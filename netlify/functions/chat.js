@@ -13,6 +13,18 @@ exports.handler = async (event, context) => {
     
 Current Excel context: ${excelContext}
 
+IMPORTANT: Always respond with valid JSON format.
+
+If the user wants to generate a BLANK ASSUMPTIONS PAGE, use the "generateAssumptionsTemplate" action:
+{
+  "response": "I'll create a blank M&A assumptions template for you.",
+  "commands": [
+    {
+      "action": "generateAssumptionsTemplate"
+    }
+  ]
+}
+
 If the user wants to modify Excel data, respond with JSON containing both a text response AND executable commands:
 {
   "response": "I'll add 2 to cell E2 for you.",
@@ -30,13 +42,18 @@ Available commands:
 - addToCell: Add value to existing cell {"action": "addToCell", "cell": "A1", "value": 5}
 - setFormula: Set Excel formula {"action": "setFormula", "cell": "A1", "formula": "=SUM(B1:B10)"}
 - formatCell: Format cell {"action": "formatCell", "cell": "A1", "format": {"bold": true, "color": "red"}}
+- generateAssumptionsTemplate: Create blank M&A assumptions template {"action": "generateAssumptionsTemplate"}
 
-For general advice without Excel modifications, respond with just text (no JSON).
+For general advice without Excel modifications, respond with JSON containing just the response:
+{
+  "response": "IRR stands for Internal Rate of Return..."
+}
 
 Examples:
 User: "add 2 to E2 cell" -> Return JSON with addToCell command
 User: "set A1 to 100" -> Return JSON with setValue command  
-User: "what is IRR?" -> Return plain text explanation`;
+User: "generate blank assumptions page" -> Return JSON with generateAssumptionsTemplate command
+User: "what is IRR?" -> Return JSON with just response text`;
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -51,48 +68,47 @@ User: "what is IRR?" -> Return plain text explanation`;
           { role: 'user', content: prompt }
         ],
         temperature: 0.3,
-        max_tokens: 1500
+        max_tokens: 1500,
+        response_format: { type: "json_object" }
       })
     });
 
     const data = await response.json();
     const aiResponse = data.choices[0].message.content;
     
-    // Try to parse as JSON first (for commands)
+    // Parse JSON response (should always be JSON now)
     let parsedResponse;
     try {
       parsedResponse = JSON.parse(aiResponse);
-      // If it's valid JSON with commands, return it structured
-      if (parsedResponse.response && parsedResponse.commands) {
-        return {
-          statusCode: 200,
-          headers: {
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Headers': 'Content-Type',
-            'Access-Control-Allow-Methods': 'POST, OPTIONS'
-          },
-          body: JSON.stringify({
-            response: parsedResponse.response,
-            commands: parsedResponse.commands
-          })
-        };
-      }
+      
+      return {
+        statusCode: 200,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Headers': 'Content-Type',
+          'Access-Control-Allow-Methods': 'POST, OPTIONS'
+        },
+        body: JSON.stringify({
+          response: parsedResponse.response,
+          commands: parsedResponse.commands || []
+        })
+      };
     } catch (e) {
-      // Not JSON, treat as plain text response
+      console.error('JSON parse error:', e);
+      // Fallback for non-JSON responses
+      return {
+        statusCode: 200,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Headers': 'Content-Type',
+          'Access-Control-Allow-Methods': 'POST, OPTIONS'
+        },
+        body: JSON.stringify({ 
+          response: aiResponse,
+          commands: []
+        })
+      };
     }
-    
-    // Return plain text response
-    return {
-      statusCode: 200,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS'
-      },
-      body: JSON.stringify({ 
-        response: aiResponse 
-      })
-    };
   } catch (error) {
     console.error('Function error:', error);
     return {

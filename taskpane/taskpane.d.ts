@@ -44,5 +44,6 @@ declare class MAModelingAddin {
     private addToCellCommand;
     private setFormulaCommand;
     private formatCellCommand;
+    private generateAssumptionsTemplate;
     private getColumnLetter;
 }
