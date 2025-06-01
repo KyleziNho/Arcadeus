@@ -1,0 +1,4 @@
+[2m2025-06-01T09:00:11.137004Z[0m [32m INFO[0m [2mbore_cli::client[0m[2m:[0m connected to server [3mremote_port[0m[2m=[0m49475
+[2m2025-06-01T09:00:11.137141Z[0m [32m INFO[0m [2mbore_cli::client[0m[2m:[0m listening at bore.pub:49475
+[2m2025-06-01T09:05:34.830807Z[0m [32m INFO[0m [1mproxy[0m[1m{[0m[3mid[0m[2m=[0m47b5e67e-65fb-4dae-9a7c-86d495771a37[1m}[0m[2m:[0m [2mbore_cli::client[0m[2m:[0m new connection
+[2m2025-06-01T09:05:35.191536Z[0m [32m INFO[0m [1mproxy[0m[1m{[0m[3mid[0m[2m=[0m47b5e67e-65fb-4dae-9a7c-86d495771a37[1m}[0m[2m:[0m [2mbore_cli::client[0m[2m:[0m connection exited
