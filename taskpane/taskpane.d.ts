@@ -15,11 +15,8 @@ interface ChatMessage {
 declare class MAModelingAddin {
     private chatMessages;
     private selectedRange;
-    private openaiApiKey;
     constructor();
     private initializeAddin;
-    private promptForApiKey;
-    private saveApiKey;
     private selectAssumptionsRange;
     private parseAssumptionsFromRange;
     private updateFormWithAssumptions;
@@ -32,7 +29,6 @@ declare class MAModelingAddin {
     private populateCFSheet;
     private calculateMetrics;
     private generateCashFlows;
-    private calculateWithOpenAI;
     private calculateMetricsFallback;
     private validateModel;
     private sendChatMessage;
@@ -43,5 +39,10 @@ declare class MAModelingAddin {
     private addChatMessage;
     private showLoading;
     private showStatus;
+    private executeCommand;
+    private setValueCommand;
+    private addToCellCommand;
+    private setFormulaCommand;
+    private formatCellCommand;
     private getColumnLetter;
 }
