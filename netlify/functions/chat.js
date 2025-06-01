@@ -25,6 +25,44 @@ If the user wants to generate a BLANK ASSUMPTIONS PAGE, use the "generateAssumpt
   ]
 }
 
+If the user wants to FILL THE ASSUMPTIONS with sample data, use the "fillAssumptionsData" action with ALL data at once:
+{
+  "response": "I'll fill the assumptions template with sample M&A data.",
+  "commands": [
+    {
+      "action": "fillAssumptionsData",
+      "data": {
+        "dealType": "Business Acquisition",
+        "sector": "Technology",
+        "geography": "United States",
+        "businessModel": "SaaS",
+        "ownership": "Private Equity",
+        "acquisitionDate": "31/03/2025",
+        "holdingPeriod": 60,
+        "currency": "USD",
+        "transactionFees": "1.5%",
+        "acquisitionLTV": "75%",
+        "equityContribution": 25000000,
+        "debtFinancing": 75000000,
+        "debtIssuanceFees": "1.0%",
+        "interestRateMargin": "3.5%",
+        "staffExpenses": 5000000,
+        "salaryGrowth": "3.0%",
+        "costItem1": 2000000,
+        "costItem2": 800000,
+        "costItem3": 1200000,
+        "costItem4": 400000,
+        "costItem5": 600000,
+        "costItem6": 300000,
+        "disposalCosts": "0.5%",
+        "terminalEquityMultiple": 12.5,
+        "terminalEBITDA": 15000000,
+        "salePrice": 187500000
+      }
+    }
+  ]
+}
+
 If the user wants to modify Excel data, respond with JSON containing both a text response AND executable commands:
 {
   "response": "I'll add 2 to cell E2 for you.",
@@ -43,6 +81,7 @@ Available commands:
 - setFormula: Set Excel formula {"action": "setFormula", "cell": "A1", "formula": "=SUM(B1:B10)"}
 - formatCell: Format cell {"action": "formatCell", "cell": "A1", "format": {"bold": true, "color": "red"}}
 - generateAssumptionsTemplate: Create blank M&A assumptions template {"action": "generateAssumptionsTemplate"}
+- fillAssumptionsData: Fill entire assumptions template with sample data {"action": "fillAssumptionsData", "data": {"dealType": "Business Acquisition", "sector": "Technology", ...}}
 
 For general advice without Excel modifications, respond with JSON containing just the response:
 {
@@ -53,6 +92,7 @@ Examples:
 User: "add 2 to E2 cell" -> Return JSON with addToCell command
 User: "set A1 to 100" -> Return JSON with setValue command  
 User: "generate blank assumptions page" -> Return JSON with generateAssumptionsTemplate command
+User: "fill assumptions with sample data" -> Return JSON with fillAssumptionsData command
 User: "what is IRR?" -> Return JSON with just response text`;
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
