@@ -51,7 +51,7 @@ User: "what is IRR?" -> Return plain text explanation`;
           { role: 'user', content: prompt }
         ],
         temperature: 0.3,
-        max_tokens: 500
+        max_tokens: 1500
       })
     });
 
@@ -94,12 +94,16 @@ User: "what is IRR?" -> Return plain text explanation`;
       })
     };
   } catch (error) {
+    console.error('Function error:', error);
     return {
       statusCode: 500,
       headers: {
         'Access-Control-Allow-Origin': '*'
       },
-      body: JSON.stringify({ error: 'Failed to process request' })
+      body: JSON.stringify({ 
+        error: 'Failed to process request',
+        details: error.message 
+      })
     };
   }
 };
