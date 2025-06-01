@@ -62,7 +62,7 @@ User: "what is IRR?" -> Return JSON with just response text`;
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'gpt-4',
+        model: 'gpt-4-turbo',
         messages: [
           { role: 'system', content: 'You are an expert Excel M&A modeling assistant.' },
           { role: 'user', content: prompt }
@@ -72,6 +72,13 @@ User: "what is IRR?" -> Return JSON with just response text`;
         response_format: { type: "json_object" }
       })
     });
+
+    if (!response.ok) {
+      console.error('OpenAI API error:', response.status, response.statusText);
+      const errorText = await response.text();
+      console.error('Error details:', errorText);
+      throw new Error(`OpenAI API error: ${response.status}`);
+    }
 
     const data = await response.json();
     const aiResponse = data.choices[0].message.content;
