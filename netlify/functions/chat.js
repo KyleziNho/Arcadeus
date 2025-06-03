@@ -7,11 +7,16 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    const { message, excelContext } = JSON.parse(event.body);
+    const { message, excelContext, fileContents } = JSON.parse(event.body);
     
-    const prompt = `You are an Excel M&A modeling expert that can directly execute Excel operations. The user says: "${message}"
+    let documentContext = '';
+    if (fileContents && fileContents.length > 0) {
+      documentContext = `\n\nUploaded Documents:\n${fileContents.join('\n\n')}`;
+    }
+
+    const prompt = `You are an Excel M&A modeling expert that can directly execute Excel operations and analyze financial documents. The user says: "${message}"
     
-Current Excel context: ${excelContext}
+Current Excel context: ${excelContext}${documentContext}
 
 IMPORTANT: Always respond with valid JSON format.
 
@@ -21,6 +26,23 @@ If the user wants to generate a BLANK ASSUMPTIONS PAGE, use the "generateAssumpt
   "commands": [
     {
       "action": "generateAssumptionsTemplate"
+    }
+  ]
+}
+
+If the user wants to ANALYZE DOCUMENTS and fill assumptions, extract data from the uploaded documents and use "fillAssumptionsData" with realistic values based on the documents:
+{
+  "response": "I've analyzed your documents and extracted the following M&A data to fill your assumptions template.",
+  "commands": [
+    {
+      "action": "fillAssumptionsData",
+      "data": {
+        "dealType": "[extracted from documents]",
+        "sector": "[extracted from documents]",
+        "purchasePrice": "[extracted from documents]",
+        "acquisitionLTV": "[extracted from documents]",
+        "[...all other fields based on document analysis]"
+      }
     }
   ]
 }
@@ -37,13 +59,12 @@ If the user wants to FILL THE ASSUMPTIONS with sample data, use the "fillAssumpt
         "geography": "United States",
         "businessModel": "SaaS",
         "ownership": "Private Equity",
+        "purchasePrice": 100,
         "acquisitionDate": "31/03/2025",
         "holdingPeriod": 60,
         "currency": "USD",
         "transactionFees": "1.5%",
         "acquisitionLTV": "75%",
-        "equityContribution": 25000000,
-        "debtFinancing": 75000000,
         "debtIssuanceFees": "1.0%",
         "interestRateMargin": "3.5%",
         "staffExpenses": 5000000,
@@ -81,7 +102,13 @@ Available commands:
 - setFormula: Set Excel formula {"action": "setFormula", "cell": "A1", "formula": "=SUM(B1:B10)"}
 - formatCell: Format cell {"action": "formatCell", "cell": "A1", "format": {"bold": true, "color": "red"}}
 - generateAssumptionsTemplate: Create blank M&A assumptions template {"action": "generateAssumptionsTemplate"}
-- fillAssumptionsData: Fill entire assumptions template with sample data {"action": "fillAssumptionsData", "data": {"dealType": "Business Acquisition", "sector": "Technology", ...}}
+- fillAssumptionsData: Fill entire assumptions template with data from documents or sample data {"action": "fillAssumptionsData", "data": {"dealType": "Business Acquisition", "sector": "Technology", "purchasePrice": 100, ...}}
+
+DOCUMENT ANALYSIS: When documents are uploaded, analyze them to extract M&A deal information including:
+- Deal type, sector, geography, business model
+- Purchase price, LTV, holding period
+- Financial metrics, cost items, exit assumptions
+- Use extracted data to populate assumptions template accurately
 
 For general advice without Excel modifications, respond with JSON containing just the response:
 {
@@ -92,7 +119,8 @@ Examples:
 User: "add 2 to E2 cell" -> Return JSON with addToCell command
 User: "set A1 to 100" -> Return JSON with setValue command  
 User: "generate blank assumptions page" -> Return JSON with generateAssumptionsTemplate command
-User: "fill assumptions with sample data" -> Return JSON with fillAssumptionsData command
+User: "fill assumptions with sample data" -> Return JSON with fillAssumptionsData command with sample data
+User: "analyze my documents and fill the template" -> Return JSON with fillAssumptionsData using extracted document data
 User: "what is IRR?" -> Return JSON with just response text`;
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {

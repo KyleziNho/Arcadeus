@@ -15,8 +15,14 @@ interface ChatMessage {
 declare class MAModelingAddin {
     private chatMessages;
     private selectedRange;
+    private uploadedFiles;
     constructor();
     private initializeAddin;
+    private initializeFileUpload;
+    private handleFileSelection;
+    private updateFileDisplay;
+    private removeFile;
+    private formatFileSize;
     private selectAssumptionsRange;
     private parseAssumptionsFromRange;
     private updateFormWithAssumptions;
@@ -33,6 +39,8 @@ declare class MAModelingAddin {
     private validateModel;
     private sendChatMessage;
     private processWithAI;
+    private processUploadedFiles;
+    private readTextFile;
     private getExcelContext;
     private offerToImplementFormula;
     private implementSuggestedFormula;
