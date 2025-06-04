@@ -2426,7 +2426,7 @@ class MAModelingAddin {
           </div>
         `;
         
-        this.showMainUploadMessage('✅ High-level parameters and deal assumptions successfully extracted and applied!', 'success');
+        this.showMainUploadMessage('✅ High-level parameters, deal assumptions, and revenue items successfully extracted and applied!', 'success');
       } else {
         console.error('No extracted data in response:', data);
         progressDiv.innerHTML = `
@@ -2511,6 +2511,18 @@ class MAModelingAddin {
       }
     }
     
+    // Revenue Items
+    if (data.revenueItems && Array.isArray(data.revenueItems) && data.revenueItems.length > 0) {
+      summary += '<br><strong>Revenue Items:</strong><br>';
+      data.revenueItems.forEach((item, index) => {
+        summary += `• ${item.name}: ${this.formatCurrency(item.initialValue)} (${item.growthType}`;
+        if (item.growthType === 'linear' && item.growthRate) {
+          summary += ` ${item.growthRate}%`;
+        }
+        summary += ')<br>';
+      });
+    }
+    
     return summary;
   }
 
@@ -2582,7 +2594,7 @@ ERROR: Could not read file content - ${error.message}`);
 
   createDataExtractionPrompt() {
     return `
-TASK: Extract HIGH-LEVEL PARAMETERS and DEAL ASSUMPTIONS from uploaded financial documents.
+TASK: Extract HIGH-LEVEL PARAMETERS, DEAL ASSUMPTIONS, and REVENUE ITEMS from uploaded financial documents.
 
 CRITICAL: You MUST carefully read ALL content in the uploaded files and extract the specific data points listed below.
 
@@ -2600,7 +2612,21 @@ REQUIRED JSON STRUCTURE - Return EXACTLY this format:
       "dealValue": 100000000,
       "transactionFee": 2.5,
       "dealLTV": 75
-    }
+    },
+    "revenueItems": [
+      {
+        "name": "Product Revenue",
+        "initialValue": 10000000,
+        "growthType": "linear",
+        "growthRate": 5
+      },
+      {
+        "name": "Service Revenue", 
+        "initialValue": 5000000,
+        "growthType": "no_growth",
+        "growthRate": 0
+      }
+    ]
   }
 }
 
@@ -2644,15 +2670,49 @@ DEAL ASSUMPTIONS:
    - Calculate from debt/total if needed: 75000000/100000000 = 75%
    - If not found, calculate from Debt/(Debt+Equity) if both are available
 
+REVENUE ITEMS:
+1. IDENTIFY ALL REVENUE STREAMS: Look for different types of revenue in the document
+   - Search for terms like "Revenue", "Sales", "Income", "Turnover"
+   - Look for specific revenue categories, product lines, service types
+   - Check for multiple revenue items listed separately
+
+2. REVENUE NAMES: Extract descriptive names for each revenue stream
+   - Use actual names from document (e.g., "Product Sales", "Service Revenue", "Licensing")
+   - If generic, create meaningful names based on business type
+   - Avoid duplicates and be specific
+
+3. INITIAL VALUES: Extract current/base year revenue amounts
+   - Look for current year figures, latest annual revenue
+   - Convert to numbers without currency symbols
+   - If multiple years shown, use most recent or base year
+
+4. GROWTH TYPE & RATE: Determine growth pattern for each revenue stream
+   - GROWTH TYPES:
+     * "linear" = consistent growth rate (e.g., 5% per year)
+     * "no_growth" = flat/stable revenue (0% growth)
+     * "nonlinear" = varying growth rates over time
+   
+   - GROWTH RATE EXTRACTION:
+     * Look for stated growth rates, CAGR, YoY growth percentages
+     * If found "Revenue Growth: 8%" → growthType: "linear", growthRate: 8
+     * If no growth mentioned → growthType: "no_growth", growthRate: 0
+     * If multiple different rates → growthType: "nonlinear", use average rate
+
+5. REVENUE ITEMS ARRAY: Create one object for each distinct revenue stream found
+   - Even if only one revenue line, create array with single item
+   - If multiple streams, create separate objects for each
+   - Ensure all required fields (name, initialValue, growthType, growthRate) are included
+
 IMPORTANT: 
 - Extract REAL data from the uploaded files
 - Use actual company names, values, and percentages from the document
-- Calculate deal value and LTV from available financial data
+- Calculate deal value and LTV from available financial data  
+- Create revenue items based on actual revenue streams found in document
 - Do not use the example values above - they are just format examples`;
   }
 
   async applyExtractedData(extractedData) {
-    console.log('Applying extracted data (HIGH-LEVEL PARAMETERS & DEAL ASSUMPTIONS):', extractedData);
+    console.log('Applying extracted data (HIGH-LEVEL PARAMETERS, DEAL ASSUMPTIONS & REVENUE ITEMS):', extractedData);
 
     try {
       // Apply High-Level Parameters
@@ -2725,7 +2785,16 @@ IMPORTANT:
         console.warn('❌ No dealAssumptions found in extracted data');
       }
 
-      console.log('✅ Successfully applied extracted data to both sections');
+      // Apply Revenue Items
+      if (extractedData.revenueItems && Array.isArray(extractedData.revenueItems)) {
+        console.log('Applying revenue items:', extractedData.revenueItems);
+        await this.applyRevenueItems(extractedData.revenueItems);
+        console.log('✅ Revenue items applied successfully');
+      } else {
+        console.warn('❌ No revenueItems found in extracted data');
+      }
+
+      console.log('✅ Successfully applied extracted data to all sections');
     } catch (error) {
       console.error('Error applying extracted data:', error);
       throw error;
