@@ -458,7 +458,9 @@ body {
 }
 
 input[type="text"],
-input[type="number"] {
+input[type="number"],
+input[type="date"],
+select {
   width: calc(100% - 2px); /* Prevent overflow with border */
   padding: var(--spacing-sm) var(--spacing-md);
   border: 1.5px solid var(--surface-tertiary);
@@ -472,8 +474,19 @@ input[type="number"] {
   box-sizing: border-box;
 }
 
+/* Select dropdown arrow */
+select {
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right var(--spacing-sm) center;
+  background-size: 20px;
+  padding-right: 40px;
+}
+
 input[type="text"]:focus,
-input[type="number"]:focus {
+input[type="number"]:focus,
+input[type="date"]:focus,
+select:focus {
   outline: none;
   border-color: var(--primary-blue);
   box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
@@ -483,6 +496,22 @@ input[type="number"]:focus {
 input[type="text"]::placeholder,
 input[type="number"]::placeholder {
   color: var(--text-tertiary);
+}
+
+/* Help text styling */
+.help-text {
+  display: block;
+  margin-top: var(--spacing-xs);
+  font-size: 13px;
+  color: var(--text-tertiary);
+  font-style: italic;
+}
+
+/* Readonly input styling */
+input[readonly] {
+  background: var(--surface-secondary);
+  color: var(--text-secondary);
+  cursor: not-allowed;
 }
 
 /* Buttons */

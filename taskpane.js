@@ -105,6 +105,9 @@ class MAModelingAddin {
     // Debt model functionality
     this.initializeDebtModel();
 
+    // High-Level Parameters functionality
+    this.initializeHighLevelParameters();
+
     this.isInitialized = true;
     console.log('MAModelingAddin initialized successfully');
     
@@ -735,6 +738,10 @@ class MAModelingAddin {
     
     // Add delay to ensure DOM is fully loaded
     setTimeout(() => {
+      // High-Level Parameters section collapse/expand functionality
+      const minimizeHighLevelBtn = document.getElementById('minimizeHighLevel');
+      const highLevelParametersSection = document.getElementById('highLevelParametersSection');
+      
       // Deal Assumptions section collapse/expand functionality
       const minimizeBtn = document.getElementById('minimizeAssumptions');
       const dealAssumptionsSection = document.getElementById('dealAssumptionsSection');
@@ -782,6 +789,34 @@ class MAModelingAddin {
         console.log('✅ Deal Assumptions collapsible section initialized successfully');
       } else {
         console.error('❌ Could not find Deal Assumptions collapsible section elements');
+      }
+      
+      // High-Level Parameters section event handler
+      if (minimizeHighLevelBtn && highLevelParametersSection) {
+        minimizeHighLevelBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          console.log('High-Level Parameters minimize button clicked');
+          
+          // Toggle collapsed class
+          highLevelParametersSection.classList.toggle('collapsed');
+          
+          // Update icon and aria-label for accessibility
+          const isCollapsed = highLevelParametersSection.classList.contains('collapsed');
+          const iconSpan = minimizeHighLevelBtn.querySelector('.minimize-icon');
+          
+          if (iconSpan) {
+            iconSpan.textContent = isCollapsed ? '+' : '−';
+          }
+          
+          minimizeHighLevelBtn.setAttribute('aria-label', 
+            isCollapsed ? 'Expand High-Level Parameters' : 'Minimize High-Level Parameters');
+          
+          console.log('High-Level Parameters section', isCollapsed ? 'collapsed' : 'expanded');
+        });
+        
+        console.log('✅ High-Level Parameters collapsible section initialized successfully');
+      } else {
+        console.error('❌ Could not find High-Level Parameters collapsible section elements');
       }
       
       // Debt Model section event handler
@@ -1130,6 +1165,103 @@ class MAModelingAddin {
       console.error('Error generating debt schedule:', error);
       this.addChatMessage('assistant', '❌ Error generating debt schedule. Please check your inputs and try again.');
     }
+  }
+
+  initializeHighLevelParameters() {
+    console.log('Initializing high-level parameters...');
+    
+    setTimeout(() => {
+      const projectStartDate = document.getElementById('projectStartDate');
+      const projectEndDate = document.getElementById('projectEndDate');
+      const modelPeriods = document.getElementById('modelPeriods');
+      const holdingPeriodsCalculated = document.getElementById('holdingPeriodsCalculated');
+      
+      console.log('High-level parameters elements found:', {
+        projectStartDate: !!projectStartDate,
+        projectEndDate: !!projectEndDate,
+        modelPeriods: !!modelPeriods,
+        holdingPeriodsCalculated: !!holdingPeriodsCalculated
+      });
+      
+      // Set default start date to today
+      if (projectStartDate) {
+        const today = new Date();
+        const formattedDate = today.toISOString().split('T')[0];
+        projectStartDate.value = formattedDate;
+      }
+      
+      // Function to calculate holding periods
+      const calculateHoldingPeriods = () => {
+        if (!projectStartDate?.value || !projectEndDate?.value || !modelPeriods?.value) {
+          if (holdingPeriodsCalculated) {
+            holdingPeriodsCalculated.value = '';
+          }
+          return;
+        }
+        
+        const startDate = new Date(projectStartDate.value);
+        const endDate = new Date(projectEndDate.value);
+        const periodType = modelPeriods.value;
+        
+        if (endDate <= startDate) {
+          if (holdingPeriodsCalculated) {
+            holdingPeriodsCalculated.value = 'End date must be after start date';
+          }
+          return;
+        }
+        
+        let periods = 0;
+        
+        switch (periodType) {
+          case 'daily':
+            const diffTime = Math.abs(endDate - startDate);
+            periods = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            break;
+            
+          case 'monthly':
+            periods = (endDate.getFullYear() - startDate.getFullYear()) * 12 + 
+                     (endDate.getMonth() - startDate.getMonth());
+            if (endDate.getDate() >= startDate.getDate()) periods++;
+            break;
+            
+          case 'quarterly':
+            const monthsDiff = (endDate.getFullYear() - startDate.getFullYear()) * 12 + 
+                              (endDate.getMonth() - startDate.getMonth());
+            periods = Math.ceil(monthsDiff / 3);
+            break;
+            
+          case 'yearly':
+            periods = endDate.getFullYear() - startDate.getFullYear();
+            if (endDate.getMonth() > startDate.getMonth() || 
+                (endDate.getMonth() === startDate.getMonth() && endDate.getDate() >= startDate.getDate())) {
+              periods++;
+            }
+            break;
+        }
+        
+        if (holdingPeriodsCalculated) {
+          holdingPeriodsCalculated.value = `${periods} ${periodType === 'daily' ? 'days' : periodType.slice(0, -2) + 's'}`;
+        }
+        
+        console.log('Calculated holding periods:', periods, periodType);
+      };
+      
+      // Add event listeners for automatic calculation
+      if (projectStartDate) {
+        projectStartDate.addEventListener('change', calculateHoldingPeriods);
+      }
+      if (projectEndDate) {
+        projectEndDate.addEventListener('change', calculateHoldingPeriods);
+      }
+      if (modelPeriods) {
+        modelPeriods.addEventListener('change', calculateHoldingPeriods);
+      }
+      
+      // Initial calculation
+      calculateHoldingPeriods();
+      
+      console.log('✅ High-level parameters initialized successfully');
+    }, 500);
   }
 
   async getExcelContext() {

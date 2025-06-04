@@ -16,6 +16,56 @@
             <p>Professional deal modeling with AI assistance</p>
         </div>
 
+        <div class="section collapsible-section" id="highLevelParametersSection">
+            <button class="minimize-btn" id="minimizeHighLevel" aria-label="Minimize High-Level Parameters">
+                <span class="minimize-icon">−</span>
+            </button>
+            <h3 data-emoji="⚙️">High-Level Parameters</h3>
+            <div class="section-content" id="highLevelContent">
+                <div class="form-group">
+                    <label>Currency</label>
+                    <select id="currency">
+                        <option value="USD">USD - US Dollar</option>
+                        <option value="EUR">EUR - Euro</option>
+                        <option value="GBP">GBP - British Pound</option>
+                        <option value="JPY">JPY - Japanese Yen</option>
+                        <option value="CAD">CAD - Canadian Dollar</option>
+                        <option value="AUD">AUD - Australian Dollar</option>
+                        <option value="CHF">CHF - Swiss Franc</option>
+                        <option value="CNY">CNY - Chinese Yuan</option>
+                        <option value="SEK">SEK - Swedish Krona</option>
+                        <option value="NOK">NOK - Norwegian Krone</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>Project Start Date</label>
+                    <input type="date" id="projectStartDate" />
+                </div>
+                
+                <div class="form-group">
+                    <label>Model Periods</label>
+                    <select id="modelPeriods">
+                        <option value="daily">Daily</option>
+                        <option value="monthly" selected>Monthly</option>
+                        <option value="quarterly">Quarterly</option>
+                        <option value="yearly">Yearly</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>Project End Date</label>
+                    <input type="date" id="projectEndDate" />
+                </div>
+                
+                <div class="form-group">
+                    <label>Holding Periods (Calculated)</label>
+                    <input type="text" id="holdingPeriodsCalculated" readonly placeholder="Select dates and period type to calculate" />
+                    <small class="help-text">Automatically calculated based on start/end dates and period type</small>
+                </div>
+            </div>
+        </div>
+
         <div class="section collapsible-section" id="dealAssumptionsSection">
             <button class="minimize-btn" id="minimizeAssumptions" aria-label="Minimize Deal Assumptions">
                 <span class="minimize-icon">−</span>
