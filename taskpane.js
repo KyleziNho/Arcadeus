@@ -940,25 +940,6 @@ class MAModelingAddin {
       allInRateRow.innerHTML = '<td><strong>All-in Rate (%)</strong></td>' + 
         Array.from({length: maxPreviewPeriods}, () => `<td>${allInRate.toFixed(1)}</td>`).join('');
       previewTable.appendChild(allInRateRow);
-      
-      // Outstanding Debt row
-      const debtRow = document.createElement('tr');
-      debtRow.innerHTML = '<td><strong>Outstanding Debt ($M)</strong></td>' + 
-        Array.from({length: maxPreviewPeriods}, (_, i) => {
-          const outstandingDebt = 100 - i * 15; // Sample data
-          return `<td>$${outstandingDebt.toFixed(1)}</td>`;
-        }).join('');
-      previewTable.appendChild(debtRow);
-      
-      // Interest Payment row
-      const interestRow = document.createElement('tr');
-      interestRow.innerHTML = '<td><strong>Interest Payment ($M)</strong></td>' + 
-        Array.from({length: maxPreviewPeriods}, (_, i) => {
-          const outstandingDebt = 100 - i * 15;
-          const interestPayment = outstandingDebt * (allInRate / 100);
-          return `<td>$${interestPayment.toFixed(1)}</td>`;
-        }).join('');
-      previewTable.appendChild(interestRow);
     }
   }
 
@@ -1002,18 +983,36 @@ class MAModelingAddin {
           const newWorksheet = worksheets.add('Debt Schedule');
           newWorksheet.activate();
           
-          // Generate transposed table structure
-          // Rows: Period, Base Rate (%), All-in Rate (%), Outstanding Debt ($M), Interest Payment ($M)
-          // Columns: Year 1, Year 2, Year 3, etc.
+          // Get all deal parameters from form
+          const dealName = document.getElementById('dealName')?.value || 'M&A Deal';
           
+          // Add deal summary section first
+          const summaryData = [];
+          summaryData.push(['DEAL SUMMARY', '', '', '', '']);
+          summaryData.push(['Deal Name', dealName, '', '', '']);
+          summaryData.push(['Deal Size ($M)', dealSize.toFixed(1), '', '', '']);
+          summaryData.push(['LTV (%)', ltv.toFixed(1), '', '', '']);
+          summaryData.push(['Debt Amount ($M)', debtAmount.toFixed(1), '', '', '']);
+          summaryData.push(['Rate Type', rateType === 'fixed' ? 'Fixed' : 'Floating', '', '', '']);
+          if (rateType === 'floating') {
+            const margin = parseFloat(document.getElementById('creditMargin')?.value) || 2.0;
+            summaryData.push(['Credit Margin (%)', margin.toFixed(1), '', '', '']);
+          }
+          summaryData.push(['Holding Period (Months)', holdingPeriod.toString(), '', '', '']);
+          summaryData.push(['', '', '', '', '']); // Empty row for spacing
+          
+          // Generate transposed rate table structure
           // Create period headers (columns)
-          const periodHeaders = [''];
+          const periodHeaders = ['RATE SCHEDULE'];
           for (let i = 1; i <= periods; i++) {
             periodHeaders.push(`Year ${i}`);
           }
           
           // Create the transposed data structure
           const transposedData = [];
+          
+          // Add summary data first
+          transposedData.push(...summaryData);
           
           // Row 1: Period headers
           transposedData.push(periodHeaders);
@@ -1032,38 +1031,33 @@ class MAModelingAddin {
           }
           transposedData.push(allInRateRow);
           
-          // Row 4: Outstanding Debt
-          const debtRow = ['Outstanding Debt ($M)'];
-          for (let i = 1; i <= periods; i++) {
-            const outstandingDebt = debtAmount * (1 - (i - 1) / periods * 0.8); // Simple amortization
-            debtRow.push(outstandingDebt.toFixed(1));
-          }
-          transposedData.push(debtRow);
-          
-          // Row 5: Interest Payment
-          const interestRow = ['Interest Payment ($M)'];
-          for (let i = 1; i <= periods; i++) {
-            const outstandingDebt = debtAmount * (1 - (i - 1) / periods * 0.8);
-            const interestPayment = outstandingDebt * (allInRate / 100);
-            interestRow.push(interestPayment.toFixed(1));
-          }
-          transposedData.push(interestRow);
-          
           // Insert all data at once
-          const totalCols = periods + 1;
+          const totalCols = Math.max(periods + 1, 5); // Ensure at least 5 columns for summary
           const totalRows = transposedData.length;
           const dataRange = newWorksheet.getRange(`A1:${String.fromCharCode(65 + totalCols - 1)}${totalRows}`);
           dataRange.values = transposedData;
           
-          // Format header row (period headers)
-          const headerRange = newWorksheet.getRange(`A1:${String.fromCharCode(65 + totalCols - 1)}1`);
-          headerRange.format.font.bold = true;
-          headerRange.format.fill.color = '#E5E5EA';
+          // Format Deal Summary section header
+          const summaryHeaderRange = newWorksheet.getRange('A1:E1');
+          summaryHeaderRange.format.font.bold = true;
+          summaryHeaderRange.format.font.size = 14;
+          summaryHeaderRange.format.fill.color = '#4472C4';
+          summaryHeaderRange.format.font.color = 'white';
+          summaryHeaderRange.merge();
+          
+          // Format summary section
+          const summaryRange = newWorksheet.getRange(`A1:B${summaryData.length}`);
+          summaryRange.format.font.bold = true;
+          
+          // Format Rate Schedule header 
+          const rateHeaderRow = summaryData.length + 1;
+          const rateHeaderRange = newWorksheet.getRange(`A${rateHeaderRow}:${String.fromCharCode(65 + totalCols - 1)}${rateHeaderRow}`);
+          rateHeaderRange.format.font.bold = true;
+          rateHeaderRange.format.fill.color = '#E5E5EA';
           
           // Format first column (row labels)
           const labelRange = newWorksheet.getRange(`A1:A${totalRows}`);
           labelRange.format.font.bold = true;
-          labelRange.format.fill.color = '#F2F2F7';
           
           // Format table borders
           const tableRange = newWorksheet.getRange(`A1:${String.fromCharCode(65 + totalCols - 1)}${totalRows}`);
@@ -1079,7 +1073,7 @@ class MAModelingAddin {
           
           await context.sync();
           
-          this.addChatMessage('assistant', `✅ Debt schedule generated successfully! Created new worksheet "Debt Schedule" with ${periods}-year transposed table. Debt amount: $${debtAmount.toFixed(1)}M at ${allInRate.toFixed(1)}% all-in rate.`);
+          this.addChatMessage('assistant', `✅ Debt schedule generated successfully! Created new worksheet "Debt Schedule" with deal summary and ${periods}-year rate schedule. Deal: ${dealName} | Debt: $${debtAmount.toFixed(1)}M | All-in Rate: ${allInRate.toFixed(1)}%`);
         });
       } else {
         // Fallback for when Excel API is not available
