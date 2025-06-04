@@ -37,7 +37,7 @@ exports.handler = async (event, context) => {
       throw new Error('Invalid JSON in request body');
     }
 
-    const { message, excelContext, fileContents } = requestData;
+    const { message, excelContext, fileContents, autoFillMode } = requestData;
     
     if (!message || typeof message !== 'string') {
       throw new Error('Message is required and must be a string');
@@ -62,7 +62,75 @@ exports.handler = async (event, context) => {
     if (hasOpenAIKey) {
       console.log('Using OpenAI API for processing');
       
-      const systemPrompt = `You are an AI assistant specialized in M&A and PE deal modeling in Excel. You can execute Excel commands to help users build financial models.
+      let systemPrompt;
+      let maxTokens = 1500;
+      
+      if (autoFillMode) {
+        console.log('Auto-fill mode activated');
+        maxTokens = 4000; // Increase token limit for auto-fill
+        
+        systemPrompt = `You are an expert financial analyst AI specialized in extracting data from M&A/PE documents and financial reports. Your task is to analyze uploaded documents and extract specific financial data.
+
+CRITICAL INSTRUCTIONS:
+1. Carefully read and analyze ALL content from the uploaded files
+2. Look for financial data, dates, percentages, company names, deal values, revenue figures, cost data, etc.
+3. Extract data that matches the required fields below
+4. Return ONLY a valid JSON object with the extracted data
+5. If you cannot find specific data, use null for that field
+6. Look for context clues - revenue might be called "sales", "income", "turnover"
+7. Cost items might be "expenses", "operating costs", "OPEX", "staff costs", etc.
+8. Growth rates might be shown as YoY%, CAGR, annual growth, projected increases
+9. Deal values might be "purchase price", "enterprise value", "transaction value", "acquisition price"
+10. Currency should be detected from symbols ($, €, £) or abbreviations (USD, EUR, GBP)
+
+REQUIRED DATA STRUCTURE:
+{
+  "extractedData": {
+    "highLevelParameters": {
+      "currency": "Detect from document (USD, EUR, GBP, etc.)",
+      "projectStartDate": "YYYY-MM-DD format - look for deal close date, acquisition date, or current year start",
+      "projectEndDate": "YYYY-MM-DD format - calculate based on holding period or exit date",
+      "modelPeriods": "Detect if data is daily/monthly/quarterly/yearly"
+    },
+    "dealAssumptions": {
+      "dealName": "Company name or deal description",
+      "dealValue": "Number - look for purchase price, enterprise value, deal size",
+      "transactionFee": "Percentage - banking fees, advisory fees, transaction costs",
+      "dealLTV": "Percentage - leverage ratio, debt percentage, LTV"
+    },
+    "revenueItems": [
+      {
+        "name": "Revenue stream name",
+        "initialValue": "Current/base year revenue",
+        "growthType": "linear if consistent growth rate, nonlinear if varying",
+        "growthRate": "Annual growth percentage if linear"
+      }
+    ],
+    "costItems": [
+      {
+        "name": "Cost category name",
+        "initialValue": "Current/base year cost",
+        "growthType": "linear or nonlinear",
+        "growthRate": "Annual growth percentage if linear"
+      }
+    ],
+    "exitAssumptions": {
+      "disposalCost": "Exit fees percentage - typically 1-3%",
+      "terminalCapRate": "Exit cap rate or exit multiple basis"
+    },
+    "debtModel": {
+      "hasDebt": "true if LTV > 0",
+      "interestRate": "Look for interest rates, cost of debt",
+      "loanIssuanceFees": "Debt arrangement fees"
+    }
+  }
+}
+
+Document Content to Analyze:
+${documentContext}`;
+      } else {
+        // Regular chat mode
+        systemPrompt = `You are an AI assistant specialized in M&A and PE deal modeling in Excel. You can execute Excel commands to help users build financial models.
 
 Available commands:
 - generateAssumptionsTemplate: Creates a professional assumptions template
@@ -81,6 +149,7 @@ Always return valid JSON with "response" and "commands" fields.
 
 Excel Context: ${excelContext || 'Not available'}
 ${documentContext}`;
+      }
 
       try {
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -96,8 +165,8 @@ ${documentContext}`;
               { role: 'user', content: message }
             ],
             response_format: { type: "json_object" },
-            temperature: 0.7,
-            max_tokens: 1500
+            temperature: autoFillMode ? 0.3 : 0.7, // Lower temperature for data extraction
+            max_tokens: maxTokens
           })
         });
 
@@ -125,11 +194,30 @@ ${documentContext}`;
             },
             body: JSON.stringify({
               response: aiResponse,
-              commands: []
+              commands: [],
+              error: 'Failed to parse response'
             })
           };
         }
 
+        // Handle auto-fill mode response
+        if (autoFillMode && parsedResponse.extractedData) {
+          console.log('Returning extracted data for auto-fill');
+          return {
+            statusCode: 200,
+            headers: {
+              'Access-Control-Allow-Origin': '*',
+              'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+              'Access-Control-Allow-Methods': 'POST, OPTIONS'
+            },
+            body: JSON.stringify({
+              extractedData: parsedResponse.extractedData,
+              response: "Data extracted successfully"
+            })
+          };
+        }
+
+        // Regular chat mode response
         return {
           statusCode: 200,
           headers: {

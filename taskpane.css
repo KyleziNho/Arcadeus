@@ -1065,6 +1065,15 @@ input[readonly] {
   100% { transform: rotate(360deg); }
 }
 
+/* Auto-fill Progress Styles */
+.autofill-progress {
+  margin-top: var(--spacing-md);
+  padding: var(--spacing-lg);
+  background: var(--surface-secondary);
+  border-radius: var(--radius-medium);
+  border: 1px solid var(--surface-tertiary);
+}
+
 /* Chat Section */
 .chat-section {
   background: var(--surface-primary);

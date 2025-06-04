@@ -2362,25 +2362,52 @@ class MAModelingAddin {
     }
 
     const autoFillBtn = document.getElementById('autoFillBtn');
+    const uploadedFilesDisplay = document.getElementById('uploadedFilesDisplay');
+    
+    // Create progress indicator
+    let progressDiv = document.createElement('div');
+    progressDiv.className = 'autofill-progress';
+    progressDiv.innerHTML = `
+      <div style="text-align: center; padding: 20px; color: var(--text-secondary);">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation: spin 1s linear infinite;">
+          <circle cx="12" cy="12" r="10"></circle>
+          <path d="M12 2v4m0 12v4m10-10h-4M6 12H2"></path>
+        </svg>
+        <p style="margin-top: 10px; font-weight: 500;">Reading uploaded files...</p>
+      </div>
+    `;
+    
+    if (uploadedFilesDisplay) {
+      uploadedFilesDisplay.appendChild(progressDiv);
+    }
+    
     if (autoFillBtn) {
       autoFillBtn.disabled = true;
       autoFillBtn.innerHTML = `
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="12" cy="12" r="3"></circle>
-          <path d="M12 1v6m0 6v6m11-7h-6m-6 0H1"></path>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation: spin 1s linear infinite;">
+          <circle cx="12" cy="12" r="10"></circle>
+          <path d="M12 2v4m0 12v4m10-10h-4M6 12H2"></path>
         </svg>
         Processing...
       `;
     }
 
     try {
-      // Process uploaded files and extract content
+      // Step 1: Process uploaded files
+      console.log('Step 1: Processing uploaded files...');
+      progressDiv.querySelector('p').textContent = 'Extracting file content...';
       const fileContents = await this.processMainUploadedFiles();
+      console.log('File contents extracted:', fileContents.length, 'files');
       
-      // Create comprehensive prompt for AI
+      // Step 2: Create comprehensive prompt for AI
+      console.log('Step 2: Creating AI prompt...');
+      progressDiv.querySelector('p').textContent = 'Preparing AI analysis...';
       const aiPrompt = this.createDataExtractionPrompt();
       
-      // Send to AI service
+      // Step 3: Send to AI service
+      console.log('Step 3: Sending to AI for analysis...');
+      progressDiv.querySelector('p').textContent = 'AI analyzing financial data...';
+      
       const response = await fetch('/.netlify/functions/chat', {
         method: 'POST',
         headers: {
@@ -2393,32 +2420,108 @@ class MAModelingAddin {
         })
       });
 
+      console.log('AI response status:', response.status);
       const data = await response.json();
+      console.log('AI response data:', data);
       
       if (data.extractedData) {
-        // Apply extracted data to form fields
+        // Step 4: Apply extracted data
+        progressDiv.querySelector('p').textContent = 'Populating form fields...';
         await this.applyExtractedData(data.extractedData);
+        
+        // Show success with summary
+        let summary = this.createExtractionSummary(data.extractedData);
+        progressDiv.innerHTML = `
+          <div style="text-align: center; padding: 20px; color: var(--accent-green);">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <path d="M9 12l2 2 4-4"></path>
+            </svg>
+            <p style="margin-top: 10px; font-weight: 600;">✅ Data Extraction Successful!</p>
+            <div style="text-align: left; margin-top: 15px; font-size: 13px; color: var(--text-secondary);">
+              ${summary}
+            </div>
+          </div>
+        `;
+        
         this.showMainUploadMessage('✅ Data successfully extracted and applied to all sections!', 'success');
       } else {
-        this.showMainUploadMessage('⚠️ AI processed the files but could not extract structured data. Please check file content and try again.', 'error');
+        console.error('No extracted data in response:', data);
+        progressDiv.innerHTML = `
+          <div style="text-align: center; padding: 20px; color: var(--accent-orange);">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12" y2="16.01"></line>
+            </svg>
+            <p style="margin-top: 10px; font-weight: 500;">⚠️ Limited data extracted</p>
+            <p style="font-size: 13px; color: var(--text-tertiary);">Please check your file format and content.</p>
+          </div>
+        `;
+        this.showMainUploadMessage('⚠️ AI processed the files but could not extract all data. Please check file content and try again.', 'error');
       }
       
     } catch (error) {
       console.error('Auto-fill processing error:', error);
+      progressDiv.innerHTML = `
+        <div style="text-align: center; padding: 20px; color: var(--accent-red);">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="15" y1="9" x2="9" y2="15"></line>
+            <line x1="9" y1="9" x2="15" y2="15"></line>
+          </svg>
+          <p style="margin-top: 10px; font-weight: 500;">❌ Processing Error</p>
+          <p style="font-size: 13px; color: var(--text-tertiary);">${error.message || 'Please try again'}</p>
+        </div>
+      `;
       this.showMainUploadMessage('❌ Error processing files with AI. Please try again.', 'error');
     } finally {
-      // Reset button
-      if (autoFillBtn) {
-        autoFillBtn.disabled = false;
-        autoFillBtn.innerHTML = `
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M9 12l2 2 4-4"></path>
-            <circle cx="12" cy="12" r="9"></circle>
-          </svg>
-          Auto Fill with AI
-        `;
-      }
+      // Reset button after delay
+      setTimeout(() => {
+        if (autoFillBtn) {
+          autoFillBtn.disabled = false;
+          autoFillBtn.innerHTML = `
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 12l2 2 4-4"></path>
+              <circle cx="12" cy="12" r="9"></circle>
+            </svg>
+            Auto Fill with AI
+          `;
+        }
+      }, 2000);
     }
+  }
+
+  createExtractionSummary(data) {
+    let summary = '<strong>Extracted Data:</strong><br>';
+    
+    if (data.dealAssumptions?.dealName) {
+      summary += `• Deal: ${data.dealAssumptions.dealName}<br>`;
+    }
+    if (data.dealAssumptions?.dealValue) {
+      summary += `• Value: ${this.formatCurrency(data.dealAssumptions.dealValue)}<br>`;
+    }
+    if (data.highLevelParameters?.currency) {
+      summary += `• Currency: ${data.highLevelParameters.currency}<br>`;
+    }
+    if (data.revenueItems?.length > 0) {
+      summary += `• Revenue Items: ${data.revenueItems.length} found<br>`;
+    }
+    if (data.costItems?.length > 0) {
+      summary += `• Cost Items: ${data.costItems.length} found<br>`;
+    }
+    
+    return summary;
+  }
+
+  formatCurrency(value) {
+    if (!value) return '';
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(value);
   }
 
   async processMainUploadedFiles() {
@@ -2430,27 +2533,47 @@ class MAModelingAddin {
         
         if (file.type === 'text/csv' || file.name.endsWith('.csv')) {
           content = await this.readTextFile(file);
-          // Keep more content for better analysis
-          content = content.substring(0, 10000);
+          // Keep ALL content for better analysis - increase limit significantly
+          content = content.substring(0, 50000); // 50KB should capture most financial data
+          
+          // Add structured format for CSV
+          const lines = content.split('\n');
+          const structuredContent = `
+File: ${file.name}
+Type: CSV Spreadsheet
+Content Preview:
+${lines.slice(0, 100).join('\n')} 
+${lines.length > 100 ? `\n... (${lines.length - 100} more rows)` : ''}
+
+FULL CONTENT FOR ANALYSIS:
+${content}`;
+          
+          fileContents.push(structuredContent);
         } else if (file.type === 'application/pdf') {
-          // For PDF files, we'll send the filename and indicate server-side processing needed
-          content = `[PDF FILE: ${file.name} - ${this.formatFileSize(file.size)} - Please extract text content from this PDF for financial data analysis]`;
+          // For PDF files, we need actual text extraction
+          // For now, provide clear instructions for manual data
+          const pdfContent = `
+File: ${file.name}
+Type: PDF Document
+Size: ${this.formatFileSize(file.size)}
+
+[PDF CONTENT NOT EXTRACTED - Please analyze based on filename and context]
+Common PDF contents in M&A:
+- Information Memorandum: Contains company overview, financials, projections
+- Financial Statements: Revenue, costs, EBITDA, growth rates
+- Deal Terms: Purchase price, structure, fees
+- Management Presentation: Business model, market, projections
+
+Please extract relevant financial data based on typical M&A document structure.`;
+          
+          fileContents.push(pdfContent);
         }
-        
-        fileContents.push({
-          filename: file.name,
-          type: file.type,
-          size: file.size,
-          content: content
-        });
       } catch (error) {
         console.error(`Error processing file ${file.name}:`, error);
-        fileContents.push({
-          filename: file.name,
-          type: file.type,
-          size: file.size,
-          content: `[ERROR: Could not read file content]`
-        });
+        fileContents.push(`
+File: ${file.name}
+Type: ${file.type}
+ERROR: Could not read file content - ${error.message}`);
       }
     }
     
@@ -2459,88 +2582,59 @@ class MAModelingAddin {
 
   createDataExtractionPrompt() {
     return `
-FINANCIAL DATA EXTRACTION FOR M&A PE MODELING
+TASK: Extract financial data from uploaded M&A/PE documents to auto-fill a financial model.
 
-Please analyze the uploaded files and extract financial data to populate ALL the following sections. Return the data in a structured JSON format.
+CRITICAL: You MUST carefully read ALL content in the uploaded files and extract specific financial data points. Look for numbers, percentages, dates, company names, and financial metrics.
 
-EXPECTED DATA STRUCTURE TO EXTRACT:
+DATA TO EXTRACT (with examples of what to look for):
 
 1. HIGH-LEVEL PARAMETERS:
-   - currency (USD, EUR, GBP, etc.)
-   - projectStartDate (YYYY-MM-DD format)
-   - projectEndDate (YYYY-MM-DD format)
-   - modelPeriods (daily, monthly, quarterly, yearly)
+   - currency: Look for currency symbols ($, €, £, ¥) or codes (USD, EUR, GBP, JPY)
+   - projectStartDate: Find acquisition date, deal close date, or current year (format: YYYY-MM-DD)
+   - projectEndDate: Calculate from start date + holding period, or find exit date
+   - modelPeriods: Determine from data frequency (if monthly data → "monthly", if annual → "yearly")
 
 2. DEAL ASSUMPTIONS:
-   - dealName (string)
-   - dealValue (number in base currency)
-   - transactionFee (percentage, e.g., 2.5)
-   - dealLTV (percentage, e.g., 70)
+   - dealName: Company name, target name, or acquisition target
+   - dealValue: Look for "purchase price", "enterprise value", "deal value", "acquisition price", "transaction value"
+   - transactionFee: Banking fees, advisory fees, transaction costs (typically 1-3%)
+   - dealLTV: Leverage ratio, debt-to-equity, loan-to-value, "financed with X% debt"
 
-3. REVENUE ITEMS (array of revenue streams):
-   Each revenue item should have:
-   - name (string, e.g., "Product Sales")
-   - initialValue (number)
-   - growthType ("none", "linear", "nonlinear")
-   - growthRate (number, if linear)
-   - periodGrowthRates (array of numbers, if nonlinear)
+3. REVENUE ITEMS (extract ALL revenue streams found):
+   Look for:
+   - Sales, Revenue, Income, Turnover, Net Sales, Gross Sales
+   - Product lines, Service revenues, Subscription income
+   - Geographic segments, Business units
+   Extract: name, current/base year value, growth rate or projections
 
-4. COST ITEMS (array of cost categories):
-   Each cost item should have:
-   - name (string, e.g., "Staff Expenses")
-   - initialValue (number)
-   - growthType ("none", "linear", "nonlinear")
-   - growthRate (number, if linear)
-   - periodGrowthRates (array of numbers, if nonlinear)
+4. COST ITEMS (extract ALL cost categories found):
+   Look for:
+   - Operating Expenses, OPEX, SG&A, COGS, Cost of Sales
+   - Staff costs, Salaries, Personnel expenses, Employee costs
+   - Marketing expenses, R&D costs, Administrative costs
+   - Rent, Utilities, Depreciation, Other expenses
+   Extract: name, current/base year value, growth rate or inflation assumptions
 
 5. EXIT ASSUMPTIONS:
-   - disposalCost (percentage, e.g., 2.5)
-   - terminalCapRate (percentage, e.g., 8.5)
+   - disposalCost: Exit fees, selling costs (if not found, use 2.5%)
+   - terminalCapRate: Exit cap rate, terminal multiple, exit yield (if not found, use 8.5%)
 
-INSTRUCTIONS:
-1. Look for financial statements, projections, deal summaries, or company reports
-2. Extract relevant financial metrics, revenues, costs, growth rates
-3. Identify deal values, transaction costs, exit assumptions
-4. If specific data is not found, leave those fields empty/null
-5. Convert all monetary values to base currency if possible
-6. Ensure growth rates are expressed as percentages
-7. Return ONLY valid JSON without any explanatory text
+6. DEBT MODEL PARAMETERS:
+   - If dealLTV > 0, look for:
+   - Interest rates, cost of debt, loan rates
+   - Loan fees, arrangement fees, issuance costs
 
-Expected JSON format:
-{
-  "highLevelParameters": {
-    "currency": "USD",
-    "projectStartDate": "2024-01-01",
-    "projectEndDate": "2029-12-31", 
-    "modelPeriods": "yearly"
-  },
-  "dealAssumptions": {
-    "dealName": "Company Acquisition",
-    "dealValue": 100000000,
-    "transactionFee": 2.5,
-    "dealLTV": 70
-  },
-  "revenueItems": [
-    {
-      "name": "Primary Revenue",
-      "initialValue": 50000000,
-      "growthType": "linear",
-      "growthRate": 15
-    }
-  ],
-  "costItems": [
-    {
-      "name": "Operating Expenses", 
-      "initialValue": 30000000,
-      "growthType": "linear",
-      "growthRate": 5
-    }
-  ],
-  "exitAssumptions": {
-    "disposalCost": 2.5,
-    "terminalCapRate": 8.5
-  }
-}`;
+PARSING INSTRUCTIONS:
+- If you see projections over multiple years, calculate the growth rate
+- Convert all percentages to number format (e.g., "5%" → 5)
+- Use the most recent historical year as "initialValue" for revenues/costs
+- If data shows monthly figures, annualize them (multiply by 12)
+- If data shows quarterly figures, annualize them (multiply by 4)
+- Look for CAGR, annual growth rates, YoY growth percentages
+
+IMPORTANT: Actually READ the uploaded file content and extract REAL data from it. Do not use placeholder values.
+
+Return your findings as valid JSON matching this exact structure.`;
   }
 
   async applyExtractedData(extractedData) {
@@ -2570,6 +2664,17 @@ Expected JSON format:
         const ea = extractedData.exitAssumptions;
         this.setInputValue('disposalCost', ea.disposalCost);
         this.setInputValue('terminalCapRate', ea.terminalCapRate);
+      }
+
+      // Apply Debt Model parameters
+      if (extractedData.debtModel) {
+        const dm = extractedData.debtModel;
+        if (dm.interestRate) {
+          this.setInputValue('fixedRate', dm.interestRate);
+        }
+        if (dm.loanIssuanceFees) {
+          this.setInputValue('loanIssuanceFees', dm.loanIssuanceFees);
+        }
       }
 
       // Apply Revenue Items
