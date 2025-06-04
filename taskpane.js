@@ -99,6 +99,9 @@ class MAModelingAddin {
     // File upload event listeners
     this.initializeFileUpload();
 
+    // Collapsible sections
+    this.initializeCollapsibleSections();
+
     this.isInitialized = true;
     console.log('MAModelingAddin initialized successfully');
     
@@ -722,6 +725,40 @@ class MAModelingAddin {
   showStatus(message) {
     console.log('Status:', message);
     // Could show in a status bar
+  }
+
+  initializeCollapsibleSections() {
+    console.log('Initializing collapsible sections...');
+    
+    // Deal Assumptions section collapse/expand functionality
+    const minimizeBtn = document.getElementById('minimizeAssumptions');
+    const dealAssumptionsSection = document.getElementById('dealAssumptionsSection');
+    
+    console.log('Collapsible elements found:', {
+      minimizeBtn: !!minimizeBtn,
+      dealAssumptionsSection: !!dealAssumptionsSection
+    });
+    
+    if (minimizeBtn && dealAssumptionsSection) {
+      minimizeBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        console.log('Minimize button clicked');
+        
+        // Toggle collapsed class
+        dealAssumptionsSection.classList.toggle('collapsed');
+        
+        // Update aria-label for accessibility
+        const isCollapsed = dealAssumptionsSection.classList.contains('collapsed');
+        minimizeBtn.setAttribute('aria-label', 
+          isCollapsed ? 'Expand Deal Assumptions' : 'Minimize Deal Assumptions');
+        
+        console.log('Deal Assumptions section', isCollapsed ? 'collapsed' : 'expanded');
+      });
+      
+      console.log('Collapsible sections initialized successfully');
+    } else {
+      console.error('Could not find collapsible section elements');
+    }
   }
 
   async getExcelContext() {
