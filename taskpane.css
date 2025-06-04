@@ -167,10 +167,12 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   color: var(--text-secondary);
   z-index: 10;
+  /* Apple-style subtle shadow */
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .minimize-btn:hover {
@@ -184,10 +186,12 @@ body {
 }
 
 .minimize-icon {
-  font-size: 18px;
-  font-weight: bold;
+  font-size: 16px;
+  font-weight: 500;
   line-height: 1;
   transition: var(--transition-fast);
+  /* Apple-style clean typography */
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif;
 }
 
 .section-content {
@@ -207,11 +211,22 @@ body {
 }
 
 .collapsible-section.collapsed {
-  padding-bottom: var(--spacing-md);
+  padding: var(--spacing-md);
+  min-height: auto;
 }
 
 .collapsible-section.collapsed:hover {
   transform: translateY(-1px);
+}
+
+/* Improved collapsed state styling */
+.collapsible-section.collapsed h3 {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  height: auto;
+  line-height: 1.2;
 }
 
 /* Collapsed state animation */
@@ -242,6 +257,10 @@ body {
   margin-bottom: var(--spacing-md);
 }
 
+.form-group:last-child {
+  margin-bottom: 0;
+}
+
 .form-group label {
   display: block;
   margin-bottom: var(--spacing-xs);
@@ -252,7 +271,7 @@ body {
 
 input[type="text"],
 input[type="number"] {
-  width: 100%;
+  width: calc(100% - 2px); /* Prevent overflow with border */
   padding: var(--spacing-sm) var(--spacing-md);
   border: 1.5px solid var(--surface-tertiary);
   border-radius: var(--radius-medium);
@@ -262,6 +281,7 @@ input[type="number"] {
   color: var(--text-primary);
   transition: var(--transition-fast);
   -webkit-appearance: none;
+  box-sizing: border-box;
 }
 
 input[type="text"]:focus,
