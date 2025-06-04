@@ -1,1 +1,123 @@
-<!doctype html><html><head><meta charset="UTF-8"/><meta http-equiv="X-UA-Compatible" content="IE=Edge"/><meta name="viewport" content="width=device-width,initial-scale=1"><title>M&A PE Modeler</title><script src="https://appsforoffice.microsoft.com/lib/1.1/hosted/office.js"></script><link rel="stylesheet" href="taskpane.css"><script defer="defer" src="taskpane.js"></script></head><body><div class="header"><h1>M&A PE Modeler</h1><p>Professional deal modeling with AI assistance</p></div><div class="section"><h3>📊 Deal Assumptions</h3><div class="form-group"><label>Deal Name</label> <input id="dealName" placeholder="e.g., TechCo Acquisition"/></div><div class="form-group"><label>Deal Size ($M)</label> <input type="number" id="dealSize" placeholder="e.g., 50" step="0.1"/></div><div class="form-group"><label>LTV (%)</label> <input type="number" id="ltv" placeholder="e.g., 70" step="1"/></div><div class="form-group"><label>Holding Period (Months)</label> <input type="number" id="holdingPeriod" placeholder="e.g., 60" step="1"/></div><div class="form-group"><label>Revenue Growth (% annually)</label> <input type="number" id="revenueGrowth" placeholder="e.g., 15" step="0.1"/></div><div class="form-group"><label>Exit Multiple (x EBITDA)</label> <input type="number" id="exitMultiple" placeholder="e.g., 12" step="0.1"/></div><button class="button" id="selectRangeBtn">📋 Select Range for Assumptions</button><div class="status" id="rangeStatus">Click to select Excel range with your assumptions</div></div><div class="section"><h3>🚀 Generate Model</h3><button class="button" id="generateModelBtn">Generate Complete M&A Model</button> <button class="button button-secondary" id="validateModelBtn">Validate Existing Model</button><div class="loading" id="loading"><div class="spinner"></div><div>Generating professional M&A model...</div></div></div><div class="section chat-section"><h3>🤖 AI Assistant</h3><div class="file-upload-section"><div class="file-dropzone" id="fileDropzone"><div class="dropzone-content"><svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7,10 12,15 17,10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg><p>Drop PDF or CSV files here, or <span class="upload-link">browse files</span></p><small>Maximum 4 files, up to 10MB each</small></div><input type="file" id="fileInput" multiple="multiple" accept=".pdf,.csv" style="display: none;"></div><div class="uploaded-files" id="uploadedFiles" style="display: none;"><h4>Uploaded Files:</h4><div class="file-list" id="fileList"></div></div></div><div class="chat-container"><div class="chat-messages" id="chatMessages"><div class="message-bubble assistant-bubble"><div class="message-content"><div class="message-text">Hi! Upload your M&A documents (PDF/CSV) and I'll help analyze them to fill out your assumptions template. You can also ask me questions about Excel formulas and calculations!</div></div></div></div></div><div class="chat-input-container"><div class="chat-input-wrapper"><input id="chatInput" placeholder="Ask me to analyze your documents or help with Excel..."/> <button class="send-button" id="sendChatBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22,2 15,22 11,13 2,9 22,2"></polygon></svg></button></div></div></div></body></html>
+<!doctype html>
+<html>
+<head>
+    <meta charset="UTF-8"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>M&A PE Modeler</title>
+    <script src="https://appsforoffice.microsoft.com/lib/1.1/hosted/office.js"></script>
+    <link rel="stylesheet" href="taskpane.css">
+    <script defer="defer" src="taskpane.js"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>M&A PE Modeler</h1>
+            <p>Professional deal modeling with AI assistance</p>
+        </div>
+
+        <div class="section">
+            <h3 data-emoji="📊">Deal Assumptions</h3>
+            <div class="form-group">
+                <label>Deal Name</label>
+                <input type="text" id="dealName" placeholder="e.g., TechCo Acquisition"/>
+            </div>
+            <div class="form-group">
+                <label>Deal Size ($M)</label>
+                <input type="number" id="dealSize" placeholder="e.g., 50" step="0.1"/>
+            </div>
+            <div class="form-group">
+                <label>LTV (%)</label>
+                <input type="number" id="ltv" placeholder="e.g., 70" step="1"/>
+            </div>
+            <div class="form-group">
+                <label>Holding Period (Months)</label>
+                <input type="number" id="holdingPeriod" placeholder="e.g., 60" step="1"/>
+            </div>
+            <div class="form-group">
+                <label>Revenue Growth (% annually)</label>
+                <input type="number" id="revenueGrowth" placeholder="e.g., 15" step="0.1"/>
+            </div>
+            <div class="form-group">
+                <label>Exit Multiple (x EBITDA)</label>
+                <input type="number" id="exitMultiple" placeholder="e.g., 12" step="0.1"/>
+            </div>
+            <button class="button" id="selectRangeBtn">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                    <circle cx="9" cy="9" r="2"></circle>
+                    <path d="M21 15l-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path>
+                </svg>
+                Select Range for Assumptions
+            </button>
+            <div class="status" id="rangeStatus">Click to select Excel range with your assumptions</div>
+        </div>
+
+        <div class="section">
+            <h3 data-emoji="🚀">Generate Model</h3>
+            <button class="button" id="generateModelBtn">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14,2 14,8 20,8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                    <polyline points="10,9 9,9 8,9"></polyline>
+                </svg>
+                Generate Complete M&A Model
+            </button>
+            <button class="button button-secondary" id="validateModelBtn">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="20,6 9,17 4,12"></polyline>
+                </svg>
+                Validate Existing Model
+            </button>
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <div>Generating professional M&A model...</div>
+            </div>
+        </div>
+
+        <div class="section chat-section">
+            <h3 data-emoji="🤖">AI Assistant</h3>
+            <div class="file-upload-section">
+                <div class="file-dropzone" id="fileDropzone">
+                    <div class="dropzone-content">
+                        <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="7,10 12,15 17,10"></polyline>
+                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                        <p>Drop PDF or CSV files here, or <span class="upload-link">browse files</span></p>
+                        <small>Maximum 4 files, up to 10MB each</small>
+                    </div>
+                    <input type="file" id="fileInput" multiple="multiple" accept=".pdf,.csv" style="display: none;">
+                </div>
+                <div class="uploaded-files" id="uploadedFiles" style="display: none;">
+                    <h4>Uploaded Files:</h4>
+                    <div class="file-list" id="fileList"></div>
+                </div>
+            </div>
+            <div class="chat-container">
+                <div class="chat-messages" id="chatMessages">
+                    <div class="message-bubble assistant-bubble">
+                        <div class="message-content">
+                            <div class="message-text">Hi! Upload your M&A documents (PDF/CSV) and I'll help analyze them to fill out your assumptions template. You can also ask me questions about Excel formulas and calculations!</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="chat-input-container">
+                    <div class="chat-input-wrapper">
+                        <input id="chatInput" placeholder="Ask me to analyze your documents or help with Excel..."/>
+                        <button class="send-button" id="sendChatBtn">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="22" y1="2" x2="11" y2="13"></line>
+                                <polygon points="22,2 15,22 11,13 2,9 22,2"></polygon>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
