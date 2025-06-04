@@ -306,20 +306,10 @@ body {
 }
 
 .radio-custom {
-  width: 20px;
-  height: 20px;
-  border: 2px solid var(--surface-quaternary);
-  border-radius: 50%;
-  position: relative;
-  transition: var(--transition-fast);
-  background: var(--surface-primary);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  display: none;
 }
 
-.radio-option:hover .radio-custom {
-  border-color: var(--primary-blue);
-  transform: scale(1.05);
-}
+/* Radio custom element hover styles removed since element is hidden */
 
 .radio-option input[type="radio"]:checked {
   /* Selected state styling moved to parent container */
@@ -371,20 +361,10 @@ body {
 }
 
 .checkbox-custom {
-  width: 18px;
-  height: 18px;
-  border: 2px solid var(--surface-quaternary);
-  border-radius: var(--radius-small);
-  position: relative;
-  transition: var(--transition-fast);
-  background: var(--surface-primary);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  display: none;
 }
 
-.checkbox-option:hover .checkbox-custom {
-  border-color: var(--primary-blue);
-  transform: scale(1.05);
-}
+/* Checkbox custom element hover styles removed since element is hidden */
 
 .checkbox-option input[type="checkbox"]:checked {
   /* Selected state styling moved to parent container */
