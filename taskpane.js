@@ -2375,26 +2375,31 @@ class MAModelingAddin {
       progressDiv.querySelector('p').textContent = 'Extracting file content...';
       const fileContents = await this.processMainUploadedFiles();
       console.log('File contents extracted:', fileContents.length, 'files');
+      console.log('DEBUG - File contents being sent to AI:', fileContents);
       
       // Step 2: Create comprehensive prompt for AI
       console.log('Step 2: Creating AI prompt...');
       progressDiv.querySelector('p').textContent = 'Preparing AI analysis...';
       const aiPrompt = this.createDataExtractionPrompt();
+      console.log('DEBUG - AI prompt:', aiPrompt);
       
       // Step 3: Send to AI service
       console.log('Step 3: Sending to AI for analysis...');
       progressDiv.querySelector('p').textContent = 'AI analyzing financial data...';
+      
+      const requestPayload = {
+        message: aiPrompt,
+        fileContents: fileContents,
+        autoFillMode: true
+      };
+      console.log('DEBUG - Request payload:', requestPayload);
       
       const response = await fetch('/.netlify/functions/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          message: aiPrompt,
-          fileContents: fileContents,
-          autoFillMode: true
-        })
+        body: JSON.stringify(requestPayload)
       });
 
       console.log('AI response status:', response.status);
@@ -2825,18 +2830,24 @@ window.addEventListener('unhandledrejection', (e) => {
   console.error('Unhandled promise rejection:', e.reason);
 });
 
-// Initialize the add-in
-console.log('Initializing MAModelingAddin...');
-console.log('Office availability:', typeof Office !== 'undefined');
-console.log('Excel availability:', typeof Excel !== 'undefined');
+// Initialize the add-in only once
+if (!window.maModelingAddin) {
+  console.log('Initializing MAModelingAddin...');
+  console.log('Office availability:', typeof Office !== 'undefined');
+  console.log('Excel availability:', typeof Excel !== 'undefined');
 
-// Wait for everything to load properly
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => {
-    console.log('DOM loaded, creating MAModelingAddin');
+  // Wait for everything to load properly
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      if (!window.maModelingAddin) {
+        console.log('DOM loaded, creating MAModelingAddin');
+        window.maModelingAddin = new MAModelingAddin();
+      }
+    });
+  } else {
+    console.log('DOM already loaded, creating MAModelingAddin');
     window.maModelingAddin = new MAModelingAddin();
-  });
+  }
 } else {
-  console.log('DOM already loaded, creating MAModelingAddin');
-  window.maModelingAddin = new MAModelingAddin();
+  console.log('MAModelingAddin already initialized, skipping');
 }
