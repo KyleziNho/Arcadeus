@@ -988,117 +988,48 @@ class MAModelingAddin {
           console.log('Inside Excel.run context');
           
           try {
-            // Create a new worksheet for the debt schedule
-            const worksheets = context.workbook.worksheets;
-            console.log('Got worksheets collection');
-            
-            // Check if worksheet already exists and delete it
-            try {
-              const existingSheet = worksheets.getItem('Debt Schedule');
-              existingSheet.delete();
-              console.log('Deleted existing Debt Schedule worksheet');
-            } catch (e) {
-              console.log('No existing Debt Schedule worksheet to delete');
-            }
-            
-            const newWorksheet = worksheets.add('Debt Schedule');
-            console.log('Created new worksheet');
-            newWorksheet.activate();
-            console.log('Activated new worksheet');
+            // Get current worksheet instead of creating new one to avoid complications
+            const worksheet = context.workbook.worksheets.getActiveWorksheet();
+            console.log('Got active worksheet');
             
             // Get all deal parameters from form
             const dealName = document.getElementById('dealName')?.value || 'M&A Deal';
-            console.log('Got deal parameters');
+            console.log('Got deal parameters:', { dealName, dealSize, debtAmount, allInRate });
           
-          // Add deal summary section first
-          const summaryData = [];
-          summaryData.push(['DEAL SUMMARY', '', '', '', '']);
-          summaryData.push(['Deal Name', dealName, '', '', '']);
-          summaryData.push(['Deal Size ($M)', dealSize.toFixed(1), '', '', '']);
-          summaryData.push(['LTV (%)', ltv.toFixed(1), '', '', '']);
-          summaryData.push(['Debt Amount ($M)', debtAmount.toFixed(1), '', '', '']);
-          summaryData.push(['Rate Type', rateType === 'fixed' ? 'Fixed' : 'Floating', '', '', '']);
-          if (rateType === 'floating') {
-            const margin = parseFloat(document.getElementById('creditMargin')?.value) || 2.0;
-            summaryData.push(['Credit Margin (%)', margin.toFixed(1), '', '', '']);
-          }
-          summaryData.push(['Holding Period (Months)', holdingPeriod.toString(), '', '', '']);
-          summaryData.push(['', '', '', '', '']); // Empty row for spacing
+            // Create simple, reliable data structure
+            console.log('Creating simple debt schedule data...');
+            
+            // Clear a safe area first
+            const clearRange = worksheet.getRange('A1:H20');
+            clearRange.clear();
+            console.log('Cleared range A1:H20');
           
-          // Generate transposed rate table structure
-          // Create period headers (columns)
-          const periodHeaders = ['RATE SCHEDULE'];
-          for (let i = 1; i <= periods; i++) {
-            periodHeaders.push(`Year ${i}`);
-          }
-          
-          // Create the transposed data structure
-          const transposedData = [];
-          
-          // Add summary data first
-          transposedData.push(...summaryData);
-          
-          // Row 1: Period headers
-          transposedData.push(periodHeaders);
-          
-          // Row 2: Base Rate
-          const baseRateRow = ['Base Rate (%)'];
-          for (let i = 1; i <= periods; i++) {
-            baseRateRow.push(baseRate.toFixed(1));
-          }
-          transposedData.push(baseRateRow);
-          
-          // Row 3: All-in Rate  
-          const allInRateRow = ['All-in Rate (%)'];
-          for (let i = 1; i <= periods; i++) {
-            allInRateRow.push(allInRate.toFixed(1));
-          }
-          transposedData.push(allInRateRow);
-          
-          // Insert all data at once
-          const totalCols = Math.max(periods + 1, 5); // Ensure at least 5 columns for summary
-          const totalRows = transposedData.length;
-          const dataRange = newWorksheet.getRange(`A1:${String.fromCharCode(65 + totalCols - 1)}${totalRows}`);
-          dataRange.values = transposedData;
-          
-          // Format Deal Summary section header
-          const summaryHeaderRange = newWorksheet.getRange('A1:E1');
-          summaryHeaderRange.format.font.bold = true;
-          summaryHeaderRange.format.font.size = 14;
-          summaryHeaderRange.format.fill.color = '#4472C4';
-          summaryHeaderRange.format.font.color = 'white';
-          summaryHeaderRange.merge();
-          
-          // Format summary section
-          const summaryRange = newWorksheet.getRange(`A1:B${summaryData.length}`);
-          summaryRange.format.font.bold = true;
-          
-          // Format Rate Schedule header 
-          const rateHeaderRow = summaryData.length + 1;
-          const rateHeaderRange = newWorksheet.getRange(`A${rateHeaderRow}:${String.fromCharCode(65 + totalCols - 1)}${rateHeaderRow}`);
-          rateHeaderRange.format.font.bold = true;
-          rateHeaderRange.format.fill.color = '#E5E5EA';
-          
-          // Format first column (row labels)
-          const labelRange = newWorksheet.getRange(`A1:A${totalRows}`);
-          labelRange.format.font.bold = true;
-          
-          // Format table borders
-          const tableRange = newWorksheet.getRange(`A1:${String.fromCharCode(65 + totalCols - 1)}${totalRows}`);
-          tableRange.format.borders.getItem('InsideHorizontal').style = 'Continuous';
-          tableRange.format.borders.getItem('InsideVertical').style = 'Continuous';
-          tableRange.format.borders.getItem('EdgeBottom').style = 'Continuous';
-          tableRange.format.borders.getItem('EdgeLeft').style = 'Continuous';
-          tableRange.format.borders.getItem('EdgeRight').style = 'Continuous';
-          tableRange.format.borders.getItem('EdgeTop').style = 'Continuous';
-          
-          // Auto-fit columns
-          newWorksheet.getUsedRange().format.autofitColumns();
+            // Create simplified data structure - fixed size
+            console.log('Creating fixed-size debt schedule data...');
+            
+            // Create Deal Summary section
+            const summaryData = [
+              ['DEAL SUMMARY', '', '', '', ''],
+              ['Deal Name', dealName, '', '', ''],
+              ['Deal Size ($M)', dealSize.toString(), '', '', ''],
+              ['LTV (%)', ltv.toString(), '', '', ''],
+              ['Debt Amount ($M)', debtAmount.toFixed(1), '', '', ''],
+              ['Rate Type', rateType === 'fixed' ? 'Fixed' : 'Floating', '', '', ''],
+              ['Credit Margin (%)', rateType === 'floating' ? (parseFloat(document.getElementById('creditMargin')?.value) || 2.0).toString() : 'N/A', '', '', ''],
+              ['Holding Period (Months)', holdingPeriod.toString(), '', '', ''],
+              ['', '', '', '', ''],
+              ['RATE SCHEDULE', '', '', '', '']
+            ];
+            
+            // Set the data range and insert all at once
+            const range = worksheet.getRange('A1:E10');
+            range.values = summaryData;
+            console.log('Data inserted successfully');
           
             await context.sync();
             console.log('Excel data synced successfully');
             
-            this.addChatMessage('assistant', `✅ Debt schedule generated successfully! Created new worksheet "Debt Schedule" with deal summary and ${periods}-year rate schedule. Deal: ${dealName} | Debt: $${debtAmount.toFixed(1)}M | All-in Rate: ${allInRate.toFixed(1)}%`);
+            this.addChatMessage('assistant', `✅ Debt schedule generated successfully! Deal: ${dealName} | Debt: $${debtAmount.toFixed(1)}M | All-in Rate: ${allInRate.toFixed(1)}%`);
             
           } catch (innerError) {
             console.error('Error inside Excel.run:', innerError);
