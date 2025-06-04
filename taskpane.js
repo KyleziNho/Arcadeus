@@ -110,6 +110,9 @@ class MAModelingAddin {
     // Cost Items functionality
     this.initializeCostItems();
 
+    // Exit Assumptions functionality
+    this.initializeExitAssumptions();
+
     this.isInitialized = true;
     console.log('MAModelingAddin initialized successfully');
     
@@ -756,6 +759,10 @@ class MAModelingAddin {
       const minimizeCostBtn = document.getElementById('minimizeCost');
       const costItemsSection = document.getElementById('costItemsSection');
       
+      // Exit Assumptions section collapse/expand functionality
+      const minimizeExitBtn = document.getElementById('minimizeExit');
+      const exitAssumptionsSection = document.getElementById('exitAssumptionsSection');
+      
       // Debt Model section collapse/expand functionality
       const minimizeDebtBtn = document.getElementById('minimizeDebtModel');
       const debtModelSection = document.getElementById('debtModelSection');
@@ -897,6 +904,37 @@ class MAModelingAddin {
         console.error('❌ Could not find Cost Items collapsible section elements');
       }
       
+      // Exit Assumptions section event handler
+      if (minimizeExitBtn && exitAssumptionsSection) {
+        minimizeExitBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          console.log('Exit Assumptions minimize button clicked');
+          
+          // Toggle collapsed class
+          exitAssumptionsSection.classList.toggle('collapsed');
+          
+          // Update icon and aria-label for accessibility
+          const isCollapsed = exitAssumptionsSection.classList.contains('collapsed');
+          const iconSpan = minimizeExitBtn.querySelector('.minimize-icon');
+          
+          if (iconSpan) {
+            iconSpan.textContent = isCollapsed ? '+' : '−';
+          }
+          
+          minimizeExitBtn.setAttribute('aria-label', 
+            isCollapsed ? 'Expand Exit Assumptions' : 'Minimize Exit Assumptions');
+          
+          console.log('Exit Assumptions section', isCollapsed ? 'collapsed' : 'expanded');
+        });
+        
+        console.log('✅ Exit Assumptions collapsible section initialized successfully');
+        
+        // Add click-to-expand functionality for collapsed section
+        this.addClickToExpandListener(exitAssumptionsSection, minimizeExitBtn);
+      } else {
+        console.error('❌ Could not find Exit Assumptions collapsible section elements');
+      }
+      
       // Debt Model section event handler
       if (minimizeDebtBtn && debtModelSection) {
         minimizeDebtBtn.addEventListener('click', (e) => {
@@ -958,6 +996,7 @@ class MAModelingAddin {
           else if (section.id.includes('dealAssumptions')) sectionName = 'Deal Assumptions';
           else if (section.id.includes('revenue')) sectionName = 'Revenue Items';
           else if (section.id.includes('cost')) sectionName = 'Cost Items';
+          else if (section.id.includes('exit')) sectionName = 'Exit Assumptions';
           else if (section.id.includes('debt')) sectionName = 'Debt Model';
           
           minimizeBtn.setAttribute('aria-label', `Minimize ${sectionName}`);
@@ -2122,6 +2161,55 @@ class MAModelingAddin {
     }
     
     console.log('Added cost period group', groupNumber, 'for item', itemId);
+  }
+
+  initializeExitAssumptions() {
+    console.log('Initializing exit assumptions...');
+    
+    setTimeout(() => {
+      const disposalCost = document.getElementById('disposalCost');
+      const terminalCapRate = document.getElementById('terminalCapRate');
+      
+      console.log('Exit assumptions elements found:', {
+        disposalCost: !!disposalCost,
+        terminalCapRate: !!terminalCapRate
+      });
+      
+      // Function to validate exit assumption inputs
+      const validateExitInputs = () => {
+        const disposalValue = parseFloat(disposalCost?.value) || 0;
+        const capRateValue = parseFloat(terminalCapRate?.value) || 0;
+        
+        // Log values for debugging
+        console.log('Exit assumptions values:', {
+          disposalCost: disposalValue,
+          terminalCapRate: capRateValue
+        });
+        
+        // Validate ranges (optional - could add visual feedback here)
+        if (disposalValue < 0 || disposalValue > 10) {
+          console.warn('Disposal cost outside typical range (0-10%)');
+        }
+        
+        if (capRateValue < 0 || capRateValue > 20) {
+          console.warn('Terminal cap rate outside typical range (0-20%)');
+        }
+      };
+      
+      // Add event listeners for real-time validation
+      if (disposalCost) {
+        disposalCost.addEventListener('input', validateExitInputs);
+      }
+      
+      if (terminalCapRate) {
+        terminalCapRate.addEventListener('input', validateExitInputs);
+      }
+      
+      // Initial validation
+      validateExitInputs();
+      
+      console.log('✅ Exit assumptions initialized successfully');
+    }, 500);
   }
 
   async getExcelContext() {
