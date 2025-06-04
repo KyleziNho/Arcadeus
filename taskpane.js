@@ -832,6 +832,7 @@ class MAModelingAddin {
       const rateTypeFloating = document.getElementById('rateTypeFloating');
       const fixedRateGroup = document.getElementById('fixedRateGroup');
       const baseRateGroup = document.getElementById('baseRateGroup');
+      const marginGroup = document.getElementById('marginGroup');
       const generateDebtScheduleBtn = document.getElementById('generateDebtSchedule');
       
       console.log('Debt model elements found:', {
@@ -857,11 +858,12 @@ class MAModelingAddin {
         useDebtNo.addEventListener('change', toggleDebtSettings);
         
         // Rate type toggle
-        if (rateTypeFixed && rateTypeFloating && fixedRateGroup && baseRateGroup) {
+        if (rateTypeFixed && rateTypeFloating && fixedRateGroup && baseRateGroup && marginGroup) {
           const toggleRateType = () => {
             const isFixed = document.querySelector('input[name="rateType"]:checked').value === 'fixed';
             fixedRateGroup.style.display = isFixed ? 'block' : 'none';
             baseRateGroup.style.display = isFixed ? 'none' : 'block';
+            marginGroup.style.display = isFixed ? 'none' : 'block';
             this.updateDebtSchedule();
           };
           
@@ -877,7 +879,7 @@ class MAModelingAddin {
         }
         
         // Input change listeners to update schedule
-        const inputs = ['fixedRate', 'baseRate'];
+        const inputs = ['fixedRate', 'baseRate', 'creditMargin'];
         inputs.forEach(id => {
           const input = document.getElementById(id);
           if (input) {
@@ -910,8 +912,9 @@ class MAModelingAddin {
       allInRate = fixedRate;
     } else {
       const fedRate = parseFloat(document.getElementById('baseRate')?.value) || 3.9;
+      const margin = parseFloat(document.getElementById('creditMargin')?.value) || 2.0;
       baseRate = fedRate;
-      allInRate = fedRate + 2.0; // Add 2% margin
+      allInRate = fedRate + margin; // Add user-specified margin
     }
     
     // Generate transposed sample schedule
@@ -983,8 +986,9 @@ class MAModelingAddin {
         allInRate = fixedRate;
       } else {
         const fedRate = parseFloat(document.getElementById('baseRate')?.value) || 3.9;
+        const margin = parseFloat(document.getElementById('creditMargin')?.value) || 2.0;
         baseRate = fedRate;
-        allInRate = fedRate + 2.0;
+        allInRate = fedRate + margin;
       }
       
       const debtAmount = dealSize * (ltv / 100);

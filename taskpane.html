@@ -95,7 +95,7 @@
                                 <label class="radio-option">
                                     <input type="radio" name="rateType" value="floating" id="rateTypeFloating">
                                     <span class="radio-custom"></span>
-                                    Floating Rate (Base + 2%)
+                                    Floating Rate (Base + Margin)
                                 </label>
                             </div>
                         </div>
@@ -109,7 +109,12 @@
                             <div class="form-group" id="baseRateGroup" style="display: none;">
                                 <label>Base Interest Rate - US Fed (%)</label>
                                 <input type="number" id="baseRate" placeholder="e.g., 3.9" step="0.1" value="3.9">
-                                <small class="rate-note">Margin of 2% will be added automatically</small>
+                            </div>
+
+                            <div class="form-group" id="marginGroup" style="display: none;">
+                                <label>Credit Margin (%)</label>
+                                <input type="number" id="creditMargin" placeholder="e.g., 2.0" step="0.1" value="2.0">
+                                <small class="rate-note">Industry standard is typically 2% - 3% for most deals</small>
                             </div>
                         </div>
 
