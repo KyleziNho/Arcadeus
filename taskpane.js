@@ -116,17 +116,15 @@ class MAModelingAddin {
     this.isInitialized = true;
     console.log('MAModelingAddin initialized successfully');
     
-    // Add a test message to verify chat is working
-    setTimeout(() => {
-      this.addChatMessage('assistant', '✅ Add-in loaded successfully! Try typing a message or clicking "browse files".');
-      
-      // Also test if Office.js is working
-      if (typeof Office !== 'undefined' && Office.context) {
-        this.addChatMessage('assistant', '📊 Excel integration ready! You can use all features.');
-      } else {
-        this.addChatMessage('assistant', '⚠️ Excel integration limited - some features may not work.');
-      }
-    }, 1500);
+    // Add-in loaded successfully
+    console.log('✅ Add-in loaded successfully! File upload and auto-fill ready.');
+    
+    // Test if Office.js is working
+    if (typeof Office !== 'undefined' && Office.context) {
+      console.log('📊 Excel integration ready! You can use all features.');
+    } else {
+      console.log('⚠️ Excel integration limited - some features may not work.');
+    }
   }
 
   initializeFileUpload() {
@@ -838,33 +836,12 @@ class MAModelingAddin {
   }
 
   addChatMessage(role, content) {
-    console.log(`Adding ${role} message:`, content);
+    console.log(`${role.toUpperCase()}: ${content}`);
     this.chatMessages.push({ role, content });
     
-    const messagesDiv = document.getElementById('chatMessages');
-    if (!messagesDiv) {
-      console.error('Chat messages div not found');
-      return;
-    }
-    
-    console.log('Creating message bubble');
-    const messageBubble = document.createElement('div');
-    messageBubble.className = `message-bubble ${role}-bubble`;
-    
-    const messageContent = document.createElement('div');
-    messageContent.className = 'message-content';
-    
-    const messageText = document.createElement('div');
-    messageText.className = 'message-text';
-    messageText.textContent = content;
-    
-    messageContent.appendChild(messageText);
-    messageBubble.appendChild(messageContent);
-    messagesDiv.appendChild(messageBubble);
-    
-    // Scroll to bottom
-    messagesDiv.scrollTop = messagesDiv.scrollHeight;
-    console.log('Message added to chat');
+    // Since we don't have a chat interface anymore, just log the message
+    // This function is kept for backwards compatibility
+    return;
   }
 
   showLoading(show) {
@@ -2586,55 +2563,59 @@ TASK: Extract financial data from uploaded M&A/PE documents to auto-fill a finan
 
 CRITICAL: You MUST carefully read ALL content in the uploaded files and extract specific financial data points. Look for numbers, percentages, dates, company names, and financial metrics.
 
-DATA TO EXTRACT (with examples of what to look for):
+REQUIRED JSON STRUCTURE - Return EXACTLY this format:
+{
+  "extractedData": {
+    "highLevelParameters": {
+      "currency": "USD",
+      "projectStartDate": "2025-03-31",
+      "projectEndDate": "2030-03-31",
+      "modelPeriods": "monthly"
+    },
+    "dealAssumptions": {
+      "dealName": "Sample Company Ltd.",
+      "dealValue": 100000000,
+      "transactionFee": 1.5,
+      "dealLTV": 75
+    },
+    "revenueItems": [
+      {
+        "name": "Revenue Stream 1",
+        "initialValue": 10000000,
+        "growthType": "linear",
+        "growthRate": 5
+      }
+    ],
+    "costItems": [
+      {
+        "name": "Staff expenses",
+        "initialValue": 5000000,
+        "growthType": "linear",
+        "growthRate": 3
+      }
+    ],
+    "exitAssumptions": {
+      "disposalCost": 0.5,
+      "terminalCapRate": 8.5
+    },
+    "debtModel": {
+      "hasDebt": true,
+      "interestRate": 3.5,
+      "loanIssuanceFees": 1.0
+    }
+  }
+}
 
-1. HIGH-LEVEL PARAMETERS:
-   - currency: Look for currency symbols ($, €, £, ¥) or codes (USD, EUR, GBP, JPY)
-   - projectStartDate: Find acquisition date, deal close date, or current year (format: YYYY-MM-DD)
-   - projectEndDate: Calculate from start date + holding period, or find exit date
-   - modelPeriods: Determine from data frequency (if monthly data → "monthly", if annual → "yearly")
+DATA EXTRACTION RULES:
+1. Extract currency from symbols ($, €, £) or codes (USD, EUR, GBP)
+2. Convert percentages to numbers (e.g., "75%" → 75, "3.5%" → 3.5)
+3. For dates: use YYYY-MM-DD format
+4. For deal value: extract actual purchase price/enterprise value
+5. Extract ALL cost items and revenue streams found
+6. Use actual growth rates from the data
+7. If holding period is mentioned, calculate end date accordingly
 
-2. DEAL ASSUMPTIONS:
-   - dealName: Company name, target name, or acquisition target
-   - dealValue: Look for "purchase price", "enterprise value", "deal value", "acquisition price", "transaction value"
-   - transactionFee: Banking fees, advisory fees, transaction costs (typically 1-3%)
-   - dealLTV: Leverage ratio, debt-to-equity, loan-to-value, "financed with X% debt"
-
-3. REVENUE ITEMS (extract ALL revenue streams found):
-   Look for:
-   - Sales, Revenue, Income, Turnover, Net Sales, Gross Sales
-   - Product lines, Service revenues, Subscription income
-   - Geographic segments, Business units
-   Extract: name, current/base year value, growth rate or projections
-
-4. COST ITEMS (extract ALL cost categories found):
-   Look for:
-   - Operating Expenses, OPEX, SG&A, COGS, Cost of Sales
-   - Staff costs, Salaries, Personnel expenses, Employee costs
-   - Marketing expenses, R&D costs, Administrative costs
-   - Rent, Utilities, Depreciation, Other expenses
-   Extract: name, current/base year value, growth rate or inflation assumptions
-
-5. EXIT ASSUMPTIONS:
-   - disposalCost: Exit fees, selling costs (if not found, use 2.5%)
-   - terminalCapRate: Exit cap rate, terminal multiple, exit yield (if not found, use 8.5%)
-
-6. DEBT MODEL PARAMETERS:
-   - If dealLTV > 0, look for:
-   - Interest rates, cost of debt, loan rates
-   - Loan fees, arrangement fees, issuance costs
-
-PARSING INSTRUCTIONS:
-- If you see projections over multiple years, calculate the growth rate
-- Convert all percentages to number format (e.g., "5%" → 5)
-- Use the most recent historical year as "initialValue" for revenues/costs
-- If data shows monthly figures, annualize them (multiply by 12)
-- If data shows quarterly figures, annualize them (multiply by 4)
-- Look for CAGR, annual growth rates, YoY growth percentages
-
-IMPORTANT: Actually READ the uploaded file content and extract REAL data from it. Do not use placeholder values.
-
-Return your findings as valid JSON matching this exact structure.`;
+IMPORTANT: Use the REAL data from the uploaded files. Do not use the example values above.`;
   }
 
   async applyExtractedData(extractedData) {
