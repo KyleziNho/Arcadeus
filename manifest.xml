@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <OfficeApp xmlns="http://schemas.microsoft.com/office/appforoffice/1.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="TaskPaneApp">
-  <Id>a13791da-e8ff-4aa3-8ab6-7f3a12f17d8c</Id>
+  <Id>b24892eb-f900-5bb7-9c67-8f4b23e28e9d</Id>
   <Version>1.0.0.0</Version>
-  <ProviderName>M&amp;A PE Modeler</ProviderName>
+  <ProviderName>MA PE Modeler</ProviderName>
   <DefaultLocale>en-US</DefaultLocale>
-  <DisplayName DefaultValue="M&amp;A PE Modeler"/>
-  <Description DefaultValue="Professional M&amp;A and PE deal modeling with ChatGPT integration"/>
-  <IconUrl DefaultValue="https://guavaexcel.netlify.app/assets/icon-32.png"/>
-  <HighResolutionIconUrl DefaultValue="https://guavaexcel.netlify.app/assets/icon-80.png"/>
-  <SupportUrl DefaultValue="https://www.contoso.com/support"/>
+  <DisplayName DefaultValue="MA PE Modeler"/>
+  <Description DefaultValue="Professional MA and PE deal modeling"/>
+  <IconUrl DefaultValue="https://guavaexcel.netlify.app/assets/icon-16.png"/>
+  <HighResolutionIconUrl DefaultValue="https://guavaexcel.netlify.app/assets/icon-16.png"/>
+  <SupportUrl DefaultValue="https://guavaexcel.netlify.app"/>
   <AppDomains>
     <AppDomain>https://guavaexcel.netlify.app</AppDomain>
   </AppDomains>
