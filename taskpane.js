@@ -102,6 +102,9 @@ class MAModelingAddin {
     // Collapsible sections
     this.initializeCollapsibleSections();
 
+    // Debt model functionality
+    this.initializeDebtModel();
+
     this.isInitialized = true;
     console.log('MAModelingAddin initialized successfully');
     
@@ -736,10 +739,16 @@ class MAModelingAddin {
       const minimizeBtn = document.getElementById('minimizeAssumptions');
       const dealAssumptionsSection = document.getElementById('dealAssumptionsSection');
       
+      // Debt Model section collapse/expand functionality
+      const minimizeDebtBtn = document.getElementById('minimizeDebtModel');
+      const debtModelSection = document.getElementById('debtModelSection');
+      
       console.log('DOM ready state:', document.readyState);
       console.log('Looking for elements:', {
         minimizeBtnExists: !!minimizeBtn,
         dealAssumptionsSectionExists: !!dealAssumptionsSection,
+        minimizeDebtBtnExists: !!minimizeDebtBtn,
+        debtModelSectionExists: !!debtModelSection,
         minimizeBtnId: minimizeBtn ? minimizeBtn.id : 'not found',
         sectionId: dealAssumptionsSection ? dealAssumptionsSection.id : 'not found'
       });
@@ -770,9 +779,37 @@ class MAModelingAddin {
           console.log('Deal Assumptions section', isCollapsed ? 'collapsed' : 'expanded');
         });
         
-        console.log('✅ Collapsible sections initialized successfully');
+        console.log('✅ Deal Assumptions collapsible section initialized successfully');
       } else {
-        console.error('❌ Could not find collapsible section elements');
+        console.error('❌ Could not find Deal Assumptions collapsible section elements');
+      }
+      
+      // Debt Model section event handler
+      if (minimizeDebtBtn && debtModelSection) {
+        minimizeDebtBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          console.log('Debt Model minimize button clicked');
+          
+          // Toggle collapsed class
+          debtModelSection.classList.toggle('collapsed');
+          
+          // Update icon and aria-label for accessibility
+          const isCollapsed = debtModelSection.classList.contains('collapsed');
+          const iconSpan = minimizeDebtBtn.querySelector('.minimize-icon');
+          
+          if (iconSpan) {
+            iconSpan.textContent = isCollapsed ? '+' : '−';
+          }
+          
+          minimizeDebtBtn.setAttribute('aria-label', 
+            isCollapsed ? 'Expand Debt Model' : 'Minimize Debt Model');
+          
+          console.log('Debt Model section', isCollapsed ? 'collapsed' : 'expanded');
+        });
+        
+        console.log('✅ Debt Model collapsible section initialized successfully');
+      } else {
+        console.error('❌ Could not find Debt Model collapsible section elements');
         console.log('Available elements in DOM:', {
           totalElements: document.querySelectorAll('*').length,
           sections: document.querySelectorAll('.section').length,
@@ -781,6 +818,127 @@ class MAModelingAddin {
         });
       }
     }, 500); // 500ms delay to ensure DOM is ready
+  }
+
+  initializeDebtModel() {
+    console.log('Initializing debt model...');
+    
+    setTimeout(() => {
+      const useDebtYes = document.getElementById('useDebtYes');
+      const useDebtNo = document.getElementById('useDebtNo');
+      const debtSettings = document.getElementById('debtSettings');
+      const debtSchedule = document.getElementById('debtSchedule');
+      const rateTypeFixed = document.getElementById('rateTypeFixed');
+      const rateTypeFloating = document.getElementById('rateTypeFloating');
+      const fixedRateGroup = document.getElementById('fixedRateGroup');
+      const baseRateGroup = document.getElementById('baseRateGroup');
+      const generateDebtScheduleBtn = document.getElementById('generateDebtSchedule');
+      
+      console.log('Debt model elements found:', {
+        useDebtYes: !!useDebtYes,
+        useDebtNo: !!useDebtNo,
+        debtSettings: !!debtSettings,
+        debtSchedule: !!debtSchedule
+      });
+      
+      // Use Debt Y/N toggle
+      if (useDebtYes && useDebtNo && debtSettings && debtSchedule) {
+        const toggleDebtSettings = () => {
+          const useDebt = document.querySelector('input[name="useDebt"]:checked').value === 'yes';
+          debtSettings.style.display = useDebt ? 'block' : 'none';
+          debtSchedule.style.display = useDebt ? 'block' : 'none';
+          
+          if (useDebt) {
+            this.updateDebtSchedule();
+          }
+        };
+        
+        useDebtYes.addEventListener('change', toggleDebtSettings);
+        useDebtNo.addEventListener('change', toggleDebtSettings);
+        
+        // Rate type toggle
+        if (rateTypeFixed && rateTypeFloating && fixedRateGroup && baseRateGroup) {
+          const toggleRateType = () => {
+            const isFixed = document.querySelector('input[name="rateType"]:checked').value === 'fixed';
+            fixedRateGroup.style.display = isFixed ? 'block' : 'none';
+            baseRateGroup.style.display = isFixed ? 'none' : 'block';
+            this.updateDebtSchedule();
+          };
+          
+          rateTypeFixed.addEventListener('change', toggleRateType);
+          rateTypeFloating.addEventListener('change', toggleRateType);
+        }
+        
+        // Generate debt schedule button
+        if (generateDebtScheduleBtn) {
+          generateDebtScheduleBtn.addEventListener('click', () => {
+            this.generateDebtScheduleInExcel();
+          });
+        }
+        
+        // Input change listeners to update schedule
+        const inputs = ['fixedRate', 'baseRate'];
+        inputs.forEach(id => {
+          const input = document.getElementById(id);
+          if (input) {
+            input.addEventListener('input', () => {
+              this.updateDebtSchedule();
+            });
+          }
+        });
+        
+        console.log('✅ Debt model initialized successfully');
+      } else {
+        console.error('❌ Could not find debt model elements');
+      }
+    }, 500);
+  }
+
+  updateDebtSchedule() {
+    const useDebt = document.querySelector('input[name="useDebt"]:checked')?.value === 'yes';
+    if (!useDebt) return;
+    
+    const rateType = document.querySelector('input[name="rateType"]:checked')?.value;
+    const holdingPeriod = parseInt(document.getElementById('holdingPeriod')?.value) || 60;
+    const periods = Math.ceil(holdingPeriod / 12); // Convert months to years
+    
+    let baseRate, allInRate;
+    
+    if (rateType === 'fixed') {
+      const fixedRate = parseFloat(document.getElementById('fixedRate')?.value) || 5.5;
+      baseRate = fixedRate;
+      allInRate = fixedRate;
+    } else {
+      const fedRate = parseFloat(document.getElementById('baseRate')?.value) || 3.9;
+      baseRate = fedRate;
+      allInRate = fedRate + 2.0; // Add 2% margin
+    }
+    
+    // Generate sample schedule
+    const tableBody = document.getElementById('debtTableBody');
+    if (tableBody) {
+      tableBody.innerHTML = '';
+      
+      for (let i = 1; i <= Math.min(periods, 5); i++) {
+        const row = document.createElement('tr');
+        const period = new Date();
+        period.setFullYear(period.getFullYear() + i);
+        
+        row.innerHTML = `
+          <td>Year ${i}</td>
+          <td>${baseRate.toFixed(1)}%</td>
+          <td>${allInRate.toFixed(1)}%</td>
+          <td>$${(100 - i * 10).toFixed(1)}M</td>
+          <td>$${((100 - i * 10) * allInRate / 100).toFixed(1)}M</td>
+        `;
+        tableBody.appendChild(row);
+      }
+    }
+  }
+
+  generateDebtScheduleInExcel() {
+    console.log('Generating debt schedule in Excel...');
+    this.addChatMessage('assistant', '📊 Debt schedule generation would create a detailed Excel model with your specified parameters. This feature will integrate with Excel Office.js API to generate the actual schedule.');
   }
 
   async getExcelContext() {
