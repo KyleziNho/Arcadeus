@@ -108,6 +108,9 @@ class MAModelingAddin {
     // High-Level Parameters functionality
     this.initializeHighLevelParameters();
 
+    // Deal Assumptions calculations
+    this.initializeDealAssumptions();
+
     this.isInitialized = true;
     console.log('MAModelingAddin initialized successfully');
     
@@ -994,8 +997,8 @@ class MAModelingAddin {
       
       const rateType = document.querySelector('input[name="rateType"]:checked')?.value;
       const holdingPeriod = parseInt(document.getElementById('holdingPeriod')?.value) || 60;
-      const dealSize = parseFloat(document.getElementById('dealSize')?.value) || 100;
-      const ltv = parseFloat(document.getElementById('ltv')?.value) || 70;
+      const dealValue = parseFloat(document.getElementById('dealValue')?.value) || 100000000;
+      const ltv = parseFloat(document.getElementById('dealLTV')?.value) || 70;
       
       let baseRate, allInRate;
       
@@ -1010,7 +1013,7 @@ class MAModelingAddin {
         allInRate = fedRate + margin;
       }
       
-      const debtAmount = dealSize * (ltv / 100);
+      const debtAmount = dealValue * (ltv / 100);
       const periods = Math.ceil(holdingPeriod / 12);
       
       // Show loading state
@@ -1049,7 +1052,7 @@ class MAModelingAddin {
             
             // Get all deal parameters from form
             const dealName = document.getElementById('dealName')?.value || 'M&A Deal';
-            console.log('Got deal parameters:', { dealName, dealSize, debtAmount, allInRate });
+            console.log('Got deal parameters:', { dealName, dealValue, debtAmount, allInRate });
             
             // Create simple debt schedule data
             console.log('Creating simplified debt schedule data...');
@@ -1138,7 +1141,7 @@ class MAModelingAddin {
               range.values = [
                 ['DEBT SCHEDULE', '', '', '', '', ''],
                 ['Deal Name', document.getElementById('dealName')?.value || 'M&A Deal', '', '', '', ''],
-                ['Deal Size ($M)', dealSize.toString(), '', '', '', ''],
+                ['Deal Value', (dealValue / 1000000).toFixed(1) + 'M', '', '', '', ''],
                 ['Debt Amount ($M)', debtAmount.toFixed(1), '', '', '', ''],
                 ['All-in Rate (%)', allInRate.toFixed(1), '', '', '', ''],
                 ['', '', '', '', '', ''],
@@ -1261,6 +1264,92 @@ class MAModelingAddin {
       calculateHoldingPeriods();
       
       console.log('✅ High-level parameters initialized successfully');
+    }, 500);
+  }
+
+  initializeDealAssumptions() {
+    console.log('Initializing deal assumptions calculations...');
+    
+    setTimeout(() => {
+      const dealValue = document.getElementById('dealValue');
+      const dealLTV = document.getElementById('dealLTV');
+      const equityContribution = document.getElementById('equityContribution');
+      const debtFinancing = document.getElementById('debtFinancing');
+      const currency = document.getElementById('currency');
+      
+      console.log('Deal assumptions elements found:', {
+        dealValue: !!dealValue,
+        dealLTV: !!dealLTV,
+        equityContribution: !!equityContribution,
+        debtFinancing: !!debtFinancing,
+        currency: !!currency
+      });
+      
+      // Function to format currency values
+      const formatCurrency = (amount, currencyCode = 'USD') => {
+        if (isNaN(amount) || amount === 0) return '';
+        
+        const formatter = new Intl.NumberFormat('en-US', {
+          style: 'currency',
+          currency: currencyCode,
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 0
+        });
+        
+        return formatter.format(amount);
+      };
+      
+      // Function to calculate deal assumptions
+      const calculateDealAssumptions = () => {
+        const dealValueAmount = parseFloat(dealValue?.value) || 0;
+        const ltvPercentage = parseFloat(dealLTV?.value) || 0;
+        const selectedCurrency = currency?.value || 'USD';
+        
+        if (dealValueAmount <= 0 || ltvPercentage <= 0) {
+          if (equityContribution) equityContribution.value = '';
+          if (debtFinancing) debtFinancing.value = '';
+          return;
+        }
+        
+        // Calculate equity contribution (Deal Value × (100% - LTV%))
+        const equityAmount = dealValueAmount * (100 - ltvPercentage) / 100;
+        
+        // Calculate debt financing (Deal Value × LTV%)
+        const debtAmount = dealValueAmount * ltvPercentage / 100;
+        
+        // Update calculated fields with currency formatting
+        if (equityContribution) {
+          equityContribution.value = formatCurrency(equityAmount, selectedCurrency);
+        }
+        
+        if (debtFinancing) {
+          debtFinancing.value = formatCurrency(debtAmount, selectedCurrency);
+        }
+        
+        console.log('Calculated deal assumptions:', {
+          dealValue: dealValueAmount,
+          ltv: ltvPercentage,
+          equity: equityAmount,
+          debt: debtAmount,
+          currency: selectedCurrency
+        });
+      };
+      
+      // Add event listeners for automatic calculation
+      if (dealValue) {
+        dealValue.addEventListener('input', calculateDealAssumptions);
+      }
+      if (dealLTV) {
+        dealLTV.addEventListener('input', calculateDealAssumptions);
+      }
+      if (currency) {
+        currency.addEventListener('change', calculateDealAssumptions);
+      }
+      
+      // Initial calculation
+      calculateDealAssumptions();
+      
+      console.log('✅ Deal assumptions calculations initialized successfully');
     }, 500);
   }
 
