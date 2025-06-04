@@ -988,21 +988,33 @@ class MAModelingAddin {
           console.log('Inside Excel.run context');
           
           try {
-            // Use the current active worksheet instead of creating new one
-            console.log('Using current active worksheet for debt schedule...');
-            const debtScheduleWorksheet = context.workbook.worksheets.getActiveWorksheet();
-            console.log('Got active worksheet successfully');
+            // Create a new worksheet for the debt schedule
+            console.log('Creating new worksheet for debt schedule...');
+            
+            // Check if "Debt Schedule" worksheet already exists and delete it
+            let debtScheduleWorksheet;
+            try {
+              debtScheduleWorksheet = context.workbook.worksheets.getItem('Debt Schedule');
+              debtScheduleWorksheet.delete();
+              await context.sync();
+              console.log('Deleted existing Debt Schedule worksheet');
+            } catch (e) {
+              console.log('No existing Debt Schedule worksheet to delete');
+            }
+            
+            // Create new worksheet
+            debtScheduleWorksheet = context.workbook.worksheets.add('Debt Schedule');
+            await context.sync();
+            console.log('Created new Debt Schedule worksheet');
+            
+            // Activate the new worksheet
+            debtScheduleWorksheet.activate();
+            await context.sync();
+            console.log('Activated new worksheet successfully');
             
             // Get all deal parameters from form
             const dealName = document.getElementById('dealName')?.value || 'M&A Deal';
             console.log('Got deal parameters:', { dealName, dealSize, debtAmount, allInRate });
-            
-            // Clear the area first and then add debt schedule
-            console.log('Clearing area for debt schedule...');
-            const clearRange = debtScheduleWorksheet.getRange('A1:J10');
-            clearRange.clear();
-            await context.sync();
-            console.log('Area cleared successfully');
             
             // Create simple debt schedule data
             console.log('Creating simplified debt schedule data...');
@@ -1037,10 +1049,11 @@ class MAModelingAddin {
               headerRange.format.fill.color = '#D9D9D9';
               headerRange.merge();
               
-              // Format period headers
+              // Format period headers with dark teal background and white text
               const periodHeaderRange = debtScheduleWorksheet.getRange('A3:J3');
               periodHeaderRange.format.font.bold = true;
-              periodHeaderRange.format.fill.color = '#E2EFDA';
+              periodHeaderRange.format.fill.color = '#1F5F5B'; // Dark teal, accent 1, darker 25%
+              periodHeaderRange.format.font.color = '#FFFFFF'; // White text
               
               // Format labels column
               const labelRange = debtScheduleWorksheet.getRange('A1:A5');
@@ -1064,7 +1077,7 @@ class MAModelingAddin {
             await context.sync();
             console.log('Excel data synced successfully');
             
-            this.addChatMessage('assistant', `✅ Debt schedule created successfully! Deal: ${dealName} | Debt: $${debtAmount.toFixed(1)}M | All-in Rate: ${allInRate.toFixed(1)}%`);
+            this.addChatMessage('assistant', `✅ Debt schedule created in new "Debt Schedule" worksheet! Deal: ${dealName} | Debt: $${debtAmount.toFixed(1)}M | All-in Rate: ${allInRate.toFixed(1)}%`);
             
           } catch (innerError) {
             console.error('Error inside Excel.run:', innerError);
