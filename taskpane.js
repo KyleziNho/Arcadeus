@@ -936,9 +936,92 @@ class MAModelingAddin {
     }
   }
 
-  generateDebtScheduleInExcel() {
+  async generateDebtScheduleInExcel() {
     console.log('Generating debt schedule in Excel...');
-    this.addChatMessage('assistant', '📊 Debt schedule generation would create a detailed Excel model with your specified parameters. This feature will integrate with Excel Office.js API to generate the actual schedule.');
+    
+    try {
+      // Get debt parameters
+      const useDebt = document.querySelector('input[name="useDebt"]:checked')?.value === 'yes';
+      if (!useDebt) {
+        this.addChatMessage('assistant', '⚠️ Please enable debt financing first to generate a debt schedule.');
+        return;
+      }
+      
+      const rateType = document.querySelector('input[name="rateType"]:checked')?.value;
+      const holdingPeriod = parseInt(document.getElementById('holdingPeriod')?.value) || 60;
+      const dealSize = parseFloat(document.getElementById('dealSize')?.value) || 100;
+      const ltv = parseFloat(document.getElementById('ltv')?.value) || 70;
+      
+      let baseRate, allInRate;
+      
+      if (rateType === 'fixed') {
+        const fixedRate = parseFloat(document.getElementById('fixedRate')?.value) || 5.5;
+        baseRate = fixedRate;
+        allInRate = fixedRate;
+      } else {
+        const fedRate = parseFloat(document.getElementById('baseRate')?.value) || 3.9;
+        baseRate = fedRate;
+        allInRate = fedRate + 2.0;
+      }
+      
+      const debtAmount = dealSize * (ltv / 100);
+      const periods = Math.ceil(holdingPeriod / 12);
+      
+      // Try to create Excel schedule
+      if (typeof Excel !== 'undefined') {
+        await Excel.run(async (context) => {
+          const worksheet = context.workbook.worksheets.getActiveWorksheet();
+          
+          // Create headers
+          const headerRange = worksheet.getRange('A1:E1');
+          headerRange.values = [['Period', 'Base Rate (%)', 'All-in Rate (%)', 'Outstanding Debt ($M)', 'Interest Payment ($M)']];
+          headerRange.format.font.bold = true;
+          headerRange.format.fill.color = '#E5E5EA';
+          
+          // Generate debt schedule data
+          const scheduleData = [];
+          for (let i = 1; i <= periods; i++) {
+            const outstandingDebt = debtAmount * (1 - (i - 1) / periods * 0.8); // Simple amortization
+            const interestPayment = outstandingDebt * (allInRate / 100);
+            
+            scheduleData.push([
+              `Year ${i}`,
+              baseRate.toFixed(1),
+              allInRate.toFixed(1),
+              outstandingDebt.toFixed(1),
+              interestPayment.toFixed(1)
+            ]);
+          }
+          
+          // Insert data
+          const dataRange = worksheet.getRange(`A2:E${periods + 1}`);
+          dataRange.values = scheduleData;
+          
+          // Format table
+          const tableRange = worksheet.getRange(`A1:E${periods + 1}`);
+          tableRange.format.borders.getItem('InsideHorizontal').style = 'Continuous';
+          tableRange.format.borders.getItem('InsideVertical').style = 'Continuous';
+          tableRange.format.borders.getItem('EdgeBottom').style = 'Continuous';
+          tableRange.format.borders.getItem('EdgeLeft').style = 'Continuous';
+          tableRange.format.borders.getItem('EdgeRight').style = 'Continuous';
+          tableRange.format.borders.getItem('EdgeTop').style = 'Continuous';
+          
+          // Auto-fit columns
+          worksheet.getUsedRange().format.autofitColumns();
+          
+          await context.sync();
+          
+          this.addChatMessage('assistant', `✅ Debt schedule generated successfully! Created a ${periods}-year schedule with ${debtAmount.toFixed(1)}M debt at ${allInRate.toFixed(1)}% all-in rate.`);
+        });
+      } else {
+        // Fallback for when Excel API is not available
+        this.addChatMessage('assistant', `📊 Debt Schedule Summary:\n• Debt Amount: $${debtAmount.toFixed(1)}M (${ltv}% LTV)\n• Rate Type: ${rateType === 'fixed' ? 'Fixed' : 'Floating'}\n• All-in Rate: ${allInRate.toFixed(1)}%\n• Term: ${periods} years\n\nExcel API not available in current environment. Please use this data to create your debt schedule manually.`);
+      }
+      
+    } catch (error) {
+      console.error('Error generating debt schedule:', error);
+      this.addChatMessage('assistant', '❌ Error generating debt schedule. Please check your inputs and try again.');
+    }
   }
 
   async getExcelContext() {
