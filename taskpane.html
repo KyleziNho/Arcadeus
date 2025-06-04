@@ -11,9 +11,44 @@
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h1>M&A PE Modeler</h1>
-            <p>Professional deal modeling with AI assistance</p>
+        <div class="file-upload-header">
+            <div class="upload-zone" id="mainUploadZone">
+                <div class="upload-content">
+                    <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-15"></path>
+                        <path d="M7 10l5-5 5 5"></path>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    <h2>Drop your CSV/PDF files here</h2>
+                    <p>Upload target company reports or spreadsheets to auto-fill data</p>
+                    <div class="upload-specs">
+                        <span>Up to 4 files • 10MB total • CSV, PDF formats</span>
+                    </div>
+                    <button class="browse-files-btn" id="browseFilesBtn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14,2 14,8 20,8"></polyline>
+                        </svg>
+                        Browse Files
+                    </button>
+                </div>
+                <input type="file" id="mainFileInput" multiple accept=".pdf,.csv" style="display: none;">
+            </div>
+            
+            <div class="uploaded-files-display" id="uploadedFilesDisplay" style="display: none;">
+                <h3>Uploaded Files</h3>
+                <div class="files-grid" id="filesGrid"></div>
+                <div class="autofill-section">
+                    <button class="autofill-btn" id="autoFillBtn">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 12l2 2 4-4"></path>
+                            <circle cx="12" cy="12" r="9"></circle>
+                        </svg>
+                        Auto Fill with AI
+                    </button>
+                    <small class="autofill-help">AI will analyze your files and populate all sections below</small>
+                </div>
+            </div>
         </div>
 
         <div class="section collapsible-section" id="highLevelParametersSection">
@@ -276,47 +311,6 @@
             </div>
         </div>
 
-        <div class="section chat-section">
-            <h3 data-emoji="🤖">AI Assistant</h3>
-            <div class="file-upload-section">
-                <div class="file-dropzone" id="fileDropzone">
-                    <div class="dropzone-content">
-                        <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                            <polyline points="7,10 12,15 17,10"></polyline>
-                            <line x1="12" y1="15" x2="12" y2="3"></line>
-                        </svg>
-                        <p>Drop PDF or CSV files here, or <span class="upload-link">browse files</span></p>
-                        <small>Maximum 4 files, up to 10MB each</small>
-                    </div>
-                    <input type="file" id="fileInput" multiple="multiple" accept=".pdf,.csv" style="display: none;">
-                </div>
-                <div class="uploaded-files" id="uploadedFiles" style="display: none;">
-                    <h4>Uploaded Files:</h4>
-                    <div class="file-list" id="fileList"></div>
-                </div>
-            </div>
-            <div class="chat-container">
-                <div class="chat-messages" id="chatMessages">
-                    <div class="message-bubble assistant-bubble">
-                        <div class="message-content">
-                            <div class="message-text">Hi! Upload your M&A documents (PDF/CSV) and I'll help analyze them to fill out your assumptions template. You can also ask me questions about Excel formulas and calculations!</div>
-                        </div>
-                    </div>
-                </div>
-                <div class="chat-input-container">
-                    <div class="chat-input-wrapper">
-                        <input id="chatInput" placeholder="Ask me to analyze your documents or help with Excel..."/>
-                        <button class="send-button" id="sendChatBtn">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <line x1="22" y1="2" x2="11" y2="13"></line>
-                                <polygon points="22,2 15,22 11,13 2,9 22,2"></polygon>
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
     </div>
 </body>
 </html>

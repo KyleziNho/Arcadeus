@@ -130,82 +130,100 @@ class MAModelingAddin {
   }
 
   initializeFileUpload() {
-    console.log('Initializing file upload...');
-    const dropzone = document.getElementById('fileDropzone');
-    const fileInput = document.getElementById('fileInput');
-    const uploadLink = document.querySelector('.upload-link');
+    console.log('Initializing main file upload system...');
+    
+    // Get new upload system elements
+    const mainUploadZone = document.getElementById('mainUploadZone');
+    const mainFileInput = document.getElementById('mainFileInput');
+    const browseFilesBtn = document.getElementById('browseFilesBtn');
+    const autoFillBtn = document.getElementById('autoFillBtn');
+    const uploadedFilesDisplay = document.getElementById('uploadedFilesDisplay');
+    const filesGrid = document.getElementById('filesGrid');
 
-    console.log('Elements found:', {
-      dropzone: !!dropzone,
-      fileInput: !!fileInput,
-      uploadLink: !!uploadLink
+    console.log('Main upload elements found:', {
+      mainUploadZone: !!mainUploadZone,
+      mainFileInput: !!mainFileInput,
+      browseFilesBtn: !!browseFilesBtn,
+      autoFillBtn: !!autoFillBtn,
+      uploadedFilesDisplay: !!uploadedFilesDisplay,
+      filesGrid: !!filesGrid
     });
 
-    // Dropzone click handler
-    if (dropzone) {
-      dropzone.addEventListener('click', (e) => {
-        console.log('Dropzone clicked');
+    // Initialize main uploaded files array
+    this.mainUploadedFiles = [];
+
+    // Main upload zone click handler
+    if (mainUploadZone) {
+      mainUploadZone.addEventListener('click', (e) => {
+        console.log('Main upload zone clicked');
         e.preventDefault();
-        if (fileInput) {
-          console.log('Triggering file input click');
-          fileInput.click();
-        } else {
-          console.error('File input not found');
+        if (mainFileInput) {
+          console.log('Triggering main file input click');
+          mainFileInput.click();
         }
       });
-      console.log('Dropzone click listener added');
     }
 
-    // Upload link click handler
-    if (uploadLink) {
-      uploadLink.addEventListener('click', (e) => {
-        console.log('Upload link clicked');
+    // Browse files button click handler
+    if (browseFilesBtn) {
+      browseFilesBtn.addEventListener('click', (e) => {
+        console.log('Browse files button clicked');
         e.preventDefault();
         e.stopPropagation();
-        if (fileInput) {
-          console.log('Triggering file input click from link');
-          fileInput.click();
-        } else {
-          console.error('File input not found');
+        if (mainFileInput) {
+          mainFileInput.click();
         }
       });
-      console.log('Upload link click listener added');
     }
 
-    // File input change handler
-    if (fileInput) {
-      fileInput.addEventListener('change', (e) => {
-        console.log('File input changed');
+    // Main file input change handler
+    if (mainFileInput) {
+      mainFileInput.addEventListener('change', (e) => {
+        console.log('Main file input changed');
         const files = e.target.files;
         console.log('Files selected:', files ? files.length : 0);
         if (files && files.length > 0) {
-          console.log('Processing files:', Array.from(files).map(f => f.name));
-          this.handleFileSelection(Array.from(files));
-        } else {
-          console.log('No files selected');
+          console.log('Processing main files:', Array.from(files).map(f => f.name));
+          this.handleMainFileSelection(Array.from(files));
+        }
+        // Reset the input
+        e.target.value = '';
+      });
+    }
+
+    // Drag and drop handlers for main upload zone
+    if (mainUploadZone) {
+      mainUploadZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        mainUploadZone.classList.add('dragover');
+      });
+
+      mainUploadZone.addEventListener('dragleave', (e) => {
+        // Only remove dragover if we're leaving the main container
+        if (!mainUploadZone.contains(e.relatedTarget)) {
+          mainUploadZone.classList.remove('dragover');
         }
       });
-      console.log('File input change listener added');
-    }
 
-    // Drag and drop handlers
-    if (dropzone) {
-      dropzone.addEventListener('dragover', (e) => {
+      mainUploadZone.addEventListener('drop', (e) => {
         e.preventDefault();
-        dropzone.classList.add('dragover');
-      });
-
-      dropzone.addEventListener('dragleave', () => {
-        dropzone.classList.remove('dragover');
-      });
-
-      dropzone.addEventListener('drop', (e) => {
-        e.preventDefault();
-        dropzone.classList.remove('dragover');
+        mainUploadZone.classList.remove('dragover');
         const files = Array.from(e.dataTransfer.files || []);
-        this.handleFileSelection(files);
+        console.log('Files dropped:', files.length);
+        this.handleMainFileSelection(files);
       });
     }
+
+    // Auto Fill button handler
+    if (autoFillBtn) {
+      autoFillBtn.addEventListener('click', () => {
+        this.processAutoFill();
+      });
+      // Initially disabled until files are uploaded
+      autoFillBtn.disabled = true;
+    }
+
+    console.log('✅ Main file upload system initialized');
   }
 
   handleFileSelection(files) {
@@ -291,6 +309,129 @@ class MAModelingAddin {
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+  }
+
+  handleMainFileSelection(files) {
+    console.log('Handling main file selection:', files.length, 'files');
+    
+    // Filter valid files (PDF and CSV only)
+    const validFiles = files.filter(file => {
+      const isValidType = file.type === 'application/pdf' || file.type === 'text/csv' || file.name.endsWith('.csv');
+      const isValidSize = file.size <= 10 * 1024 * 1024; // 10MB per file
+      console.log(`File ${file.name}: type=${file.type}, size=${file.size}, valid=${isValidType && isValidSize}`);
+      return isValidType && isValidSize;
+    });
+
+    console.log('Valid files for main upload:', validFiles.length);
+
+    // Check file limits
+    if (this.mainUploadedFiles.length + validFiles.length > 4) {
+      this.showMainUploadMessage('Maximum 4 files allowed. Please remove some files first.', 'error');
+      return;
+    }
+
+    // Check total size limit (10MB total)
+    const currentTotalSize = this.mainUploadedFiles.reduce((total, file) => total + file.size, 0);
+    const newFilesSize = validFiles.reduce((total, file) => total + file.size, 0);
+    const totalSize = currentTotalSize + newFilesSize;
+
+    if (totalSize > 10 * 1024 * 1024) {
+      this.showMainUploadMessage('Total file size cannot exceed 10MB. Please select smaller files.', 'error');
+      return;
+    }
+
+    // Add files to main uploaded list
+    this.mainUploadedFiles.push(...validFiles);
+    console.log('Total main uploaded files:', this.mainUploadedFiles.length);
+    
+    this.updateMainFileDisplay();
+
+    if (validFiles.length > 0) {
+      console.log('Main files uploaded successfully');
+      this.showMainUploadMessage(`Successfully uploaded ${validFiles.length} file(s). Click "Auto Fill with AI" to extract data.`, 'success');
+    } else {
+      console.log('No valid files to upload');
+      this.showMainUploadMessage('Please upload PDF or CSV files only (max 10MB total).', 'error');
+    }
+  }
+
+  updateMainFileDisplay() {
+    const uploadedFilesDisplay = document.getElementById('uploadedFilesDisplay');
+    const filesGrid = document.getElementById('filesGrid');
+    const autoFillBtn = document.getElementById('autoFillBtn');
+    const mainUploadZone = document.getElementById('mainUploadZone');
+
+    if (this.mainUploadedFiles.length === 0) {
+      if (uploadedFilesDisplay) uploadedFilesDisplay.style.display = 'none';
+      if (autoFillBtn) autoFillBtn.disabled = true;
+      if (mainUploadZone) mainUploadZone.style.display = 'block';
+      return;
+    }
+
+    // Show files display and hide upload zone
+    if (uploadedFilesDisplay) uploadedFilesDisplay.style.display = 'block';
+    if (autoFillBtn) autoFillBtn.disabled = false;
+    if (mainUploadZone) mainUploadZone.style.display = 'none';
+
+    // Clear and populate files grid
+    if (filesGrid) {
+      filesGrid.innerHTML = '';
+
+      this.mainUploadedFiles.forEach((file, index) => {
+        const fileCard = document.createElement('div');
+        fileCard.className = 'file-card';
+        
+        const fileIcon = file.type === 'application/pdf' ? 
+          `<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14,2 14,8 20,8"></polyline>` :
+          `<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14,2 14,8 20,8"></polyline><path d="M16 13v3"></path><path d="M8 13v3"></path><path d="M12 13v3"></path>`;
+
+        fileCard.innerHTML = `
+          <svg class="file-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            ${fileIcon}
+          </svg>
+          <div class="file-card-info">
+            <div class="file-card-name">${file.name}</div>
+            <div class="file-card-size">${this.formatFileSize(file.size)}</div>
+          </div>
+          <button class="file-card-remove" data-index="${index}" title="Remove file">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        `;
+
+        const removeBtn = fileCard.querySelector('.file-card-remove');
+        if (removeBtn) {
+          removeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.removeMainFile(index);
+          });
+        }
+
+        filesGrid.appendChild(fileCard);
+      });
+    }
+  }
+
+  removeMainFile(index) {
+    this.mainUploadedFiles.splice(index, 1);
+    this.updateMainFileDisplay();
+    console.log('Removed main file at index:', index);
+  }
+
+  showMainUploadMessage(message, type = 'info') {
+    // This could be enhanced to show toast notifications
+    console.log(`Main Upload ${type.toUpperCase()}:`, message);
+    
+    // For now, we'll use console logging, but this could be enhanced with UI notifications
+    if (type === 'error') {
+      console.error(message);
+    } else if (type === 'success') {
+      console.log('✅', message);
+    } else {
+      console.info('ℹ️', message);
+    }
   }
 
   async selectAssumptionsRange() {
@@ -2210,6 +2351,349 @@ class MAModelingAddin {
       
       console.log('✅ Exit assumptions initialized successfully');
     }, 500);
+  }
+
+  async processAutoFill() {
+    console.log('🤖 Processing auto-fill with AI...');
+    
+    if (!this.mainUploadedFiles || this.mainUploadedFiles.length === 0) {
+      this.showMainUploadMessage('No files uploaded for processing.', 'error');
+      return;
+    }
+
+    const autoFillBtn = document.getElementById('autoFillBtn');
+    if (autoFillBtn) {
+      autoFillBtn.disabled = true;
+      autoFillBtn.innerHTML = `
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M12 1v6m0 6v6m11-7h-6m-6 0H1"></path>
+        </svg>
+        Processing...
+      `;
+    }
+
+    try {
+      // Process uploaded files and extract content
+      const fileContents = await this.processMainUploadedFiles();
+      
+      // Create comprehensive prompt for AI
+      const aiPrompt = this.createDataExtractionPrompt();
+      
+      // Send to AI service
+      const response = await fetch('/.netlify/functions/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          message: aiPrompt,
+          fileContents: fileContents,
+          autoFillMode: true
+        })
+      });
+
+      const data = await response.json();
+      
+      if (data.extractedData) {
+        // Apply extracted data to form fields
+        await this.applyExtractedData(data.extractedData);
+        this.showMainUploadMessage('✅ Data successfully extracted and applied to all sections!', 'success');
+      } else {
+        this.showMainUploadMessage('⚠️ AI processed the files but could not extract structured data. Please check file content and try again.', 'error');
+      }
+      
+    } catch (error) {
+      console.error('Auto-fill processing error:', error);
+      this.showMainUploadMessage('❌ Error processing files with AI. Please try again.', 'error');
+    } finally {
+      // Reset button
+      if (autoFillBtn) {
+        autoFillBtn.disabled = false;
+        autoFillBtn.innerHTML = `
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 12l2 2 4-4"></path>
+            <circle cx="12" cy="12" r="9"></circle>
+          </svg>
+          Auto Fill with AI
+        `;
+      }
+    }
+  }
+
+  async processMainUploadedFiles() {
+    const fileContents = [];
+    
+    for (const file of this.mainUploadedFiles) {
+      try {
+        let content = '';
+        
+        if (file.type === 'text/csv' || file.name.endsWith('.csv')) {
+          content = await this.readTextFile(file);
+          // Keep more content for better analysis
+          content = content.substring(0, 10000);
+        } else if (file.type === 'application/pdf') {
+          // For PDF files, we'll send the filename and indicate server-side processing needed
+          content = `[PDF FILE: ${file.name} - ${this.formatFileSize(file.size)} - Please extract text content from this PDF for financial data analysis]`;
+        }
+        
+        fileContents.push({
+          filename: file.name,
+          type: file.type,
+          size: file.size,
+          content: content
+        });
+      } catch (error) {
+        console.error(`Error processing file ${file.name}:`, error);
+        fileContents.push({
+          filename: file.name,
+          type: file.type,
+          size: file.size,
+          content: `[ERROR: Could not read file content]`
+        });
+      }
+    }
+    
+    return fileContents;
+  }
+
+  createDataExtractionPrompt() {
+    return `
+FINANCIAL DATA EXTRACTION FOR M&A PE MODELING
+
+Please analyze the uploaded files and extract financial data to populate ALL the following sections. Return the data in a structured JSON format.
+
+EXPECTED DATA STRUCTURE TO EXTRACT:
+
+1. HIGH-LEVEL PARAMETERS:
+   - currency (USD, EUR, GBP, etc.)
+   - projectStartDate (YYYY-MM-DD format)
+   - projectEndDate (YYYY-MM-DD format)
+   - modelPeriods (daily, monthly, quarterly, yearly)
+
+2. DEAL ASSUMPTIONS:
+   - dealName (string)
+   - dealValue (number in base currency)
+   - transactionFee (percentage, e.g., 2.5)
+   - dealLTV (percentage, e.g., 70)
+
+3. REVENUE ITEMS (array of revenue streams):
+   Each revenue item should have:
+   - name (string, e.g., "Product Sales")
+   - initialValue (number)
+   - growthType ("none", "linear", "nonlinear")
+   - growthRate (number, if linear)
+   - periodGrowthRates (array of numbers, if nonlinear)
+
+4. COST ITEMS (array of cost categories):
+   Each cost item should have:
+   - name (string, e.g., "Staff Expenses")
+   - initialValue (number)
+   - growthType ("none", "linear", "nonlinear")
+   - growthRate (number, if linear)
+   - periodGrowthRates (array of numbers, if nonlinear)
+
+5. EXIT ASSUMPTIONS:
+   - disposalCost (percentage, e.g., 2.5)
+   - terminalCapRate (percentage, e.g., 8.5)
+
+INSTRUCTIONS:
+1. Look for financial statements, projections, deal summaries, or company reports
+2. Extract relevant financial metrics, revenues, costs, growth rates
+3. Identify deal values, transaction costs, exit assumptions
+4. If specific data is not found, leave those fields empty/null
+5. Convert all monetary values to base currency if possible
+6. Ensure growth rates are expressed as percentages
+7. Return ONLY valid JSON without any explanatory text
+
+Expected JSON format:
+{
+  "highLevelParameters": {
+    "currency": "USD",
+    "projectStartDate": "2024-01-01",
+    "projectEndDate": "2029-12-31", 
+    "modelPeriods": "yearly"
+  },
+  "dealAssumptions": {
+    "dealName": "Company Acquisition",
+    "dealValue": 100000000,
+    "transactionFee": 2.5,
+    "dealLTV": 70
+  },
+  "revenueItems": [
+    {
+      "name": "Primary Revenue",
+      "initialValue": 50000000,
+      "growthType": "linear",
+      "growthRate": 15
+    }
+  ],
+  "costItems": [
+    {
+      "name": "Operating Expenses", 
+      "initialValue": 30000000,
+      "growthType": "linear",
+      "growthRate": 5
+    }
+  ],
+  "exitAssumptions": {
+    "disposalCost": 2.5,
+    "terminalCapRate": 8.5
+  }
+}`;
+  }
+
+  async applyExtractedData(extractedData) {
+    console.log('Applying extracted data:', extractedData);
+
+    try {
+      // Apply High-Level Parameters
+      if (extractedData.highLevelParameters) {
+        const hlp = extractedData.highLevelParameters;
+        this.setInputValue('currency', hlp.currency);
+        this.setInputValue('projectStartDate', hlp.projectStartDate);
+        this.setInputValue('projectEndDate', hlp.projectEndDate);
+        this.setInputValue('modelPeriods', hlp.modelPeriods);
+      }
+
+      // Apply Deal Assumptions
+      if (extractedData.dealAssumptions) {
+        const da = extractedData.dealAssumptions;
+        this.setInputValue('dealName', da.dealName);
+        this.setInputValue('dealValue', da.dealValue);
+        this.setInputValue('transactionFee', da.transactionFee);
+        this.setInputValue('dealLTV', da.dealLTV);
+      }
+
+      // Apply Exit Assumptions
+      if (extractedData.exitAssumptions) {
+        const ea = extractedData.exitAssumptions;
+        this.setInputValue('disposalCost', ea.disposalCost);
+        this.setInputValue('terminalCapRate', ea.terminalCapRate);
+      }
+
+      // Apply Revenue Items
+      if (extractedData.revenueItems && Array.isArray(extractedData.revenueItems)) {
+        await this.applyRevenueItems(extractedData.revenueItems);
+      }
+
+      // Apply Cost Items
+      if (extractedData.costItems && Array.isArray(extractedData.costItems)) {
+        await this.applyCostItems(extractedData.costItems);
+      }
+
+      // Trigger calculations for interdependent fields
+      this.triggerCalculations();
+
+      console.log('✅ Successfully applied extracted data to all sections');
+    } catch (error) {
+      console.error('Error applying extracted data:', error);
+      throw error;
+    }
+  }
+
+  setInputValue(elementId, value) {
+    const element = document.getElementById(elementId);
+    if (element && value !== null && value !== undefined) {
+      element.value = value;
+      // Trigger change event to update calculations
+      element.dispatchEvent(new Event('change', { bubbles: true }));
+      element.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+  }
+
+  async applyRevenueItems(revenueItems) {
+    // Clear existing revenue items first (keep required one)
+    const revenueContainer = document.getElementById('revenueItemsContainer');
+    if (revenueContainer) {
+      // Remove all but the first (required) revenue item
+      const existingItems = revenueContainer.querySelectorAll('.revenue-item');
+      for (let i = 1; i < existingItems.length; i++) {
+        existingItems[i].remove();
+      }
+    }
+
+    // Apply revenue items
+    for (let i = 0; i < revenueItems.length; i++) {
+      const item = revenueItems[i];
+      
+      // For the first item, use existing required item
+      let itemId = 1;
+      if (i > 0) {
+        // Create new revenue item
+        const addBtn = document.getElementById('addRevenueItem');
+        if (addBtn) {
+          addBtn.click();
+          itemId = this.revenueItemCounter;
+        }
+      }
+
+      // Apply data to revenue item
+      this.setInputValue(`revenueName_${itemId}`, item.name);
+      this.setInputValue(`revenueValue_${itemId}`, item.initialValue);
+      this.setInputValue(`growthType_${itemId}`, item.growthType);
+      
+      if (item.growthType === 'linear' && item.growthRate) {
+        this.setInputValue(`linearGrowth_${itemId}`, item.growthRate);
+      }
+    }
+  }
+
+  async applyCostItems(costItems) {
+    // Clear existing cost items first (keep required one)
+    const costContainer = document.getElementById('costItemsContainer');
+    if (costContainer) {
+      // Remove all but the first (required) cost item
+      const existingItems = costContainer.querySelectorAll('.cost-item');
+      for (let i = 1; i < existingItems.length; i++) {
+        existingItems[i].remove();
+      }
+    }
+
+    // Apply cost items
+    for (let i = 0; i < costItems.length; i++) {
+      const item = costItems[i];
+      
+      // For the first item, use existing required item
+      let itemId = 1;
+      if (i > 0) {
+        // Create new cost item
+        const addBtn = document.getElementById('addCostItem');
+        if (addBtn) {
+          addBtn.click();
+          itemId = this.costItemCounter;
+        }
+      }
+
+      // Apply data to cost item
+      this.setInputValue(`costName_${itemId}`, item.name);
+      this.setInputValue(`costValue_${itemId}`, item.initialValue);
+      this.setInputValue(`costGrowthType_${itemId}`, item.growthType);
+      
+      if (item.growthType === 'linear' && item.growthRate) {
+        this.setInputValue(`costLinearGrowth_${itemId}`, item.growthRate);
+      }
+    }
+  }
+
+  triggerCalculations() {
+    // Trigger holding period calculations
+    const projectStartDate = document.getElementById('projectStartDate');
+    if (projectStartDate) {
+      projectStartDate.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+
+    // Trigger deal assumptions calculations
+    const dealValue = document.getElementById('dealValue');
+    if (dealValue) {
+      dealValue.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+
+    // Trigger debt eligibility check
+    const dealLTV = document.getElementById('dealLTV');
+    if (dealLTV) {
+      dealLTV.dispatchEvent(new Event('input', { bubbles: true }));
+    }
   }
 
   async getExcelContext() {
