@@ -415,7 +415,7 @@ input[type="number"]::placeholder {
 .file-dropzone {
   border: 2px dashed var(--surface-quaternary);
   border-radius: var(--radius-large);
-  padding: var(--spacing-xl);
+  padding: var(--spacing-md);
   text-align: center;
   cursor: pointer;
   transition: var(--transition-normal);
@@ -442,9 +442,9 @@ input[type="number"]::placeholder {
 }
 
 .upload-icon {
-  width: 48px;
-  height: 48px;
-  margin-bottom: var(--spacing-md);
+  width: 32px;
+  height: 32px;
+  margin-bottom: var(--spacing-sm);
   color: var(--text-tertiary);
   transition: var(--transition-normal);
 }
