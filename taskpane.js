@@ -954,6 +954,9 @@ class MAModelingAddin {
         return;
       }
       
+      console.log('Excel API available:', typeof Excel !== 'undefined');
+      console.log('Office API available:', typeof Office !== 'undefined');
+      
       const rateType = document.querySelector('input[name="rateType"]:checked')?.value;
       const holdingPeriod = parseInt(document.getElementById('holdingPeriod')?.value) || 60;
       const dealSize = parseFloat(document.getElementById('dealSize')?.value) || 100;
@@ -975,16 +978,37 @@ class MAModelingAddin {
       const debtAmount = dealSize * (ltv / 100);
       const periods = Math.ceil(holdingPeriod / 12);
       
+      // Show loading state
+      this.addChatMessage('assistant', '🔄 Generating debt schedule in Excel...');
+      
       // Try to create Excel schedule
-      if (typeof Excel !== 'undefined') {
+      if (typeof Excel !== 'undefined' && typeof Office !== 'undefined') {
+        console.log('Starting Excel.run...');
         await Excel.run(async (context) => {
-          // Create a new worksheet for the debt schedule
-          const worksheets = context.workbook.worksheets;
-          const newWorksheet = worksheets.add('Debt Schedule');
-          newWorksheet.activate();
+          console.log('Inside Excel.run context');
           
-          // Get all deal parameters from form
-          const dealName = document.getElementById('dealName')?.value || 'M&A Deal';
+          try {
+            // Create a new worksheet for the debt schedule
+            const worksheets = context.workbook.worksheets;
+            console.log('Got worksheets collection');
+            
+            // Check if worksheet already exists and delete it
+            try {
+              const existingSheet = worksheets.getItem('Debt Schedule');
+              existingSheet.delete();
+              console.log('Deleted existing Debt Schedule worksheet');
+            } catch (e) {
+              console.log('No existing Debt Schedule worksheet to delete');
+            }
+            
+            const newWorksheet = worksheets.add('Debt Schedule');
+            console.log('Created new worksheet');
+            newWorksheet.activate();
+            console.log('Activated new worksheet');
+            
+            // Get all deal parameters from form
+            const dealName = document.getElementById('dealName')?.value || 'M&A Deal';
+            console.log('Got deal parameters');
           
           // Add deal summary section first
           const summaryData = [];
@@ -1071,13 +1095,56 @@ class MAModelingAddin {
           // Auto-fit columns
           newWorksheet.getUsedRange().format.autofitColumns();
           
-          await context.sync();
-          
-          this.addChatMessage('assistant', `✅ Debt schedule generated successfully! Created new worksheet "Debt Schedule" with deal summary and ${periods}-year rate schedule. Deal: ${dealName} | Debt: $${debtAmount.toFixed(1)}M | All-in Rate: ${allInRate.toFixed(1)}%`);
+            await context.sync();
+            console.log('Excel data synced successfully');
+            
+            this.addChatMessage('assistant', `✅ Debt schedule generated successfully! Created new worksheet "Debt Schedule" with deal summary and ${periods}-year rate schedule. Deal: ${dealName} | Debt: $${debtAmount.toFixed(1)}M | All-in Rate: ${allInRate.toFixed(1)}%`);
+            
+          } catch (innerError) {
+            console.error('Error inside Excel.run:', innerError);
+            this.addChatMessage('assistant', `❌ Error creating Excel worksheet: ${innerError.message}. Please try again.`);
+          }
+        }).catch(excelError => {
+          console.error('Excel.run failed:', excelError);
+          this.addChatMessage('assistant', `❌ Excel API error: ${excelError.message}. Please ensure you're using Excel Online or Excel desktop with Office.js support.`);
         });
       } else {
-        // Fallback for when Excel API is not available
-        this.addChatMessage('assistant', `📊 Debt Schedule Summary:\n• Debt Amount: $${debtAmount.toFixed(1)}M (${ltv}% LTV)\n• Rate Type: ${rateType === 'fixed' ? 'Fixed' : 'Floating'}\n• All-in Rate: ${allInRate.toFixed(1)}%\n• Term: ${periods} years\n\nExcel API not available in current environment. Please use this data to create your debt schedule manually.`);
+        console.log('Excel API not available, using fallback');
+        
+        // Try simple Excel approach without complex formatting
+        if (typeof Office !== 'undefined' && Office.context && Office.context.document) {
+          this.addChatMessage('assistant', '🔄 Excel API limited - trying simple table creation...');
+          
+          try {
+            await Excel.run(async (context) => {
+              const worksheet = context.workbook.worksheets.getActiveWorksheet();
+              
+              // Create simple table
+              const range = worksheet.getRange('A1:F10');
+              range.values = [
+                ['DEBT SCHEDULE', '', '', '', '', ''],
+                ['Deal Name', document.getElementById('dealName')?.value || 'M&A Deal', '', '', '', ''],
+                ['Deal Size ($M)', dealSize.toString(), '', '', '', ''],
+                ['Debt Amount ($M)', debtAmount.toFixed(1), '', '', '', ''],
+                ['All-in Rate (%)', allInRate.toFixed(1), '', '', '', ''],
+                ['', '', '', '', '', ''],
+                ['', 'Year 1', 'Year 2', 'Year 3', 'Year 4', 'Year 5'],
+                ['Base Rate (%)', baseRate.toFixed(1), baseRate.toFixed(1), baseRate.toFixed(1), baseRate.toFixed(1), baseRate.toFixed(1)],
+                ['All-in Rate (%)', allInRate.toFixed(1), allInRate.toFixed(1), allInRate.toFixed(1), allInRate.toFixed(1), allInRate.toFixed(1)]
+              ];
+              
+              await context.sync();
+              this.addChatMessage('assistant', '✅ Basic debt schedule created in current worksheet!');
+            });
+          } catch (simpleError) {
+            console.error('Simple Excel creation failed:', simpleError);
+            // Ultimate fallback
+            this.addChatMessage('assistant', `📊 Debt Schedule Summary:\n• Deal: ${document.getElementById('dealName')?.value || 'M&A Deal'}\n• Debt Amount: $${debtAmount.toFixed(1)}M (${ltv}% LTV)\n• Rate Type: ${rateType === 'fixed' ? 'Fixed' : 'Floating'}\n• All-in Rate: ${allInRate.toFixed(1)}%\n• Term: ${periods} years\n\nExcel API not fully available. Please copy this data into Excel manually.`);
+          }
+        } else {
+          // Ultimate fallback
+          this.addChatMessage('assistant', `📊 Debt Schedule Summary:\n• Deal: ${document.getElementById('dealName')?.value || 'M&A Deal'}\n• Debt Amount: $${debtAmount.toFixed(1)}M (${ltv}% LTV)\n• Rate Type: ${rateType === 'fixed' ? 'Fixed' : 'Floating'}\n• All-in Rate: ${allInRate.toFixed(1)}%\n• Term: ${periods} years\n\nExcel API not available. Please copy this data into Excel manually.`);
+        }
       }
       
     } catch (error) {
