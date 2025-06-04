@@ -1,130 +1,244 @@
 /* global Office, Excel */
 
-interface DealAssumptions {
-  dealName: string;
-  dealSize: number;
-  ltv: number;
-  holdingPeriod: number;
-  revenueGrowth: number;
-  exitMultiple: number;
-  selectedRange?: string;
-  rangeData?: any[][];
-}
-
-interface ChatMessage {
-  role: 'user' | 'assistant';
-  content: string;
-}
-
 class MAModelingAddin {
-  private chatMessages: ChatMessage[] = [];
-  private selectedRange: string | null = null;
-  private uploadedFiles: File[] = [];
-
   constructor() {
+    this.chatMessages = [];
+    this.selectedRange = null;
+    this.uploadedFiles = [];
+    this.isInitialized = false;
+
     // Initialize when Office is ready
-    Office.onReady(() => {
-      this.initializeAddin();
-    });
+    console.log('MAModelingAddin constructor called');
+    
+    // Check if Office is already available
+    if (typeof Office !== 'undefined' && Office.onReady) {
+      Office.onReady((info) => {
+        console.log('Office.onReady fired:', info);
+        this.initializeAddin();
+      });
+    } else {
+      console.log('Office not available, trying fallback initialization');
+      // Fallback - try to initialize after a delay
+      setTimeout(() => {
+        this.initializeAddin();
+      }, 2000);
+    }
   }
 
-  private initializeAddin() {
+  initializeAddin() {
+    if (this.isInitialized) {
+      console.log('Add-in already initialized, skipping');
+      return;
+    }
+    
+    console.log('Initializing add-in...');
+    
+    // Wait for DOM to be ready
+    if (document.readyState === 'loading') {
+      console.log('DOM still loading, waiting...');
+      document.addEventListener('DOMContentLoaded', () => {
+        this.initializeAddin();
+      });
+      return;
+    }
+    
     // Set up event listeners
-    document.getElementById('selectRangeBtn')?.addEventListener('click', () => this.selectAssumptionsRange());
-    document.getElementById('generateModelBtn')?.addEventListener('click', () => this.generateModel());
-    document.getElementById('validateModelBtn')?.addEventListener('click', () => this.validateModel());
-    document.getElementById('sendChatBtn')?.addEventListener('click', () => this.sendChatMessage());
+    const selectRangeBtn = document.getElementById('selectRangeBtn');
+    const generateModelBtn = document.getElementById('generateModelBtn');
+    const validateModelBtn = document.getElementById('validateModelBtn');
+    const sendChatBtn = document.getElementById('sendChatBtn');
+    const chatInput = document.getElementById('chatInput');
+    
+    console.log('DOM elements found:', {
+      selectRangeBtn: !!selectRangeBtn,
+      generateModelBtn: !!generateModelBtn,
+      validateModelBtn: !!validateModelBtn,
+      sendChatBtn: !!sendChatBtn,
+      chatInput: !!chatInput
+    });
+
+    if (selectRangeBtn) {
+      selectRangeBtn.addEventListener('click', () => this.selectAssumptionsRange());
+      console.log('Select range button listener added');
+    }
+    if (generateModelBtn) {
+      generateModelBtn.addEventListener('click', () => this.generateModel());
+      console.log('Generate model button listener added');
+    }
+    if (validateModelBtn) {
+      validateModelBtn.addEventListener('click', () => this.validateModel());
+      console.log('Validate model button listener added');
+    }
+    if (sendChatBtn) {
+      sendChatBtn.addEventListener('click', () => this.sendChatMessage());
+      console.log('Send chat button listener added');
+    }
     
     // Allow Enter key in chat input
-    document.getElementById('chatInput')?.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') {
-        this.sendChatMessage();
-      }
-    });
+    if (chatInput) {
+      chatInput.addEventListener('keypress', (e) => {
+        console.log('Key pressed in chat input:', e.key);
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          console.log('Enter pressed, sending message');
+          this.sendChatMessage();
+        }
+      });
+      
+      // Also add keydown for better compatibility
+      chatInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          console.log('Enter keydown, sending message');
+          this.sendChatMessage();
+        }
+      });
+      console.log('Chat input listeners added');
+    }
 
     // File upload event listeners
     this.initializeFileUpload();
 
-    // API key is already configured
-    console.log('OpenAI API key configured');
+    this.isInitialized = true;
+    console.log('MAModelingAddin initialized successfully');
+    
+    // Add a test message to verify chat is working
+    setTimeout(() => {
+      this.addChatMessage('assistant', '✅ Add-in loaded successfully! Try typing a message or clicking "browse files".');
+      
+      // Also test if Office.js is working
+      if (typeof Office !== 'undefined' && Office.context) {
+        this.addChatMessage('assistant', '📊 Excel integration ready! You can use all features.');
+      } else {
+        this.addChatMessage('assistant', '⚠️ Excel integration limited - some features may not work.');
+      }
+    }, 1500);
   }
 
-  private initializeFileUpload() {
+  initializeFileUpload() {
+    console.log('Initializing file upload...');
     const dropzone = document.getElementById('fileDropzone');
-    const fileInput = document.getElementById('fileInput') as HTMLInputElement;
+    const fileInput = document.getElementById('fileInput');
     const uploadLink = document.querySelector('.upload-link');
 
-    // Dropzone click handler
-    dropzone?.addEventListener('click', () => {
-      fileInput?.click();
+    console.log('Elements found:', {
+      dropzone: !!dropzone,
+      fileInput: !!fileInput,
+      uploadLink: !!uploadLink
     });
+
+    // Dropzone click handler
+    if (dropzone) {
+      dropzone.addEventListener('click', (e) => {
+        console.log('Dropzone clicked');
+        e.preventDefault();
+        if (fileInput) {
+          console.log('Triggering file input click');
+          fileInput.click();
+        } else {
+          console.error('File input not found');
+        }
+      });
+      console.log('Dropzone click listener added');
+    }
 
     // Upload link click handler
-    uploadLink?.addEventListener('click', (e) => {
-      e.stopPropagation();
-      fileInput?.click();
-    });
+    if (uploadLink) {
+      uploadLink.addEventListener('click', (e) => {
+        console.log('Upload link clicked');
+        e.preventDefault();
+        e.stopPropagation();
+        if (fileInput) {
+          console.log('Triggering file input click from link');
+          fileInput.click();
+        } else {
+          console.error('File input not found');
+        }
+      });
+      console.log('Upload link click listener added');
+    }
 
     // File input change handler
-    fileInput?.addEventListener('change', (e) => {
-      const files = (e.target as HTMLInputElement).files;
-      if (files) {
-        this.handleFileSelection(Array.from(files));
-      }
-    });
+    if (fileInput) {
+      fileInput.addEventListener('change', (e) => {
+        console.log('File input changed');
+        const files = e.target.files;
+        console.log('Files selected:', files ? files.length : 0);
+        if (files && files.length > 0) {
+          console.log('Processing files:', Array.from(files).map(f => f.name));
+          this.handleFileSelection(Array.from(files));
+        } else {
+          console.log('No files selected');
+        }
+      });
+      console.log('File input change listener added');
+    }
 
     // Drag and drop handlers
-    dropzone?.addEventListener('dragover', (e) => {
-      e.preventDefault();
-      dropzone.classList.add('dragover');
-    });
+    if (dropzone) {
+      dropzone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropzone.classList.add('dragover');
+      });
 
-    dropzone?.addEventListener('dragleave', () => {
-      dropzone.classList.remove('dragover');
-    });
+      dropzone.addEventListener('dragleave', () => {
+        dropzone.classList.remove('dragover');
+      });
 
-    dropzone?.addEventListener('drop', (e) => {
-      e.preventDefault();
-      dropzone.classList.remove('dragover');
-      const files = Array.from(e.dataTransfer?.files || []);
-      this.handleFileSelection(files);
-    });
+      dropzone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropzone.classList.remove('dragover');
+        const files = Array.from(e.dataTransfer.files || []);
+        this.handleFileSelection(files);
+      });
+    }
   }
 
-  private handleFileSelection(files: File[]) {
+  handleFileSelection(files) {
+    console.log('Handling file selection:', files.length, 'files');
+    
     // Filter valid files (PDF and CSV only)
     const validFiles = files.filter(file => {
       const isValidType = file.type === 'application/pdf' || file.type === 'text/csv' || file.name.endsWith('.csv');
       const isValidSize = file.size <= 10 * 1024 * 1024; // 10MB limit
+      console.log(`File ${file.name}: type=${file.type}, size=${file.size}, valid=${isValidType && isValidSize}`);
       return isValidType && isValidSize;
     });
 
+    console.log('Valid files:', validFiles.length);
+
     // Check total file limit
     if (this.uploadedFiles.length + validFiles.length > 4) {
+      console.log('Too many files uploaded');
       this.addChatMessage('assistant', 'Maximum 4 files allowed. Please remove some files first.');
       return;
     }
 
     // Add files to uploaded list
     this.uploadedFiles.push(...validFiles);
+    console.log('Total uploaded files:', this.uploadedFiles.length);
     this.updateFileDisplay();
 
     if (validFiles.length > 0) {
+      console.log('Files uploaded successfully');
       this.addChatMessage('assistant', `Successfully uploaded ${validFiles.length} file(s). You can now ask me to analyze them and fill out your assumptions template!`);
+    } else {
+      console.log('No valid files to upload');
+      this.addChatMessage('assistant', 'Please upload PDF or CSV files only (max 10MB each).');
     }
   }
 
-  private updateFileDisplay() {
+  updateFileDisplay() {
     const uploadedFilesDiv = document.getElementById('uploadedFiles');
     const fileList = document.getElementById('fileList');
 
     if (this.uploadedFiles.length === 0) {
-      uploadedFilesDiv!.style.display = 'none';
+      if (uploadedFilesDiv) uploadedFilesDiv.style.display = 'none';
       return;
     }
 
-    uploadedFilesDiv!.style.display = 'block';
-    fileList!.innerHTML = '';
+    if (uploadedFilesDiv) uploadedFilesDiv.style.display = 'block';
+    if (fileList) fileList.innerHTML = '';
 
     this.uploadedFiles.forEach((file, index) => {
       const fileItem = document.createElement('div');
@@ -144,18 +258,20 @@ class MAModelingAddin {
       `;
 
       const removeBtn = fileItem.querySelector('.remove-file');
-      removeBtn?.addEventListener('click', () => this.removeFile(index));
+      if (removeBtn) {
+        removeBtn.addEventListener('click', () => this.removeFile(index));
+      }
 
-      fileList!.appendChild(fileItem);
+      if (fileList) fileList.appendChild(fileItem);
     });
   }
 
-  private removeFile(index: number) {
+  removeFile(index) {
     this.uploadedFiles.splice(index, 1);
     this.updateFileDisplay();
   }
 
-  private formatFileSize(bytes: number): string {
+  formatFileSize(bytes) {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
@@ -163,7 +279,16 @@ class MAModelingAddin {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
   }
 
-  private async selectAssumptionsRange() {
+  async selectAssumptionsRange() {
+    console.log('Select assumptions range clicked');
+    
+    // Check if Excel is available
+    if (typeof Excel === 'undefined') {
+      console.error('Excel API not available');
+      this.addChatMessage('assistant', '❌ Excel API not available. Please make sure you are running this in Excel.');
+      return;
+    }
+    
     try {
       await Excel.run(async (context) => {
         const range = context.workbook.getSelectedRange();
@@ -182,16 +307,17 @@ class MAModelingAddin {
         
         // Try to parse assumptions from selected range
         this.parseAssumptionsFromRange(rangeData);
+        this.addChatMessage('assistant', `✅ Selected range ${range.address} with ${rangeData.length} rows.`);
       });
     } catch (error) {
       console.error('Error selecting range:', error);
-      this.showStatus('Error selecting range. Please try again.');
+      this.addChatMessage('assistant', `❌ Error selecting range: ${error.message || error}`);
     }
   }
 
-  private parseAssumptionsFromRange(rangeData: any[][]) {
+  parseAssumptionsFromRange(rangeData) {
     // Smart parsing of assumptions from Excel range
-    const assumptions: any = {};
+    const assumptions = {};
     
     for (let i = 0; i < rangeData.length; i++) {
       const row = rangeData[i];
@@ -218,21 +344,26 @@ class MAModelingAddin {
     this.updateFormWithAssumptions(assumptions);
   }
 
-  private updateFormWithAssumptions(assumptions: any) {
+  updateFormWithAssumptions(assumptions) {
     const fields = ['dealSize', 'ltv', 'holdingPeriod', 'revenueGrowth', 'exitMultiple'];
     
     fields.forEach(field => {
-      const element = document.getElementById(field) as HTMLInputElement;
+      const element = document.getElementById(field);
       if (element && assumptions[field] !== undefined) {
         element.value = assumptions[field].toString();
       }
     });
   }
 
-  private collectAssumptions(): DealAssumptions {
-    const getValue = (id: string): string => {
-      const element = document.getElementById(id) as HTMLInputElement;
-      return element?.value || '';
+  async generateModel() {
+    console.log('Generate model clicked');
+    this.addChatMessage('assistant', 'Model generation feature is being loaded. Please use the chat to ask me to "create a blank assumptions template" for now.');
+  }
+
+  collectAssumptions() {
+    const getValue = (id) => {
+      const element = document.getElementById(id);
+      return element ? element.value : '';
     };
 
     return {
@@ -246,291 +377,40 @@ class MAModelingAddin {
     };
   }
 
-  private async generateModel() {
-    const assumptions = this.collectAssumptions();
-    
-    this.showLoading(true);
-    this.showStatus('Generating M&A model sheets...');
-    
-    try {
-      await Excel.run(async (context) => {
-        // Create or clear sheets
-        await this.createModelSheets(context, assumptions);
-        
-        // Generate cash flows and calculate metrics
-        const metrics = await this.calculateMetrics(assumptions);
-        
-        // Populate sheets with data and formulas
-        await this.populateAssumptionsSheet(context, assumptions);
-        await this.populateNPVSheet(context, assumptions, metrics);
-        await this.populatePLSheet(context, assumptions);
-        await this.populateCFSheet(context, assumptions);
-        
-        await context.sync();
-        
-        this.showStatus('✅ M&A model generated successfully!');
-        this.addChatMessage('assistant', `M&A model for "${assumptions.dealName}" has been generated with the following key metrics:\n• Levered IRR: ${(metrics.leveredIRR * 100).toFixed(1)}%\n• MOIC: ${metrics.moic.toFixed(1)}x\n• Deal Size: $${assumptions.dealSize}M`);
-      });
-    } catch (error) {
-      console.error('Error generating model:', error);
-      this.showStatus('❌ Error generating model. Please check your inputs.');
-    } finally {
-      this.showLoading(false);
-    }
-  }
-
-  private async createModelSheets(context: Excel.RequestContext, assumptions: DealAssumptions) {
-    const workbook = context.workbook;
-    const sheetNames = ['Assumptions', 'P&L', 'CF Statement', 'NPV', 'Outputs'];
-    
-    // Create sheets if they don't exist
-    for (const sheetName of sheetNames) {
-      try {
-        let sheet = workbook.worksheets.getItem(sheetName);
-        sheet.load('name');
-        await context.sync();
-        
-        // Clear existing content
-        const usedRange = sheet.getUsedRange();
-        usedRange.clear();
-      } catch {
-        // Sheet doesn't exist, create it
-        workbook.worksheets.add(sheetName);
-      }
-    }
-  }
-
-  private async populateAssumptionsSheet(context: Excel.RequestContext, assumptions: DealAssumptions) {
-    const sheet = context.workbook.worksheets.getItem('Assumptions');
-    
-    // Header
-    sheet.getRange('A1:F1').merge();
-    sheet.getRange('A1').values = [[`${assumptions.dealName} - Key Assumptions`]];
-    sheet.getRange('A1').format.font.bold = true;
-    sheet.getRange('A1').format.font.size = 16;
-    
-    // Deal parameters
-    const data = [
-      ['', ''],
-      ['Deal Information', ''],
-      ['Deal Size ($M)', assumptions.dealSize],
-      ['LTV (%)', assumptions.ltv],
-      ['Holding Period (Months)', assumptions.holdingPeriod],
-      ['Revenue Growth (% annually)', assumptions.revenueGrowth],
-      ['Exit Multiple (x EBITDA)', assumptions.exitMultiple],
-      ['', ''],
-      ['Calculated Values', ''],
-      ['Debt Amount ($M)', `=C4*C5/100`],
-      ['Equity Amount ($M)', `=C4*(1-C5/100)`],
-      ['Exit Year', `=C6/12`]
-    ];
-    
-    sheet.getRange('B3:C14').values = data;
-    
-    // Format headers
-    sheet.getRange('B4').format.fill.color = '#1F4E79';
-    sheet.getRange('B4').format.font.color = 'white';
-    sheet.getRange('B4').format.font.bold = true;
-    
-    sheet.getRange('B10').format.fill.color = '#1F4E79';
-    sheet.getRange('B10').format.font.color = 'white';
-    sheet.getRange('B10').format.font.bold = true;
-    
-    // Format input cells
-    const inputRanges = ['C4:C8'];
-    inputRanges.forEach(range => {
-      sheet.getRange(range).format.fill.color = '#FDE9D9';
-    });
-    
-    // Format calculated cells
-    const calcRanges = ['C11:C13'];
-    calcRanges.forEach(range => {
-      sheet.getRange(range).format.fill.color = '#E6E6FA';
-    });
-  }
-
-  private async populateNPVSheet(context: Excel.RequestContext, assumptions: DealAssumptions, metrics: any) {
-    const sheet = context.workbook.worksheets.getItem('NPV');
-    
-    // Header
-    sheet.getRange('A1').values = [['NPV Analysis & Returns']];
-    sheet.getRange('A1').format.font.bold = true;
-    sheet.getRange('A1').format.font.size = 16;
-    
-    // Key metrics section
-    const metricsData = [
-      ['Key Metrics', 'Value'],
-      ['Levered IRR', metrics.leveredIRR],
-      ['Unlevered IRR', metrics.unleveredIRR],
-      ['MOIC', metrics.moic],
-      ['Levered NPV ($M)', metrics.leveredNPV / 1000000],
-      ['Unlevered NPV ($M)', metrics.unleveredNPV / 1000000]
-    ];
-    
-    sheet.getRange('A3:B8').values = metricsData;
-    
-    // Format metrics
-    sheet.getRange('A3:B3').format.fill.color = '#1F4E79';
-    sheet.getRange('A3:B3').format.font.color = 'white';
-    sheet.getRange('A3:B3').format.font.bold = true;
-    
-    // Format IRR cells as percentages
-    sheet.getRange('B4:B5').numberFormat = [['0.00%']];
-    
-    // Format MOIC with x
-    sheet.getRange('B6').numberFormat = [['0.0"x"']];
-    
-    // Format NPV as currency
-    sheet.getRange('B7:B8').numberFormat = [['$#,##0.0']];
-  }
-
-  private async populatePLSheet(context: Excel.RequestContext, assumptions: DealAssumptions) {
-    const sheet = context.workbook.worksheets.getItem('P&L');
-    
-    // Create a simplified P&L with formulas
-    const months = assumptions.holdingPeriod;
-    const headers = ['P&L Item', 'Formula/Notes'];
-    
-    // Add month columns
-    for (let i = 0; i <= months; i++) {
-      headers.push(`M${i}`);
-    }
-    
-    sheet.getRange('A1').values = [headers];
-    
-    // Basic P&L structure
-    const plData = [
-      ['Revenue', 'Growing at specified rate'],
-      ['Operating Expenses', 'Fixed + variable'],
-      ['EBITDA', '=Revenue - OpEx'],
-      ['Interest Expense', 'From debt model'],
-      ['Net Income', '=EBITDA - Interest']
-    ];
-    
-    sheet.getRange('A2:B6').values = plData;
-    
-    // Format headers
-    sheet.getRange('A1:' + this.getColumnLetter(headers.length) + '1').format.fill.color = '#1F4E79';
-    sheet.getRange('A1:' + this.getColumnLetter(headers.length) + '1').format.font.color = 'white';
-    sheet.getRange('A1:' + this.getColumnLetter(headers.length) + '1').format.font.bold = true;
-  }
-
-  private async populateCFSheet(context: Excel.RequestContext, assumptions: DealAssumptions) {
-    const sheet = context.workbook.worksheets.getItem('CF Statement');
-    
-    // Basic cash flow structure
-    sheet.getRange('A1').values = [['Cash Flow Statement']];
-    sheet.getRange('A1').format.font.bold = true;
-    sheet.getRange('A1').format.font.size = 16;
-    
-    const cfData = [
-      ['', ''],
-      ['Operating Cash Flows', ''],
-      ['EBITDA', 'Link to P&L'],
-      ['Working Capital Changes', 'Assumption'],
-      ['Operating CF', '=EBITDA + WC Changes'],
-      ['', ''],
-      ['Investment Cash Flows', ''],
-      ['Initial Investment', -assumptions.dealSize * 1000000],
-      ['Exit Proceeds', 'Final period only'],
-      ['', ''],
-      ['Financing Cash Flows', ''],
-      ['Debt Drawn', 'Initial period'],
-      ['Interest Payments', 'Monthly'],
-      ['Principal Repayments', 'Monthly'],
-      ['', ''],
-      ['Net Cash Flow', 'Sum of all sections']
-    ];
-    
-    sheet.getRange('A3:B18').values = cfData;
-  }
-
-  private async calculateMetrics(assumptions: DealAssumptions): Promise<any> {
-    // Use the same calculation logic from the web app
-    const cashFlows = this.generateCashFlows(assumptions);
-    
-    // Use fallback calculation for now
-    return this.calculateMetricsFallback(cashFlows);
-  }
-
-  private generateCashFlows(assumptions: DealAssumptions): number[] {
-    const periods = assumptions.holdingPeriod;
-    const dealSize = assumptions.dealSize * 1000000;
-    const equity = dealSize * (1 - assumptions.ltv / 100);
-    const cashFlows: number[] = [];
-    
-    // Initial investment
-    cashFlows.push(-equity);
-    
-    // Operating periods
-    const monthlyEBITDA = dealSize * 0.2 / 12; // Assume 20% EBITDA margin
-    for (let i = 1; i <= periods; i++) {
-      const growthFactor = Math.pow(1 + assumptions.revenueGrowth / 100, (i - 1) / 12);
-      let cf = monthlyEBITDA * growthFactor;
-      
-      // Add exit value in final period
-      if (i === periods) {
-        const annualEBITDA = monthlyEBITDA * 12 * growthFactor;
-        const exitValue = annualEBITDA * assumptions.exitMultiple;
-        cf += exitValue;
-      }
-      
-      cashFlows.push(cf);
-    }
-    
-    return cashFlows;
-  }
-
-  private calculateMetricsFallback(cashFlows: number[]): any {
-    // Simple IRR approximation
-    let irr = 0.1;
-    for (let i = 0; i < 100; i++) {
-      let npv = 0;
-      let dnpv = 0;
-      
-      for (let j = 0; j < cashFlows.length; j++) {
-        const period = j / 12;
-        npv += cashFlows[j] / Math.pow(1 + irr, period);
-        dnpv -= (period * cashFlows[j]) / Math.pow(1 + irr, period + 1);
-      }
-      
-      if (Math.abs(npv) < 0.01) break;
-      if (Math.abs(dnpv) < 0.01) break;
-      
-      irr = irr - npv / dnpv;
-    }
-    
-    const moic = cashFlows[cashFlows.length - 1] / Math.abs(cashFlows[0]);
-    const npv8 = cashFlows.reduce((sum, cf, i) => sum + cf / Math.pow(1.08, i / 12), 0);
-    
-    return {
-      leveredIRR: irr,
-      unleveredIRR: irr * 0.9, // Simplified
-      moic: moic,
-      leveredNPV: npv8,
-      unleveredNPV: npv8 * 1.1
-    };
-  }
-
-  private async validateModel() {
+  async validateModel() {
+    console.log('Validate model clicked');
     this.addChatMessage('assistant', 'Model validation feature coming soon! This will check all formulas and cross-references for accuracy.');
   }
 
-  private async sendChatMessage() {
-    const input = document.getElementById('chatInput') as HTMLInputElement;
-    const message = input.value.trim();
+  async sendChatMessage() {
+    console.log('Send chat message function called');
+    const input = document.getElementById('chatInput');
+    console.log('Chat input element:', input);
     
-    if (!message) return;
+    if (!input) {
+      console.error('Chat input element not found');
+      return;
+    }
+    
+    const message = input.value.trim();
+    console.log('Message to send:', message);
+    
+    if (!message) {
+      console.log('No message to send (empty)');
+      return;
+    }
     
     // Add user message
+    console.log('Adding user message to chat');
     this.addChatMessage('user', message);
     input.value = '';
     
     // Process with AI
+    console.log('Processing message with AI');
     await this.processWithAI(message);
   }
 
-  private async processWithAI(message: string) {
+  async processWithAI(message) {
     try {
       const context = await this.getExcelContext();
       
@@ -563,11 +443,6 @@ class MAModelingAddin {
         // Regular text response
         const responseText = data.response || data.error || 'No response received';
         this.addChatMessage('assistant', responseText);
-        
-        // Legacy formula detection for backwards compatibility
-        if (responseText && typeof responseText === 'string' && responseText.includes('=') && responseText.includes('cell')) {
-          this.offerToImplementFormula(responseText);
-        }
       }
       
     } catch (error) {
@@ -583,8 +458,8 @@ class MAModelingAddin {
     }
   }
 
-  private async processUploadedFiles(): Promise<string[]> {
-    const fileContents: string[] = [];
+  async processUploadedFiles() {
+    const fileContents = [];
     
     for (const file of this.uploadedFiles) {
       try {
@@ -609,109 +484,16 @@ class MAModelingAddin {
     return fileContents;
   }
 
-  private readTextFile(file: File): Promise<string> {
+  readTextFile(file) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.onload = (e) => resolve(e.target?.result as string);
+      reader.onload = (e) => resolve(e.target.result);
       reader.onerror = reject;
       reader.readAsText(file);
     });
   }
 
-  private async getExcelContext(): Promise<string> {
-    try {
-      return await Excel.run(async (context) => {
-        const worksheet = context.workbook.worksheets.getActiveWorksheet();
-        const selectedRange = context.workbook.getSelectedRange();
-        const usedRange = worksheet.getUsedRange();
-        
-        worksheet.load(['name']);
-        selectedRange.load(['address', 'values', 'formulas']);
-        usedRange.load(['address', 'values', 'formulas']);
-        
-        await context.sync();
-        
-        return JSON.stringify({
-          worksheetName: worksheet.name,
-          selectedRange: {
-            address: selectedRange.address,
-            values: selectedRange.values,
-            formulas: selectedRange.formulas
-          },
-          usedRange: {
-            address: usedRange.address,
-            values: usedRange.values.slice(0, 10), // Limit to first 10 rows
-            formulas: usedRange.formulas.slice(0, 10)
-          }
-        });
-      });
-    } catch {
-      return JSON.stringify({ error: 'Could not read Excel context' });
-    }
-  }
-
-  private offerToImplementFormula(aiResponse: string) {
-    if (confirm('Would you like me to implement the suggested formula in your selected cell?')) {
-      this.implementSuggestedFormula(aiResponse);
-    }
-  }
-
-  private async implementSuggestedFormula(aiResponse: string) {
-    // Extract formula from AI response (simple pattern matching)
-    const formulaMatch = aiResponse.match(/=([^"]+)/);
-    if (!formulaMatch) return;
-    
-    const formula = '=' + formulaMatch[1].trim();
-    
-    try {
-      await Excel.run(async (context) => {
-        const range = context.workbook.getSelectedRange();
-        range.formulas = [[formula]];
-        await context.sync();
-        
-        this.addChatMessage('assistant', `✅ Formula implemented: ${formula}`);
-      });
-    } catch (error) {
-      this.addChatMessage('assistant', `❌ Error implementing formula: ${error}`);
-    }
-  }
-
-  private addChatMessage(role: 'user' | 'assistant', content: string) {
-    this.chatMessages.push({ role, content });
-    
-    const messagesDiv = document.getElementById('chatMessages');
-    if (messagesDiv) {
-      const messageBubble = document.createElement('div');
-      messageBubble.className = `message-bubble ${role}-bubble`;
-      
-      const messageContent = document.createElement('div');
-      messageContent.className = 'message-content';
-      
-      const messageText = document.createElement('div');
-      messageText.className = 'message-text';
-      messageText.textContent = content;
-      
-      messageContent.appendChild(messageText);
-      messageBubble.appendChild(messageContent);
-      messagesDiv.appendChild(messageBubble);
-      
-      messagesDiv.scrollTop = messagesDiv.scrollHeight;
-    }
-  }
-
-  private showLoading(show: boolean) {
-    const loading = document.getElementById('loading');
-    if (loading) {
-      loading.style.display = show ? 'block' : 'none';
-    }
-  }
-
-  private showStatus(message: string) {
-    console.log('Status:', message);
-    // Could show in a status bar
-  }
-
-  private async executeCommand(command: any) {
+  async executeCommand(command) {
     try {
       await Excel.run(async (context) => {
         switch (command.action) {
@@ -753,44 +535,17 @@ class MAModelingAddin {
     }
   }
 
-  private async setValueCommand(context: Excel.RequestContext, cellAddress: string, value: any) {
+  async setValueCommand(context, cellAddress, value) {
     const range = context.workbook.worksheets.getActiveWorksheet().getRange(cellAddress);
     range.values = [[value]];
   }
 
-  private async addToCellCommand(context: Excel.RequestContext, cellAddress: string, addValue: number) {
-    const range = context.workbook.worksheets.getActiveWorksheet().getRange(cellAddress);
-    range.load(['values']);
-    await context.sync();
-    
-    const currentValue = parseFloat(range.values[0][0]) || 0;
-    const newValue = currentValue + addValue;
-    range.values = [[newValue]];
-  }
-
-  private async setFormulaCommand(context: Excel.RequestContext, cellAddress: string, formula: string) {
+  async setFormulaCommand(context, cellAddress, formula) {
     const range = context.workbook.worksheets.getActiveWorksheet().getRange(cellAddress);
     range.formulas = [[formula]];
   }
 
-  private async formatCellCommand(context: Excel.RequestContext, cellAddress: string, format: any) {
-    const range = context.workbook.worksheets.getActiveWorksheet().getRange(cellAddress);
-    
-    if (format.bold !== undefined) {
-      range.format.font.bold = format.bold;
-    }
-    if (format.color) {
-      range.format.font.color = format.color;
-    }
-    if (format.backgroundColor) {
-      range.format.fill.color = format.backgroundColor;
-    }
-    if (format.numberFormat) {
-      range.numberFormat = [[format.numberFormat]];
-    }
-  }
-
-  private async generateAssumptionsTemplate(context: Excel.RequestContext) {
+  async generateAssumptionsTemplate(context) {
     try {
       const worksheet = context.workbook.worksheets.getActiveWorksheet();
       
@@ -881,7 +636,7 @@ class MAModelingAddin {
     }
   }
 
-  private async fillAssumptionsData(context: Excel.RequestContext, data: any) {
+  async fillAssumptionsData(context, data) {
     try {
       const worksheet = context.workbook.worksheets.getActiveWorksheet();
       
@@ -927,16 +682,103 @@ class MAModelingAddin {
     }
   }
 
-  private getColumnLetter(col: number): string {
-    let letter = '';
-    while (col > 0) {
-      const mod = (col - 1) % 26;
-      letter = String.fromCharCode(65 + mod) + letter;
-      col = Math.floor((col - 1) / 26);
+  addChatMessage(role, content) {
+    console.log(`Adding ${role} message:`, content);
+    this.chatMessages.push({ role, content });
+    
+    const messagesDiv = document.getElementById('chatMessages');
+    if (!messagesDiv) {
+      console.error('Chat messages div not found');
+      return;
     }
-    return letter;
+    
+    console.log('Creating message bubble');
+    const messageBubble = document.createElement('div');
+    messageBubble.className = `message-bubble ${role}-bubble`;
+    
+    const messageContent = document.createElement('div');
+    messageContent.className = 'message-content';
+    
+    const messageText = document.createElement('div');
+    messageText.className = 'message-text';
+    messageText.textContent = content;
+    
+    messageContent.appendChild(messageText);
+    messageBubble.appendChild(messageContent);
+    messagesDiv.appendChild(messageBubble);
+    
+    // Scroll to bottom
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    console.log('Message added to chat');
+  }
+
+  showLoading(show) {
+    const loading = document.getElementById('loading');
+    if (loading) {
+      loading.style.display = show ? 'block' : 'none';
+    }
+  }
+
+  showStatus(message) {
+    console.log('Status:', message);
+    // Could show in a status bar
+  }
+
+  async getExcelContext() {
+    try {
+      return await Excel.run(async (context) => {
+        const worksheet = context.workbook.worksheets.getActiveWorksheet();
+        const selectedRange = context.workbook.getSelectedRange();
+        const usedRange = worksheet.getUsedRange();
+        
+        worksheet.load(['name']);
+        selectedRange.load(['address', 'values', 'formulas']);
+        usedRange.load(['address', 'values', 'formulas']);
+        
+        await context.sync();
+        
+        return JSON.stringify({
+          worksheetName: worksheet.name,
+          selectedRange: {
+            address: selectedRange.address,
+            values: selectedRange.values,
+            formulas: selectedRange.formulas
+          },
+          usedRange: {
+            address: usedRange.address,
+            values: usedRange.values.slice(0, 10), // Limit to first 10 rows
+            formulas: usedRange.formulas.slice(0, 10)
+          }
+        });
+      });
+    } catch {
+      return JSON.stringify({ error: 'Could not read Excel context' });
+    }
   }
 }
 
+// Global error handler for better debugging
+window.addEventListener('error', (e) => {
+  console.error('Global error caught:', e.error, e.filename, e.lineno);
+});
+
+// Global unhandled promise rejection handler
+window.addEventListener('unhandledrejection', (e) => {
+  console.error('Unhandled promise rejection:', e.reason);
+});
+
 // Initialize the add-in
-new MAModelingAddin();
+console.log('Initializing MAModelingAddin...');
+console.log('Office availability:', typeof Office !== 'undefined');
+console.log('Excel availability:', typeof Excel !== 'undefined');
+
+// Wait for everything to load properly
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    console.log('DOM loaded, creating MAModelingAddin');
+    new MAModelingAddin();
+  });
+} else {
+  console.log('DOM already loaded, creating MAModelingAddin');
+  new MAModelingAddin();
+}
