@@ -333,9 +333,7 @@ body {
 }
 
 .radio-option:has(input[type="radio"]:checked) .radio-custom {
-  border-color: white;
-  background: white;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  display: none;
 }
 
 /* Apple-style Checkbox Styling */
@@ -400,9 +398,7 @@ body {
 }
 
 .checkbox-option:has(input[type="checkbox"]:checked) .checkbox-custom {
-  border-color: white;
-  background: white;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  display: none;
 }
 
 /* Rate Note */
