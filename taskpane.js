@@ -1012,95 +1012,53 @@ class MAModelingAddin {
             const dealName = document.getElementById('dealName')?.value || 'M&A Deal';
             console.log('Got deal parameters:', { dealName, dealSize, debtAmount, allInRate });
             
-            // Create period headers based on holding period (monthly periods)
-            const periodsInMonths = Math.min(holdingPeriod, 60); // Cap at 60 months for display
-            const periodHeaders = [''];
-            for (let i = 1; i <= periodsInMonths; i++) {
-              const date = new Date();
-              date.setMonth(date.getMonth() + i - 1);
-              const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-              periodHeaders.push(`${i}-${monthNames[date.getMonth()]}-${date.getFullYear().toString().substr(-2)}`);
+            // Create simple debt schedule first - get data into Excel reliably
+            console.log('Creating simplified debt schedule data...');
+            
+            // Step 1: Insert basic data first (no complex calculations)
+            const basicData = [
+              ['Debt Model', '', '', '', '', '', '', '', '', ''],
+              ['', '', '', '', '', '', '', '', '', ''],
+              ['Period', '1-Jan-25', '2-Feb-25', '3-Mar-25', '4-Apr-25', '5-May-25', '6-Jun-25', '7-Jul-25', '8-Aug-25', '9-Sep-25'],
+              ['Base interest rate - U.S. Fed', `${baseRate.toFixed(1)}%`, `${baseRate.toFixed(1)}%`, `${baseRate.toFixed(1)}%`, `${baseRate.toFixed(1)}%`, `${baseRate.toFixed(1)}%`, `${baseRate.toFixed(1)}%`, `${baseRate.toFixed(1)}%`, `${baseRate.toFixed(1)}%`, `${baseRate.toFixed(1)}%`],
+              ['All-in interest rate', `${allInRate.toFixed(1)}%`, `${allInRate.toFixed(1)}%`, `${allInRate.toFixed(1)}%`, `${allInRate.toFixed(1)}%`, `${allInRate.toFixed(1)}%`, `${allInRate.toFixed(1)}%`, `${allInRate.toFixed(1)}%`, `${allInRate.toFixed(1)}%`, `${allInRate.toFixed(1)}%`]
+            ];
+            
+            // Use fixed range to avoid calculation errors
+            const dataRange = debtScheduleWorksheet.getRange('A1:J5');
+            dataRange.values = basicData;
+            console.log('Basic data inserted to A1:J5');
+            
+            await context.sync();
+            console.log('Data sync completed');
+            
+            // Step 2: Apply basic formatting
+            try {
+              // Format header
+              const headerRange = debtScheduleWorksheet.getRange('A1:J1');
+              headerRange.format.font.bold = true;
+              headerRange.format.fill.color = '#D9D9D9';
+              headerRange.merge();
+              
+              // Format period headers
+              const periodHeaderRange = debtScheduleWorksheet.getRange('A3:J3');
+              periodHeaderRange.format.font.bold = true;
+              periodHeaderRange.format.fill.color = '#E2EFDA';
+              
+              // Format labels column
+              const labelRange = debtScheduleWorksheet.getRange('A1:A5');
+              labelRange.format.font.bold = true;
+              
+              await context.sync();
+              console.log('Basic formatting applied');
+            } catch (formatError) {
+              console.log('Formatting failed but data was inserted:', formatError);
             }
-            
-            // Create transposed debt schedule data structure (like your image)
-            const debtScheduleData = [];
-            
-            // Header row
-            debtScheduleData.push(['Debt Model', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '']);
-            debtScheduleData.push(['', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '']);
-            
-            // Period row (dates across columns)
-            const periodRow = ['Period'].concat(periodHeaders.slice(1));
-            debtScheduleData.push(periodRow);
-            
-            // Base interest rate row
-            const baseRateRow = ['Base interest rate - U.S. Fed'];
-            for (let i = 1; i <= periodsInMonths; i++) {
-              baseRateRow.push(`${baseRate.toFixed(1)}%`);
-            }
-            debtScheduleData.push(baseRateRow);
-            
-            // All-in interest rate row
-            const allInRateRow = ['All-in interest rate'];
-            for (let i = 1; i <= periodsInMonths; i++) {
-              allInRateRow.push(`${allInRate.toFixed(1)}%`);
-            }
-            debtScheduleData.push(allInRateRow);
-            
-            // Calculate range size needed
-            const maxCols = Math.max(periodsInMonths + 1, 20); // Ensure minimum 20 columns
-            const maxRows = debtScheduleData.length;
-            
-            // Insert all data at once
-            const dataRange = debtScheduleWorksheet.getRange(`A1:${String.fromCharCode(65 + maxCols - 1)}${maxRows}`);
-            
-            // Pad rows to match range width
-            const paddedData = debtScheduleData.map(row => {
-              const paddedRow = [...row];
-              while (paddedRow.length < maxCols) {
-                paddedRow.push('');
-              }
-              return paddedRow;
-            });
-            
-            dataRange.values = paddedData;
-            console.log('Data inserted successfully');
-            
-            // Apply formatting similar to your image
-            // Format header
-            const headerRange = debtScheduleWorksheet.getRange('A1:T1');
-            headerRange.format.font.bold = true;
-            headerRange.format.font.size = 12;
-            headerRange.format.fill.color = '#D9D9D9';
-            headerRange.merge();
-            
-            // Format period headers (row 3)
-            const periodHeaderRange = debtScheduleWorksheet.getRange(`A3:${String.fromCharCode(65 + periodsInMonths)}3`);
-            periodHeaderRange.format.font.bold = true;
-            periodHeaderRange.format.fill.color = '#E2EFDA';
-            periodHeaderRange.format.borders.getItem('EdgeBottom').style = 'Continuous';
-            
-            // Format row labels (first column)
-            const labelRange = debtScheduleWorksheet.getRange(`A3:A${maxRows}`);
-            labelRange.format.font.bold = true;
-            
-            // Format data area with borders
-            const tableRange = debtScheduleWorksheet.getRange(`A3:${String.fromCharCode(65 + periodsInMonths)}${maxRows}`);
-            tableRange.format.borders.getItem('InsideHorizontal').style = 'Continuous';
-            tableRange.format.borders.getItem('InsideVertical').style = 'Continuous';
-            tableRange.format.borders.getItem('EdgeBottom').style = 'Continuous';
-            tableRange.format.borders.getItem('EdgeLeft').style = 'Continuous';
-            tableRange.format.borders.getItem('EdgeRight').style = 'Continuous';
-            tableRange.format.borders.getItem('EdgeTop').style = 'Continuous';
-            
-            // Auto-fit columns
-            debtScheduleWorksheet.getUsedRange().format.autofitColumns();
-            console.log('Formatting applied successfully');
           
             await context.sync();
             console.log('Excel data synced successfully');
             
-            this.addChatMessage('assistant', `✅ Debt schedule created in new worksheet "Debt Schedule"! Deal: ${dealName} | Debt: $${debtAmount.toFixed(1)}M | All-in Rate: ${allInRate.toFixed(1)}% | Periods: ${periodsInMonths} months`);
+            this.addChatMessage('assistant', `✅ Debt schedule created in new worksheet "Debt Schedule"! Deal: ${dealName} | Debt: $${debtAmount.toFixed(1)}M | All-in Rate: ${allInRate.toFixed(1)}%`);
             
           } catch (innerError) {
             console.error('Error inside Excel.run:', innerError);
