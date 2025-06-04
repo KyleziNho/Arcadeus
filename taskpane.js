@@ -2426,7 +2426,7 @@ class MAModelingAddin {
           </div>
         `;
         
-        this.showMainUploadMessage('✅ High-level parameters successfully extracted and applied!', 'success');
+        this.showMainUploadMessage('✅ High-level parameters and deal assumptions successfully extracted and applied!', 'success');
       } else {
         console.error('No extracted data in response:', data);
         progressDiv.innerHTML = `
@@ -2475,19 +2475,40 @@ class MAModelingAddin {
   }
 
   createExtractionSummary(data) {
-    let summary = '<strong>High-Level Parameters Extracted:</strong><br>';
+    let summary = '<strong>Extracted Data:</strong><br>';
     
-    if (data.highLevelParameters?.currency) {
-      summary += `• Currency: ${data.highLevelParameters.currency}<br>`;
+    // High-Level Parameters
+    if (data.highLevelParameters) {
+      summary += '<strong>High-Level Parameters:</strong><br>';
+      if (data.highLevelParameters.currency) {
+        summary += `• Currency: ${data.highLevelParameters.currency}<br>`;
+      }
+      if (data.highLevelParameters.projectStartDate) {
+        summary += `• Start Date: ${data.highLevelParameters.projectStartDate}<br>`;
+      }
+      if (data.highLevelParameters.projectEndDate) {
+        summary += `• End Date: ${data.highLevelParameters.projectEndDate}<br>`;
+      }
+      if (data.highLevelParameters.modelPeriods) {
+        summary += `• Periods: ${data.highLevelParameters.modelPeriods}<br>`;
+      }
     }
-    if (data.highLevelParameters?.projectStartDate) {
-      summary += `• Start Date: ${data.highLevelParameters.projectStartDate}<br>`;
-    }
-    if (data.highLevelParameters?.projectEndDate) {
-      summary += `• End Date: ${data.highLevelParameters.projectEndDate}<br>`;
-    }
-    if (data.highLevelParameters?.modelPeriods) {
-      summary += `• Periods: ${data.highLevelParameters.modelPeriods}<br>`;
+    
+    // Deal Assumptions
+    if (data.dealAssumptions) {
+      summary += '<br><strong>Deal Assumptions:</strong><br>';
+      if (data.dealAssumptions.dealName) {
+        summary += `• Deal: ${data.dealAssumptions.dealName}<br>`;
+      }
+      if (data.dealAssumptions.dealValue) {
+        summary += `• Value: ${this.formatCurrency(data.dealAssumptions.dealValue)}<br>`;
+      }
+      if (data.dealAssumptions.transactionFee) {
+        summary += `• Transaction Fee: ${data.dealAssumptions.transactionFee}%<br>`;
+      }
+      if (data.dealAssumptions.dealLTV) {
+        summary += `• LTV: ${data.dealAssumptions.dealLTV}%<br>`;
+      }
     }
     
     return summary;
@@ -2561,9 +2582,9 @@ ERROR: Could not read file content - ${error.message}`);
 
   createDataExtractionPrompt() {
     return `
-TASK: Extract HIGH-LEVEL PARAMETERS ONLY from uploaded financial documents.
+TASK: Extract HIGH-LEVEL PARAMETERS and DEAL ASSUMPTIONS from uploaded financial documents.
 
-CRITICAL: You MUST carefully read ALL content in the uploaded files and extract ONLY the high-level parameters listed below.
+CRITICAL: You MUST carefully read ALL content in the uploaded files and extract the specific data points listed below.
 
 REQUIRED JSON STRUCTURE - Return EXACTLY this format:
 {
@@ -2573,45 +2594,68 @@ REQUIRED JSON STRUCTURE - Return EXACTLY this format:
       "projectStartDate": "2025-03-31",
       "projectEndDate": "2030-03-31",
       "modelPeriods": "monthly"
+    },
+    "dealAssumptions": {
+      "dealName": "Sample Company Ltd.",
+      "dealValue": 100000000,
+      "transactionFee": 2.5,
+      "dealLTV": 75
     }
   }
 }
 
-EXTRACTION RULES FOR HIGH-LEVEL PARAMETERS:
+EXTRACTION RULES:
 
+HIGH-LEVEL PARAMETERS:
 1. CURRENCY: Look for currency symbols ($, €, £) or codes (USD, EUR, GBP, JPY, CAD, AUD, CHF, CNY, SEK, NOK)
-   - Check all monetary values in the document
    - Return the 3-letter currency code (e.g., "USD", "EUR", "GBP")
 
-2. PROJECT START DATE: Look for acquisition date, deal close date, or current date
+2. PROJECT START DATE: Look for acquisition date, deal close date
    - Format: YYYY-MM-DD (e.g., "2025-03-31")
    - If found: "Acquisition date,31/03/2025" → convert to "2025-03-31"
-   - If not found, use current year start: "2025-01-01"
 
-3. MODEL PERIODS: Determine the period frequency from the data structure
-   - If data appears to be monthly → "monthly"
-   - If data appears to be quarterly → "quarterly" 
-   - If data appears to be yearly → "yearly"
-   - Default to "monthly" if unclear
-
-4. PROJECT END DATE: Calculate from start date + holding period, or find exit date
+3. PROJECT END DATE: Calculate from start date + holding period
    - Look for "Holding Period (Months)" in the document
-   - If found: add that many months to start date
+   - Add that many months to start date
    - Example: Start "2025-03-31" + 60 months = "2030-03-31"
-   - If no holding period found, use start date + 5 years
+
+4. MODEL PERIODS: Default to "monthly" for M&A financial models
+
+DEAL ASSUMPTIONS:
+1. DEAL NAME: Look for company name, target company, business name
+   - Extract from headers like "Sample Company Ltd. - Key Assumptions"
+   - Or from lines like "Deal type,Business Acquisition"
+   - Return the actual company/target name
+
+2. DEAL VALUE: Calculate total transaction value
+   - Look for "Equity Contribution" + "Debt Financing" values
+   - Or find "Purchase Price", "Enterprise Value", "Transaction Value"
+   - Return as number (e.g., 100000000 for $100M)
+   - If found separately: Equity 25000000 + Debt 75000000 = 100000000
+
+3. TRANSACTION FEE: Look for banking fees, advisory fees, transaction costs
+   - Search for "Transaction Fees", "Advisory Fees", "Banking Fees"
+   - Convert percentage to number (e.g., "1.50%" → 1.5)
+   - If not found, use default: 2.5
+
+4. DEAL LTV: Look for leverage ratio, loan-to-value, debt percentage
+   - Search for "LTV", "Leverage", "Debt Ratio", "Acquisition LTV"
+   - Convert percentage to number (e.g., "75%" → 75)
+   - Calculate from debt/total if needed: 75000000/100000000 = 75%
+   - If not found, calculate from Debt/(Debt+Equity) if both are available
 
 IMPORTANT: 
 - Extract REAL data from the uploaded files
-- Only return the highLevelParameters object
-- Use actual dates and currency from the document
-- Calculate end date based on actual holding period if provided`;
+- Use actual company names, values, and percentages from the document
+- Calculate deal value and LTV from available financial data
+- Do not use the example values above - they are just format examples`;
   }
 
   async applyExtractedData(extractedData) {
-    console.log('Applying extracted data (HIGH-LEVEL PARAMETERS ONLY):', extractedData);
+    console.log('Applying extracted data (HIGH-LEVEL PARAMETERS & DEAL ASSUMPTIONS):', extractedData);
 
     try {
-      // Apply High-Level Parameters ONLY
+      // Apply High-Level Parameters
       if (extractedData.highLevelParameters) {
         const hlp = extractedData.highLevelParameters;
         
@@ -2646,9 +2690,44 @@ IMPORTANT:
         console.warn('❌ No highLevelParameters found in extracted data');
       }
 
-      console.log('✅ Successfully applied high-level parameters');
+      // Apply Deal Assumptions
+      if (extractedData.dealAssumptions) {
+        const da = extractedData.dealAssumptions;
+        
+        console.log('Applying deal assumptions:', da);
+        
+        // Set deal name
+        if (da.dealName) {
+          console.log('Setting deal name to:', da.dealName);
+          this.setInputValue('dealName', da.dealName);
+        }
+        
+        // Set deal value
+        if (da.dealValue) {
+          console.log('Setting deal value to:', da.dealValue);
+          this.setInputValue('dealValue', da.dealValue);
+        }
+        
+        // Set transaction fee
+        if (da.transactionFee) {
+          console.log('Setting transaction fee to:', da.transactionFee);
+          this.setInputValue('transactionFee', da.transactionFee);
+        }
+        
+        // Set deal LTV
+        if (da.dealLTV) {
+          console.log('Setting deal LTV to:', da.dealLTV);
+          this.setInputValue('dealLTV', da.dealLTV);
+        }
+        
+        console.log('✅ Deal assumptions applied successfully');
+      } else {
+        console.warn('❌ No dealAssumptions found in extracted data');
+      }
+
+      console.log('✅ Successfully applied extracted data to both sections');
     } catch (error) {
-      console.error('Error applying high-level parameters:', error);
+      console.error('Error applying extracted data:', error);
       throw error;
     }
   }
