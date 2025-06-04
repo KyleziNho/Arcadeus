@@ -790,6 +790,9 @@ class MAModelingAddin {
         });
         
         console.log('✅ Deal Assumptions collapsible section initialized successfully');
+        
+        // Add click-to-expand functionality for collapsed section
+        this.addClickToExpandListener(dealAssumptionsSection, minimizeBtn);
       } else {
         console.error('❌ Could not find Deal Assumptions collapsible section elements');
       }
@@ -818,6 +821,9 @@ class MAModelingAddin {
         });
         
         console.log('✅ High-Level Parameters collapsible section initialized successfully');
+        
+        // Add click-to-expand functionality for collapsed section
+        this.addClickToExpandListener(highLevelParametersSection, minimizeHighLevelBtn);
       } else {
         console.error('❌ Could not find High-Level Parameters collapsible section elements');
       }
@@ -846,6 +852,9 @@ class MAModelingAddin {
         });
         
         console.log('✅ Revenue Items collapsible section initialized successfully');
+        
+        // Add click-to-expand functionality for collapsed section
+        this.addClickToExpandListener(revenueItemsSection, minimizeRevenueBtn);
       } else {
         console.error('❌ Could not find Revenue Items collapsible section elements');
       }
@@ -874,6 +883,9 @@ class MAModelingAddin {
         });
         
         console.log('✅ Debt Model collapsible section initialized successfully');
+        
+        // Add click-to-expand functionality for collapsed section
+        this.addClickToExpandListener(debtModelSection, minimizeDebtBtn);
       } else {
         console.error('❌ Could not find Debt Model collapsible section elements');
         console.log('Available elements in DOM:', {
@@ -884,6 +896,37 @@ class MAModelingAddin {
         });
       }
     }, 500); // 500ms delay to ensure DOM is ready
+  }
+
+  addClickToExpandListener(section, minimizeBtn) {
+    if (section && minimizeBtn) {
+      section.addEventListener('click', (e) => {
+        // Only expand if section is collapsed and click wasn't on the minimize button
+        if (section.classList.contains('collapsed') && !minimizeBtn.contains(e.target)) {
+          e.preventDefault();
+          
+          // Trigger the minimize button click to expand
+          section.classList.remove('collapsed');
+          
+          // Update icon and aria-label
+          const iconSpan = minimizeBtn.querySelector('.minimize-icon');
+          if (iconSpan) {
+            iconSpan.textContent = '−';
+          }
+          
+          // Update aria-label based on section
+          let sectionName = 'Section';
+          if (section.id.includes('highLevel')) sectionName = 'High-Level Parameters';
+          else if (section.id.includes('dealAssumptions')) sectionName = 'Deal Assumptions';
+          else if (section.id.includes('revenue')) sectionName = 'Revenue Items';
+          else if (section.id.includes('debt')) sectionName = 'Debt Model';
+          
+          minimizeBtn.setAttribute('aria-label', `Minimize ${sectionName}`);
+          
+          console.log(`${sectionName} section expanded by click`);
+        }
+      });
+    }
   }
 
   initializeDebtModel() {
@@ -1555,56 +1598,180 @@ class MAModelingAddin {
       case 'nonlinear':
         const projectStartDate = document.getElementById('projectStartDate')?.value;
         const projectEndDate = document.getElementById('projectEndDate')?.value;
+        const modelPeriods = document.getElementById('modelPeriods')?.value;
+        const holdingPeriodsCalculated = document.getElementById('holdingPeriodsCalculated')?.value;
         
-        if (projectStartDate && projectEndDate) {
-          const startYear = new Date(projectStartDate).getFullYear();
-          const endYear = new Date(projectEndDate).getFullYear();
-          const yearInputs = [];
+        // Extract number of periods from calculated holding periods
+        let totalPeriods = 12; // default fallback
+        if (holdingPeriodsCalculated) {
+          const periodsMatch = holdingPeriodsCalculated.match(/(\d+)/);
+          if (periodsMatch) {
+            totalPeriods = parseInt(periodsMatch[1]);
+          }
+        }
+        
+        console.log('Non-linear setup:', { modelPeriods, totalPeriods, holdingPeriodsCalculated });
+        
+        if (totalPeriods <= 12) {
+          // Simple period-by-period input for ≤12 periods
+          const periodInputs = [];
+          const periodLabel = this.getPeriodLabel(modelPeriods);
           
-          for (let year = startYear; year <= Math.min(endYear, startYear + 4); year++) {
-            yearInputs.push(`
+          for (let i = 1; i <= totalPeriods; i++) {
+            periodInputs.push(`
               <div class="year-input-group">
-                <label>Year ${year}</label>
-                <input type="number" id="nonLinearGrowth_${itemId}_${year}" placeholder="%" step="0.1" value="0"/>
+                <label>${periodLabel} ${i}</label>
+                <input type="number" id="nonLinearGrowth_${itemId}_${i}" placeholder="%" step="0.1" value="0"/>
               </div>
             `);
           }
           
           growthInputsContainer.innerHTML = `
             <div class="form-group">
-              <label>Year-by-Year Growth Rates (%)</label>
+              <label>Period-by-Period Growth Rates (%)</label>
               <div class="non-linear-inputs">
-                ${yearInputs.join('')}
+                ${periodInputs.join('')}
               </div>
-              <small class="help-text">Set specific growth rate for each year. Positive for growth, negative for decline.</small>
+              <small class="help-text">Set specific growth rate for each ${periodLabel.toLowerCase()}. Positive for growth, negative for decline.</small>
             </div>
           `;
         } else {
+          // Grouped input for >12 periods
           growthInputsContainer.innerHTML = `
             <div class="form-group">
-              <label>Simple Non-Linear Growth (%)</label>
-              <div class="non-linear-inputs">
-                <div class="year-input-group">
-                  <label>Year 1</label>
-                  <input type="number" id="nonLinearGrowth_${itemId}_1" placeholder="%" step="0.1" value="0"/>
-                </div>
-                <div class="year-input-group">
-                  <label>Year 2</label>
-                  <input type="number" id="nonLinearGrowth_${itemId}_2" placeholder="%" step="0.1" value="0"/>
-                </div>
-                <div class="year-input-group">
-                  <label>Year 3</label>
-                  <input type="number" id="nonLinearGrowth_${itemId}_3" placeholder="%" step="0.1" value="0"/>
+              <label>Grouped Growth Periods</label>
+              <div class="period-groups" id="periodGroups_${itemId}">
+                <div class="period-group">
+                  <div class="period-group-header">
+                    <label>Group 1</label>
+                    <button type="button" class="add-period-group" data-item-id="${itemId}">+ Add Group</button>
+                  </div>
+                  <div class="period-group-inputs">
+                    <div class="form-group">
+                      <label>From ${this.getPeriodLabel(modelPeriods)}</label>
+                      <input type="number" id="periodStart_${itemId}_1" placeholder="1" min="1" max="${totalPeriods}" value="1"/>
+                    </div>
+                    <div class="form-group">
+                      <label>To ${this.getPeriodLabel(modelPeriods)}</label>
+                      <input type="number" id="periodEnd_${itemId}_1" placeholder="12" min="1" max="${totalPeriods}" value="12"/>
+                    </div>
+                    <div class="form-group">
+                      <label>Growth Rate (%)</label>
+                      <input type="number" id="periodGrowth_${itemId}_1" placeholder="0" step="0.1" value="0"/>
+                    </div>
+                  </div>
                 </div>
               </div>
-              <small class="help-text">Set specific growth rate for each year. Configure project dates for more years.</small>
+              <small class="help-text">Define growth rates for period ranges. Example: ${this.getPeriodLabel(modelPeriods)}s 1-12 at 1%, then ${this.getPeriodLabel(modelPeriods)}s 13-${totalPeriods} at 0.5%</small>
             </div>
           `;
+          
+          // Add event listener for adding more period groups
+          setTimeout(() => {
+            const addGroupBtn = document.querySelector(`[data-item-id="${itemId}"]`);
+            if (addGroupBtn) {
+              addGroupBtn.addEventListener('click', () => this.addPeriodGroup(itemId, totalPeriods, modelPeriods));
+            }
+          }, 100);
         }
         break;
     }
     
     console.log('Updated growth inputs for item', itemId, 'with type', growthType);
+  }
+
+  getPeriodLabel(modelPeriods) {
+    switch (modelPeriods) {
+      case 'daily': return 'Day';
+      case 'monthly': return 'Month';
+      case 'quarterly': return 'Quarter';
+      case 'yearly': return 'Year';
+      default: return 'Period';
+    }
+  }
+
+  addPeriodGroup(itemId, totalPeriods, modelPeriods) {
+    const periodGroupsContainer = document.getElementById(`periodGroups_${itemId}`);
+    if (!periodGroupsContainer) return;
+    
+    const existingGroups = periodGroupsContainer.querySelectorAll('.period-group');
+    const groupNumber = existingGroups.length + 1;
+    
+    // Calculate suggested start period (end of last group + 1)
+    const lastGroup = existingGroups[existingGroups.length - 1];
+    const lastEndInput = lastGroup.querySelector('[id*="periodEnd_"]');
+    const suggestedStart = lastEndInput ? parseInt(lastEndInput.value) + 1 : 1;
+    const suggestedEnd = Math.min(suggestedStart + 11, totalPeriods);
+    
+    const periodLabel = this.getPeriodLabel(modelPeriods);
+    
+    const newGroup = document.createElement('div');
+    newGroup.className = 'period-group';
+    newGroup.innerHTML = `
+      <div class="period-group-header">
+        <label>Group ${groupNumber}</label>
+        <button type="button" class="remove-period-group">× Remove</button>
+      </div>
+      <div class="period-group-inputs">
+        <div class="form-group">
+          <label>From ${periodLabel}</label>
+          <input type="number" id="periodStart_${itemId}_${groupNumber}" placeholder="${suggestedStart}" min="1" max="${totalPeriods}" value="${suggestedStart}"/>
+        </div>
+        <div class="form-group">
+          <label>To ${periodLabel}</label>
+          <input type="number" id="periodEnd_${itemId}_${groupNumber}" placeholder="${suggestedEnd}" min="1" max="${totalPeriods}" value="${suggestedEnd}"/>
+        </div>
+        <div class="form-group">
+          <label>Growth Rate (%)</label>
+          <input type="number" id="periodGrowth_${itemId}_${groupNumber}" placeholder="0" step="0.1" value="0"/>
+        </div>
+      </div>
+    `;
+    
+    // Remove the add button from previous groups
+    periodGroupsContainer.querySelectorAll('.add-period-group').forEach(btn => btn.remove());
+    
+    // Add the new group
+    periodGroupsContainer.appendChild(newGroup);
+    
+    // Add the "Add Group" button to the new group if not at total periods
+    if (suggestedEnd < totalPeriods) {
+      const addButton = document.createElement('button');
+      addButton.type = 'button';
+      addButton.className = 'add-period-group';
+      addButton.setAttribute('data-item-id', itemId);
+      addButton.textContent = '+ Add Group';
+      newGroup.querySelector('.period-group-header').appendChild(addButton);
+      
+      addButton.addEventListener('click', () => this.addPeriodGroup(itemId, totalPeriods, modelPeriods));
+    }
+    
+    // Add remove functionality
+    const removeBtn = newGroup.querySelector('.remove-period-group');
+    if (removeBtn) {
+      removeBtn.addEventListener('click', () => {
+        newGroup.remove();
+        // Re-add the add button to the last group if needed
+        const remainingGroups = periodGroupsContainer.querySelectorAll('.period-group');
+        const lastRemainingGroup = remainingGroups[remainingGroups.length - 1];
+        if (lastRemainingGroup && !lastRemainingGroup.querySelector('.add-period-group')) {
+          const lastEndInput = lastRemainingGroup.querySelector('[id*="periodEnd_"]');
+          const lastEnd = lastEndInput ? parseInt(lastEndInput.value) : 0;
+          if (lastEnd < totalPeriods) {
+            const addButton = document.createElement('button');
+            addButton.type = 'button';
+            addButton.className = 'add-period-group';
+            addButton.setAttribute('data-item-id', itemId);
+            addButton.textContent = '+ Add Group';
+            lastRemainingGroup.querySelector('.period-group-header').appendChild(addButton);
+            
+            addButton.addEventListener('click', () => this.addPeriodGroup(itemId, totalPeriods, modelPeriods));
+          }
+        }
+      });
+    }
+    
+    console.log('Added period group', groupNumber, 'for item', itemId);
   }
 
   async getExcelContext() {

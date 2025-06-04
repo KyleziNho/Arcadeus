@@ -150,6 +150,15 @@ body {
 .collapsible-section {
   overflow: hidden;
   position: relative;
+  transition: var(--transition-normal);
+}
+
+.collapsible-section.collapsed {
+  cursor: pointer;
+}
+
+.collapsible-section:not(.collapsed) {
+  cursor: default;
 }
 
 /* Section header styles removed - no longer using section-header div */
@@ -626,6 +635,71 @@ input[readonly] {
 .year-input-group input {
   padding: var(--spacing-xs) var(--spacing-sm);
   font-size: 14px;
+}
+
+/* Period Groups Styling */
+.period-groups {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.period-group {
+  background: var(--surface-primary);
+  border: 1px solid var(--surface-tertiary);
+  border-radius: var(--radius-medium);
+  padding: var(--spacing-md);
+}
+
+.period-group-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-sm);
+}
+
+.period-group-header label {
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.period-group-inputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: var(--spacing-sm);
+}
+
+.add-period-group {
+  background: var(--accent-green);
+  color: white;
+  border: none;
+  border-radius: var(--radius-small);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  font-size: 12px;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.add-period-group:hover {
+  background: #28A745;
+  transform: scale(1.05);
+}
+
+.remove-period-group {
+  background: var(--accent-red);
+  color: white;
+  border: none;
+  border-radius: var(--radius-small);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  font-size: 12px;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.remove-period-group:hover {
+  background: #E60000;
+  transform: scale(1.05);
 }
 
 /* Buttons */
