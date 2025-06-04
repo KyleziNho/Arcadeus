@@ -914,25 +914,48 @@ class MAModelingAddin {
       allInRate = fedRate + 2.0; // Add 2% margin
     }
     
-    // Generate sample schedule
-    const tableBody = document.getElementById('debtTableBody');
-    if (tableBody) {
-      tableBody.innerHTML = '';
+    // Generate transposed sample schedule
+    const previewTable = document.getElementById('debtPreviewTable');
+    if (previewTable) {
+      previewTable.innerHTML = '';
       
-      for (let i = 1; i <= Math.min(periods, 5); i++) {
-        const row = document.createElement('tr');
-        const period = new Date();
-        period.setFullYear(period.getFullYear() + i);
-        
-        row.innerHTML = `
-          <td>Year ${i}</td>
-          <td>${baseRate.toFixed(1)}%</td>
-          <td>${allInRate.toFixed(1)}%</td>
-          <td>$${(100 - i * 10).toFixed(1)}M</td>
-          <td>$${((100 - i * 10) * allInRate / 100).toFixed(1)}M</td>
-        `;
-        tableBody.appendChild(row);
-      }
+      const maxPreviewPeriods = Math.min(periods, 5);
+      
+      // Create header row with periods
+      const headerRow = document.createElement('tr');
+      headerRow.innerHTML = '<th></th>' + Array.from({length: maxPreviewPeriods}, (_, i) => `<th>Year ${i + 1}</th>`).join('');
+      previewTable.appendChild(headerRow);
+      
+      // Base Rate row
+      const baseRateRow = document.createElement('tr');
+      baseRateRow.innerHTML = '<td><strong>Base Rate (%)</strong></td>' + 
+        Array.from({length: maxPreviewPeriods}, () => `<td>${baseRate.toFixed(1)}</td>`).join('');
+      previewTable.appendChild(baseRateRow);
+      
+      // All-in Rate row
+      const allInRateRow = document.createElement('tr');
+      allInRateRow.innerHTML = '<td><strong>All-in Rate (%)</strong></td>' + 
+        Array.from({length: maxPreviewPeriods}, () => `<td>${allInRate.toFixed(1)}</td>`).join('');
+      previewTable.appendChild(allInRateRow);
+      
+      // Outstanding Debt row
+      const debtRow = document.createElement('tr');
+      debtRow.innerHTML = '<td><strong>Outstanding Debt ($M)</strong></td>' + 
+        Array.from({length: maxPreviewPeriods}, (_, i) => {
+          const outstandingDebt = 100 - i * 15; // Sample data
+          return `<td>$${outstandingDebt.toFixed(1)}</td>`;
+        }).join('');
+      previewTable.appendChild(debtRow);
+      
+      // Interest Payment row
+      const interestRow = document.createElement('tr');
+      interestRow.innerHTML = '<td><strong>Interest Payment ($M)</strong></td>' + 
+        Array.from({length: maxPreviewPeriods}, (_, i) => {
+          const outstandingDebt = 100 - i * 15;
+          const interestPayment = outstandingDebt * (allInRate / 100);
+          return `<td>$${interestPayment.toFixed(1)}</td>`;
+        }).join('');
+      previewTable.appendChild(interestRow);
     }
   }
 
@@ -970,35 +993,76 @@ class MAModelingAddin {
       // Try to create Excel schedule
       if (typeof Excel !== 'undefined') {
         await Excel.run(async (context) => {
-          const worksheet = context.workbook.worksheets.getActiveWorksheet();
+          // Create a new worksheet for the debt schedule
+          const worksheets = context.workbook.worksheets;
+          const newWorksheet = worksheets.add('Debt Schedule');
+          newWorksheet.activate();
           
-          // Create headers
-          const headerRange = worksheet.getRange('A1:E1');
-          headerRange.values = [['Period', 'Base Rate (%)', 'All-in Rate (%)', 'Outstanding Debt ($M)', 'Interest Payment ($M)']];
+          // Generate transposed table structure
+          // Rows: Period, Base Rate (%), All-in Rate (%), Outstanding Debt ($M), Interest Payment ($M)
+          // Columns: Year 1, Year 2, Year 3, etc.
+          
+          // Create period headers (columns)
+          const periodHeaders = [''];
+          for (let i = 1; i <= periods; i++) {
+            periodHeaders.push(`Year ${i}`);
+          }
+          
+          // Create the transposed data structure
+          const transposedData = [];
+          
+          // Row 1: Period headers
+          transposedData.push(periodHeaders);
+          
+          // Row 2: Base Rate
+          const baseRateRow = ['Base Rate (%)'];
+          for (let i = 1; i <= periods; i++) {
+            baseRateRow.push(baseRate.toFixed(1));
+          }
+          transposedData.push(baseRateRow);
+          
+          // Row 3: All-in Rate  
+          const allInRateRow = ['All-in Rate (%)'];
+          for (let i = 1; i <= periods; i++) {
+            allInRateRow.push(allInRate.toFixed(1));
+          }
+          transposedData.push(allInRateRow);
+          
+          // Row 4: Outstanding Debt
+          const debtRow = ['Outstanding Debt ($M)'];
+          for (let i = 1; i <= periods; i++) {
+            const outstandingDebt = debtAmount * (1 - (i - 1) / periods * 0.8); // Simple amortization
+            debtRow.push(outstandingDebt.toFixed(1));
+          }
+          transposedData.push(debtRow);
+          
+          // Row 5: Interest Payment
+          const interestRow = ['Interest Payment ($M)'];
+          for (let i = 1; i <= periods; i++) {
+            const outstandingDebt = debtAmount * (1 - (i - 1) / periods * 0.8);
+            const interestPayment = outstandingDebt * (allInRate / 100);
+            interestRow.push(interestPayment.toFixed(1));
+          }
+          transposedData.push(interestRow);
+          
+          // Insert all data at once
+          const totalCols = periods + 1;
+          const totalRows = transposedData.length;
+          const dataRange = newWorksheet.getRange(`A1:${String.fromCharCode(65 + totalCols - 1)}${totalRows}`);
+          dataRange.values = transposedData;
+          
+          // Format header row (period headers)
+          const headerRange = newWorksheet.getRange(`A1:${String.fromCharCode(65 + totalCols - 1)}1`);
           headerRange.format.font.bold = true;
           headerRange.format.fill.color = '#E5E5EA';
           
-          // Generate debt schedule data
-          const scheduleData = [];
-          for (let i = 1; i <= periods; i++) {
-            const outstandingDebt = debtAmount * (1 - (i - 1) / periods * 0.8); // Simple amortization
-            const interestPayment = outstandingDebt * (allInRate / 100);
-            
-            scheduleData.push([
-              `Year ${i}`,
-              baseRate.toFixed(1),
-              allInRate.toFixed(1),
-              outstandingDebt.toFixed(1),
-              interestPayment.toFixed(1)
-            ]);
-          }
+          // Format first column (row labels)
+          const labelRange = newWorksheet.getRange(`A1:A${totalRows}`);
+          labelRange.format.font.bold = true;
+          labelRange.format.fill.color = '#F2F2F7';
           
-          // Insert data
-          const dataRange = worksheet.getRange(`A2:E${periods + 1}`);
-          dataRange.values = scheduleData;
-          
-          // Format table
-          const tableRange = worksheet.getRange(`A1:E${periods + 1}`);
+          // Format table borders
+          const tableRange = newWorksheet.getRange(`A1:${String.fromCharCode(65 + totalCols - 1)}${totalRows}`);
           tableRange.format.borders.getItem('InsideHorizontal').style = 'Continuous';
           tableRange.format.borders.getItem('InsideVertical').style = 'Continuous';
           tableRange.format.borders.getItem('EdgeBottom').style = 'Continuous';
@@ -1007,11 +1071,11 @@ class MAModelingAddin {
           tableRange.format.borders.getItem('EdgeTop').style = 'Continuous';
           
           // Auto-fit columns
-          worksheet.getUsedRange().format.autofitColumns();
+          newWorksheet.getUsedRange().format.autofitColumns();
           
           await context.sync();
           
-          this.addChatMessage('assistant', `✅ Debt schedule generated successfully! Created a ${periods}-year schedule with ${debtAmount.toFixed(1)}M debt at ${allInRate.toFixed(1)}% all-in rate.`);
+          this.addChatMessage('assistant', `✅ Debt schedule generated successfully! Created new worksheet "Debt Schedule" with ${periods}-year transposed table. Debt amount: $${debtAmount.toFixed(1)}M at ${allInRate.toFixed(1)}% all-in rate.`);
         });
       } else {
         // Fallback for when Excel API is not available

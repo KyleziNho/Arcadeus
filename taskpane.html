@@ -145,19 +145,8 @@
                 <div class="debt-schedule" id="debtSchedule" style="display: none;">
                     <h4>Debt Schedule Preview</h4>
                     <div class="schedule-table-container">
-                        <table class="debt-table">
-                            <thead>
-                                <tr>
-                                    <th>Period</th>
-                                    <th>Base Rate</th>
-                                    <th>All-in Rate</th>
-                                    <th>Outstanding Debt</th>
-                                    <th>Interest Payment</th>
-                                </tr>
-                            </thead>
-                            <tbody id="debtTableBody">
-                                <!-- Dynamic rows will be inserted here -->
-                            </tbody>
+                        <table class="debt-table" id="debtPreviewTable">
+                            <!-- Dynamic transposed table will be inserted here -->
                         </table>
                     </div>
                     <button class="button button-secondary" id="generateDebtSchedule">
