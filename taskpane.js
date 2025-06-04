@@ -43,24 +43,17 @@ class MAModelingAddin {
     }
     
     // Set up event listeners
-    const selectRangeBtn = document.getElementById('selectRangeBtn');
     const generateModelBtn = document.getElementById('generateModelBtn');
     const validateModelBtn = document.getElementById('validateModelBtn');
     const sendChatBtn = document.getElementById('sendChatBtn');
     const chatInput = document.getElementById('chatInput');
     
     console.log('DOM elements found:', {
-      selectRangeBtn: !!selectRangeBtn,
       generateModelBtn: !!generateModelBtn,
       validateModelBtn: !!validateModelBtn,
       sendChatBtn: !!sendChatBtn,
       chatInput: !!chatInput
     });
-
-    if (selectRangeBtn) {
-      selectRangeBtn.addEventListener('click', () => this.selectAssumptionsRange());
-      console.log('Select range button listener added');
-    }
     if (generateModelBtn) {
       generateModelBtn.addEventListener('click', () => this.generateModel());
       console.log('Generate model button listener added');
@@ -921,43 +914,40 @@ class MAModelingAddin {
       
       // Initial check
       checkDebtEligibility();
+      
+      // Rate type toggle
+      if (rateTypeFixed && rateTypeFloating && fixedRateGroup && baseRateGroup && marginGroup) {
+        const toggleRateType = () => {
+          const isFixed = document.querySelector('input[name="rateType"]:checked').value === 'fixed';
+          fixedRateGroup.style.display = isFixed ? 'block' : 'none';
+          baseRateGroup.style.display = isFixed ? 'none' : 'block';
+          marginGroup.style.display = isFixed ? 'none' : 'block';
+          this.updateDebtSchedule();
+        };
         
-        // Rate type toggle
-        if (rateTypeFixed && rateTypeFloating && fixedRateGroup && baseRateGroup && marginGroup) {
-          const toggleRateType = () => {
-            const isFixed = document.querySelector('input[name="rateType"]:checked').value === 'fixed';
-            fixedRateGroup.style.display = isFixed ? 'block' : 'none';
-            baseRateGroup.style.display = isFixed ? 'none' : 'block';
-            marginGroup.style.display = isFixed ? 'none' : 'block';
+        rateTypeFixed.addEventListener('change', toggleRateType);
+        rateTypeFloating.addEventListener('change', toggleRateType);
+      }
+      
+      // Generate debt schedule button
+      if (generateDebtScheduleBtn) {
+        generateDebtScheduleBtn.addEventListener('click', () => {
+          this.generateDebtScheduleInExcel();
+        });
+      }
+      
+      // Input change listeners to update schedule
+      const inputs = ['fixedRate', 'baseRate', 'creditMargin'];
+      inputs.forEach(id => {
+        const input = document.getElementById(id);
+        if (input) {
+          input.addEventListener('input', () => {
             this.updateDebtSchedule();
-          };
-          
-          rateTypeFixed.addEventListener('change', toggleRateType);
-          rateTypeFloating.addEventListener('change', toggleRateType);
-        }
-        
-        // Generate debt schedule button
-        if (generateDebtScheduleBtn) {
-          generateDebtScheduleBtn.addEventListener('click', () => {
-            this.generateDebtScheduleInExcel();
           });
         }
-        
-        // Input change listeners to update schedule
-        const inputs = ['fixedRate', 'baseRate', 'creditMargin'];
-        inputs.forEach(id => {
-          const input = document.getElementById(id);
-          if (input) {
-            input.addEventListener('input', () => {
-              this.updateDebtSchedule();
-            });
-          }
-        });
-        
-        console.log('✅ Debt model initialized successfully');
-      } else {
-        console.error('❌ Could not find debt model elements');
-      }
+      });
+      
+      console.log('✅ Debt model initialized successfully');
     }, 500);
   }
 
