@@ -104,6 +104,9 @@ class MAModelingAddin {
     // Deal Assumptions calculations
     this.initializeDealAssumptions();
 
+    // Revenue Items functionality
+    this.initializeRevenueItems();
+
     this.isInitialized = true;
     console.log('MAModelingAddin initialized successfully');
     
@@ -742,6 +745,10 @@ class MAModelingAddin {
       const minimizeBtn = document.getElementById('minimizeAssumptions');
       const dealAssumptionsSection = document.getElementById('dealAssumptionsSection');
       
+      // Revenue Items section collapse/expand functionality
+      const minimizeRevenueBtn = document.getElementById('minimizeRevenue');
+      const revenueItemsSection = document.getElementById('revenueItemsSection');
+      
       // Debt Model section collapse/expand functionality
       const minimizeDebtBtn = document.getElementById('minimizeDebtModel');
       const debtModelSection = document.getElementById('debtModelSection');
@@ -813,6 +820,34 @@ class MAModelingAddin {
         console.log('✅ High-Level Parameters collapsible section initialized successfully');
       } else {
         console.error('❌ Could not find High-Level Parameters collapsible section elements');
+      }
+      
+      // Revenue Items section event handler
+      if (minimizeRevenueBtn && revenueItemsSection) {
+        minimizeRevenueBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          console.log('Revenue Items minimize button clicked');
+          
+          // Toggle collapsed class
+          revenueItemsSection.classList.toggle('collapsed');
+          
+          // Update icon and aria-label for accessibility
+          const isCollapsed = revenueItemsSection.classList.contains('collapsed');
+          const iconSpan = minimizeRevenueBtn.querySelector('.minimize-icon');
+          
+          if (iconSpan) {
+            iconSpan.textContent = isCollapsed ? '+' : '−';
+          }
+          
+          minimizeRevenueBtn.setAttribute('aria-label', 
+            isCollapsed ? 'Expand Revenue Items' : 'Minimize Revenue Items');
+          
+          console.log('Revenue Items section', isCollapsed ? 'collapsed' : 'expanded');
+        });
+        
+        console.log('✅ Revenue Items collapsible section initialized successfully');
+      } else {
+        console.error('❌ Could not find Revenue Items collapsible section elements');
       }
       
       // Debt Model section event handler
@@ -1373,6 +1408,203 @@ class MAModelingAddin {
       
       console.log('✅ Deal assumptions calculations initialized successfully');
     }, 500);
+  }
+
+  initializeRevenueItems() {
+    console.log('Initializing revenue items...');
+    
+    setTimeout(() => {
+      const revenueItemsContainer = document.getElementById('revenueItemsContainer');
+      const addRevenueItemBtn = document.getElementById('addRevenueItem');
+      
+      console.log('Revenue items elements found:', {
+        revenueItemsContainer: !!revenueItemsContainer,
+        addRevenueItemBtn: !!addRevenueItemBtn
+      });
+      
+      this.revenueItemCounter = 0;
+      
+      // Function to create a new revenue item
+      const createRevenueItem = (isRequired = false) => {
+        this.revenueItemCounter++;
+        const itemId = this.revenueItemCounter;
+        
+        const revenueItem = document.createElement('div');
+        revenueItem.className = 'revenue-item';
+        revenueItem.setAttribute('data-revenue-id', itemId);
+        
+        revenueItem.innerHTML = `
+          <div class="revenue-item-header">
+            <div class="revenue-item-title">Revenue Item ${itemId}${isRequired ? ' (Required)' : ''}</div>
+            ${!isRequired ? `<button class="remove-revenue-item" data-revenue-id="${itemId}">Remove</button>` : ''}
+          </div>
+          
+          <div class="revenue-item-fields">
+            <div class="form-group">
+              <label>Revenue Source Name</label>
+              <input type="text" id="revenueName_${itemId}" placeholder="e.g., Product Sales, Subscriptions"/>
+              <small class="help-text">Name or description of this revenue stream</small>
+            </div>
+            
+            <div class="form-group">
+              <label>Initial Value</label>
+              <input type="number" id="revenueValue_${itemId}" placeholder="e.g., 10000000" step="100000"/>
+              <small class="help-text">Starting revenue amount in selected currency</small>
+            </div>
+          </div>
+          
+          <div class="revenue-growth-config">
+            <div class="form-group">
+              <label>Growth Type</label>
+              <select id="growthType_${itemId}">
+                <option value="none">No Growth</option>
+                <option value="linear" selected>Linear Growth</option>
+                <option value="nonlinear">Non-Linear Growth</option>
+              </select>
+              <small class="help-text">Select how this revenue stream grows over time</small>
+            </div>
+            
+            <div class="growth-inputs" id="growthInputs_${itemId}">
+              <!-- Growth-specific inputs will be inserted here -->
+            </div>
+          </div>
+        `;
+        
+        if (revenueItemsContainer) {
+          revenueItemsContainer.appendChild(revenueItem);
+        }
+        
+        // Set up event listeners for this item
+        this.setupRevenueItemListeners(itemId);
+        
+        // Initialize with linear growth by default
+        this.updateGrowthInputs(itemId, 'linear');
+        
+        console.log('Created revenue item:', itemId);
+        return itemId;
+      };
+      
+      // Function to remove a revenue item
+      const removeRevenueItem = (itemId) => {
+        const revenueItem = document.querySelector(`[data-revenue-id="${itemId}"]`);
+        if (revenueItem) {
+          revenueItem.remove();
+          console.log('Removed revenue item:', itemId);
+        }
+      };
+      
+      // Add revenue item button event listener
+      if (addRevenueItemBtn) {
+        addRevenueItemBtn.addEventListener('click', () => {
+          createRevenueItem(false);
+        });
+      }
+      
+      // Set up event delegation for remove buttons
+      if (revenueItemsContainer) {
+        revenueItemsContainer.addEventListener('click', (e) => {
+          if (e.target.classList.contains('remove-revenue-item')) {
+            const itemId = e.target.getAttribute('data-revenue-id');
+            removeRevenueItem(itemId);
+          }
+        });
+      }
+      
+      // Create the first required revenue item
+      createRevenueItem(true);
+      
+      console.log('✅ Revenue items initialized successfully');
+    }, 500);
+  }
+
+  setupRevenueItemListeners(itemId) {
+    const growthTypeSelect = document.getElementById(`growthType_${itemId}`);
+    
+    if (growthTypeSelect) {
+      growthTypeSelect.addEventListener('change', (e) => {
+        this.updateGrowthInputs(itemId, e.target.value);
+      });
+    }
+  }
+
+  updateGrowthInputs(itemId, growthType) {
+    const growthInputsContainer = document.getElementById(`growthInputs_${itemId}`);
+    if (!growthInputsContainer) return;
+    
+    growthInputsContainer.innerHTML = '';
+    
+    switch (growthType) {
+      case 'none':
+        growthInputsContainer.innerHTML = `
+          <div class="form-group">
+            <small class="help-text">This revenue stream will remain constant over time</small>
+          </div>
+        `;
+        break;
+        
+      case 'linear':
+        growthInputsContainer.innerHTML = `
+          <div class="form-group">
+            <label>Annual Growth Rate (%)</label>
+            <input type="number" id="linearGrowth_${itemId}" placeholder="e.g., 15" step="0.1" value="0"/>
+            <small class="help-text">Positive for growth, negative for decline (e.g., 15% or -5%)</small>
+          </div>
+        `;
+        break;
+        
+      case 'nonlinear':
+        const projectStartDate = document.getElementById('projectStartDate')?.value;
+        const projectEndDate = document.getElementById('projectEndDate')?.value;
+        
+        if (projectStartDate && projectEndDate) {
+          const startYear = new Date(projectStartDate).getFullYear();
+          const endYear = new Date(projectEndDate).getFullYear();
+          const yearInputs = [];
+          
+          for (let year = startYear; year <= Math.min(endYear, startYear + 4); year++) {
+            yearInputs.push(`
+              <div class="year-input-group">
+                <label>Year ${year}</label>
+                <input type="number" id="nonLinearGrowth_${itemId}_${year}" placeholder="%" step="0.1" value="0"/>
+              </div>
+            `);
+          }
+          
+          growthInputsContainer.innerHTML = `
+            <div class="form-group">
+              <label>Year-by-Year Growth Rates (%)</label>
+              <div class="non-linear-inputs">
+                ${yearInputs.join('')}
+              </div>
+              <small class="help-text">Set specific growth rate for each year. Positive for growth, negative for decline.</small>
+            </div>
+          `;
+        } else {
+          growthInputsContainer.innerHTML = `
+            <div class="form-group">
+              <label>Simple Non-Linear Growth (%)</label>
+              <div class="non-linear-inputs">
+                <div class="year-input-group">
+                  <label>Year 1</label>
+                  <input type="number" id="nonLinearGrowth_${itemId}_1" placeholder="%" step="0.1" value="0"/>
+                </div>
+                <div class="year-input-group">
+                  <label>Year 2</label>
+                  <input type="number" id="nonLinearGrowth_${itemId}_2" placeholder="%" step="0.1" value="0"/>
+                </div>
+                <div class="year-input-group">
+                  <label>Year 3</label>
+                  <input type="number" id="nonLinearGrowth_${itemId}_3" placeholder="%" step="0.1" value="0"/>
+                </div>
+              </div>
+              <small class="help-text">Set specific growth rate for each year. Configure project dates for more years.</small>
+            </div>
+          `;
+        }
+        break;
+    }
+    
+    console.log('Updated growth inputs for item', itemId, 'with type', growthType);
   }
 
   async getExcelContext() {

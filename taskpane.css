@@ -540,6 +540,94 @@ input[readonly] {
   font-style: italic;
 }
 
+/* Revenue Items Styling */
+.revenue-items-container {
+  margin-bottom: var(--spacing-lg);
+}
+
+.revenue-item {
+  background: var(--surface-secondary);
+  border: 1px solid var(--surface-tertiary);
+  border-radius: var(--radius-medium);
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+  position: relative;
+}
+
+.revenue-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-md);
+}
+
+.revenue-item-title {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 16px;
+}
+
+.remove-revenue-item {
+  background: var(--accent-red);
+  color: white;
+  border: none;
+  border-radius: var(--radius-small);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  font-size: 12px;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.remove-revenue-item:hover {
+  background: #E60000;
+  transform: scale(1.05);
+}
+
+.revenue-item-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+}
+
+.revenue-growth-config {
+  grid-column: 1 / -1;
+}
+
+.growth-inputs {
+  margin-top: var(--spacing-sm);
+}
+
+.non-linear-inputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-sm);
+}
+
+.revenue-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: var(--spacing-lg);
+}
+
+.year-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.year-input-group label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.year-input-group input {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  font-size: 14px;
+}
+
 /* Buttons */
 .button {
   display: inline-flex;
