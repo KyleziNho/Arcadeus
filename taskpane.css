@@ -514,6 +514,32 @@ input[readonly] {
   cursor: not-allowed;
 }
 
+/* Debt status styling */
+.debt-status {
+  padding: var(--spacing-md);
+  border-radius: var(--radius-medium);
+  border: 1px solid var(--surface-tertiary);
+  background: var(--surface-secondary);
+}
+
+.status-message {
+  font-size: 14px;
+  color: var(--text-tertiary);
+  font-style: italic;
+  text-align: center;
+}
+
+.status-message.enabled {
+  color: var(--accent-green);
+  font-weight: 500;
+  font-style: normal;
+}
+
+.status-message.disabled {
+  color: var(--text-tertiary);
+  font-style: italic;
+}
+
 /* Buttons */
 .button {
   display: inline-flex;

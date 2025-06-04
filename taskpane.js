@@ -862,10 +862,11 @@ class MAModelingAddin {
     console.log('Initializing debt model...');
     
     setTimeout(() => {
-      const useDebtYes = document.getElementById('useDebtYes');
-      const useDebtNo = document.getElementById('useDebtNo');
+      const debtStatus = document.getElementById('debtStatus');
+      const debtStatusMessage = document.getElementById('debtStatusMessage');
       const debtSettings = document.getElementById('debtSettings');
       const debtSchedule = document.getElementById('debtSchedule');
+      const dealLTV = document.getElementById('dealLTV');
       const rateTypeFixed = document.getElementById('rateTypeFixed');
       const rateTypeFloating = document.getElementById('rateTypeFloating');
       const fixedRateGroup = document.getElementById('fixedRateGroup');
@@ -874,26 +875,52 @@ class MAModelingAddin {
       const generateDebtScheduleBtn = document.getElementById('generateDebtSchedule');
       
       console.log('Debt model elements found:', {
-        useDebtYes: !!useDebtYes,
-        useDebtNo: !!useDebtNo,
+        debtStatus: !!debtStatus,
+        debtStatusMessage: !!debtStatusMessage,
         debtSettings: !!debtSettings,
-        debtSchedule: !!debtSchedule
+        debtSchedule: !!debtSchedule,
+        dealLTV: !!dealLTV
       });
       
-      // Use Debt Y/N toggle
-      if (useDebtYes && useDebtNo && debtSettings && debtSchedule) {
-        const toggleDebtSettings = () => {
-          const useDebt = document.querySelector('input[name="useDebt"]:checked').value === 'yes';
-          debtSettings.style.display = useDebt ? 'block' : 'none';
-          debtSchedule.style.display = useDebt ? 'block' : 'none';
-          
-          if (useDebt) {
-            this.updateDebtSchedule();
-          }
-        };
+      // Function to check LTV and enable/disable debt financing
+      const checkDebtEligibility = () => {
+        const ltvValue = parseFloat(dealLTV?.value) || 0;
+        const isDebtEnabled = ltvValue > 0;
         
-        useDebtYes.addEventListener('change', toggleDebtSettings);
-        useDebtNo.addEventListener('change', toggleDebtSettings);
+        if (isDebtEnabled) {
+          // Enable debt financing
+          if (debtStatusMessage) {
+            debtStatusMessage.textContent = `Debt financing available (${ltvValue}% LTV)`;
+            debtStatusMessage.className = 'status-message enabled';
+          }
+          if (debtSettings) debtSettings.style.display = 'block';
+          if (debtSchedule) debtSchedule.style.display = 'block';
+          
+          // Update debt schedule
+          this.updateDebtSchedule();
+        } else {
+          // Disable debt financing
+          if (debtStatusMessage) {
+            debtStatusMessage.textContent = 'Please input a higher LTV to access debt financing options';
+            debtStatusMessage.className = 'status-message disabled';
+          }
+          if (debtSettings) debtSettings.style.display = 'none';
+          if (debtSchedule) debtSchedule.style.display = 'none';
+        }
+        
+        console.log('Debt eligibility checked:', { ltvValue, isDebtEnabled });
+      };
+      
+      // Add event listener to Deal LTV field
+      if (dealLTV) {
+        dealLTV.addEventListener('input', checkDebtEligibility);
+      }
+      
+      // Store reference for external access
+      this.checkDebtEligibility = checkDebtEligibility;
+      
+      // Initial check
+      checkDebtEligibility();
         
         // Rate type toggle
         if (rateTypeFixed && rateTypeFloating && fixedRateGroup && baseRateGroup && marginGroup) {
@@ -935,8 +962,8 @@ class MAModelingAddin {
   }
 
   updateDebtSchedule() {
-    const useDebt = document.querySelector('input[name="useDebt"]:checked')?.value === 'yes';
-    if (!useDebt) return;
+    const ltvValue = parseFloat(document.getElementById('dealLTV')?.value) || 0;
+    if (ltvValue <= 0) return;
     
     const rateType = document.querySelector('input[name="rateType"]:checked')?.value;
     const holdingPeriod = parseInt(document.getElementById('holdingPeriod')?.value) || 60;
@@ -985,10 +1012,10 @@ class MAModelingAddin {
     console.log('Generating debt schedule in Excel...');
     
     try {
-      // Get debt parameters
-      const useDebt = document.querySelector('input[name="useDebt"]:checked')?.value === 'yes';
-      if (!useDebt) {
-        this.addChatMessage('assistant', '⚠️ Please enable debt financing first to generate a debt schedule.');
+      // Check if debt financing is available based on LTV
+      const ltvValue = parseFloat(document.getElementById('dealLTV')?.value) || 0;
+      if (ltvValue <= 0) {
+        this.addChatMessage('assistant', '⚠️ Please input a Deal LTV greater than 0% to generate a debt schedule.');
         return;
       }
       
@@ -1333,6 +1360,11 @@ class MAModelingAddin {
           debt: debtAmount,
           currency: selectedCurrency
         });
+        
+        // Trigger debt model check when LTV changes
+        if (window.maModelingAddin && window.maModelingAddin.checkDebtEligibility) {
+          window.maModelingAddin.checkDebtEligibility();
+        }
       };
       
       // Add event listeners for automatic calculation
@@ -1405,9 +1437,9 @@ console.log('Excel availability:', typeof Excel !== 'undefined');
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => {
     console.log('DOM loaded, creating MAModelingAddin');
-    new MAModelingAddin();
+    window.maModelingAddin = new MAModelingAddin();
   });
 } else {
   console.log('DOM already loaded, creating MAModelingAddin');
-  new MAModelingAddin();
+  window.maModelingAddin = new MAModelingAddin();
 }
