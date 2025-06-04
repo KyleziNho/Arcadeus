@@ -2426,7 +2426,7 @@ class MAModelingAddin {
           </div>
         `;
         
-        this.showMainUploadMessage('✅ Data successfully extracted and applied to all sections!', 'success');
+        this.showMainUploadMessage('✅ High-level parameters successfully extracted and applied!', 'success');
       } else {
         console.error('No extracted data in response:', data);
         progressDiv.innerHTML = `
@@ -2440,7 +2440,7 @@ class MAModelingAddin {
             <p style="font-size: 13px; color: var(--text-tertiary);">Please check your file format and content.</p>
           </div>
         `;
-        this.showMainUploadMessage('⚠️ AI processed the files but could not extract all data. Please check file content and try again.', 'error');
+        this.showMainUploadMessage('⚠️ AI could not extract high-level parameters. Please check file content and try again.', 'error');
       }
       
     } catch (error) {
@@ -2475,22 +2475,19 @@ class MAModelingAddin {
   }
 
   createExtractionSummary(data) {
-    let summary = '<strong>Extracted Data:</strong><br>';
+    let summary = '<strong>High-Level Parameters Extracted:</strong><br>';
     
-    if (data.dealAssumptions?.dealName) {
-      summary += `• Deal: ${data.dealAssumptions.dealName}<br>`;
-    }
-    if (data.dealAssumptions?.dealValue) {
-      summary += `• Value: ${this.formatCurrency(data.dealAssumptions.dealValue)}<br>`;
-    }
     if (data.highLevelParameters?.currency) {
       summary += `• Currency: ${data.highLevelParameters.currency}<br>`;
     }
-    if (data.revenueItems?.length > 0) {
-      summary += `• Revenue Items: ${data.revenueItems.length} found<br>`;
+    if (data.highLevelParameters?.projectStartDate) {
+      summary += `• Start Date: ${data.highLevelParameters.projectStartDate}<br>`;
     }
-    if (data.costItems?.length > 0) {
-      summary += `• Cost Items: ${data.costItems.length} found<br>`;
+    if (data.highLevelParameters?.projectEndDate) {
+      summary += `• End Date: ${data.highLevelParameters.projectEndDate}<br>`;
+    }
+    if (data.highLevelParameters?.modelPeriods) {
+      summary += `• Periods: ${data.highLevelParameters.modelPeriods}<br>`;
     }
     
     return summary;
@@ -2564,9 +2561,9 @@ ERROR: Could not read file content - ${error.message}`);
 
   createDataExtractionPrompt() {
     return `
-TASK: Extract financial data from uploaded M&A/PE documents to auto-fill a financial model.
+TASK: Extract HIGH-LEVEL PARAMETERS ONLY from uploaded financial documents.
 
-CRITICAL: You MUST carefully read ALL content in the uploaded files and extract specific financial data points. Look for numbers, percentages, dates, company names, and financial metrics.
+CRITICAL: You MUST carefully read ALL content in the uploaded files and extract ONLY the high-level parameters listed below.
 
 REQUIRED JSON STRUCTURE - Return EXACTLY this format:
 {
@@ -2576,109 +2573,88 @@ REQUIRED JSON STRUCTURE - Return EXACTLY this format:
       "projectStartDate": "2025-03-31",
       "projectEndDate": "2030-03-31",
       "modelPeriods": "monthly"
-    },
-    "dealAssumptions": {
-      "dealName": "Sample Company Ltd.",
-      "dealValue": 100000000,
-      "transactionFee": 1.5,
-      "dealLTV": 75
-    },
-    "revenueItems": [
-      {
-        "name": "Revenue Stream 1",
-        "initialValue": 10000000,
-        "growthType": "linear",
-        "growthRate": 5
-      }
-    ],
-    "costItems": [
-      {
-        "name": "Staff expenses",
-        "initialValue": 5000000,
-        "growthType": "linear",
-        "growthRate": 3
-      }
-    ],
-    "exitAssumptions": {
-      "disposalCost": 0.5,
-      "terminalCapRate": 8.5
-    },
-    "debtModel": {
-      "hasDebt": true,
-      "interestRate": 3.5,
-      "loanIssuanceFees": 1.0
     }
   }
 }
 
-DATA EXTRACTION RULES:
-1. Extract currency from symbols ($, €, £) or codes (USD, EUR, GBP)
-2. Convert percentages to numbers (e.g., "75%" → 75, "3.5%" → 3.5)
-3. For dates: use YYYY-MM-DD format
-4. For deal value: extract actual purchase price/enterprise value
-5. Extract ALL cost items and revenue streams found
-6. Use actual growth rates from the data
-7. If holding period is mentioned, calculate end date accordingly
+EXTRACTION RULES FOR HIGH-LEVEL PARAMETERS:
 
-IMPORTANT: Use the REAL data from the uploaded files. Do not use the example values above.`;
+1. CURRENCY: Look for currency symbols ($, €, £) or codes (USD, EUR, GBP, JPY, CAD, AUD, CHF, CNY, SEK, NOK)
+   - Check all monetary values in the document
+   - Return the 3-letter currency code (e.g., "USD", "EUR", "GBP")
+
+2. PROJECT START DATE: Look for acquisition date, deal close date, or current date
+   - Format: YYYY-MM-DD (e.g., "2025-03-31")
+   - If found: "Acquisition date,31/03/2025" → convert to "2025-03-31"
+   - If not found, use current year start: "2025-01-01"
+
+3. MODEL PERIODS: Determine the period frequency from the data structure
+   - If data appears to be monthly → "monthly"
+   - If data appears to be quarterly → "quarterly" 
+   - If data appears to be yearly → "yearly"
+   - Default to "monthly" if unclear
+
+4. PROJECT END DATE: Calculate from start date + holding period, or find exit date
+   - Look for "Holding Period (Months)" in the document
+   - If found: add that many months to start date
+   - Example: Start "2025-03-31" + 60 months = "2030-03-31"
+   - If no holding period found, use start date + 5 years
+
+IMPORTANT: 
+- Extract REAL data from the uploaded files
+- Only return the highLevelParameters object
+- Use actual dates and currency from the document
+- Calculate end date based on actual holding period if provided`;
   }
 
   async applyExtractedData(extractedData) {
-    console.log('Applying extracted data:', extractedData);
+    console.log('Applying extracted data (HIGH-LEVEL PARAMETERS ONLY):', extractedData);
 
     try {
-      // Apply High-Level Parameters
+      // Apply High-Level Parameters ONLY
       if (extractedData.highLevelParameters) {
         const hlp = extractedData.highLevelParameters;
-        this.setInputValue('currency', hlp.currency);
-        this.setInputValue('projectStartDate', hlp.projectStartDate);
-        this.setInputValue('projectEndDate', hlp.projectEndDate);
-        this.setInputValue('modelPeriods', hlp.modelPeriods);
-      }
-
-      // Apply Deal Assumptions
-      if (extractedData.dealAssumptions) {
-        const da = extractedData.dealAssumptions;
-        this.setInputValue('dealName', da.dealName);
-        this.setInputValue('dealValue', da.dealValue);
-        this.setInputValue('transactionFee', da.transactionFee);
-        this.setInputValue('dealLTV', da.dealLTV);
-      }
-
-      // Apply Exit Assumptions
-      if (extractedData.exitAssumptions) {
-        const ea = extractedData.exitAssumptions;
-        this.setInputValue('disposalCost', ea.disposalCost);
-        this.setInputValue('terminalCapRate', ea.terminalCapRate);
-      }
-
-      // Apply Debt Model parameters
-      if (extractedData.debtModel) {
-        const dm = extractedData.debtModel;
-        if (dm.interestRate) {
-          this.setInputValue('fixedRate', dm.interestRate);
+        
+        console.log('Applying high-level parameters:', hlp);
+        
+        // Set currency
+        if (hlp.currency) {
+          console.log('Setting currency to:', hlp.currency);
+          this.setInputValue('currency', hlp.currency);
         }
-        if (dm.loanIssuanceFees) {
-          this.setInputValue('loanIssuanceFees', dm.loanIssuanceFees);
+        
+        // Set project start date
+        if (hlp.projectStartDate) {
+          console.log('Setting project start date to:', hlp.projectStartDate);
+          this.setInputValue('projectStartDate', hlp.projectStartDate);
         }
-      }
-
-      // Apply Revenue Items
-      if (extractedData.revenueItems && Array.isArray(extractedData.revenueItems)) {
-        await this.applyRevenueItems(extractedData.revenueItems);
-      }
-
-      // Apply Cost Items
-      if (extractedData.costItems && Array.isArray(extractedData.costItems)) {
-        await this.applyCostItems(extractedData.costItems);
+        
+        // Set project end date
+        if (hlp.projectEndDate) {
+          console.log('Setting project end date to:', hlp.projectEndDate);
+          this.setInputValue('projectEndDate', hlp.projectEndDate);
+        }
+        
+        // Set model periods
+        if (hlp.modelPeriods) {
+          console.log('Setting model periods to:', hlp.modelPeriods);
+          this.setInputValue('modelPeriods', hlp.modelPeriods);
+        }
+        
+        // Trigger calculation of holding periods
+        this.calculateHoldingPeriods();
+        
+        console.log('✅ High-level parameters applied successfully');
+      } else {
+        console.warn('❌ No highLevelParameters found in extracted data');
       }
 
       // Trigger calculations for interdependent fields
       this.triggerCalculations();
 
-      console.log('✅ Successfully applied extracted data to all sections');
+      console.log('✅ Successfully applied high-level parameters');
     } catch (error) {
-      console.error('Error applying extracted data:', error);
+      console.error('Error applying high-level parameters:', error);
       throw error;
     }
   }
