@@ -107,6 +107,9 @@ class MAModelingAddin {
     // Revenue Items functionality
     this.initializeRevenueItems();
 
+    // Cost Items functionality
+    this.initializeCostItems();
+
     this.isInitialized = true;
     console.log('MAModelingAddin initialized successfully');
     
@@ -749,6 +752,10 @@ class MAModelingAddin {
       const minimizeRevenueBtn = document.getElementById('minimizeRevenue');
       const revenueItemsSection = document.getElementById('revenueItemsSection');
       
+      // Cost Items section collapse/expand functionality
+      const minimizeCostBtn = document.getElementById('minimizeCost');
+      const costItemsSection = document.getElementById('costItemsSection');
+      
       // Debt Model section collapse/expand functionality
       const minimizeDebtBtn = document.getElementById('minimizeDebtModel');
       const debtModelSection = document.getElementById('debtModelSection');
@@ -859,6 +866,37 @@ class MAModelingAddin {
         console.error('❌ Could not find Revenue Items collapsible section elements');
       }
       
+      // Cost Items section event handler
+      if (minimizeCostBtn && costItemsSection) {
+        minimizeCostBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          console.log('Cost Items minimize button clicked');
+          
+          // Toggle collapsed class
+          costItemsSection.classList.toggle('collapsed');
+          
+          // Update icon and aria-label for accessibility
+          const isCollapsed = costItemsSection.classList.contains('collapsed');
+          const iconSpan = minimizeCostBtn.querySelector('.minimize-icon');
+          
+          if (iconSpan) {
+            iconSpan.textContent = isCollapsed ? '+' : '−';
+          }
+          
+          minimizeCostBtn.setAttribute('aria-label', 
+            isCollapsed ? 'Expand Cost Items' : 'Minimize Cost Items');
+          
+          console.log('Cost Items section', isCollapsed ? 'collapsed' : 'expanded');
+        });
+        
+        console.log('✅ Cost Items collapsible section initialized successfully');
+        
+        // Add click-to-expand functionality for collapsed section
+        this.addClickToExpandListener(costItemsSection, minimizeCostBtn);
+      } else {
+        console.error('❌ Could not find Cost Items collapsible section elements');
+      }
+      
       // Debt Model section event handler
       if (minimizeDebtBtn && debtModelSection) {
         minimizeDebtBtn.addEventListener('click', (e) => {
@@ -919,6 +957,7 @@ class MAModelingAddin {
           if (section.id.includes('highLevel')) sectionName = 'High-Level Parameters';
           else if (section.id.includes('dealAssumptions')) sectionName = 'Deal Assumptions';
           else if (section.id.includes('revenue')) sectionName = 'Revenue Items';
+          else if (section.id.includes('cost')) sectionName = 'Cost Items';
           else if (section.id.includes('debt')) sectionName = 'Debt Model';
           
           minimizeBtn.setAttribute('aria-label', `Minimize ${sectionName}`);
@@ -1772,6 +1811,317 @@ class MAModelingAddin {
     }
     
     console.log('Added period group', groupNumber, 'for item', itemId);
+  }
+
+  initializeCostItems() {
+    console.log('Initializing cost items...');
+    
+    setTimeout(() => {
+      const costItemsContainer = document.getElementById('costItemsContainer');
+      const addCostItemBtn = document.getElementById('addCostItem');
+      
+      console.log('Cost items elements found:', {
+        costItemsContainer: !!costItemsContainer,
+        addCostItemBtn: !!addCostItemBtn
+      });
+      
+      this.costItemCounter = 0;
+      
+      // Function to create a new cost item
+      const createCostItem = (isRequired = false) => {
+        this.costItemCounter++;
+        const itemId = this.costItemCounter;
+        
+        const costItem = document.createElement('div');
+        costItem.className = 'cost-item';
+        costItem.setAttribute('data-cost-id', itemId);
+        
+        costItem.innerHTML = `
+          <div class="cost-item-header">
+            <div class="cost-item-title">Cost Item ${itemId}${isRequired ? ' (Required)' : ''}</div>
+            ${!isRequired ? `<button class="remove-cost-item" data-cost-id="${itemId}">Remove</button>` : ''}
+          </div>
+          
+          <div class="cost-item-fields">
+            <div class="form-group">
+              <label>Cost Item Name</label>
+              <input type="text" id="costName_${itemId}" placeholder="e.g., Staff Expenses, Marketing Costs"/>
+              <small class="help-text">Name or description of this cost category</small>
+            </div>
+            
+            <div class="form-group">
+              <label>Initial Value</label>
+              <input type="number" id="costValue_${itemId}" placeholder="e.g., 5000000" step="100000"/>
+              <small class="help-text">Starting cost amount in selected currency</small>
+            </div>
+          </div>
+          
+          <div class="cost-growth-config">
+            <div class="form-group">
+              <label>Growth Type</label>
+              <select id="costGrowthType_${itemId}">
+                <option value="none">No Growth</option>
+                <option value="linear" selected>Linear Growth</option>
+                <option value="nonlinear">Non-Linear Growth</option>
+              </select>
+              <small class="help-text">Select how this cost category grows over time</small>
+            </div>
+            
+            <div class="growth-inputs" id="costGrowthInputs_${itemId}">
+              <!-- Growth-specific inputs will be inserted here -->
+            </div>
+          </div>
+        `;
+        
+        if (costItemsContainer) {
+          costItemsContainer.appendChild(costItem);
+        }
+        
+        // Set up event listeners for this item
+        this.setupCostItemListeners(itemId);
+        
+        // Initialize with linear growth by default
+        this.updateCostGrowthInputs(itemId, 'linear');
+        
+        console.log('Created cost item:', itemId);
+        return itemId;
+      };
+      
+      // Function to remove a cost item
+      const removeCostItem = (itemId) => {
+        const costItem = document.querySelector(`[data-cost-id="${itemId}"]`);
+        if (costItem) {
+          costItem.remove();
+          console.log('Removed cost item:', itemId);
+        }
+      };
+      
+      // Add cost item button event listener
+      if (addCostItemBtn) {
+        addCostItemBtn.addEventListener('click', () => {
+          createCostItem(false);
+        });
+      }
+      
+      // Set up event delegation for remove buttons
+      if (costItemsContainer) {
+        costItemsContainer.addEventListener('click', (e) => {
+          if (e.target.classList.contains('remove-cost-item')) {
+            const itemId = e.target.getAttribute('data-cost-id');
+            removeCostItem(itemId);
+          }
+        });
+      }
+      
+      // Create the first required cost item
+      createCostItem(true);
+      
+      console.log('✅ Cost items initialized successfully');
+    }, 500);
+  }
+
+  setupCostItemListeners(itemId) {
+    const costGrowthTypeSelect = document.getElementById(`costGrowthType_${itemId}`);
+    
+    if (costGrowthTypeSelect) {
+      costGrowthTypeSelect.addEventListener('change', (e) => {
+        this.updateCostGrowthInputs(itemId, e.target.value);
+      });
+    }
+  }
+
+  updateCostGrowthInputs(itemId, growthType) {
+    const growthInputsContainer = document.getElementById(`costGrowthInputs_${itemId}`);
+    if (!growthInputsContainer) return;
+    
+    growthInputsContainer.innerHTML = '';
+    
+    switch (growthType) {
+      case 'none':
+        growthInputsContainer.innerHTML = `
+          <div class="form-group">
+            <small class="help-text">This cost category will remain constant over time</small>
+          </div>
+        `;
+        break;
+        
+      case 'linear':
+        growthInputsContainer.innerHTML = `
+          <div class="form-group">
+            <label>Annual Growth Rate (%)</label>
+            <input type="number" id="costLinearGrowth_${itemId}" placeholder="e.g., 3" step="0.1" value="0"/>
+            <small class="help-text">Positive for cost increase, negative for cost reduction (e.g., 3% or -2%)</small>
+          </div>
+        `;
+        break;
+        
+      case 'nonlinear':
+        const projectStartDate = document.getElementById('projectStartDate')?.value;
+        const projectEndDate = document.getElementById('projectEndDate')?.value;
+        const modelPeriods = document.getElementById('modelPeriods')?.value;
+        const holdingPeriodsCalculated = document.getElementById('holdingPeriodsCalculated')?.value;
+        
+        // Extract number of periods from calculated holding periods
+        let totalPeriods = 12; // default fallback
+        if (holdingPeriodsCalculated) {
+          const periodsMatch = holdingPeriodsCalculated.match(/(\\d+)/);
+          if (periodsMatch) {
+            totalPeriods = parseInt(periodsMatch[1]);
+          }
+        }
+        
+        console.log('Cost non-linear setup:', { modelPeriods, totalPeriods, holdingPeriodsCalculated });
+        
+        if (totalPeriods <= 12) {
+          // Simple period-by-period input for ≤12 periods
+          const periodInputs = [];
+          const periodLabel = this.getPeriodLabel(modelPeriods);
+          
+          for (let i = 1; i <= totalPeriods; i++) {
+            periodInputs.push(`
+              <div class="year-input-group">
+                <label>${periodLabel} ${i}</label>
+                <input type="number" id="costNonLinearGrowth_${itemId}_${i}" placeholder="%" step="0.1" value="0"/>
+              </div>
+            `);
+          }
+          
+          growthInputsContainer.innerHTML = `
+            <div class="form-group">
+              <label>Period-by-Period Growth Rates (%)</label>
+              <div class="non-linear-inputs">
+                ${periodInputs.join('')}
+              </div>
+              <small class="help-text">Set specific growth rate for each ${periodLabel.toLowerCase()}. Positive for cost increase, negative for cost reduction.</small>
+            </div>
+          `;
+        } else {
+          // Grouped input for >12 periods
+          growthInputsContainer.innerHTML = `
+            <div class="form-group">
+              <label>Grouped Growth Periods</label>
+              <div class="period-groups" id="costPeriodGroups_${itemId}">
+                <div class="period-group">
+                  <div class="period-group-header">
+                    <label>Group 1</label>
+                    <button type="button" class="add-period-group" data-cost-item-id="${itemId}">+ Add Group</button>
+                  </div>
+                  <div class="period-group-inputs">
+                    <div class="form-group">
+                      <label>From ${this.getPeriodLabel(modelPeriods)}</label>
+                      <input type="number" id="costPeriodStart_${itemId}_1" placeholder="1" min="1" max="${totalPeriods}" value="1"/>
+                    </div>
+                    <div class="form-group">
+                      <label>To ${this.getPeriodLabel(modelPeriods)}</label>
+                      <input type="number" id="costPeriodEnd_${itemId}_1" placeholder="12" min="1" max="${totalPeriods}" value="12"/>
+                    </div>
+                    <div class="form-group">
+                      <label>Growth Rate (%)</label>
+                      <input type="number" id="costPeriodGrowth_${itemId}_1" placeholder="0" step="0.1" value="0"/>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <small class="help-text">Define growth rates for period ranges. Example: ${this.getPeriodLabel(modelPeriods)}s 1-12 at 3%, then ${this.getPeriodLabel(modelPeriods)}s 13-${totalPeriods} at 2%</small>
+            </div>
+          `;
+          
+          // Add event listener for adding more period groups
+          setTimeout(() => {
+            const addGroupBtn = document.querySelector(`[data-cost-item-id="${itemId}"]`);
+            if (addGroupBtn) {
+              addGroupBtn.addEventListener('click', () => this.addCostPeriodGroup(itemId, totalPeriods, modelPeriods));
+            }
+          }, 100);
+        }
+        break;
+    }
+    
+    console.log('Updated cost growth inputs for item', itemId, 'with type', growthType);
+  }
+
+  addCostPeriodGroup(itemId, totalPeriods, modelPeriods) {
+    const periodGroupsContainer = document.getElementById(`costPeriodGroups_${itemId}`);
+    if (!periodGroupsContainer) return;
+    
+    const existingGroups = periodGroupsContainer.querySelectorAll('.period-group');
+    const groupNumber = existingGroups.length + 1;
+    
+    // Calculate suggested start period (end of last group + 1)
+    const lastGroup = existingGroups[existingGroups.length - 1];
+    const lastEndInput = lastGroup.querySelector('[id*="costPeriodEnd_"]');
+    const suggestedStart = lastEndInput ? parseInt(lastEndInput.value) + 1 : 1;
+    const suggestedEnd = Math.min(suggestedStart + 11, totalPeriods);
+    
+    const periodLabel = this.getPeriodLabel(modelPeriods);
+    
+    const newGroup = document.createElement('div');
+    newGroup.className = 'period-group';
+    newGroup.innerHTML = `
+      <div class="period-group-header">
+        <label>Group ${groupNumber}</label>
+        <button type="button" class="remove-period-group">× Remove</button>
+      </div>
+      <div class="period-group-inputs">
+        <div class="form-group">
+          <label>From ${periodLabel}</label>
+          <input type="number" id="costPeriodStart_${itemId}_${groupNumber}" placeholder="${suggestedStart}" min="1" max="${totalPeriods}" value="${suggestedStart}"/>
+        </div>
+        <div class="form-group">
+          <label>To ${periodLabel}</label>
+          <input type="number" id="costPeriodEnd_${itemId}_${groupNumber}" placeholder="${suggestedEnd}" min="1" max="${totalPeriods}" value="${suggestedEnd}"/>
+        </div>
+        <div class="form-group">
+          <label>Growth Rate (%)</label>
+          <input type="number" id="costPeriodGrowth_${itemId}_${groupNumber}" placeholder="0" step="0.1" value="0"/>
+        </div>
+      </div>
+    `;
+    
+    // Remove the add button from previous groups
+    periodGroupsContainer.querySelectorAll('.add-period-group').forEach(btn => btn.remove());
+    
+    // Add the new group
+    periodGroupsContainer.appendChild(newGroup);
+    
+    // Add the "Add Group" button to the new group if not at total periods
+    if (suggestedEnd < totalPeriods) {
+      const addButton = document.createElement('button');
+      addButton.type = 'button';
+      addButton.className = 'add-period-group';
+      addButton.setAttribute('data-cost-item-id', itemId);
+      addButton.textContent = '+ Add Group';
+      newGroup.querySelector('.period-group-header').appendChild(addButton);
+      
+      addButton.addEventListener('click', () => this.addCostPeriodGroup(itemId, totalPeriods, modelPeriods));
+    }
+    
+    // Add remove functionality
+    const removeBtn = newGroup.querySelector('.remove-period-group');
+    if (removeBtn) {
+      removeBtn.addEventListener('click', () => {
+        newGroup.remove();
+        // Re-add the add button to the last group if needed
+        const remainingGroups = periodGroupsContainer.querySelectorAll('.period-group');
+        const lastRemainingGroup = remainingGroups[remainingGroups.length - 1];
+        if (lastRemainingGroup && !lastRemainingGroup.querySelector('.add-period-group')) {
+          const lastEndInput = lastRemainingGroup.querySelector('[id*="costPeriodEnd_"]');
+          const lastEnd = lastEndInput ? parseInt(lastEndInput.value) : 0;
+          if (lastEnd < totalPeriods) {
+            const addButton = document.createElement('button');
+            addButton.type = 'button';
+            addButton.className = 'add-period-group';
+            addButton.setAttribute('data-cost-item-id', itemId);
+            addButton.textContent = '+ Add Group';
+            lastRemainingGroup.querySelector('.period-group-header').appendChild(addButton);
+            
+            addButton.addEventListener('click', () => this.addCostPeriodGroup(itemId, totalPeriods, modelPeriods));
+          }
+        }
+      });
+    }
+    
+    console.log('Added cost period group', groupNumber, 'for item', itemId);
   }
 
   async getExcelContext() {

@@ -620,6 +620,66 @@ input[readonly] {
   margin-top: var(--spacing-lg);
 }
 
+/* Cost Items Styling (reuses revenue item styles) */
+.cost-items-container {
+  margin-bottom: var(--spacing-lg);
+}
+
+.cost-item {
+  background: var(--surface-secondary);
+  border: 1px solid var(--surface-tertiary);
+  border-radius: var(--radius-medium);
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+  position: relative;
+}
+
+.cost-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-md);
+}
+
+.cost-item-title {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 16px;
+}
+
+.remove-cost-item {
+  background: var(--accent-red);
+  color: white;
+  border: none;
+  border-radius: var(--radius-small);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  font-size: 12px;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.remove-cost-item:hover {
+  background: #E60000;
+  transform: scale(1.05);
+}
+
+.cost-item-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+}
+
+.cost-growth-config {
+  grid-column: 1 / -1;
+}
+
+.cost-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: var(--spacing-lg);
+}
+
 .year-input-group {
   display: flex;
   flex-direction: column;
