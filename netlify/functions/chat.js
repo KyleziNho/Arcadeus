@@ -43,15 +43,114 @@ exports.handler = async (event, context) => {
       throw new Error('Message is required and must be a string');
     }
 
-    // Check if OpenAI API key is configured
-    const hasOpenAIKey = process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY.length > 10;
+    // Get OpenAI API key from Netlify environment variables
+    const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+    const hasOpenAIKey = OPENAI_API_KEY && OPENAI_API_KEY.length > 10;
+    
+    console.log('API Key check:', {
+      hasKey: !!OPENAI_API_KEY,
+      keyLength: OPENAI_API_KEY ? OPENAI_API_KEY.length : 0,
+      hasOpenAIKey: hasOpenAIKey
+    });
     
     let documentContext = '';
     if (fileContents && Array.isArray(fileContents) && fileContents.length > 0) {
       documentContext = `\n\nUploaded Documents:\n${fileContents.join('\n\n')}`;
     }
 
-    // If no OpenAI API key, use fallback logic
+    // If we have OpenAI API key, use it for intelligent processing
+    if (hasOpenAIKey) {
+      console.log('Using OpenAI API for processing');
+      
+      const systemPrompt = `You are an AI assistant specialized in M&A and PE deal modeling in Excel. You can execute Excel commands to help users build financial models.
+
+Available commands:
+- generateAssumptionsTemplate: Creates a professional assumptions template
+- fillAssumptionsData: Fills template with data (provide data object)
+- setValue: Set value in specific cell (provide cell, value)
+- setFormula: Set formula in specific cell (provide cell, formula)
+- formatCell: Format a cell (provide cell, format object)
+
+When users ask to:
+1. "create template" or "blank template" → use generateAssumptionsTemplate
+2. "fill data" or "use CSV data" → use fillAssumptionsData with parsed data
+3. Specific Excel tasks → use appropriate commands
+
+Always respond conversationally and execute relevant commands.
+Always return valid JSON with "response" and "commands" fields.
+
+Excel Context: ${excelContext || 'Not available'}
+${documentContext}`;
+
+      try {
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${OPENAI_API_KEY}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            model: 'gpt-4-turbo-preview',
+            messages: [
+              { role: 'system', content: systemPrompt },
+              { role: 'user', content: message }
+            ],
+            response_format: { type: "json_object" },
+            temperature: 0.7,
+            max_tokens: 1500
+          })
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('OpenAI API error:', response.status, errorText);
+          throw new Error(`OpenAI API error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        const aiResponse = data.choices[0].message.content;
+        
+        let parsedResponse;
+        try {
+          parsedResponse = JSON.parse(aiResponse);
+        } catch (e) {
+          console.error('Failed to parse AI response as JSON:', aiResponse);
+          // Fallback: treat as text response
+          return {
+            statusCode: 200,
+            headers: {
+              'Access-Control-Allow-Origin': '*',
+              'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+              'Access-Control-Allow-Methods': 'POST, OPTIONS'
+            },
+            body: JSON.stringify({
+              response: aiResponse,
+              commands: []
+            })
+          };
+        }
+
+        return {
+          statusCode: 200,
+          headers: {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+            'Access-Control-Allow-Methods': 'POST, OPTIONS'
+          },
+          body: JSON.stringify({
+            response: parsedResponse.response || "I've processed your request.",
+            commands: parsedResponse.commands || []
+          })
+        };
+        
+      } catch (apiError) {
+        console.error('OpenAI API call failed:', apiError);
+        // Fall through to fallback logic below
+      }
+    }
+    
+    // Fallback logic when no API key or API call fails
+    console.log('Using fallback logic (no API key or API failed)');
     if (!hasOpenAIKey) {
       console.log('No OpenAI API key, using fallback logic');
       
@@ -117,8 +216,7 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // If we have OpenAI API key, use it (this part would be for when API key is available)
-    // For now, just return a message indicating API is needed
+    // Default fallback if no conditions match
     return {
       statusCode: 200,
       headers: {
@@ -127,7 +225,7 @@ exports.handler = async (event, context) => {
         'Access-Control-Allow-Methods': 'POST, OPTIONS'
       },
       body: JSON.stringify({
-        response: "AI processing requires OpenAI API key configuration.",
+        response: "I'm processing your request. Please try again.",
         commands: []
       })
     };
