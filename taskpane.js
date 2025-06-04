@@ -2641,16 +2641,10 @@ IMPORTANT:
           this.setInputValue('modelPeriods', hlp.modelPeriods);
         }
         
-        // Trigger calculation of holding periods
-        this.calculateHoldingPeriods();
-        
         console.log('✅ High-level parameters applied successfully');
       } else {
         console.warn('❌ No highLevelParameters found in extracted data');
       }
-
-      // Trigger calculations for interdependent fields
-      this.triggerCalculations();
 
       console.log('✅ Successfully applied high-level parameters');
     } catch (error) {
