@@ -730,35 +730,51 @@ class MAModelingAddin {
   initializeCollapsibleSections() {
     console.log('Initializing collapsible sections...');
     
-    // Deal Assumptions section collapse/expand functionality
-    const minimizeBtn = document.getElementById('minimizeAssumptions');
-    const dealAssumptionsSection = document.getElementById('dealAssumptionsSection');
-    
-    console.log('Collapsible elements found:', {
-      minimizeBtn: !!minimizeBtn,
-      dealAssumptionsSection: !!dealAssumptionsSection
-    });
-    
-    if (minimizeBtn && dealAssumptionsSection) {
-      minimizeBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        console.log('Minimize button clicked');
-        
-        // Toggle collapsed class
-        dealAssumptionsSection.classList.toggle('collapsed');
-        
-        // Update aria-label for accessibility
-        const isCollapsed = dealAssumptionsSection.classList.contains('collapsed');
-        minimizeBtn.setAttribute('aria-label', 
-          isCollapsed ? 'Expand Deal Assumptions' : 'Minimize Deal Assumptions');
-        
-        console.log('Deal Assumptions section', isCollapsed ? 'collapsed' : 'expanded');
+    // Add delay to ensure DOM is fully loaded
+    setTimeout(() => {
+      // Deal Assumptions section collapse/expand functionality
+      const minimizeBtn = document.getElementById('minimizeAssumptions');
+      const dealAssumptionsSection = document.getElementById('dealAssumptionsSection');
+      
+      console.log('DOM ready state:', document.readyState);
+      console.log('Looking for elements:', {
+        minimizeBtnExists: !!minimizeBtn,
+        dealAssumptionsSectionExists: !!dealAssumptionsSection,
+        minimizeBtnId: minimizeBtn ? minimizeBtn.id : 'not found',
+        sectionId: dealAssumptionsSection ? dealAssumptionsSection.id : 'not found'
       });
       
-      console.log('Collapsible sections initialized successfully');
-    } else {
-      console.error('Could not find collapsible section elements');
-    }
+      // Debug: List all elements with these IDs
+      console.log('All elements with minimizeAssumptions ID:', document.querySelectorAll('#minimizeAssumptions'));
+      console.log('All elements with dealAssumptionsSection ID:', document.querySelectorAll('#dealAssumptionsSection'));
+      
+      if (minimizeBtn && dealAssumptionsSection) {
+        minimizeBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          console.log('Minimize button clicked');
+          
+          // Toggle collapsed class
+          dealAssumptionsSection.classList.toggle('collapsed');
+          
+          // Update aria-label for accessibility
+          const isCollapsed = dealAssumptionsSection.classList.contains('collapsed');
+          minimizeBtn.setAttribute('aria-label', 
+            isCollapsed ? 'Expand Deal Assumptions' : 'Minimize Deal Assumptions');
+          
+          console.log('Deal Assumptions section', isCollapsed ? 'collapsed' : 'expanded');
+        });
+        
+        console.log('✅ Collapsible sections initialized successfully');
+      } else {
+        console.error('❌ Could not find collapsible section elements');
+        console.log('Available elements in DOM:', {
+          totalElements: document.querySelectorAll('*').length,
+          sections: document.querySelectorAll('.section').length,
+          buttons: document.querySelectorAll('button').length,
+          bodyHTML: document.body ? document.body.innerHTML.substring(0, 500) + '...' : 'No body'
+        });
+      }
+    }, 500); // 500ms delay to ensure DOM is ready
   }
 
   async getExcelContext() {

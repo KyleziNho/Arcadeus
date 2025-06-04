@@ -16,8 +16,16 @@
             <p>Professional deal modeling with AI assistance</p>
         </div>
 
-        <div class="section">
-            <h3 data-emoji="📊">Deal Assumptions</h3>
+        <div class="section collapsible-section" id="dealAssumptionsSection">
+            <div class="section-header">
+                <h3 data-emoji="📊">Deal Assumptions</h3>
+                <button class="minimize-btn" id="minimizeAssumptions" aria-label="Minimize Deal Assumptions">
+                    <svg class="minimize-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="6,9 12,15 18,9"></polyline>
+                    </svg>
+                </button>
+            </div>
+            <div class="section-content" id="assumptionsContent">
             <div class="form-group">
                 <label>Deal Name</label>
                 <input type="text" id="dealName" placeholder="e.g., TechCo Acquisition"/>
@@ -51,6 +59,7 @@
                 Select Range for Assumptions
             </button>
             <div class="status" id="rangeStatus">Click to select Excel range with your assumptions</div>
+            </div>
         </div>
 
         <div class="section">
