@@ -1024,8 +1024,13 @@ class MAModelingAddin {
             await context.sync();
             console.log('Data sync completed');
             
-            // Step 2: Apply basic formatting
+            // Step 2: Apply professional formatting with Times New Roman
             try {
+              // Apply Times New Roman 12pt to entire debt schedule area
+              const entireRange = debtScheduleWorksheet.getRange('A1:J5');
+              entireRange.format.font.name = 'Times New Roman';
+              entireRange.format.font.size = 12;
+              
               // Format header
               const headerRange = debtScheduleWorksheet.getRange('A1:J1');
               headerRange.format.font.bold = true;
@@ -1041,8 +1046,17 @@ class MAModelingAddin {
               const labelRange = debtScheduleWorksheet.getRange('A1:A5');
               labelRange.format.font.bold = true;
               
+              // Add borders for professional appearance
+              const tableRange = debtScheduleWorksheet.getRange('A1:J5');
+              tableRange.format.borders.getItem('InsideHorizontal').style = 'Continuous';
+              tableRange.format.borders.getItem('InsideVertical').style = 'Continuous';
+              tableRange.format.borders.getItem('EdgeBottom').style = 'Continuous';
+              tableRange.format.borders.getItem('EdgeLeft').style = 'Continuous';
+              tableRange.format.borders.getItem('EdgeRight').style = 'Continuous';
+              tableRange.format.borders.getItem('EdgeTop').style = 'Continuous';
+              
               await context.sync();
-              console.log('Basic formatting applied');
+              console.log('Professional formatting applied with Times New Roman 12pt');
             } catch (formatError) {
               console.log('Formatting failed but data was inserted:', formatError);
             }
