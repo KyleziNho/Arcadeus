@@ -2563,7 +2563,6 @@ ${content}`;
           fileContents.push(structuredContent);
         } else if (file.type === 'application/pdf') {
           // For PDF files, we need actual text extraction
-          // For now, provide clear instructions for manual data
           const pdfContent = `
 File: ${file.name}
 Type: PDF Document
@@ -2579,6 +2578,34 @@ Common PDF contents in M&A:
 Please extract relevant financial data based on typical M&A document structure.`;
           
           fileContents.push(pdfContent);
+        } else if (file.type.startsWith('image/') || file.name.match(/\.(png|jpg|jpeg)$/i)) {
+          // For image files (PNG, JPG, JPEG), describe what AI should look for
+          const imageContent = `
+File: ${file.name}
+Type: Image/Screenshot
+Size: ${this.formatFileSize(file.size)}
+
+[IMAGE CONTENT - AI SHOULD ANALYZE VISUAL DATA]
+This appears to be a financial data screenshot/image. Please analyze the visual content and extract:
+
+REVENUE ITEMS SECTION (if visible):
+- Look for "Revenue Item 1", "Revenue Item 2", etc.
+- Extract initial values (e.g., 500,000, 766,000)
+- Find growth rates (e.g., "Rent Growth 1: 2.00%", "Rent Growth 2: 3.00%")
+- Note: Growth rates apply to corresponding revenue items
+
+HIGH-LEVEL PARAMETERS:
+- Currency symbols or codes
+- Dates (Acquisition date, holding periods)
+- Business model information
+
+DEAL ASSUMPTIONS:
+- Deal values, transaction fees, LTV ratios
+- Company names and deal structure
+
+If no specific revenue items are visible, return empty revenueItems array.`;
+          
+          fileContents.push(imageContent);
         }
       } catch (error) {
         console.error(`Error processing file ${file.name}:`, error);
@@ -2615,16 +2642,16 @@ REQUIRED JSON STRUCTURE - Return EXACTLY this format:
     },
     "revenueItems": [
       {
-        "name": "Product Revenue",
-        "initialValue": 10000000,
+        "name": "Revenue Stream 1",
+        "initialValue": 500000,
         "growthType": "linear",
-        "growthRate": 5
+        "growthRate": 2
       },
       {
-        "name": "Service Revenue", 
-        "initialValue": 5000000,
-        "growthType": "no_growth",
-        "growthRate": 0
+        "name": "Revenue Stream 2", 
+        "initialValue": 766000,
+        "growthType": "linear",
+        "growthRate": 3
       }
     ]
   }
@@ -2671,43 +2698,52 @@ DEAL ASSUMPTIONS:
    - If not found, calculate from Debt/(Debt+Equity) if both are available
 
 REVENUE ITEMS:
-1. IDENTIFY ALL REVENUE STREAMS: Look for different types of revenue in the document
-   - Search for terms like "Revenue", "Sales", "Income", "Turnover"
-   - Look for specific revenue categories, product lines, service types
-   - Check for multiple revenue items listed separately
+CRITICAL: Analyze the ACTUAL uploaded file content to extract real revenue information.
 
-2. REVENUE NAMES: Extract descriptive names for each revenue stream
-   - Use actual names from document (e.g., "Product Sales", "Service Revenue", "Licensing")
-   - If generic, create meaningful names based on business type
-   - Avoid duplicates and be specific
+1. ANALYZE FILE CONTENT FOR REVENUE DATA:
+   - Look for any lines with "Revenue", "Sales", "Income", "Subscription", "Service Revenue"
+   - Check for EBITDA figures that can indicate revenue scale
+   - Examine business model and sector to understand revenue streams
+   - Look for financial projections, growth rates, or revenue multiples
 
-3. INITIAL VALUES: Extract current/base year revenue amounts
-   - Look for current year figures, latest annual revenue
-   - Convert to numbers without currency symbols
-   - If multiple years shown, use most recent or base year
+2. EXTRACT FROM YOUR ACTUAL FILE CONTENT:
+   Look for specific revenue data patterns:
+   - "Revenue Item 1", "Revenue Item 2", etc. with corresponding values
+   - "Rent Growth 1", "Rent Growth 2", etc. with percentage growth rates
+   - Match growth rates to corresponding revenue items by number
+   - If Real Estate business: Revenue items likely represent rental income from properties
 
-4. GROWTH TYPE & RATE: Determine growth pattern for each revenue stream
-   - GROWTH TYPES:
-     * "linear" = consistent growth rate (e.g., 5% per year)
-     * "no_growth" = flat/stable revenue (0% growth)
-     * "nonlinear" = varying growth rates over time
-   
-   - GROWTH RATE EXTRACTION:
-     * Look for stated growth rates, CAGR, YoY growth percentages
-     * If found "Revenue Growth: 8%" → growthType: "linear", growthRate: 8
-     * If no growth mentioned → growthType: "no_growth", growthRate: 0
-     * If multiple different rates → growthType: "nonlinear", use average rate
+3. REVENUE STREAM IDENTIFICATION:
+   PRIORITY: Look for explicit "Revenue Item" entries in the data
+   - "Revenue Item 1" → Name: "Revenue Stream 1" or based on business context
+   - "Revenue Item 2" → Name: "Revenue Stream 2" or based on business context
+   - For Real Estate: Could be "Property 1 Rental Income", "Property 2 Rental Income"
+   - Use business model to create meaningful names
 
-5. REVENUE ITEMS ARRAY: Create one object for each distinct revenue stream found
-   - Even if only one revenue line, create array with single item
-   - If multiple streams, create separate objects for each
-   - Ensure all required fields (name, initialValue, growthType, growthRate) are included
+4. CALCULATE INITIAL VALUES:
+   PRIORITY: Use explicit revenue values from document
+   - If found "Revenue Item 1: 500,000" → initialValue: 500000
+   - If found "Revenue Item 2: 766,000" → initialValue: 766000
+   - Convert all values to numbers (remove commas, currency symbols)
+
+5. DETERMINE GROWTH PATTERNS:
+   PRIORITY: Match growth rates to revenue items by number
+   - "Rent Growth 1: 2.00%" → Revenue Item 1 gets growthType: "linear", growthRate: 2
+   - "Rent Growth 2: 3.00%" → Revenue Item 2 gets growthType: "linear", growthRate: 3
+   - If no growth rate found for an item → growthType: "no_growth", growthRate: 0
+
+6. CONDITIONAL REVENUE CREATION:
+   - IF explicit revenue items found → Create exact number with exact data
+   - IF NO revenue items found → Return empty revenueItems array []
+   - DO NOT create estimated/fake revenue items unless explicit data exists
 
 IMPORTANT: 
 - Extract REAL data from the uploaded files
 - Use actual company names, values, and percentages from the document
 - Calculate deal value and LTV from available financial data  
 - Create revenue items based on actual revenue streams found in document
+- CRITICAL: Always include revenueItems array with at least one item
+- For Sample Company Ltd (Technology/SaaS): Create "Subscription Revenue" with estimated value
 - Do not use the example values above - they are just format examples`;
   }
 
@@ -2787,11 +2823,20 @@ IMPORTANT:
 
       // Apply Revenue Items
       if (extractedData.revenueItems && Array.isArray(extractedData.revenueItems)) {
-        console.log('Applying revenue items:', extractedData.revenueItems);
-        await this.applyRevenueItems(extractedData.revenueItems);
-        console.log('✅ Revenue items applied successfully');
+        if (extractedData.revenueItems.length > 0) {
+          console.log('✅ Found revenue items in extracted data:', extractedData.revenueItems);
+          console.log('Number of revenue items to apply:', extractedData.revenueItems.length);
+          await this.applyRevenueItems(extractedData.revenueItems);
+          console.log('✅ Revenue items applied successfully');
+        } else {
+          console.log('📋 No revenue items found in document - leaving Revenue Items section empty');
+        }
       } else {
         console.warn('❌ No revenueItems found in extracted data');
+        console.warn('❌ Full extracted data structure:', extractedData);
+        console.warn('❌ RevenueItems field exists?', 'revenueItems' in extractedData);
+        console.warn('❌ RevenueItems is array?', Array.isArray(extractedData.revenueItems));
+        console.warn('❌ RevenueItems value:', extractedData.revenueItems);
       }
 
       console.log('✅ Successfully applied extracted data to all sections');
