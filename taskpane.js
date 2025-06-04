@@ -756,8 +756,14 @@ class MAModelingAddin {
           // Toggle collapsed class
           dealAssumptionsSection.classList.toggle('collapsed');
           
-          // Update aria-label for accessibility
+          // Update icon and aria-label for accessibility
           const isCollapsed = dealAssumptionsSection.classList.contains('collapsed');
+          const iconSpan = minimizeBtn.querySelector('.minimize-icon');
+          
+          if (iconSpan) {
+            iconSpan.textContent = isCollapsed ? '+' : '−';
+          }
+          
           minimizeBtn.setAttribute('aria-label', 
             isCollapsed ? 'Expand Deal Assumptions' : 'Minimize Deal Assumptions');
           

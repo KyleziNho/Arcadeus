@@ -146,6 +146,97 @@ body {
   font-size: 24px;
 }
 
+/* Collapsible Sections */
+.collapsible-section {
+  overflow: hidden;
+  position: relative;
+}
+
+/* Section header styles removed - no longer using section-header div */
+
+.minimize-btn {
+  position: absolute;
+  top: var(--spacing-md);
+  right: var(--spacing-md);
+  background: var(--surface-secondary);
+  border: 1px solid var(--surface-tertiary);
+  border-radius: var(--radius-small);
+  padding: 0;
+  cursor: pointer;
+  transition: var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  color: var(--text-secondary);
+  z-index: 10;
+}
+
+.minimize-btn:hover {
+  background: var(--surface-tertiary);
+  color: var(--text-primary);
+  transform: scale(1.05);
+}
+
+.minimize-btn:active {
+  transform: scale(0.95);
+}
+
+.minimize-icon {
+  font-size: 18px;
+  font-weight: bold;
+  line-height: 1;
+  transition: var(--transition-fast);
+}
+
+.section-content {
+  max-height: 1000px;
+  overflow: hidden;
+  transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), 
+              opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              padding 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 1;
+}
+
+.collapsible-section.collapsed .section-content {
+  max-height: 0;
+  opacity: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.collapsible-section.collapsed {
+  padding-bottom: var(--spacing-md);
+}
+
+.collapsible-section.collapsed:hover {
+  transform: translateY(-1px);
+}
+
+/* Collapsed state animation */
+@keyframes collapseSection {
+  from {
+    max-height: 1000px;
+    opacity: 1;
+  }
+  to {
+    max-height: 0;
+    opacity: 0;
+  }
+}
+
+@keyframes expandSection {
+  from {
+    max-height: 0;
+    opacity: 0;
+  }
+  to {
+    max-height: 1000px;
+    opacity: 1;
+  }
+}
+
 /* Form Elements */
 .form-group {
   margin-bottom: var(--spacing-md);
