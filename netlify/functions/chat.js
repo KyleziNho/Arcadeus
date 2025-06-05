@@ -152,6 +152,30 @@ EXTRACTION RULES:
 
 Document Content: ${documentContext}`;
           
+        } else if (batchType === 'exit') {
+          maxTokens = 1000; // Small for exit assumptions
+          systemPrompt = `You are an expert financial analyst AI. Extract ONLY exit assumptions.
+
+CRITICAL: Return ONLY the JSON structure below with exit data from the documents.
+
+REQUIRED JSON STRUCTURE:
+{
+  "extractedData": {
+    "exitAssumptions": {
+      "disposalCost": 2.5,
+      "terminalCapRate": 8.5
+    }
+  }
+}
+
+EXTRACTION RULES:
+- Disposal Cost: Look for "disposal cost", "exit cost", "transaction fees at exit"
+- Terminal Cap Rate: Look for "terminal cap", "exit cap rate", "terminal yield"
+- Convert percentages to numbers: "2.5%" → 2.5
+- Use defaults if not found: disposal 2.5%, terminal cap 8.5%
+
+Document Content: ${documentContext}`;
+          
         } else {
           // Fallback to original large prompt (legacy support)
           maxTokens = 4000;

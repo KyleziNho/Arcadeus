@@ -2381,7 +2381,8 @@ class MAModelingAddin {
         highLevelParameters: null,
         dealAssumptions: null,
         revenueItems: [],
-        costItems: []
+        costItems: [],
+        exitAssumptions: null
       };
 
       // Step 2: Process High-Level Parameters & Deal Assumptions (smaller batch)
@@ -2416,8 +2417,18 @@ class MAModelingAddin {
         console.warn('⚠️ No cost data returned from batch processing');
       }
 
-      // Step 5: Apply all extracted data
-      console.log('Step 5: Applying extracted data...');
+      // Step 5: Process Exit Assumptions (separate batch)
+      console.log('Step 5: Processing exit assumptions...');
+      progressDiv.querySelector('p').textContent = 'Extracting exit assumptions...';
+      
+      const exitData = await this.processBatchExtraction(fileContents, 'exit');
+      if (exitData && exitData.exitAssumptions) {
+        extractedData.exitAssumptions = exitData.exitAssumptions;
+        console.log('✅ Exit assumptions found');
+      }
+
+      // Step 6: Apply all extracted data
+      console.log('Step 6: Applying extracted data...');
       progressDiv.querySelector('p').textContent = 'Populating form fields...';
       await this.applyExtractedData(extractedData);
       
@@ -2498,6 +2509,10 @@ class MAModelingAddin {
       case 'cost':
         prompt = this.createCostExtractionPrompt();
         expectedFields = ['costItems'];
+        break;
+      case 'exit':
+        prompt = this.createExitExtractionPrompt();
+        expectedFields = ['exitAssumptions'];
         break;
       default:
         throw new Error(`Unknown batch type: ${batchType}`);
@@ -2628,6 +2643,26 @@ EXTRACTION:
 - Return empty array [] if no costs found`;
   }
 
+  createExitExtractionPrompt() {
+    return `Extract exit assumptions from the documents. Look for disposal costs and terminal cap rates.
+
+REQUIRED JSON:
+{
+  "extractedData": {
+    "exitAssumptions": {
+      "disposalCost": 2.5,
+      "terminalCapRate": 8.5
+    }
+  }
+}
+
+EXTRACTION:
+- Disposal Cost: Look for "disposal cost", "exit cost", "transaction fees at exit", "selling costs"
+- Terminal Cap Rate: Look for "terminal cap", "exit cap rate", "terminal yield", "exit yield"
+- Convert percentages to numbers: "2.5%" → 2.5
+- Use industry defaults if not found: disposal 2.5%, terminal cap 8.5%`;
+  }
+
   createExtractionSummary(data) {
     let summary = '<strong>Extracted Data:</strong><br>';
     
@@ -2687,6 +2722,17 @@ EXTRACTION:
         }
         summary += ')<br>';
       });
+    }
+    
+    // Exit Assumptions
+    if (data.exitAssumptions) {
+      summary += '<br><strong>Exit Assumptions:</strong><br>';
+      if (data.exitAssumptions.disposalCost !== null && data.exitAssumptions.disposalCost !== undefined) {
+        summary += `• Disposal Cost: ${data.exitAssumptions.disposalCost}%<br>`;
+      }
+      if (data.exitAssumptions.terminalCapRate !== null && data.exitAssumptions.terminalCapRate !== undefined) {
+        summary += `• Terminal Cap Rate: ${data.exitAssumptions.terminalCapRate}%<br>`;
+      }
     }
     
     return summary;
@@ -3024,6 +3070,29 @@ IMPORTANT:
         console.warn('❌ CostItems field exists?', 'costItems' in extractedData);
         console.warn('❌ CostItems is array?', Array.isArray(extractedData.costItems));
         console.warn('❌ CostItems value:', extractedData.costItems);
+      }
+
+      // Apply Exit Assumptions
+      if (extractedData.exitAssumptions) {
+        const exit = extractedData.exitAssumptions;
+        
+        console.log('Applying exit assumptions:', exit);
+        
+        // Set disposal cost
+        if (exit.disposalCost !== null && exit.disposalCost !== undefined) {
+          console.log('Setting disposal cost to:', exit.disposalCost);
+          this.setInputValue('disposalCost', exit.disposalCost);
+        }
+        
+        // Set terminal cap rate
+        if (exit.terminalCapRate !== null && exit.terminalCapRate !== undefined) {
+          console.log('Setting terminal cap rate to:', exit.terminalCapRate);
+          this.setInputValue('terminalCapRate', exit.terminalCapRate);
+        }
+        
+        console.log('✅ Exit assumptions applied successfully');
+      } else {
+        console.log('📋 No exit assumptions found in extracted data - using defaults');
       }
 
       console.log('✅ Successfully applied extracted data to all sections');
