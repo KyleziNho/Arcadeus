@@ -1,3 +1,5 @@
+// This is a backup of the working chat.js with simplified cost extraction
+
 exports.handler = async (event, context) => {
   // Handle CORS preflight requests
   if (event.httpMethod === 'OPTIONS') {
@@ -126,7 +128,7 @@ REQUIRED DATA STRUCTURE:
 Document Content to Analyze:
 ${documentContext}`;
       } else {
-        // Regular chat mode
+        // Regular chat mode (simplified)
         systemPrompt = `You are an AI assistant for Excel M&A modeling. Help with Excel commands and data analysis.`;
       }
 
