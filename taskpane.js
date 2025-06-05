@@ -748,222 +748,259 @@ class MAModelingAddin {
   }
 
   async createAssumptionsLayout(context, sheet, data) {
-    let currentRow = 1;
+    // Add title at row 3
+    sheet.getRange("C3").values = [["Company Logo (doing the M&A Process)"]];
+    sheet.getRange("C3").format.font.bold = true;
+    sheet.getRange("C3").format.horizontalAlignment = "Center";
     
-    // Title Section
-    const titleRange = sheet.getRange(`A${currentRow}:B${currentRow}`);
-    titleRange.merge();
-    titleRange.values = [[`${data.dealName} - Key Assumptions`]];
-    titleRange.format.font.bold = true;
-    titleRange.format.font.size = 14;
-    titleRange.format.fill.color = '#E5E5E5';
-    currentRow++;
+    // Company name and header - Row 5
+    sheet.getRange("A5:H5").merge();
+    sheet.getRange("A5").values = [[`${data.dealName} - Key Assumptions`]];
+    sheet.getRange("A5").format.font.bold = true;
+    sheet.getRange("A5").format.font.size = 12;
+    sheet.getRange("A5:H5").format.fill.color = "#E5E5E5";
     
-    // Company Info Section
-    const companyInfo = [
-      ['Deal type', data.dealType],
-      ['Sector/Industry', data.sector],
-      ['Geography', data.geography],
-      ['Business Model', data.businessModel],
-      ['Ownership Structure', data.ownershipStructure]
-    ];
+    // Company Info Section - Rows 6-10
+    sheet.getRange("A6").values = [["Deal type"]];
+    sheet.getRange("H6").values = [[data.dealType]];
+    sheet.getRange("H6").format.fill.color = "#FFE6CC";
+    sheet.getRange("H6").format.horizontalAlignment = "Right";
     
-    companyInfo.forEach(row => {
-      sheet.getRange(`A${currentRow}:A${currentRow}`).values = [[row[0]]];
-      sheet.getRange(`B${currentRow}:B${currentRow}`).values = [[row[1]]];
-      sheet.getRange(`B${currentRow}:B${currentRow}`).format.fill.color = '#FFF5E6';
-      sheet.getRange(`B${currentRow}:B${currentRow}`).format.horizontalAlignment = 'Right';
-      currentRow++;
-    });
-    currentRow++;
+    sheet.getRange("A7").values = [["Sector/Industry"]];
+    sheet.getRange("H7").values = [[data.sector]];
+    sheet.getRange("H7").format.fill.color = "#FFE6CC";
+    sheet.getRange("H7").format.horizontalAlignment = "Right";
     
-    // Acquisition Assumptions Section
-    const acqHeaderRange = sheet.getRange(`A${currentRow}:B${currentRow}`);
-    acqHeaderRange.merge();
-    acqHeaderRange.values = [['Acquisition Assumptions']];
-    acqHeaderRange.format.font.bold = true;
-    acqHeaderRange.format.font.color = 'white';
-    acqHeaderRange.format.fill.color = '#1F3A5F';
-    currentRow++;
+    sheet.getRange("A8").values = [["Geography"]];
+    sheet.getRange("H8").values = [[data.geography]];
+    sheet.getRange("H8").format.fill.color = "#FFE6CC";
+    sheet.getRange("H8").format.horizontalAlignment = "Right";
     
-    const acquisitionData = [
-      ['Acquisition date', data.acquisitionDate],
-      ['Holding Period (Months)', data.holdingPeriod],
-      ['Currency', data.currency === 'USD' ? '$' : data.currency],
-      ['Transaction Fees', `${data.transactionFee.toFixed(2)}%`],
-      ['Acquisition LTV', `${data.acquisitionLTV.toFixed(2)}%`],
-      ['Equity Contribution', data.equityContribution],
-      ['Debt Financing', data.debtAmount],
-      ['Debt Issuance Fees', '1.00%'],
-      ['Interest Rate Margin', `${data.interestRateMargin.toFixed(2)}%`]
-    ];
+    sheet.getRange("A9").values = [["Business Model"]];
+    sheet.getRange("H9").values = [[data.businessModel]];
+    sheet.getRange("H9").format.fill.color = "#FFE6CC";
+    sheet.getRange("H9").format.horizontalAlignment = "Right";
     
-    acquisitionData.forEach(row => {
-      sheet.getRange(`A${currentRow}:A${currentRow}`).values = [[row[0]]];
-      const valueCell = sheet.getRange(`B${currentRow}:B${currentRow}`);
-      
-      // Format numbers appropriately
-      if (typeof row[1] === 'number' && row[0].includes('Contribution') || row[0].includes('Financing')) {
-        valueCell.values = [[row[1]]];
-        valueCell.numberFormat = [['#,##0']];
-      } else {
-        valueCell.values = [[row[1]]];
-      }
-      
-      valueCell.format.fill.color = '#FFF5E6';
-      valueCell.format.horizontalAlignment = 'Right';
-      currentRow++;
-    });
-    currentRow++;
+    sheet.getRange("A10").values = [["Ownership Structure"]];
+    sheet.getRange("H10").values = [[data.ownershipStructure]];
+    sheet.getRange("H10").format.fill.color = "#FFE6CC";
+    sheet.getRange("H10").format.horizontalAlignment = "Right";
     
-    // Revenue Items Section
-    const revHeaderRange = sheet.getRange(`A${currentRow}:B${currentRow}`);
-    revHeaderRange.merge();
-    revHeaderRange.values = [['Revenue Items']];
-    revHeaderRange.format.font.bold = true;
-    revHeaderRange.format.font.color = 'white';
-    revHeaderRange.format.fill.color = '#1F3A5F';
-    currentRow++;
+    // Acquisition Assumptions Header - Row 12
+    sheet.getRange("A12:H12").merge();
+    sheet.getRange("A12").values = [["Acquisition Assumptions"]];
+    sheet.getRange("A12").format.font.bold = true;
+    sheet.getRange("A12").format.font.color = "white";
+    sheet.getRange("A12:H12").format.fill.color = "#1F3A5F";
     
+    // Acquisition data - Rows 13-21
+    sheet.getRange("A13").values = [["Acquisition date"]];
+    sheet.getRange("H13").values = [[data.acquisitionDate]];
+    sheet.getRange("H13").format.fill.color = "#FFE6CC";
+    sheet.getRange("H13").format.horizontalAlignment = "Right";
+    
+    sheet.getRange("A14").values = [["Holding Period (Months)"]];
+    sheet.getRange("H14").values = [[data.holdingPeriod]];
+    sheet.getRange("H14").format.fill.color = "#FFE6CC";
+    sheet.getRange("H14").format.horizontalAlignment = "Right";
+    
+    sheet.getRange("A15").values = [["Currency"]];
+    sheet.getRange("H15").values = [[data.currency === 'USD' ? '$' : data.currency]];
+    sheet.getRange("H15").format.fill.color = "#FFE6CC";
+    sheet.getRange("H15").format.horizontalAlignment = "Right";
+    
+    sheet.getRange("A16").values = [["Transaction Fees"]];
+    sheet.getRange("H16").values = [[data.transactionFee / 100]];
+    sheet.getRange("H16").numberFormat = [["0.00%"]];
+    sheet.getRange("H16").format.fill.color = "#FFE6CC";
+    sheet.getRange("H16").format.horizontalAlignment = "Right";
+    
+    sheet.getRange("A17").values = [["Acquisition LTV"]];
+    sheet.getRange("H17").values = [[data.acquisitionLTV / 100]];
+    sheet.getRange("H17").numberFormat = [["0.00%"]];
+    sheet.getRange("H17").format.fill.color = "#FFE6CC";
+    sheet.getRange("H17").format.horizontalAlignment = "Right";
+    
+    sheet.getRange("A18").values = [["Equity Contribution"]];
+    sheet.getRange("H18").values = [[data.equityContribution]];
+    sheet.getRange("H18").numberFormat = [["#,##0"]];
+    sheet.getRange("H18").format.fill.color = "#FFE6CC";
+    sheet.getRange("H18").format.horizontalAlignment = "Right";
+    
+    sheet.getRange("A19").values = [["Debt Financing"]];
+    sheet.getRange("H19").values = [[data.debtAmount]];
+    sheet.getRange("H19").numberFormat = [["#,##0"]];
+    sheet.getRange("H19").format.fill.color = "#FFE6CC";
+    sheet.getRange("H19").format.horizontalAlignment = "Right";
+    
+    sheet.getRange("A20").values = [["Debt Issuance Fees"]];
+    sheet.getRange("H20").values = [[0.01]];
+    sheet.getRange("H20").numberFormat = [["0.00%"]];
+    sheet.getRange("H20").format.fill.color = "#FFE6CC";
+    sheet.getRange("H20").format.horizontalAlignment = "Right";
+    
+    sheet.getRange("A21").values = [["Interest Rate Margin"]];
+    sheet.getRange("H21").values = [[data.interestRateMargin / 100]];
+    sheet.getRange("H21").numberFormat = [["0.00%"]];
+    sheet.getRange("H21").format.fill.color = "#FFE6CC";
+    sheet.getRange("H21").format.horizontalAlignment = "Right";
+    
+    // Revenue Items Header - Row 23
+    sheet.getRange("A23:H23").merge();
+    sheet.getRange("A23").values = [["Revenue Items"]];
+    sheet.getRange("A23").format.font.bold = true;
+    sheet.getRange("A23").format.font.color = "white";
+    sheet.getRange("A23:H23").format.fill.color = "#1F3A5F";
+    
+    // Revenue items starting at row 24
+    let currentRow = 24;
     data.revenueItems.forEach((item, index) => {
-      sheet.getRange(`A${currentRow}:A${currentRow}`).values = [[item.name]];
-      const valueCell = sheet.getRange(`B${currentRow}:B${currentRow}`);
-      valueCell.values = [[item.value]];
-      valueCell.numberFormat = [['#,##0']];
-      valueCell.format.fill.color = '#FFF5E6';
-      valueCell.format.horizontalAlignment = 'Right';
+      sheet.getRange(`A${currentRow}`).values = [[item.name]];
+      sheet.getRange(`H${currentRow}`).values = [[item.value]];
+      sheet.getRange(`H${currentRow}`).numberFormat = [["#,##0"]];
+      sheet.getRange(`H${currentRow}`).format.fill.color = "#FFE6CC";
+      sheet.getRange(`H${currentRow}`).format.horizontalAlignment = "Right";
       currentRow++;
       
       if (item.growth > 0) {
-        sheet.getRange(`A${currentRow}:A${currentRow}`).values = [[`Rent Growth ${index + 1}`]];
-        sheet.getRange(`B${currentRow}:B${currentRow}`).values = [[`${item.growth.toFixed(2)}%`]];
-        sheet.getRange(`B${currentRow}:B${currentRow}`).format.fill.color = '#FFF5E6';
-        sheet.getRange(`B${currentRow}:B${currentRow}`).format.horizontalAlignment = 'Right';
+        sheet.getRange(`A${currentRow}`).values = [[`Rent Growth ${index + 1}`]];
+        sheet.getRange(`H${currentRow}`).values = [[item.growth / 100]];
+        sheet.getRange(`H${currentRow}`).numberFormat = [["0.00%"]];
+        sheet.getRange(`H${currentRow}`).format.fill.color = "#FFE6CC";
+        sheet.getRange(`H${currentRow}`).format.horizontalAlignment = "Right";
         currentRow++;
       }
     });
+    
+    // Cost Items (OpEx) Header
+    currentRow += 1;
+    sheet.getRange(`A${currentRow}:H${currentRow}`).merge();
+    sheet.getRange(`A${currentRow}`).values = [["Cost Items (OpEx)"]];
+    sheet.getRange(`A${currentRow}`).format.font.bold = true;
+    sheet.getRange(`A${currentRow}`).format.font.color = "white";
+    sheet.getRange(`A${currentRow}:H${currentRow}`).format.fill.color = "#1F3A5F";
     currentRow++;
     
-    // Cost Items (OpEx) Section
-    const opexHeaderRange = sheet.getRange(`A${currentRow}:B${currentRow}`);
-    opexHeaderRange.merge();
-    opexHeaderRange.values = [['Cost Items (OpEx)']];
-    opexHeaderRange.format.font.bold = true;
-    opexHeaderRange.format.font.color = 'white';
-    opexHeaderRange.format.fill.color = '#1F3A5F';
-    currentRow++;
-    
-    data.costItems.opex.forEach((item, index) => {
-      sheet.getRange(`A${currentRow}:A${currentRow}`).values = [[item.name]];
-      const valueCell = sheet.getRange(`B${currentRow}:B${currentRow}`);
-      valueCell.values = [[item.value]];
-      valueCell.numberFormat = [['#,##0']];
-      valueCell.format.fill.color = '#FFF5E6';
-      valueCell.format.horizontalAlignment = 'Right';
+    // OpEx items
+    data.costItems.opex.forEach(item => {
+      sheet.getRange(`A${currentRow}`).values = [[item.name]];
+      sheet.getRange(`H${currentRow}`).values = [[item.value]];
+      sheet.getRange(`H${currentRow}`).numberFormat = [["#,##0"]];
+      sheet.getRange(`H${currentRow}`).format.fill.color = "#FFE6CC";
+      sheet.getRange(`H${currentRow}`).format.horizontalAlignment = "Right";
       currentRow++;
       
-      // Add growth rate for specific items
+      // Add growth rate for Staff expenses
       if (item.name === 'Staff expenses' && item.growth) {
-        sheet.getRange(`A${currentRow}:A${currentRow}`).values = [['Salary Growth (p.a.)']];
-        sheet.getRange(`B${currentRow}:B${currentRow}`).values = [[`${item.growth.toFixed(2)}%`]];
-        sheet.getRange(`B${currentRow}:B${currentRow}`).format.fill.color = '#FFF5E6';
-        sheet.getRange(`B${currentRow}:B${currentRow}`).format.horizontalAlignment = 'Right';
+        sheet.getRange(`A${currentRow}`).values = [["Salary Growth (p.a.)"]];
+        sheet.getRange(`H${currentRow}`).values = [[item.growth / 100]];
+        sheet.getRange(`H${currentRow}`).numberFormat = [["0.00%"]];
+        sheet.getRange(`H${currentRow}`).format.fill.color = "#FFE6CC";
+        sheet.getRange(`H${currentRow}`).format.horizontalAlignment = "Right";
         currentRow++;
       }
     });
     
-    // Add OpEx inflation
-    sheet.getRange(`A${currentRow}:A${currentRow}`).values = [['OpEx Cost Inflation']];
-    sheet.getRange(`B${currentRow}:B${currentRow}`).values = [['2.00%']];
-    sheet.getRange(`B${currentRow}:B${currentRow}`).format.fill.color = '#FFF5E6';
-    sheet.getRange(`B${currentRow}:B${currentRow}`).format.horizontalAlignment = 'Right';
-    currentRow++;
+    // OpEx Cost Inflation
+    sheet.getRange(`A${currentRow}`).values = [["OpEx Cost Inflation"]];
+    sheet.getRange(`H${currentRow}`).values = [[0.02]];
+    sheet.getRange(`H${currentRow}`).numberFormat = [["0.00%"]];
+    sheet.getRange(`H${currentRow}`).format.fill.color = "#FFE6CC";
+    sheet.getRange(`H${currentRow}`).format.horizontalAlignment = "Right";
     currentRow++;
     
-    // Cost Items (CapEx) Section if any
+    // Cost Items (CapEx) Header
+    currentRow += 1;
+    sheet.getRange(`A${currentRow}:H${currentRow}`).merge();
+    sheet.getRange(`A${currentRow}`).values = [["Cost Items (CapEx)"]];
+    sheet.getRange(`A${currentRow}`).format.font.bold = true;
+    sheet.getRange(`A${currentRow}`).format.font.color = "white";
+    sheet.getRange(`A${currentRow}:H${currentRow}`).format.fill.color = "#1F3A5F";
+    currentRow++;
+    
+    // CapEx items
     if (data.costItems.capex.length > 0) {
-      const capexHeaderRange = sheet.getRange(`A${currentRow}:B${currentRow}`);
-      capexHeaderRange.merge();
-      capexHeaderRange.values = [['Cost Items (CapEx)']];
-      capexHeaderRange.format.font.bold = true;
-      capexHeaderRange.format.font.color = 'white';
-      capexHeaderRange.format.fill.color = '#1F3A5F';
-      currentRow++;
-      
       data.costItems.capex.forEach(item => {
-        sheet.getRange(`A${currentRow}:A${currentRow}`).values = [[item.name]];
-        const valueCell = sheet.getRange(`B${currentRow}:B${currentRow}`);
-        valueCell.values = [[item.value]];
-        valueCell.numberFormat = [['#,##0']];
-        valueCell.format.fill.color = '#FFF5E6';
-        valueCell.format.horizontalAlignment = 'Right';
+        sheet.getRange(`A${currentRow}`).values = [[item.name]];
+        sheet.getRange(`H${currentRow}`).values = [[item.value]];
+        sheet.getRange(`H${currentRow}`).numberFormat = [["#,##0"]];
+        sheet.getRange(`H${currentRow}`).format.fill.color = "#FFE6CC";
+        sheet.getRange(`H${currentRow}`).format.horizontalAlignment = "Right";
         currentRow++;
       });
       
-      // Add CapEx inflation
-      sheet.getRange(`A${currentRow}:A${currentRow}`).values = [['CapEx Cost Inflation']];
-      sheet.getRange(`B${currentRow}:B${currentRow}`).values = [['1.50%']];
-      sheet.getRange(`B${currentRow}:B${currentRow}`).format.fill.color = '#FFF5E6';
-      sheet.getRange(`B${currentRow}:B${currentRow}`).format.horizontalAlignment = 'Right';
-      currentRow++;
+      // CapEx Cost Inflation
+      sheet.getRange(`A${currentRow}`).values = [["CapEx Cost Inflation"]];
+      sheet.getRange(`H${currentRow}`).values = [[0.015]];
+      sheet.getRange(`H${currentRow}`).numberFormat = [["0.00%"]];
+      sheet.getRange(`H${currentRow}`).format.fill.color = "#FFE6CC";
+      sheet.getRange(`H${currentRow}`).format.horizontalAlignment = "Right";
       currentRow++;
     }
     
-    // Total Fixed Costs placeholder
-    const fixedCostsHeaderRange = sheet.getRange(`A${currentRow}:B${currentRow}`);
-    fixedCostsHeaderRange.merge();
-    fixedCostsHeaderRange.values = [['Cost Items (CapEx)']];
-    fixedCostsHeaderRange.format.font.bold = true;
-    fixedCostsHeaderRange.format.font.color = 'white';
-    fixedCostsHeaderRange.format.fill.color = '#1F3A5F';
+    // Total Fixed Costs section
+    currentRow += 1;
+    sheet.getRange(`A${currentRow}:H${currentRow}`).merge();
+    sheet.getRange(`A${currentRow}`).values = [["Cost Items (CapEx)"]];
+    sheet.getRange(`A${currentRow}`).format.font.bold = true;
+    sheet.getRange(`A${currentRow}`).format.font.color = "white";
+    sheet.getRange(`A${currentRow}:H${currentRow}`).format.fill.color = "#1F3A5F";
     currentRow++;
     
-    sheet.getRange(`A${currentRow}:A${currentRow}`).values = [['Total Fixed Costs']];
-    sheet.getRange(`B${currentRow}:B${currentRow}`).values = [[2000]];
-    sheet.getRange(`B${currentRow}:B${currentRow}`).numberFormat = [['#,##0']];
-    sheet.getRange(`B${currentRow}:B${currentRow}`).format.fill.color = '#FFF5E6';
-    sheet.getRange(`B${currentRow}:B${currentRow}`).format.horizontalAlignment = 'Right';
-    currentRow++;
-    currentRow++;
-    
-    // Exit Assumptions Section
-    const exitHeaderRange = sheet.getRange(`A${currentRow}:B${currentRow}`);
-    exitHeaderRange.merge();
-    exitHeaderRange.values = [['Exit Assumptions']];
-    exitHeaderRange.format.font.bold = true;
-    exitHeaderRange.format.font.color = 'white';
-    exitHeaderRange.format.fill.color = '#1F3A5F';
+    sheet.getRange(`A${currentRow}`).values = [["Total Fixed Costs"]];
+    sheet.getRange(`H${currentRow}`).values = [[2000]];
+    sheet.getRange(`H${currentRow}`).numberFormat = [["#,##0"]];
+    sheet.getRange(`H${currentRow}`).format.fill.color = "#FFE6CC";
+    sheet.getRange(`H${currentRow}`).format.horizontalAlignment = "Right";
     currentRow++;
     
-    const exitData = [
-      ['Disposal Costs', `${data.disposalCost.toFixed(2)}%`],
-      ['Terminal Cap Rate', `${data.terminalCapRate.toFixed(2)}%`],
-      ['Terminal NOI', ''],  // Leave blank as requested
-      ['Sale Price', '']     // Leave blank as requested
-    ];
+    // Exit Assumptions Header
+    currentRow += 1;
+    sheet.getRange(`A${currentRow}:H${currentRow}`).merge();
+    sheet.getRange(`A${currentRow}`).values = [["Exit Assumptions"]];
+    sheet.getRange(`A${currentRow}`).format.font.bold = true;
+    sheet.getRange(`A${currentRow}`).format.font.color = "white";
+    sheet.getRange(`A${currentRow}:H${currentRow}`).format.fill.color = "#1F3A5F";
+    currentRow++;
     
-    exitData.forEach(row => {
-      sheet.getRange(`A${currentRow}:A${currentRow}`).values = [[row[0]]];
-      if (row[1]) {
-        sheet.getRange(`B${currentRow}:B${currentRow}`).values = [[row[1]]];
-        sheet.getRange(`B${currentRow}:B${currentRow}`).format.fill.color = '#FFF5E6';
-      }
-      sheet.getRange(`B${currentRow}:B${currentRow}`).format.horizontalAlignment = 'Right';
-      currentRow++;
-    });
+    // Exit data
+    sheet.getRange(`A${currentRow}`).values = [["Disposal Costs"]];
+    sheet.getRange(`H${currentRow}`).values = [[data.disposalCost / 100]];
+    sheet.getRange(`H${currentRow}`).numberFormat = [["0.00%"]];
+    sheet.getRange(`H${currentRow}`).format.fill.color = "#FFE6CC";
+    sheet.getRange(`H${currentRow}`).format.horizontalAlignment = "Right";
+    currentRow++;
+    
+    sheet.getRange(`A${currentRow}`).values = [["Terminal Cap Rate"]];
+    sheet.getRange(`H${currentRow}`).values = [[data.terminalCapRate / 100]];
+    sheet.getRange(`H${currentRow}`).numberFormat = [["0.00%"]];
+    sheet.getRange(`H${currentRow}`).format.fill.color = "#FFE6CC";
+    sheet.getRange(`H${currentRow}`).format.horizontalAlignment = "Right";
+    currentRow++;
+    
+    sheet.getRange(`A${currentRow}`).values = [["Terminal NOI"]];
+    sheet.getRange(`H${currentRow}`).values = [[""]]; // Leave blank
+    sheet.getRange(`H${currentRow}`).format.fill.color = "#FFE6CC";
+    currentRow++;
+    
+    sheet.getRange(`A${currentRow}`).values = [["Sale Price"]];
+    sheet.getRange(`H${currentRow}`).values = [[""]]; // Leave blank
+    sheet.getRange(`H${currentRow}`).format.fill.color = "#FFE6CC";
+    currentRow++;
     
     // Format column widths
-    sheet.getRange("A:A").format.columnWidth = 200;
-    sheet.getRange("B:B").format.columnWidth = 120;
+    sheet.getRange("A:A").format.columnWidth = 150;
+    sheet.getRange("B:G").format.columnWidth = 80;
+    sheet.getRange("H:H").format.columnWidth = 120;
     
     // Add borders to all data
-    const allDataRange = sheet.getRange(`A1:B${currentRow - 1}`);
-    allDataRange.format.borders.getItem('EdgeTop').style = 'Thin';
-    allDataRange.format.borders.getItem('EdgeBottom').style = 'Thin';
-    allDataRange.format.borders.getItem('EdgeLeft').style = 'Thin';
-    allDataRange.format.borders.getItem('EdgeRight').style = 'Thin';
-    allDataRange.format.borders.getItem('InsideHorizontal').style = 'Thin';
-    allDataRange.format.borders.getItem('InsideVertical').style = 'Thin';
+    const dataRange = sheet.getRange(`A5:H${currentRow - 1}`);
+    dataRange.format.borders.getItem('EdgeTop').style = 'Thin';
+    dataRange.format.borders.getItem('EdgeBottom').style = 'Thin';
+    dataRange.format.borders.getItem('EdgeLeft').style = 'Thin';
+    dataRange.format.borders.getItem('EdgeRight').style = 'Thin';
+    dataRange.format.borders.getItem('InsideHorizontal').style = 'Thin';
+    dataRange.format.borders.getItem('InsideVertical').style = 'Thin';
   }
 
   async validateModel() {
