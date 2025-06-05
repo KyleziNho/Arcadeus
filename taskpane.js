@@ -751,138 +751,178 @@ class MAModelingAddin {
     // Add title at row 3
     sheet.getRange("C3").values = [["Company Logo (doing the M&A Process)"]];
     sheet.getRange("C3").format.font.bold = true;
+    sheet.getRange("C3").format.font.name = "Times New Roman";
+    sheet.getRange("C3").format.font.size = 12;
     sheet.getRange("C3").format.horizontalAlignment = "Center";
     
-    // Company name and header - Row 5
-    sheet.getRange("A5:H5").merge();
+    // Company name and header - Row 5 (ends at column B)
+    sheet.getRange("A5:B5").merge();
     sheet.getRange("A5").values = [[`${data.dealName} - Key Assumptions`]];
     sheet.getRange("A5").format.font.bold = true;
+    sheet.getRange("A5").format.font.name = "Times New Roman";
     sheet.getRange("A5").format.font.size = 12;
-    sheet.getRange("A5:H5").format.fill.color = "#E5E5E5";
+    sheet.getRange("A5:B5").format.fill.color = "#E5E5E5";
     
-    // Company Info Section - Rows 6-10
-    sheet.getRange("A6").values = [["Deal type"]];
-    sheet.getRange("B6").values = [[data.dealType]];
-    sheet.getRange("B6").format.fill.color = "#FFE6CC";
-    sheet.getRange("B6").format.horizontalAlignment = "Right";
+    // Empty row before Company Info Section (Row 6)
+    sheet.getRange("6:6").format.rowHeight = 5;
     
-    sheet.getRange("A7").values = [["Sector/Industry"]];
-    sheet.getRange("B7").values = [[data.sector]];
-    sheet.getRange("B7").format.fill.color = "#FFE6CC";
+    // Company Info Section - Rows 7-11
+    sheet.getRange("A7").values = [["Deal type"]];
+    sheet.getRange("B7").values = [[data.dealType]];
+    sheet.getRange("A7:B7").format.font.name = "Times New Roman";
+    sheet.getRange("A7:B7").format.font.size = 12;
     sheet.getRange("B7").format.horizontalAlignment = "Right";
     
-    sheet.getRange("A8").values = [["Geography"]];
-    sheet.getRange("B8").values = [[data.geography]];
-    sheet.getRange("B8").format.fill.color = "#FFE6CC";
+    sheet.getRange("A8").values = [["Sector/Industry"]];
+    sheet.getRange("B8").values = [[data.sector]];
+    sheet.getRange("A8:B8").format.font.name = "Times New Roman";
+    sheet.getRange("A8:B8").format.font.size = 12;
     sheet.getRange("B8").format.horizontalAlignment = "Right";
     
-    sheet.getRange("A9").values = [["Business Model"]];
-    sheet.getRange("B9").values = [[data.businessModel]];
-    sheet.getRange("B9").format.fill.color = "#FFE6CC";
+    sheet.getRange("A9").values = [["Geography"]];
+    sheet.getRange("B9").values = [[data.geography]];
+    sheet.getRange("A9:B9").format.font.name = "Times New Roman";
+    sheet.getRange("A9:B9").format.font.size = 12;
     sheet.getRange("B9").format.horizontalAlignment = "Right";
     
-    sheet.getRange("A10").values = [["Ownership Structure"]];
-    sheet.getRange("B10").values = [[data.ownershipStructure]];
-    sheet.getRange("B10").format.fill.color = "#FFE6CC";
+    sheet.getRange("A10").values = [["Business Model"]];
+    sheet.getRange("B10").values = [[data.businessModel]];
+    sheet.getRange("A10:B10").format.font.name = "Times New Roman";
+    sheet.getRange("A10:B10").format.font.size = 12;
     sheet.getRange("B10").format.horizontalAlignment = "Right";
     
-    // Acquisition Assumptions Header - Row 12
-    sheet.getRange("A12:B12").merge();
-    sheet.getRange("A12").values = [["Acquisition Assumptions"]];
-    sheet.getRange("A12").format.font.bold = true;
-    sheet.getRange("A12").format.font.color = "white";
-    sheet.getRange("A12:B12").format.fill.color = "#1F3A5F";
+    sheet.getRange("A11").values = [["Ownership Structure"]];
+    sheet.getRange("B11").values = [[data.ownershipStructure]];
+    sheet.getRange("A11:B11").format.font.name = "Times New Roman";
+    sheet.getRange("A11:B11").format.font.size = 12;
+    sheet.getRange("B11").format.horizontalAlignment = "Right";
     
-    // Acquisition data - Rows 13-22 (added Purchase Price at top)
-    sheet.getRange("A13").values = [["Purchase Price"]];
-    sheet.getRange("B13").values = [[data.dealValue]];
-    sheet.getRange("B13").numberFormat = [["#,##0"]];
-    sheet.getRange("B13").format.fill.color = "#FFE6CC";
-    sheet.getRange("B13").format.horizontalAlignment = "Right";
+    // Empty row before Acquisition Assumptions (Row 12)
+    sheet.getRange("12:12").format.rowHeight = 5;
     
-    sheet.getRange("A14").values = [["Acquisition date"]];
-    sheet.getRange("B14").values = [[data.acquisitionDate]];
-    sheet.getRange("B14").format.fill.color = "#FFE6CC";
+    // Acquisition Assumptions Header - Row 13
+    sheet.getRange("A13:B13").merge();
+    sheet.getRange("A13").values = [["Acquisition Assumptions"]];
+    sheet.getRange("A13").format.font.bold = true;
+    sheet.getRange("A13").format.font.name = "Times New Roman";
+    sheet.getRange("A13").format.font.size = 12;
+    sheet.getRange("A13").format.font.color = "white";
+    sheet.getRange("A13:B13").format.fill.color = "#1F3A5F";
+    
+    // Acquisition data - Rows 14-23 (added Purchase Price at top)
+    sheet.getRange("A14").values = [["Purchase Price"]];
+    sheet.getRange("B14").values = [[data.dealValue]];
+    sheet.getRange("A14:B14").format.font.name = "Times New Roman";
+    sheet.getRange("A14:B14").format.font.size = 12;
+    sheet.getRange("B14").numberFormat = [["#,##0"]];
     sheet.getRange("B14").format.horizontalAlignment = "Right";
     
-    sheet.getRange("A15").values = [["Holding Period (Months)"]];
-    sheet.getRange("B15").values = [[data.holdingPeriod]];
-    sheet.getRange("B15").format.fill.color = "#FFE6CC";
+    sheet.getRange("A15").values = [["Acquisition date"]];
+    sheet.getRange("B15").values = [[data.acquisitionDate]];
+    sheet.getRange("A15:B15").format.font.name = "Times New Roman";
+    sheet.getRange("A15:B15").format.font.size = 12;
     sheet.getRange("B15").format.horizontalAlignment = "Right";
     
-    sheet.getRange("A16").values = [["Currency"]];
-    sheet.getRange("B16").values = [[data.currency === 'USD' ? '$' : data.currency]];
-    sheet.getRange("B16").format.fill.color = "#FFE6CC";
+    sheet.getRange("A16").values = [["Holding Period (Months)"]];
+    sheet.getRange("B16").values = [[data.holdingPeriod]];
+    sheet.getRange("A16:B16").format.font.name = "Times New Roman";
+    sheet.getRange("A16:B16").format.font.size = 12;
     sheet.getRange("B16").format.horizontalAlignment = "Right";
     
-    sheet.getRange("A17").values = [["Transaction Fees"]];
-    sheet.getRange("B17").values = [[data.transactionFee / 100]];
-    sheet.getRange("B17").numberFormat = [["0.00%"]];
-    sheet.getRange("B17").format.fill.color = "#FFE6CC";
+    sheet.getRange("A17").values = [["Currency"]];
+    sheet.getRange("B17").values = [[data.currency === 'USD' ? '$' : data.currency]];
+    sheet.getRange("A17:B17").format.font.name = "Times New Roman";
+    sheet.getRange("A17:B17").format.font.size = 12;
     sheet.getRange("B17").format.horizontalAlignment = "Right";
     
-    sheet.getRange("A18").values = [["Acquisition LTV"]];
-    sheet.getRange("B18").values = [[data.acquisitionLTV / 100]];
+    sheet.getRange("A18").values = [["Transaction Fees"]];
+    sheet.getRange("B18").values = [[data.transactionFee / 100]];
+    sheet.getRange("A18:B18").format.font.name = "Times New Roman";
+    sheet.getRange("A18:B18").format.font.size = 12;
     sheet.getRange("B18").numberFormat = [["0.00%"]];
-    sheet.getRange("B18").format.fill.color = "#FFE6CC";
     sheet.getRange("B18").format.horizontalAlignment = "Right";
     
-    // Equity Contribution - Formula: Purchase Price * (1 - LTV)
-    sheet.getRange("A19").values = [["Equity Contribution"]];
-    sheet.getRange("B19").formulas = [["=B13*(1-B18)"]];
-    sheet.getRange("B19").numberFormat = [["#,##0"]];
+    sheet.getRange("A19").values = [["Acquisition LTV"]];
+    sheet.getRange("B19").values = [[data.acquisitionLTV / 100]];
+    sheet.getRange("A19:B19").format.font.name = "Times New Roman";
+    sheet.getRange("A19:B19").format.font.size = 12;
+    sheet.getRange("B19").numberFormat = [["0.00%"]];
     sheet.getRange("B19").format.horizontalAlignment = "Right";
     
-    // Debt Financing - Formula: Purchase Price * LTV
-    sheet.getRange("A20").values = [["Debt Financing"]];
-    sheet.getRange("B20").formulas = [["=B13*B18"]];
+    // Equity Contribution - Formula: Purchase Price * (1 - LTV)
+    sheet.getRange("A20").values = [["Equity Contribution"]];
+    sheet.getRange("B20").formulas = [["=B14*(1-B19)"]];
+    sheet.getRange("A20:B20").format.font.name = "Times New Roman";
+    sheet.getRange("A20:B20").format.font.size = 12;
     sheet.getRange("B20").numberFormat = [["#,##0"]];
     sheet.getRange("B20").format.horizontalAlignment = "Right";
     
-    sheet.getRange("A21").values = [["Debt Issuance Fees"]];
-    sheet.getRange("B21").values = [[0.01]];
-    sheet.getRange("B21").numberFormat = [["0.00%"]];
-    sheet.getRange("B21").format.fill.color = "#FFE6CC";
+    // Debt Financing - Formula: Purchase Price * LTV
+    sheet.getRange("A21").values = [["Debt Financing"]];
+    sheet.getRange("B21").formulas = [["=B14*B19"]];
+    sheet.getRange("A21:B21").format.font.name = "Times New Roman";
+    sheet.getRange("A21:B21").format.font.size = 12;
+    sheet.getRange("B21").numberFormat = [["#,##0"]];
     sheet.getRange("B21").format.horizontalAlignment = "Right";
     
-    sheet.getRange("A22").values = [["Interest Rate Margin"]];
-    sheet.getRange("B22").values = [[data.interestRateMargin / 100]];
+    sheet.getRange("A22").values = [["Debt Issuance Fees"]];
+    sheet.getRange("B22").values = [[0.01]];
+    sheet.getRange("A22:B22").format.font.name = "Times New Roman";
+    sheet.getRange("A22:B22").format.font.size = 12;
     sheet.getRange("B22").numberFormat = [["0.00%"]];
-    sheet.getRange("B22").format.fill.color = "#FFE6CC";
     sheet.getRange("B22").format.horizontalAlignment = "Right";
     
-    // Revenue Items Header - Row 24
-    sheet.getRange("A24:B24").merge();
-    sheet.getRange("A24").values = [["Revenue Items"]];
-    sheet.getRange("A24").format.font.bold = true;
-    sheet.getRange("A24").format.font.color = "white";
-    sheet.getRange("A24:B24").format.fill.color = "#1F3A5F";
+    sheet.getRange("A23").values = [["Interest Rate Margin"]];
+    sheet.getRange("B23").values = [[data.interestRateMargin / 100]];
+    sheet.getRange("A23:B23").format.font.name = "Times New Roman";
+    sheet.getRange("A23:B23").format.font.size = 12;
+    sheet.getRange("B23").numberFormat = [["0.00%"]];
+    sheet.getRange("B23").format.horizontalAlignment = "Right";
     
-    // Revenue items starting at row 25
-    let currentRow = 25;
+    // Empty row before Revenue Items (Row 24)
+    sheet.getRange("24:24").format.rowHeight = 5;
+    
+    // Revenue Items Header - Row 25
+    sheet.getRange("A25:B25").merge();
+    sheet.getRange("A25").values = [["Revenue Items"]];
+    sheet.getRange("A25").format.font.bold = true;
+    sheet.getRange("A25").format.font.name = "Times New Roman";
+    sheet.getRange("A25").format.font.size = 12;
+    sheet.getRange("A25").format.font.color = "white";
+    sheet.getRange("A25:B25").format.fill.color = "#1F3A5F";
+    
+    // Revenue items starting at row 26
+    let currentRow = 26;
     data.revenueItems.forEach((item, index) => {
       sheet.getRange(`A${currentRow}`).values = [[item.name]];
       sheet.getRange(`B${currentRow}`).values = [[item.value]];
+      sheet.getRange(`A${currentRow}:B${currentRow}`).format.font.name = "Times New Roman";
+      sheet.getRange(`A${currentRow}:B${currentRow}`).format.font.size = 12;
       sheet.getRange(`B${currentRow}`).numberFormat = [["#,##0"]];
-      sheet.getRange(`B${currentRow}`).format.fill.color = "#FFE6CC";
       sheet.getRange(`B${currentRow}`).format.horizontalAlignment = "Right";
       currentRow++;
       
       if (item.growth > 0) {
         sheet.getRange(`A${currentRow}`).values = [[`Rent Growth ${index + 1}`]];
         sheet.getRange(`B${currentRow}`).values = [[item.growth / 100]];
+        sheet.getRange(`A${currentRow}:B${currentRow}`).format.font.name = "Times New Roman";
+        sheet.getRange(`A${currentRow}:B${currentRow}`).format.font.size = 12;
         sheet.getRange(`B${currentRow}`).numberFormat = [["0.00%"]];
-        sheet.getRange(`B${currentRow}`).format.fill.color = "#FFE6CC";
         sheet.getRange(`B${currentRow}`).format.horizontalAlignment = "Right";
         currentRow++;
       }
     });
     
+    // Empty row before Cost Items (OpEx) Header
+    sheet.getRange(`${currentRow}:${currentRow}`).format.rowHeight = 5;
+    currentRow++;
+    
     // Cost Items (OpEx) Header
-    currentRow += 1;
     sheet.getRange(`A${currentRow}:B${currentRow}`).merge();
     sheet.getRange(`A${currentRow}`).values = [["Cost Items (OpEx)"]];
     sheet.getRange(`A${currentRow}`).format.font.bold = true;
+    sheet.getRange(`A${currentRow}`).format.font.name = "Times New Roman";
+    sheet.getRange(`A${currentRow}`).format.font.size = 12;
     sheet.getRange(`A${currentRow}`).format.font.color = "white";
     sheet.getRange(`A${currentRow}:B${currentRow}`).format.fill.color = "#1F3A5F";
     currentRow++;
@@ -891,8 +931,9 @@ class MAModelingAddin {
     data.costItems.opex.forEach(item => {
       sheet.getRange(`A${currentRow}`).values = [[item.name]];
       sheet.getRange(`B${currentRow}`).values = [[item.value]];
+      sheet.getRange(`A${currentRow}:B${currentRow}`).format.font.name = "Times New Roman";
+      sheet.getRange(`A${currentRow}:B${currentRow}`).format.font.size = 12;
       sheet.getRange(`B${currentRow}`).numberFormat = [["#,##0"]];
-      sheet.getRange(`B${currentRow}`).format.fill.color = "#FFE6CC";
       sheet.getRange(`B${currentRow}`).format.horizontalAlignment = "Right";
       currentRow++;
       
@@ -900,8 +941,9 @@ class MAModelingAddin {
       if (item.name === 'Staff expenses' && item.growth) {
         sheet.getRange(`A${currentRow}`).values = [["Salary Growth (p.a.)"]];
         sheet.getRange(`B${currentRow}`).values = [[item.growth / 100]];
+        sheet.getRange(`A${currentRow}:B${currentRow}`).format.font.name = "Times New Roman";
+        sheet.getRange(`A${currentRow}:B${currentRow}`).format.font.size = 12;
         sheet.getRange(`B${currentRow}`).numberFormat = [["0.00%"]];
-        sheet.getRange(`B${currentRow}`).format.fill.color = "#FFE6CC";
         sheet.getRange(`B${currentRow}`).format.horizontalAlignment = "Right";
         currentRow++;
       }
@@ -910,17 +952,23 @@ class MAModelingAddin {
     // OpEx Cost Inflation
     sheet.getRange(`A${currentRow}`).values = [["OpEx Cost Inflation"]];
     sheet.getRange(`B${currentRow}`).values = [[0.02]];
+    sheet.getRange(`A${currentRow}:B${currentRow}`).format.font.name = "Times New Roman";
+    sheet.getRange(`A${currentRow}:B${currentRow}`).format.font.size = 12;
     sheet.getRange(`B${currentRow}`).numberFormat = [["0.00%"]];
-    sheet.getRange(`B${currentRow}`).format.fill.color = "#FFE6CC";
     sheet.getRange(`B${currentRow}`).format.horizontalAlignment = "Right";
     currentRow++;
     
     // Cost Items (CapEx) Header - only show if there are CapEx items
     if (data.costItems.capex.length > 0) {
-      currentRow += 1;
+      // Empty row before CapEx Header
+      sheet.getRange(`${currentRow}:${currentRow}`).format.rowHeight = 5;
+      currentRow++;
+      
       sheet.getRange(`A${currentRow}:B${currentRow}`).merge();
       sheet.getRange(`A${currentRow}`).values = [["Cost Items (CapEx)"]];
       sheet.getRange(`A${currentRow}`).format.font.bold = true;
+      sheet.getRange(`A${currentRow}`).format.font.name = "Times New Roman";
+      sheet.getRange(`A${currentRow}`).format.font.size = 12;
       sheet.getRange(`A${currentRow}`).format.font.color = "white";
       sheet.getRange(`A${currentRow}:B${currentRow}`).format.fill.color = "#1F3A5F";
       currentRow++;
@@ -929,8 +977,9 @@ class MAModelingAddin {
       data.costItems.capex.forEach(item => {
         sheet.getRange(`A${currentRow}`).values = [[item.name]];
         sheet.getRange(`B${currentRow}`).values = [[item.value]];
+        sheet.getRange(`A${currentRow}:B${currentRow}`).format.font.name = "Times New Roman";
+        sheet.getRange(`A${currentRow}:B${currentRow}`).format.font.size = 12;
         sheet.getRange(`B${currentRow}`).numberFormat = [["#,##0"]];
-        sheet.getRange(`B${currentRow}`).format.fill.color = "#FFE6CC";
         sheet.getRange(`B${currentRow}`).format.horizontalAlignment = "Right";
         currentRow++;
       });
@@ -938,17 +987,21 @@ class MAModelingAddin {
       // CapEx Cost Inflation
       sheet.getRange(`A${currentRow}`).values = [["CapEx Cost Inflation"]];
       sheet.getRange(`B${currentRow}`).values = [[0.015]];
+      sheet.getRange(`A${currentRow}:B${currentRow}`).format.font.name = "Times New Roman";
+      sheet.getRange(`A${currentRow}:B${currentRow}`).format.font.size = 12;
       sheet.getRange(`B${currentRow}`).numberFormat = [["0.00%"]];
-      sheet.getRange(`B${currentRow}`).format.fill.color = "#FFE6CC";
       sheet.getRange(`B${currentRow}`).format.horizontalAlignment = "Right";
       currentRow++;
     }
     
     // Total Fixed Costs section
     currentRow += 1;
+    sheet.getRange(`${currentRow}:${currentRow}`).format.rowHeight = 5;
     sheet.getRange(`A${currentRow}:B${currentRow}`).merge();
     sheet.getRange(`A${currentRow}`).values = [["Cost Items (CapEx)"]];
     sheet.getRange(`A${currentRow}`).format.font.bold = true;
+    sheet.getRange(`A${currentRow}`).format.font.name = "Times New Roman";
+    sheet.getRange(`A${currentRow}`).format.font.size = 12;
     sheet.getRange(`A${currentRow}`).format.font.color = "white";
     sheet.getRange(`A${currentRow}:B${currentRow}`).format.fill.color = "#1F3A5F";
     currentRow++;
@@ -956,15 +1009,18 @@ class MAModelingAddin {
     sheet.getRange(`A${currentRow}`).values = [["Total Fixed Costs"]];
     sheet.getRange(`B${currentRow}`).values = [[2000]];
     sheet.getRange(`B${currentRow}`).numberFormat = [["#,##0"]];
-    sheet.getRange(`B${currentRow}`).format.fill.color = "#FFE6CC";
+    // Removed orange highlight
     sheet.getRange(`B${currentRow}`).format.horizontalAlignment = "Right";
     currentRow++;
     
     // Exit Assumptions Header
     currentRow += 1;
+    sheet.getRange(`${currentRow}:${currentRow}`).format.rowHeight = 5;
     sheet.getRange(`A${currentRow}:B${currentRow}`).merge();
     sheet.getRange(`A${currentRow}`).values = [["Exit Assumptions"]];
     sheet.getRange(`A${currentRow}`).format.font.bold = true;
+    sheet.getRange(`A${currentRow}`).format.font.name = "Times New Roman";
+    sheet.getRange(`A${currentRow}`).format.font.size = 12;
     sheet.getRange(`A${currentRow}`).format.font.color = "white";
     sheet.getRange(`A${currentRow}:B${currentRow}`).format.fill.color = "#1F3A5F";
     currentRow++;
@@ -973,14 +1029,14 @@ class MAModelingAddin {
     sheet.getRange(`A${currentRow}`).values = [["Disposal Costs"]];
     sheet.getRange(`B${currentRow}`).values = [[data.disposalCost / 100]];
     sheet.getRange(`B${currentRow}`).numberFormat = [["0.00%"]];
-    sheet.getRange(`B${currentRow}`).format.fill.color = "#FFE6CC";
+    // Removed orange highlight
     sheet.getRange(`B${currentRow}`).format.horizontalAlignment = "Right";
     currentRow++;
     
     sheet.getRange(`A${currentRow}`).values = [["Terminal Cap Rate"]];
     sheet.getRange(`B${currentRow}`).values = [[data.terminalCapRate / 100]];
     sheet.getRange(`B${currentRow}`).numberFormat = [["0.00%"]];
-    sheet.getRange(`B${currentRow}`).format.fill.color = "#FFE6CC";
+    // Removed orange highlight
     sheet.getRange(`B${currentRow}`).format.horizontalAlignment = "Right";
     currentRow++;
     
