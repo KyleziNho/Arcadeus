@@ -1022,28 +1022,26 @@ class MAModelingAddin {
       currentRow++;
     }
     
-    // Total Fixed Costs section
+    // Empty row before Total Fixed Costs
     currentRow += 1;
     sheet.getRange(`${currentRow}:${currentRow}`).format.rowHeight = 5;
-    sheet.getRange(`A${currentRow}:B${currentRow}`).merge();
-    sheet.getRange(`A${currentRow}`).values = [["Capital Expenses"]];
-    sheet.getRange(`A${currentRow}`).format.font.bold = true;
-    sheet.getRange(`A${currentRow}`).format.font.name = "Times New Roman";
-    sheet.getRange(`A${currentRow}`).format.font.size = 12;
-    sheet.getRange(`A${currentRow}`).format.font.color = "white";
-    sheet.getRange(`A${currentRow}:B${currentRow}`).format.fill.color = "#1F3A5F";
-    currentRow++;
+    currentRow += 1;
     
+    // Total Fixed Costs
     sheet.getRange(`A${currentRow}`).values = [["Total Fixed Costs"]];
     sheet.getRange(`B${currentRow}`).values = [[2000]];
+    sheet.getRange(`A${currentRow}:B${currentRow}`).format.font.name = "Times New Roman";
+    sheet.getRange(`A${currentRow}:B${currentRow}`).format.font.size = 12;
     sheet.getRange(`B${currentRow}`).numberFormat = [["#,##0"]];
-    // Removed orange highlight
     sheet.getRange(`B${currentRow}`).format.horizontalAlignment = "Right";
     currentRow++;
     
-    // Exit Assumptions Header
+    // Empty row before Exit Assumptions
     currentRow += 1;
     sheet.getRange(`${currentRow}:${currentRow}`).format.rowHeight = 5;
+    currentRow += 1;
+    
+    // Exit Assumptions Header
     sheet.getRange(`A${currentRow}:B${currentRow}`).merge();
     sheet.getRange(`A${currentRow}`).values = [["Exit Assumptions"]];
     sheet.getRange(`A${currentRow}`).format.font.bold = true;
