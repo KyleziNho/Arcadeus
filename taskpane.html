@@ -4,13 +4,32 @@
     <meta charset="UTF-8"/>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge"/>
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>M&A PE Modeler</title>
+    <title>Arcadeus - M&A Intelligence Suite</title>
     <script src="https://appsforoffice.microsoft.com/lib/1.1/hosted/office.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="taskpane.css">
     <script defer="defer" src="taskpane.js"></script>
 </head>
 <body>
     <div class="container">
+        <!-- Arcadeus Header -->
+        <div class="app-header">
+            <div class="brand-section">
+                <div class="logo-container">
+                    <div class="logo-icon">A</div>
+                    <div class="brand-info">
+                        <h1 class="brand-name">Arcadeus</h1>
+                        <span class="tagline">M&A Intelligence Suite</span>
+                    </div>
+                </div>
+            </div>
+            <div class="header-description">
+                <p>AI-powered financial modeling and deal analysis platform</p>
+            </div>
+        </div>
+
         <div class="file-upload-header">
             <div class="upload-zone" id="mainUploadZone">
                 <div class="upload-content">
@@ -19,7 +38,7 @@
                         <path d="M7 10l5-5 5 5"></path>
                         <line x1="12" y1="15" x2="12" y2="3"></line>
                     </svg>
-                    <h2>Drop your CSV/PDF/PNG files here</h2>
+                    <h2>Drop your files here</h2>
                     <p>Upload target company reports or spreadsheets to auto-fill data</p>
                     <div class="upload-specs">
                         <span>Up to 4 files • 10MB total • CSV, PDF, PNG formats</span>
