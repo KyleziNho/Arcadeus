@@ -2408,8 +2408,12 @@ class MAModelingAddin {
       progressDiv.querySelector('p').textContent = 'Extracting cost structure...';
       
       const costData = await this.processBatchExtraction(fileContents, 'cost');
+      console.log('🔍 Cost batch returned:', costData);
       if (costData && costData.costItems) {
         extractedData.costItems = costData.costItems;
+        console.log('✅ Cost items found:', extractedData.costItems.length);
+      } else {
+        console.warn('⚠️ No cost data returned from batch processing');
       }
 
       // Step 5: Apply all extracted data
@@ -2469,7 +2473,7 @@ class MAModelingAddin {
     console.log(`🔄 Processing batch: ${batchType}`);
     
     // Limit file content size per batch to prevent memory issues
-    const maxContentLength = 20000; // Increased slightly for better cost extraction
+    const maxContentLength = 10000; // Reduced to prevent 502 errors
     let processedContent = fileContents.join('\n\n');
     
     if (processedContent.length > maxContentLength) {
@@ -2601,44 +2605,27 @@ EXTRACTION FOCUS:
   }
 
   createCostExtractionPrompt() {
-    return `Extract ONLY cost items and inflation rates from the financial documents.
+    return `Extract cost items from the documents. Look for "Cost Item 1", "Cost Item 2", "Staff expenses", etc.
 
-CRITICAL: You MUST carefully search for ALL cost-related data including:
-- "Cost Item 1", "Cost Item 2", etc.
-- "Staff expenses", "Operating expenses", "Admin expenses"
-- Any line with "Cost" or "Expense" in the name
-- Look in BOTH the beginning AND end of the document
-
-REQUIRED JSON STRUCTURE:
+REQUIRED JSON:
 {
   "extractedData": {
     "costItems": [
       {
-        "name": "Staff expenses",
-        "initialValue": 60000,
+        "name": "Cost Item 1",
+        "initialValue": 200000,
         "growthType": "linear",
-        "growthRate": 0.5
+        "growthRate": 2
       }
     ]
   }
 }
 
-EXTRACTION RULES:
-1. SEARCH PATTERNS:
-   - "Cost Item X" where X is a number
-   - Any expense categories: "Staff", "Operating", "Admin", "Maintenance"
-   - Values after commas: "Cost Item 1,200000" → extract 200000
-
-2. GROWTH RATES:
-   - Look for "OpEx Cost Inflation", "Cost Growth", "Expense Growth"
-   - Match inflation rates to cost categories
-   - Default to 2% if inflation rate is mentioned but not specified
-
-3. IMPORTANT:
-   - Extract ALL cost items found, not just the first few
-   - Check the ENTIRE document, especially near revenue items
-   - If cost data exists but is unclear, make reasonable estimates
-   - Return empty array [] ONLY if absolutely no cost data exists`;
+EXTRACTION:
+- Find lines like "Cost Item 1,200000" → extract name and value
+- Look for "OpEx Cost Inflation" for growth rates
+- Check near revenue items for cost data
+- Return empty array [] if no costs found`;
   }
 
   createExtractionSummary(data) {
