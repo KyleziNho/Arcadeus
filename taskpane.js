@@ -2361,9 +2361,9 @@ class MAModelingAddin {
     if (autoFillBtn) {
       autoFillBtn.disabled = true;
       autoFillBtn.innerHTML = `
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation: spin 1s linear infinite;">
-          <circle cx="12" cy="12" r="10"></circle>
-          <path d="M12 2v4m0 12v4m10-10h-4M6 12H2"></path>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 12l2 2 4-4"></path>
+          <circle cx="12" cy="12" r="9"></circle>
         </svg>
         Processing...
       `;
