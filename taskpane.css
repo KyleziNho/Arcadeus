@@ -756,6 +756,23 @@ input[readonly] {
   background: var(--surface-secondary);
 }
 
+/* Generate Model Section */
+.generate-model-section {
+  text-align: center;
+  padding: var(--spacing-2xl) var(--spacing-lg);
+  background: var(--surface-secondary);
+  border-radius: var(--radius-large);
+  margin: var(--spacing-xl) 0;
+  border: 1px solid var(--surface-tertiary);
+}
+
+.generate-model-section .button {
+  font-size: 18px;
+  padding: var(--spacing-md) var(--spacing-2xl);
+  font-weight: 600;
+  gap: var(--spacing-md);
+}
+
 .status-message {
   font-size: 14px;
   color: var(--text-tertiary);

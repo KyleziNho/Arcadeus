@@ -510,7 +510,224 @@ class MAModelingAddin {
 
   async generateModel() {
     console.log('Generate model clicked');
-    this.addChatMessage('assistant', 'Model generation feature is being loaded. Please use the chat to ask me to "create a blank assumptions template" for now.');
+    
+    // First validate all required fields are filled
+    const validation = this.validateAllFields();
+    if (!validation.isValid) {
+      this.addChatMessage('assistant', `⚠️ Please fill out all required fields before generating the model:\n${validation.errors.join('\n')}`);
+      return;
+    }
+
+    try {
+      await Excel.run(async (context) => {
+        // Create a new worksheet named "Assumptions"
+        const sheets = context.workbook.worksheets;
+        let assumptionsSheet;
+        
+        try {
+          // Try to get existing sheet
+          assumptionsSheet = sheets.getItem("Assumptions");
+          assumptionsSheet.delete();
+          await context.sync();
+        } catch (e) {
+          // Sheet doesn't exist, that's fine
+        }
+        
+        // Create new sheet
+        assumptionsSheet = sheets.add("Assumptions");
+        assumptionsSheet.activate();
+        
+        // Collect all data
+        const modelData = this.collectAllModelData();
+        
+        // Generate the assumptions page layout
+        await this.createAssumptionsLayout(context, assumptionsSheet, modelData);
+        
+        await context.sync();
+        
+        this.addChatMessage('assistant', '✅ Model assumptions page generated successfully in Excel!');
+      });
+    } catch (error) {
+      console.error('Error generating model:', error);
+      this.addChatMessage('assistant', `❌ Error generating model: ${error.message}`);
+    }
+  }
+
+  validateAllFields() {
+    const errors = [];
+    const requiredFields = [
+      // High-Level Parameters
+      { id: 'currency', name: 'Currency' },
+      { id: 'projectStartDate', name: 'Project Start Date' },
+      { id: 'projectEndDate', name: 'Project End Date' },
+      { id: 'modelPeriods', name: 'Model Periods' },
+      
+      // Deal Assumptions
+      { id: 'dealName', name: 'Deal Name' },
+      { id: 'dealValue', name: 'Deal Value' },
+      { id: 'transactionFee', name: 'Transaction Fee' },
+      { id: 'dealLTV', name: 'Deal LTV' },
+      
+      // Exit Assumptions
+      { id: 'disposalCost', name: 'Disposal Cost' },
+      { id: 'terminalCapRate', name: 'Terminal Cap Rate' }
+    ];
+    
+    // Check required fields
+    requiredFields.forEach(field => {
+      const element = document.getElementById(field.id);
+      if (!element || !element.value || element.value.trim() === '') {
+        errors.push(`• ${field.name}`);
+      }
+    });
+    
+    // Check at least one revenue item exists
+    const revenueItems = document.querySelectorAll('.revenue-item');
+    if (revenueItems.length === 0) {
+      errors.push('• At least one Revenue Item');
+    }
+    
+    // Check at least one cost item exists
+    const costItems = document.querySelectorAll('.cost-item');
+    if (costItems.length === 0) {
+      errors.push('• At least one Cost Item');
+    }
+    
+    return {
+      isValid: errors.length === 0,
+      errors: errors
+    };
+  }
+
+  collectAllModelData() {
+    const data = {
+      // Company info
+      dealName: document.getElementById('dealName').value || 'Sample Company Ltd.',
+      dealType: 'Office Acquisition',
+      sector: 'Real Estate',
+      geography: 'United States',
+      businessModel: 'Core-Plus/Light Refurb',
+      ownershipStructure: 'Private',
+      
+      // Acquisition Assumptions
+      acquisitionDate: this.formatDateForExcel(document.getElementById('projectStartDate').value),
+      holdingPeriod: this.calculateHoldingPeriod(),
+      currency: document.getElementById('currency').value,
+      transactionFee: parseFloat(document.getElementById('transactionFee').value) || 0,
+      acquisitionLTV: parseFloat(document.getElementById('dealLTV').value) || 0,
+      dealValue: parseFloat(document.getElementById('dealValue').value) || 0,
+      
+      // Revenue Items
+      revenueItems: this.collectRevenueItems(),
+      
+      // Cost Items
+      costItems: this.collectCostItems(),
+      
+      // Exit Assumptions
+      disposalCost: parseFloat(document.getElementById('disposalCost').value) || 0,
+      terminalCapRate: parseFloat(document.getElementById('terminalCapRate').value) || 0,
+      
+      // Debt info if enabled
+      hasDebt: document.getElementById('debtYes')?.checked || false,
+      debtAmount: 0,
+      interestRateMargin: 0
+    };
+    
+    // Calculate debt amount and collect debt info if enabled
+    if (data.hasDebt) {
+      data.debtAmount = data.dealValue * (data.acquisitionLTV / 100);
+      data.equityContribution = data.dealValue - data.debtAmount;
+      
+      // Get debt parameters
+      const debtInputs = document.querySelectorAll('#debtParameters input');
+      debtInputs.forEach(input => {
+        if (input.id === 'marginRate') {
+          data.interestRateMargin = parseFloat(input.value) || 2.0;
+        }
+      });
+    } else {
+      data.equityContribution = data.dealValue;
+      data.debtAmount = 0;
+    }
+    
+    return data;
+  }
+
+  formatDateForExcel(dateString) {
+    if (!dateString) return '31/3/25';
+    const date = new Date(dateString);
+    const day = date.getDate();
+    const month = date.getMonth() + 1;
+    const year = date.getFullYear().toString().substr(-2);
+    return `${day}/${month}/${year}`;
+  }
+
+  calculateHoldingPeriod() {
+    const startDate = document.getElementById('projectStartDate').value;
+    const endDate = document.getElementById('projectEndDate').value;
+    
+    if (!startDate || !endDate) return 24;
+    
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const monthsDiff = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth());
+    
+    return Math.max(1, monthsDiff);
+  }
+
+  collectRevenueItems() {
+    const items = [];
+    const revenueContainers = document.querySelectorAll('.revenue-item');
+    
+    revenueContainers.forEach((container, index) => {
+      const nameInput = container.querySelector(`#revenueName_${index + 1}`);
+      const valueInput = container.querySelector(`#revenueValue_${index + 1}`);
+      const growthInput = container.querySelector(`#linearGrowth_${index + 1}`);
+      
+      if (nameInput && valueInput) {
+        items.push({
+          name: nameInput.value || `Revenue Item ${index + 1}`,
+          value: parseFloat(valueInput.value) || 0,
+          growth: parseFloat(growthInput?.value) || 0
+        });
+      }
+    });
+    
+    return items;
+  }
+
+  collectCostItems() {
+    const opexItems = [];
+    const capexItems = [];
+    const costContainers = document.querySelectorAll('.cost-item');
+    
+    costContainers.forEach((container, index) => {
+      const nameInput = container.querySelector(`#costName_${index + 1}`);
+      const valueInput = container.querySelector(`#costValue_${index + 1}`);
+      const typeSelect = container.querySelector(`#costType_${index + 1}`);
+      const growthInput = container.querySelector(`#linearGrowth_cost_${index + 1}`);
+      
+      if (nameInput && valueInput) {
+        const item = {
+          name: nameInput.value || `Cost Item ${index + 1}`,
+          value: parseFloat(valueInput.value) || 0,
+          growth: parseFloat(growthInput?.value) || 2.0
+        };
+        
+        if (typeSelect?.value === 'capex') {
+          capexItems.push(item);
+        } else {
+          opexItems.push(item);
+        }
+      }
+    });
+    
+    // Add any special items
+    if (opexItems.length === 0) {
+      opexItems.push({ name: 'Staff expenses', value: 60000, growth: 0.5 });
+    }
+    
+    return { opex: opexItems, capex: capexItems };
   }
 
   collectAssumptions() {
@@ -528,6 +745,225 @@ class MAModelingAddin {
       exitMultiple: parseFloat(getValue('exitMultiple')) || 12,
       selectedRange: this.selectedRange || undefined
     };
+  }
+
+  async createAssumptionsLayout(context, sheet, data) {
+    let currentRow = 1;
+    
+    // Title Section
+    const titleRange = sheet.getRange(`A${currentRow}:B${currentRow}`);
+    titleRange.merge();
+    titleRange.values = [[`${data.dealName} - Key Assumptions`]];
+    titleRange.format.font.bold = true;
+    titleRange.format.font.size = 14;
+    titleRange.format.fill.color = '#E5E5E5';
+    currentRow++;
+    
+    // Company Info Section
+    const companyInfo = [
+      ['Deal type', data.dealType],
+      ['Sector/Industry', data.sector],
+      ['Geography', data.geography],
+      ['Business Model', data.businessModel],
+      ['Ownership Structure', data.ownershipStructure]
+    ];
+    
+    companyInfo.forEach(row => {
+      sheet.getRange(`A${currentRow}:A${currentRow}`).values = [[row[0]]];
+      sheet.getRange(`B${currentRow}:B${currentRow}`).values = [[row[1]]];
+      sheet.getRange(`B${currentRow}:B${currentRow}`).format.fill.color = '#FFF5E6';
+      sheet.getRange(`B${currentRow}:B${currentRow}`).format.horizontalAlignment = 'Right';
+      currentRow++;
+    });
+    currentRow++;
+    
+    // Acquisition Assumptions Section
+    const acqHeaderRange = sheet.getRange(`A${currentRow}:B${currentRow}`);
+    acqHeaderRange.merge();
+    acqHeaderRange.values = [['Acquisition Assumptions']];
+    acqHeaderRange.format.font.bold = true;
+    acqHeaderRange.format.font.color = 'white';
+    acqHeaderRange.format.fill.color = '#1F3A5F';
+    currentRow++;
+    
+    const acquisitionData = [
+      ['Acquisition date', data.acquisitionDate],
+      ['Holding Period (Months)', data.holdingPeriod],
+      ['Currency', data.currency === 'USD' ? '$' : data.currency],
+      ['Transaction Fees', `${data.transactionFee.toFixed(2)}%`],
+      ['Acquisition LTV', `${data.acquisitionLTV.toFixed(2)}%`],
+      ['Equity Contribution', data.equityContribution],
+      ['Debt Financing', data.debtAmount],
+      ['Debt Issuance Fees', '1.00%'],
+      ['Interest Rate Margin', `${data.interestRateMargin.toFixed(2)}%`]
+    ];
+    
+    acquisitionData.forEach(row => {
+      sheet.getRange(`A${currentRow}:A${currentRow}`).values = [[row[0]]];
+      const valueCell = sheet.getRange(`B${currentRow}:B${currentRow}`);
+      
+      // Format numbers appropriately
+      if (typeof row[1] === 'number' && row[0].includes('Contribution') || row[0].includes('Financing')) {
+        valueCell.values = [[row[1]]];
+        valueCell.numberFormat = [['#,##0']];
+      } else {
+        valueCell.values = [[row[1]]];
+      }
+      
+      valueCell.format.fill.color = '#FFF5E6';
+      valueCell.format.horizontalAlignment = 'Right';
+      currentRow++;
+    });
+    currentRow++;
+    
+    // Revenue Items Section
+    const revHeaderRange = sheet.getRange(`A${currentRow}:B${currentRow}`);
+    revHeaderRange.merge();
+    revHeaderRange.values = [['Revenue Items']];
+    revHeaderRange.format.font.bold = true;
+    revHeaderRange.format.font.color = 'white';
+    revHeaderRange.format.fill.color = '#1F3A5F';
+    currentRow++;
+    
+    data.revenueItems.forEach((item, index) => {
+      sheet.getRange(`A${currentRow}:A${currentRow}`).values = [[item.name]];
+      const valueCell = sheet.getRange(`B${currentRow}:B${currentRow}`);
+      valueCell.values = [[item.value]];
+      valueCell.numberFormat = [['#,##0']];
+      valueCell.format.fill.color = '#FFF5E6';
+      valueCell.format.horizontalAlignment = 'Right';
+      currentRow++;
+      
+      if (item.growth > 0) {
+        sheet.getRange(`A${currentRow}:A${currentRow}`).values = [[`Rent Growth ${index + 1}`]];
+        sheet.getRange(`B${currentRow}:B${currentRow}`).values = [[`${item.growth.toFixed(2)}%`]];
+        sheet.getRange(`B${currentRow}:B${currentRow}`).format.fill.color = '#FFF5E6';
+        sheet.getRange(`B${currentRow}:B${currentRow}`).format.horizontalAlignment = 'Right';
+        currentRow++;
+      }
+    });
+    currentRow++;
+    
+    // Cost Items (OpEx) Section
+    const opexHeaderRange = sheet.getRange(`A${currentRow}:B${currentRow}`);
+    opexHeaderRange.merge();
+    opexHeaderRange.values = [['Cost Items (OpEx)']];
+    opexHeaderRange.format.font.bold = true;
+    opexHeaderRange.format.font.color = 'white';
+    opexHeaderRange.format.fill.color = '#1F3A5F';
+    currentRow++;
+    
+    data.costItems.opex.forEach((item, index) => {
+      sheet.getRange(`A${currentRow}:A${currentRow}`).values = [[item.name]];
+      const valueCell = sheet.getRange(`B${currentRow}:B${currentRow}`);
+      valueCell.values = [[item.value]];
+      valueCell.numberFormat = [['#,##0']];
+      valueCell.format.fill.color = '#FFF5E6';
+      valueCell.format.horizontalAlignment = 'Right';
+      currentRow++;
+      
+      // Add growth rate for specific items
+      if (item.name === 'Staff expenses' && item.growth) {
+        sheet.getRange(`A${currentRow}:A${currentRow}`).values = [['Salary Growth (p.a.)']];
+        sheet.getRange(`B${currentRow}:B${currentRow}`).values = [[`${item.growth.toFixed(2)}%`]];
+        sheet.getRange(`B${currentRow}:B${currentRow}`).format.fill.color = '#FFF5E6';
+        sheet.getRange(`B${currentRow}:B${currentRow}`).format.horizontalAlignment = 'Right';
+        currentRow++;
+      }
+    });
+    
+    // Add OpEx inflation
+    sheet.getRange(`A${currentRow}:A${currentRow}`).values = [['OpEx Cost Inflation']];
+    sheet.getRange(`B${currentRow}:B${currentRow}`).values = [['2.00%']];
+    sheet.getRange(`B${currentRow}:B${currentRow}`).format.fill.color = '#FFF5E6';
+    sheet.getRange(`B${currentRow}:B${currentRow}`).format.horizontalAlignment = 'Right';
+    currentRow++;
+    currentRow++;
+    
+    // Cost Items (CapEx) Section if any
+    if (data.costItems.capex.length > 0) {
+      const capexHeaderRange = sheet.getRange(`A${currentRow}:B${currentRow}`);
+      capexHeaderRange.merge();
+      capexHeaderRange.values = [['Cost Items (CapEx)']];
+      capexHeaderRange.format.font.bold = true;
+      capexHeaderRange.format.font.color = 'white';
+      capexHeaderRange.format.fill.color = '#1F3A5F';
+      currentRow++;
+      
+      data.costItems.capex.forEach(item => {
+        sheet.getRange(`A${currentRow}:A${currentRow}`).values = [[item.name]];
+        const valueCell = sheet.getRange(`B${currentRow}:B${currentRow}`);
+        valueCell.values = [[item.value]];
+        valueCell.numberFormat = [['#,##0']];
+        valueCell.format.fill.color = '#FFF5E6';
+        valueCell.format.horizontalAlignment = 'Right';
+        currentRow++;
+      });
+      
+      // Add CapEx inflation
+      sheet.getRange(`A${currentRow}:A${currentRow}`).values = [['CapEx Cost Inflation']];
+      sheet.getRange(`B${currentRow}:B${currentRow}`).values = [['1.50%']];
+      sheet.getRange(`B${currentRow}:B${currentRow}`).format.fill.color = '#FFF5E6';
+      sheet.getRange(`B${currentRow}:B${currentRow}`).format.horizontalAlignment = 'Right';
+      currentRow++;
+      currentRow++;
+    }
+    
+    // Total Fixed Costs placeholder
+    const fixedCostsHeaderRange = sheet.getRange(`A${currentRow}:B${currentRow}`);
+    fixedCostsHeaderRange.merge();
+    fixedCostsHeaderRange.values = [['Cost Items (CapEx)']];
+    fixedCostsHeaderRange.format.font.bold = true;
+    fixedCostsHeaderRange.format.font.color = 'white';
+    fixedCostsHeaderRange.format.fill.color = '#1F3A5F';
+    currentRow++;
+    
+    sheet.getRange(`A${currentRow}:A${currentRow}`).values = [['Total Fixed Costs']];
+    sheet.getRange(`B${currentRow}:B${currentRow}`).values = [[2000]];
+    sheet.getRange(`B${currentRow}:B${currentRow}`).numberFormat = [['#,##0']];
+    sheet.getRange(`B${currentRow}:B${currentRow}`).format.fill.color = '#FFF5E6';
+    sheet.getRange(`B${currentRow}:B${currentRow}`).format.horizontalAlignment = 'Right';
+    currentRow++;
+    currentRow++;
+    
+    // Exit Assumptions Section
+    const exitHeaderRange = sheet.getRange(`A${currentRow}:B${currentRow}`);
+    exitHeaderRange.merge();
+    exitHeaderRange.values = [['Exit Assumptions']];
+    exitHeaderRange.format.font.bold = true;
+    exitHeaderRange.format.font.color = 'white';
+    exitHeaderRange.format.fill.color = '#1F3A5F';
+    currentRow++;
+    
+    const exitData = [
+      ['Disposal Costs', `${data.disposalCost.toFixed(2)}%`],
+      ['Terminal Cap Rate', `${data.terminalCapRate.toFixed(2)}%`],
+      ['Terminal NOI', ''],  // Leave blank as requested
+      ['Sale Price', '']     // Leave blank as requested
+    ];
+    
+    exitData.forEach(row => {
+      sheet.getRange(`A${currentRow}:A${currentRow}`).values = [[row[0]]];
+      if (row[1]) {
+        sheet.getRange(`B${currentRow}:B${currentRow}`).values = [[row[1]]];
+        sheet.getRange(`B${currentRow}:B${currentRow}`).format.fill.color = '#FFF5E6';
+      }
+      sheet.getRange(`B${currentRow}:B${currentRow}`).format.horizontalAlignment = 'Right';
+      currentRow++;
+    });
+    
+    // Format column widths
+    sheet.getRange("A:A").format.columnWidth = 200;
+    sheet.getRange("B:B").format.columnWidth = 120;
+    
+    // Add borders to all data
+    const allDataRange = sheet.getRange(`A1:B${currentRow - 1}`);
+    allDataRange.format.borders.getItem('EdgeTop').style = 'Thin';
+    allDataRange.format.borders.getItem('EdgeBottom').style = 'Thin';
+    allDataRange.format.borders.getItem('EdgeLeft').style = 'Thin';
+    allDataRange.format.borders.getItem('EdgeRight').style = 'Thin';
+    allDataRange.format.borders.getItem('InsideHorizontal').style = 'Thin';
+    allDataRange.format.borders.getItem('InsideVertical').style = 'Thin';
   }
 
   async validateModel() {
