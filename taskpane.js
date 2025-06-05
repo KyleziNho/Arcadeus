@@ -787,11 +787,11 @@ class MAModelingAddin {
     sheet.getRange("B10").format.horizontalAlignment = "Right";
     
     // Acquisition Assumptions Header - Row 12
-    sheet.getRange("A12:H12").merge();
+    sheet.getRange("A12:B12").merge();
     sheet.getRange("A12").values = [["Acquisition Assumptions"]];
     sheet.getRange("A12").format.font.bold = true;
     sheet.getRange("A12").format.font.color = "white";
-    sheet.getRange("A12:H12").format.fill.color = "#1F3A5F";
+    sheet.getRange("A12:B12").format.fill.color = "#1F3A5F";
     
     // Acquisition data - Rows 13-22 (added Purchase Price at top)
     sheet.getRange("A13").values = [["Purchase Price"]];
@@ -852,11 +852,11 @@ class MAModelingAddin {
     sheet.getRange("B22").format.horizontalAlignment = "Right";
     
     // Revenue Items Header - Row 24
-    sheet.getRange("A24:H24").merge();
+    sheet.getRange("A24:B24").merge();
     sheet.getRange("A24").values = [["Revenue Items"]];
     sheet.getRange("A24").format.font.bold = true;
     sheet.getRange("A24").format.font.color = "white";
-    sheet.getRange("A24:H24").format.fill.color = "#1F3A5F";
+    sheet.getRange("A24:B24").format.fill.color = "#1F3A5F";
     
     // Revenue items starting at row 25
     let currentRow = 25;
@@ -880,11 +880,11 @@ class MAModelingAddin {
     
     // Cost Items (OpEx) Header
     currentRow += 1;
-    sheet.getRange(`A${currentRow}:H${currentRow}`).merge();
+    sheet.getRange(`A${currentRow}:B${currentRow}`).merge();
     sheet.getRange(`A${currentRow}`).values = [["Cost Items (OpEx)"]];
     sheet.getRange(`A${currentRow}`).format.font.bold = true;
     sheet.getRange(`A${currentRow}`).format.font.color = "white";
-    sheet.getRange(`A${currentRow}:H${currentRow}`).format.fill.color = "#1F3A5F";
+    sheet.getRange(`A${currentRow}:B${currentRow}`).format.fill.color = "#1F3A5F";
     currentRow++;
     
     // OpEx items
@@ -915,17 +915,17 @@ class MAModelingAddin {
     sheet.getRange(`B${currentRow}`).format.horizontalAlignment = "Right";
     currentRow++;
     
-    // Cost Items (CapEx) Header
-    currentRow += 1;
-    sheet.getRange(`A${currentRow}:H${currentRow}`).merge();
-    sheet.getRange(`A${currentRow}`).values = [["Cost Items (CapEx)"]];
-    sheet.getRange(`A${currentRow}`).format.font.bold = true;
-    sheet.getRange(`A${currentRow}`).format.font.color = "white";
-    sheet.getRange(`A${currentRow}:H${currentRow}`).format.fill.color = "#1F3A5F";
-    currentRow++;
-    
-    // CapEx items
+    // Cost Items (CapEx) Header - only show if there are CapEx items
     if (data.costItems.capex.length > 0) {
+      currentRow += 1;
+      sheet.getRange(`A${currentRow}:B${currentRow}`).merge();
+      sheet.getRange(`A${currentRow}`).values = [["Cost Items (CapEx)"]];
+      sheet.getRange(`A${currentRow}`).format.font.bold = true;
+      sheet.getRange(`A${currentRow}`).format.font.color = "white";
+      sheet.getRange(`A${currentRow}:B${currentRow}`).format.fill.color = "#1F3A5F";
+      currentRow++;
+      
+      // CapEx items
       data.costItems.capex.forEach(item => {
         sheet.getRange(`A${currentRow}`).values = [[item.name]];
         sheet.getRange(`B${currentRow}`).values = [[item.value]];
@@ -946,11 +946,11 @@ class MAModelingAddin {
     
     // Total Fixed Costs section
     currentRow += 1;
-    sheet.getRange(`A${currentRow}:H${currentRow}`).merge();
+    sheet.getRange(`A${currentRow}:B${currentRow}`).merge();
     sheet.getRange(`A${currentRow}`).values = [["Cost Items (CapEx)"]];
     sheet.getRange(`A${currentRow}`).format.font.bold = true;
     sheet.getRange(`A${currentRow}`).format.font.color = "white";
-    sheet.getRange(`A${currentRow}:H${currentRow}`).format.fill.color = "#1F3A5F";
+    sheet.getRange(`A${currentRow}:B${currentRow}`).format.fill.color = "#1F3A5F";
     currentRow++;
     
     sheet.getRange(`A${currentRow}`).values = [["Total Fixed Costs"]];
@@ -962,11 +962,11 @@ class MAModelingAddin {
     
     // Exit Assumptions Header
     currentRow += 1;
-    sheet.getRange(`A${currentRow}:H${currentRow}`).merge();
+    sheet.getRange(`A${currentRow}:B${currentRow}`).merge();
     sheet.getRange(`A${currentRow}`).values = [["Exit Assumptions"]];
     sheet.getRange(`A${currentRow}`).format.font.bold = true;
     sheet.getRange(`A${currentRow}`).format.font.color = "white";
-    sheet.getRange(`A${currentRow}:H${currentRow}`).format.fill.color = "#1F3A5F";
+    sheet.getRange(`A${currentRow}:B${currentRow}`).format.fill.color = "#1F3A5F";
     currentRow++;
     
     // Exit data
