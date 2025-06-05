@@ -2331,7 +2331,7 @@ class MAModelingAddin {
   }
 
   async processAutoFill() {
-    console.log('🤖 Processing auto-fill with AI...');
+    console.log('🤖 Processing auto-fill with AI using batch processing...');
     
     if (!this.mainUploadedFiles || this.mainUploadedFiles.length === 0) {
       this.showMainUploadMessage('No files uploaded for processing.', 'error');
@@ -2375,73 +2375,64 @@ class MAModelingAddin {
       progressDiv.querySelector('p').textContent = 'Extracting file content...';
       const fileContents = await this.processMainUploadedFiles();
       console.log('File contents extracted:', fileContents.length, 'files');
-      console.log('DEBUG - File contents being sent to AI:', fileContents);
       
-      // Step 2: Create comprehensive prompt for AI
-      console.log('Step 2: Creating AI prompt...');
-      progressDiv.querySelector('p').textContent = 'Preparing AI analysis...';
-      const aiPrompt = this.createDataExtractionPrompt();
-      console.log('DEBUG - AI prompt:', aiPrompt);
-      
-      // Step 3: Send to AI service
-      console.log('Step 3: Sending to AI for analysis...');
-      progressDiv.querySelector('p').textContent = 'AI analyzing financial data...';
-      
-      const requestPayload = {
-        message: aiPrompt,
-        fileContents: fileContents,
-        autoFillMode: true
+      // Combine all extracted data
+      let extractedData = {
+        highLevelParameters: null,
+        dealAssumptions: null,
+        revenueItems: [],
+        costItems: []
       };
-      console.log('DEBUG - Request payload:', requestPayload);
-      
-      const response = await fetch('/.netlify/functions/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(requestPayload)
-      });
 
-      console.log('AI response status:', response.status);
-      const data = await response.json();
-      console.log('AI response data:', data);
+      // Step 2: Process High-Level Parameters & Deal Assumptions (smaller batch)
+      console.log('Step 2: Processing high-level parameters and deal assumptions...');
+      progressDiv.querySelector('p').textContent = 'Analyzing deal structure...';
       
-      if (data.extractedData) {
-        // Step 4: Apply extracted data
-        progressDiv.querySelector('p').textContent = 'Populating form fields...';
-        await this.applyExtractedData(data.extractedData);
-        
-        // Show success with summary
-        let summary = this.createExtractionSummary(data.extractedData);
-        progressDiv.innerHTML = `
-          <div style="text-align: center; padding: 20px; color: var(--accent-green);">
-            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="10"></circle>
-              <path d="M9 12l2 2 4-4"></path>
-            </svg>
-            <p style="margin-top: 10px; font-weight: 600;">✅ Data Extraction Successful!</p>
-            <div style="text-align: left; margin-top: 15px; font-size: 13px; color: var(--text-secondary);">
-              ${summary}
-            </div>
-          </div>
-        `;
-        
-        this.showMainUploadMessage('✅ High-level parameters, deal assumptions, and revenue items successfully extracted and applied!', 'success');
-      } else {
-        console.error('No extracted data in response:', data);
-        progressDiv.innerHTML = `
-          <div style="text-align: center; padding: 20px; color: var(--accent-orange);">
-            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="10"></circle>
-              <line x1="12" y1="8" x2="12" y2="12"></line>
-              <line x1="12" y1="16" x2="12" y2="16.01"></line>
-            </svg>
-            <p style="margin-top: 10px; font-weight: 500;">⚠️ Limited data extracted</p>
-            <p style="font-size: 13px; color: var(--text-tertiary);">Please check your file format and content.</p>
-          </div>
-        `;
-        this.showMainUploadMessage('⚠️ AI could not extract high-level parameters. Please check file content and try again.', 'error');
+      const basicData = await this.processBatchExtraction(fileContents, 'basic');
+      if (basicData) {
+        extractedData.highLevelParameters = basicData.highLevelParameters;
+        extractedData.dealAssumptions = basicData.dealAssumptions;
       }
+
+      // Step 3: Process Revenue Items (separate batch)
+      console.log('Step 3: Processing revenue items...');
+      progressDiv.querySelector('p').textContent = 'Extracting revenue streams...';
+      
+      const revenueData = await this.processBatchExtraction(fileContents, 'revenue');
+      if (revenueData && revenueData.revenueItems) {
+        extractedData.revenueItems = revenueData.revenueItems;
+      }
+
+      // Step 4: Process Cost Items (separate batch)
+      console.log('Step 4: Processing cost items...');
+      progressDiv.querySelector('p').textContent = 'Extracting cost structure...';
+      
+      const costData = await this.processBatchExtraction(fileContents, 'cost');
+      if (costData && costData.costItems) {
+        extractedData.costItems = costData.costItems;
+      }
+
+      // Step 5: Apply all extracted data
+      console.log('Step 5: Applying extracted data...');
+      progressDiv.querySelector('p').textContent = 'Populating form fields...';
+      await this.applyExtractedData(extractedData);
+      
+      // Show success with summary
+      let summary = this.createExtractionSummary(extractedData);
+      progressDiv.innerHTML = `
+        <div style="text-align: center; padding: 20px; color: var(--accent-green);">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <path d="M9 12l2 2 4-4"></path>
+          </svg>
+          <p style="margin-top: 10px; font-weight: 600;">✅ Data Extraction Successful!</p>
+          <div style="text-align: left; margin-top: 15px; font-size: 13px; color: var(--text-secondary);">
+            ${summary}
+          </div>
+        </div>
+      `;
+      
+      this.showMainUploadMessage('✅ All sections successfully extracted and applied using batch processing!', 'success');
       
     } catch (error) {
       console.error('Auto-fill processing error:', error);
@@ -2472,6 +2463,166 @@ class MAModelingAddin {
         }
       }, 2000);
     }
+  }
+
+  async processBatchExtraction(fileContents, batchType) {
+    console.log(`🔄 Processing batch: ${batchType}`);
+    
+    // Limit file content size per batch to prevent memory issues
+    const maxContentLength = 15000; // Reduced from unlimited
+    let processedContent = fileContents.join('\n\n');
+    
+    if (processedContent.length > maxContentLength) {
+      // Take the first part + last part to capture key data
+      const firstHalf = processedContent.substring(0, maxContentLength / 2);
+      const lastHalf = processedContent.substring(processedContent.length - maxContentLength / 2);
+      processedContent = firstHalf + '\n\n[... content truncated for memory optimization ...]\n\n' + lastHalf;
+      console.log(`📝 Content truncated to ${processedContent.length} characters for batch: ${batchType}`);
+    }
+
+    let prompt, expectedFields;
+    
+    switch (batchType) {
+      case 'basic':
+        prompt = this.createBasicExtractionPrompt();
+        expectedFields = ['highLevelParameters', 'dealAssumptions'];
+        break;
+      case 'revenue':
+        prompt = this.createRevenueExtractionPrompt();
+        expectedFields = ['revenueItems'];
+        break;
+      case 'cost':
+        prompt = this.createCostExtractionPrompt();
+        expectedFields = ['costItems'];
+        break;
+      default:
+        throw new Error(`Unknown batch type: ${batchType}`);
+    }
+
+    try {
+      const requestPayload = {
+        message: prompt,
+        fileContents: [processedContent], // Single processed content string
+        autoFillMode: true,
+        batchType: batchType
+      };
+
+      console.log(`📤 Sending ${batchType} batch API call...`);
+      const response = await fetch('/.netlify/functions/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestPayload)
+      });
+
+      if (!response.ok) {
+        throw new Error(`${batchType} batch API call failed: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log(`📥 ${batchType} batch response:`, data);
+
+      if (data.extractedData) {
+        // Validate expected fields are present
+        const hasExpectedData = expectedFields.some(field => data.extractedData[field]);
+        if (hasExpectedData) {
+          console.log(`✅ ${batchType} batch processing successful`);
+          return data.extractedData;
+        } else {
+          console.warn(`⚠️ ${batchType} batch returned no expected data:`, expectedFields);
+          return null;
+        }
+      } else {
+        console.warn(`⚠️ No extractedData in ${batchType} batch response`);
+        return null;
+      }
+
+    } catch (error) {
+      console.error(`❌ ${batchType} batch processing error:`, error);
+      // Don't throw - let other batches continue
+      return null;
+    }
+  }
+
+  createBasicExtractionPrompt() {
+    return `Extract ONLY high-level parameters and deal assumptions from the financial documents.
+
+REQUIRED JSON STRUCTURE:
+{
+  "extractedData": {
+    "highLevelParameters": {
+      "currency": "USD",
+      "projectStartDate": "2025-03-31",
+      "projectEndDate": "2030-03-31",
+      "modelPeriods": "monthly"
+    },
+    "dealAssumptions": {
+      "dealName": "Company Name",
+      "dealValue": 100000000,
+      "transactionFee": 2.5,
+      "dealLTV": 75
+    }
+  }
+}
+
+EXTRACTION FOCUS:
+- CURRENCY: Look for currency symbols ($, €, £) or codes (USD, EUR, GBP, etc.)
+- DATES: Find acquisition date, deal close date, holding period
+- DEAL NAME: Company name, target company
+- DEAL VALUE: Purchase price, enterprise value, equity + debt
+- TRANSACTION FEE: Banking fees, advisory fees (default 2.5% if not found)
+- DEAL LTV: Leverage ratio, debt percentage (calculate from debt/total if needed)`;
+  }
+
+  createRevenueExtractionPrompt() {
+    return `Extract ONLY revenue items and growth rates from the financial documents.
+
+REQUIRED JSON STRUCTURE:
+{
+  "extractedData": {
+    "revenueItems": [
+      {
+        "name": "Revenue Stream 1",
+        "initialValue": 500000,
+        "growthType": "linear",
+        "growthRate": 2
+      }
+    ]
+  }
+}
+
+EXTRACTION FOCUS:
+- Look for "Revenue Item 1", "Revenue Item 2", etc.
+- Extract exact values and convert to numbers
+- Match growth rates: "Rent Growth 1: 2%" → Revenue Item 1 gets 2% linear growth
+- Use business context for meaningful names
+- If no revenue items found, return empty array []`;
+  }
+
+  createCostExtractionPrompt() {
+    return `Extract ONLY cost items and inflation rates from the financial documents.
+
+REQUIRED JSON STRUCTURE:
+{
+  "extractedData": {
+    "costItems": [
+      {
+        "name": "Staff expenses",
+        "initialValue": 60000,
+        "growthType": "linear",
+        "growthRate": 0.5
+      }
+    ]
+  }
+}
+
+EXTRACTION FOCUS:
+- Look for "Cost Item 1", "Cost Item 2", "Staff expenses", operating expenses
+- Extract exact values: "Cost Item 1,200000" → initialValue: 200000
+- Match inflation: "OpEx Cost Inflation,2" → apply 2% to relevant items
+- Include all cost categories found
+- If no cost items found, return empty array []`;
   }
 
   createExtractionSummary(data) {
@@ -2852,6 +3003,9 @@ IMPORTANT:
       }
 
       // Apply Cost Items
+      console.log('🔍 DEBUG - Checking for cost items in extracted data...');
+      console.log('🔍 DEBUG - extractedData.costItems exists?', !!extractedData.costItems);
+      console.log('🔍 DEBUG - extractedData.costItems value:', extractedData.costItems);
       if (extractedData.costItems && Array.isArray(extractedData.costItems)) {
         if (extractedData.costItems.length > 0) {
           console.log('✅ Found cost items in extracted data:', extractedData.costItems);
