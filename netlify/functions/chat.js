@@ -84,10 +84,12 @@ REVENUE EXTRACTION:
 - Use exact names and values from files
 
 COST EXTRACTION:
-- Look for "Cost Item 1", "Staff expenses", etc.  
+- Look for "Cost Item 1", "Cost Item 2", "Staff expenses", etc.  
 - Extract exact values and inflation rates
 - Match patterns: "OpEx Cost Inflation: 2%", "Salary Growth: 0.5%"
 - Use exact names and values from files
+- CRITICAL: If you see ANY cost/expense data, extract it
+- Look for ANY line with expense keywords: staff, cost, rent, utilities, etc.
 
 REQUIRED DATA STRUCTURE:
 {
@@ -118,6 +120,12 @@ REQUIRED DATA STRUCTURE:
         "initialValue": 60000,
         "growthType": "linear",
         "growthRate": 0.5
+      },
+      {
+        "name": "Cost Item 1",
+        "initialValue": 200000,
+        "growthType": "linear",
+        "growthRate": 2
       }
     ]
   }
