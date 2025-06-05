@@ -410,6 +410,33 @@ body {
   opacity: 1;
 }
 
+/* Add scrolling for sections with many form fields */
+.section-content:not(.collapsed) {
+  max-height: 500px;
+  overflow-y: auto;
+  padding-right: var(--spacing-xs);
+  /* Custom scrollbar styling */
+  scrollbar-width: thin;
+  scrollbar-color: var(--surface-quaternary) transparent;
+}
+
+.section-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.section-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.section-content::-webkit-scrollbar-thumb {
+  background: var(--surface-quaternary);
+  border-radius: 3px;
+}
+
+.section-content::-webkit-scrollbar-thumb:hover {
+  background: var(--text-tertiary);
+}
+
 .collapsible-section.collapsed .section-content {
   max-height: 0;
   opacity: 0;
@@ -750,6 +777,29 @@ input[readonly] {
 /* Revenue Items Styling */
 .revenue-items-container {
   margin-bottom: var(--spacing-lg);
+  max-height: 400px;
+  overflow-y: auto;
+  padding-right: var(--spacing-xs);
+  /* Custom scrollbar styling */
+  scrollbar-width: thin;
+  scrollbar-color: var(--surface-quaternary) transparent;
+}
+
+.revenue-items-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.revenue-items-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.revenue-items-container::-webkit-scrollbar-thumb {
+  background: var(--surface-quaternary);
+  border-radius: 3px;
+}
+
+.revenue-items-container::-webkit-scrollbar-thumb:hover {
+  background: var(--text-tertiary);
 }
 
 .revenue-item {
@@ -821,6 +871,29 @@ input[readonly] {
 /* Cost Items Styling (reuses revenue item styles) */
 .cost-items-container {
   margin-bottom: var(--spacing-lg);
+  max-height: 400px;
+  overflow-y: auto;
+  padding-right: var(--spacing-xs);
+  /* Custom scrollbar styling */
+  scrollbar-width: thin;
+  scrollbar-color: var(--surface-quaternary) transparent;
+}
+
+.cost-items-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.cost-items-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.cost-items-container::-webkit-scrollbar-thumb {
+  background: var(--surface-quaternary);
+  border-radius: 3px;
+}
+
+.cost-items-container::-webkit-scrollbar-thumb:hover {
+  background: var(--text-tertiary);
 }
 
 .cost-item {
