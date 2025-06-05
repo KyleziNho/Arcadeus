@@ -83,6 +83,35 @@ CRITICAL INSTRUCTIONS:
 9. Deal values might be "purchase price", "enterprise value", "transaction value", "acquisition price"
 10. Currency should be detected from symbols ($, €, £) or abbreviations (USD, EUR, GBP)
 
+REVENUE ITEMS EXTRACTION - CRITICAL:
+11. Search for ALL revenue streams in the document - look for patterns like:
+    - "Revenue Item 1", "Revenue Item 2", etc.
+    - "Revenue Stream A", "Revenue Stream B", etc.
+    - Product names, service lines, business segments with revenue
+    - Sales categories, income sources, rental income, subscription revenue
+    - Any line items with monetary values that represent income
+12. For EACH revenue item found, extract:
+    - Name: Use the EXACT name from the document (e.g., "Revenue Item 1" not "Primary Revenue")
+    - Initial Value: The number associated with that revenue item (convert to plain number)
+    - Growth Type: Determine based on data:
+      * "linear" - if you find a consistent growth % (e.g., "2% annual growth")
+      * "nonlinear" - if growth varies by year or mentions "accelerating/decelerating"
+      * "no_growth" - if no growth rate is mentioned or growth is 0%
+    - Growth Rate: Extract the exact percentage (only for linear growth, e.g., 2 for 2%)
+13. Growth rate matching patterns:
+    - "Rent Growth 1: 2%" → Revenue Item 1 has 2% linear growth
+    - "Revenue Item 1 growth: 3%" → Revenue Item 1 has 3% linear growth
+    - "All revenue grows at 5%" → Apply 5% to all revenue items
+    - If no specific match, check for general growth rates
+14. File format specific extraction:
+    - CSV: Look for columns/rows with revenue data
+    - Images/Screenshots: Look for tables or lists showing revenue items
+    - PDF: Extract revenue sections, financial statements, projections
+15. MANDATORY: Extract the EXACT number of revenue items shown in the file
+    - If file shows 3 revenue items, return exactly 3
+    - If file shows 0 revenue items, return empty array []
+    - NEVER invent or estimate revenue items not in the file
+
 REQUIRED DATA STRUCTURE:
 {
   "extractedData": {
@@ -100,10 +129,16 @@ REQUIRED DATA STRUCTURE:
     },
     "revenueItems": [
       {
-        "name": "Revenue stream name",
-        "initialValue": "Current/base year revenue",
-        "growthType": "linear if consistent growth rate, nonlinear if varying",
-        "growthRate": "Annual growth percentage if linear"
+        "name": "Revenue Item 1",
+        "initialValue": 500000,
+        "growthType": "linear",
+        "growthRate": 2
+      },
+      {
+        "name": "Revenue Item 2", 
+        "initialValue": 766000,
+        "growthType": "linear",
+        "growthRate": 3
       }
     ],
     "costItems": [
@@ -125,6 +160,15 @@ REQUIRED DATA STRUCTURE:
     }
   }
 }
+
+CRITICAL REVENUE EXTRACTION RULES:
+- You MUST extract the EXACT revenue items from the uploaded files
+- Do NOT create generic revenue items based on business type
+- If you see "Revenue Item 1: 500,000" then extract exactly that
+- Count ALL revenue items in the files and create that exact number
+- Analyze growth patterns: if consistent % year-over-year = "linear", if varying = "nonlinear", if no growth mentioned = "no_growth"
+- Extract exact values as numbers (remove commas, currency symbols)
+- Match growth rates to specific revenue items when labeled (e.g., "Rent Growth 1" → "Revenue Item 1")
 
 Document Content to Analyze:
 ${documentContext}`;
