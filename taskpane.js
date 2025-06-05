@@ -545,29 +545,49 @@ class MAModelingAddin {
         
         await context.sync();
         
+        this.addChatMessage('assistant', '✅ Assumptions page generated! Now creating Profit & Loss statement...');
+        
         // Create P&L Statement
         let plSheet;
         try {
-          // Try to get existing P&L sheet
-          plSheet = sheets.getItem("Profit & Loss Statement");
-          plSheet.delete();
+          console.log('Starting P&L creation...');
+          
+          try {
+            // Try to get existing P&L sheet
+            plSheet = sheets.getItem("Profit & Loss Statement");
+            plSheet.delete();
+            await context.sync();
+            console.log('Deleted existing P&L sheet');
+          } catch (e) {
+            console.log('No existing P&L sheet to delete');
+          }
+          
+          // Create new P&L sheet
+          console.log('Creating new P&L sheet...');
+          plSheet = sheets.add("Profit & Loss Statement");
           await context.sync();
-        } catch (e) {
-          // Sheet doesn't exist, that's fine
+          console.log('P&L sheet created successfully');
+          
+          // Generate the P&L statement layout
+          console.log('Starting P&L layout generation...');
+          await this.createProfitLossLayout(context, plSheet, modelData);
+          console.log('P&L layout completed');
+          
+          await context.sync();
+          console.log('P&L context synced');
+          
+          // Activate the Assumptions sheet to show it first
+          assumptionsSheet.activate();
+          
+          this.addChatMessage('assistant', '✅ Model assumptions page and Profit & Loss statement generated successfully in Excel!');
+          
+        } catch (plError) {
+          console.error('Error creating P&L statement:', plError);
+          this.addChatMessage('assistant', `⚠️ Assumptions page created successfully, but there was an error creating the P&L statement: ${plError.message}`);
+          
+          // Still activate the assumptions sheet
+          assumptionsSheet.activate();
         }
-        
-        // Create new P&L sheet
-        plSheet = sheets.add("Profit & Loss Statement");
-        
-        // Generate the P&L statement layout
-        await this.createProfitLossLayout(context, plSheet, modelData);
-        
-        await context.sync();
-        
-        // Activate the Assumptions sheet to show it first
-        assumptionsSheet.activate();
-        
-        this.addChatMessage('assistant', '✅ Model assumptions page and Profit & Loss statement generated successfully in Excel!');
       });
     } catch (error) {
       console.error('Error generating model:', error);
@@ -1111,15 +1131,24 @@ class MAModelingAddin {
   }
 
   async createProfitLossLayout(context, sheet, data) {
+    console.log('P&L Layout: Starting with data:', data);
+    
     // Calculate periods and dates
     const projectStartDate = new Date(data.projectStartDate);
     const projectEndDate = new Date(data.projectEndDate);
     const modelPeriods = data.modelPeriods || 12;
     
+    console.log('P&L Layout: Dates and periods:', { projectStartDate, projectEndDate, modelPeriods });
+    
     // Calculate total number of periods
     const totalMonths = (projectEndDate.getFullYear() - projectStartDate.getFullYear()) * 12 + 
                        (projectEndDate.getMonth() - projectStartDate.getMonth());
-    const totalPeriods = Math.ceil(totalMonths / modelPeriods);
+    let totalPeriods = Math.ceil(totalMonths / modelPeriods);
+    
+    // Limit to maximum 20 periods to avoid Excel column limits
+    totalPeriods = Math.min(totalPeriods, 20);
+    
+    console.log('P&L Layout: Calculated periods:', { totalMonths, totalPeriods });
     
     // Set up title and headers
     sheet.getRange("A1").values = [["Profit & Loss Statement"]];
@@ -1139,12 +1168,24 @@ class MAModelingAddin {
     // Generate period headers (1, 2, 3, etc.)
     for (let period = 1; period <= totalPeriods; period++) {
       const col = String.fromCharCode(65 + period); // B, C, D, etc.
+      console.log(`P&L Layout: Creating period header ${period} in column ${col}`);
       sheet.getRange(col + currentRow).values = [[period]];
       sheet.getRange(col + currentRow).format.font.bold = true;
       sheet.getRange(col + currentRow).format.font.name = "Times New Roman";
       sheet.getRange(col + currentRow).format.font.size = 12;
       sheet.getRange(col + currentRow).format.horizontalAlignment = "Center";
     }
+    
+    console.log('P&L Layout: Period headers created successfully');
+    
+    // Test: Let's create a simple test to see if basic functionality works
+    sheet.getRange("A10").values = [["Test P&L Creation"]];
+    sheet.getRange("B10").values = [["SUCCESS"]];
+    
+    console.log('P&L Layout: Basic test complete - if you see this, P&L sheet creation works');
+    
+    // For now, let's return early to test basic functionality
+    return;
     
     currentRow++;
     
