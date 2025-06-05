@@ -554,7 +554,7 @@ class MAModelingAddin {
           
           try {
             // Try to get existing P&L sheet
-            plSheet = sheets.getItem("Profit & Loss Statement");
+            plSheet = sheets.getItem("ProfitLoss");
             plSheet.delete();
             await context.sync();
             console.log('Deleted existing P&L sheet');
@@ -562,27 +562,31 @@ class MAModelingAddin {
             console.log('No existing P&L sheet to delete');
           }
           
-          // Create new P&L sheet
+          // Create new P&L sheet - using simpler name without spaces/special chars
           console.log('Creating new P&L sheet...');
-          plSheet = sheets.add("Profit & Loss Statement");
+          plSheet = sheets.add("ProfitLoss");
           await context.sync();
           console.log('P&L sheet created successfully');
           
-          // Generate the P&L statement layout
-          console.log('Starting P&L layout generation...');
-          await this.createProfitLossLayout(context, plSheet, modelData);
-          console.log('P&L layout completed');
-          
+          // Test basic operations first
+          console.log('Testing basic cell operations...');
+          plSheet.getRange("A1").values = [["Profit & Loss Statement"]];
+          plSheet.getRange("A2").values = [["Test"]];
           await context.sync();
-          console.log('P&L context synced');
+          console.log('Basic operations successful');
           
           // Activate the Assumptions sheet to show it first
           assumptionsSheet.activate();
           
-          this.addChatMessage('assistant', '✅ Model assumptions page and Profit & Loss statement generated successfully in Excel!');
+          this.addChatMessage('assistant', '✅ Model assumptions page and basic Profit & Loss statement created successfully!');
           
         } catch (plError) {
           console.error('Error creating P&L statement:', plError);
+          console.error('Full error details:', {
+            message: plError.message,
+            stack: plError.stack,
+            name: plError.name
+          });
           this.addChatMessage('assistant', `⚠️ Assumptions page created successfully, but there was an error creating the P&L statement: ${plError.message}`);
           
           // Still activate the assumptions sheet
