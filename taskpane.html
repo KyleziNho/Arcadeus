@@ -181,23 +181,45 @@
             </div>
         </div>
 
-        <div class="section collapsible-section" id="costItemsSection">
-            <button class="minimize-btn" id="minimizeCost" aria-label="Minimize Cost Items">
+        <div class="section collapsible-section" id="operatingExpensesSection">
+            <button class="minimize-btn" id="minimizeOpEx" aria-label="Minimize Operating Expenses">
                 <span class="minimize-icon">−</span>
             </button>
-            <h3 data-emoji="💸">Cost Items</h3>
-            <div class="section-content" id="costContent">
-                <div class="cost-items-container" id="costItemsContainer">
-                    <!-- Cost items will be dynamically added here -->
+            <h3 data-emoji="💸">Operating Expenses</h3>
+            <div class="section-content" id="opExContent">
+                <div class="cost-items-container" id="operatingExpensesContainer">
+                    <!-- Operating expenses will be dynamically added here -->
                 </div>
                 <div class="cost-actions">
-                    <button class="button button-secondary" id="addCostItem">
+                    <button class="button button-secondary" id="addOperatingExpense">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <circle cx="12" cy="12" r="10"></circle>
                             <line x1="12" y1="8" x2="12" y2="16"></line>
                             <line x1="8" y1="12" x2="16" y2="12"></line>
                         </svg>
-                        Add Cost Item
+                        Add Operating Expense
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="section collapsible-section" id="capitalExpensesSection">
+            <button class="minimize-btn" id="minimizeCapEx" aria-label="Minimize Capital Expenses">
+                <span class="minimize-icon">−</span>
+            </button>
+            <h3 data-emoji="🏗️">Capital Expenses</h3>
+            <div class="section-content" id="capExContent">
+                <div class="cost-items-container" id="capitalExpensesContainer">
+                    <!-- Capital expenses will be dynamically added here -->
+                </div>
+                <div class="cost-actions">
+                    <button class="button button-secondary" id="addCapitalExpense">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="8" x2="12" y2="16"></line>
+                            <line x1="8" y1="12" x2="16" y2="12"></line>
+                        </svg>
+                        Add Capital Expense
                     </button>
                 </div>
             </div>

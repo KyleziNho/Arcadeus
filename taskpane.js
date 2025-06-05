@@ -697,37 +697,65 @@ class MAModelingAddin {
   }
 
   collectCostItems() {
-    const opexItems = [];
-    const capexItems = [];
-    const costContainers = document.querySelectorAll('.cost-item');
+    const opexItems = this.collectOperatingExpenses();
+    const capexItems = this.collectCapitalExpenses();
     
-    costContainers.forEach((container, index) => {
-      const nameInput = container.querySelector(`#costName_${index + 1}`);
-      const valueInput = container.querySelector(`#costValue_${index + 1}`);
-      const typeSelect = container.querySelector(`#costType_${index + 1}`);
-      const growthInput = container.querySelector(`#linearGrowth_cost_${index + 1}`);
-      
-      if (nameInput && valueInput) {
-        const item = {
-          name: nameInput.value || `Cost Item ${index + 1}`,
-          value: parseFloat(valueInput.value) || 0,
-          growth: parseFloat(growthInput?.value) || 2.0
-        };
-        
-        if (typeSelect?.value === 'capex') {
-          capexItems.push(item);
-        } else {
-          opexItems.push(item);
-        }
-      }
-    });
-    
-    // Add any special items
+    // Add default items if empty
     if (opexItems.length === 0) {
       opexItems.push({ name: 'Staff expenses', value: 60000, growth: 0.5 });
     }
     
     return { opex: opexItems, capex: capexItems };
+  }
+
+  collectOperatingExpenses() {
+    const items = [];
+    const opExContainer = document.getElementById('operatingExpensesContainer');
+    if (!opExContainer) return items;
+    
+    const costContainers = opExContainer.querySelectorAll('.cost-item');
+    
+    costContainers.forEach((container, index) => {
+      const nameInput = container.querySelector(`#opExName_${index + 1}`);
+      const valueInput = container.querySelector(`#opExValue_${index + 1}`);
+      const growthInput = container.querySelector(`#linearGrowth_opEx_${index + 1}`);
+      
+      if (nameInput && valueInput) {
+        const item = {
+          name: nameInput.value || `Operating Expense ${index + 1}`,
+          value: parseFloat(valueInput.value) || 0,
+          growth: parseFloat(growthInput?.value) || 2.0
+        };
+        items.push(item);
+      }
+    });
+    
+    return items;
+  }
+
+  collectCapitalExpenses() {
+    const items = [];
+    const capExContainer = document.getElementById('capitalExpensesContainer');
+    if (!capExContainer) return items;
+    
+    const costContainers = capExContainer.querySelectorAll('.cost-item');
+    
+    costContainers.forEach((container, index) => {
+      const nameInput = container.querySelector(`#capExName_${index + 1}`);
+      const valueInput = container.querySelector(`#capExValue_${index + 1}`);
+      const growthInput = container.querySelector(`#linearGrowth_capEx_${index + 1}`);
+      
+      if (nameInput && valueInput) {
+        const item = {
+          name: nameInput.value || `Capital Expense ${index + 1}`,
+          value: parseFloat(valueInput.value) || 0,
+          growth: parseFloat(growthInput?.value) || 2.0
+        };
+        items.push(item);
+      }
+    });
+    
+    return items;
   }
 
   collectAssumptions() {
@@ -919,7 +947,7 @@ class MAModelingAddin {
     
     // Cost Items (OpEx) Header
     sheet.getRange(`A${currentRow}:B${currentRow}`).merge();
-    sheet.getRange(`A${currentRow}`).values = [["Cost Items (OpEx)"]];
+    sheet.getRange(`A${currentRow}`).values = [["Operating Expenses"]];
     sheet.getRange(`A${currentRow}`).format.font.bold = true;
     sheet.getRange(`A${currentRow}`).format.font.name = "Times New Roman";
     sheet.getRange(`A${currentRow}`).format.font.size = 12;
@@ -998,7 +1026,7 @@ class MAModelingAddin {
     currentRow += 1;
     sheet.getRange(`${currentRow}:${currentRow}`).format.rowHeight = 5;
     sheet.getRange(`A${currentRow}:B${currentRow}`).merge();
-    sheet.getRange(`A${currentRow}`).values = [["Cost Items (CapEx)"]];
+    sheet.getRange(`A${currentRow}`).values = [["Capital Expenses"]];
     sheet.getRange(`A${currentRow}`).format.font.bold = true;
     sheet.getRange(`A${currentRow}`).format.font.name = "Times New Roman";
     sheet.getRange(`A${currentRow}`).format.font.size = 12;
@@ -1405,9 +1433,13 @@ class MAModelingAddin {
       const minimizeRevenueBtn = document.getElementById('minimizeRevenue');
       const revenueItemsSection = document.getElementById('revenueItemsSection');
       
-      // Cost Items section collapse/expand functionality
-      const minimizeCostBtn = document.getElementById('minimizeCost');
-      const costItemsSection = document.getElementById('costItemsSection');
+      // Operating Expenses section collapse/expand functionality
+      const minimizeOpExBtn = document.getElementById('minimizeOpEx');
+      const operatingExpensesSection = document.getElementById('operatingExpensesSection');
+      
+      // Capital Expenses section collapse/expand functionality
+      const minimizeCapExBtn = document.getElementById('minimizeCapEx');
+      const capitalExpensesSection = document.getElementById('capitalExpensesSection');
       
       // Exit Assumptions section collapse/expand functionality
       const minimizeExitBtn = document.getElementById('minimizeExit');
@@ -1523,35 +1555,66 @@ class MAModelingAddin {
         console.error('❌ Could not find Revenue Items collapsible section elements');
       }
       
-      // Cost Items section event handler
-      if (minimizeCostBtn && costItemsSection) {
-        minimizeCostBtn.addEventListener('click', (e) => {
+      // Operating Expenses section event handler
+      if (minimizeOpExBtn && operatingExpensesSection) {
+        minimizeOpExBtn.addEventListener('click', (e) => {
           e.preventDefault();
-          console.log('Cost Items minimize button clicked');
+          console.log('Operating Expenses minimize button clicked');
           
           // Toggle collapsed class
-          costItemsSection.classList.toggle('collapsed');
+          operatingExpensesSection.classList.toggle('collapsed');
           
           // Update icon and aria-label for accessibility
-          const isCollapsed = costItemsSection.classList.contains('collapsed');
-          const iconSpan = minimizeCostBtn.querySelector('.minimize-icon');
+          const isCollapsed = operatingExpensesSection.classList.contains('collapsed');
+          const iconSpan = minimizeOpExBtn.querySelector('.minimize-icon');
           
           if (iconSpan) {
             iconSpan.textContent = isCollapsed ? '+' : '−';
           }
           
-          minimizeCostBtn.setAttribute('aria-label', 
-            isCollapsed ? 'Expand Cost Items' : 'Minimize Cost Items');
+          minimizeOpExBtn.setAttribute('aria-label', 
+            isCollapsed ? 'Expand Operating Expenses' : 'Minimize Operating Expenses');
           
-          console.log('Cost Items section', isCollapsed ? 'collapsed' : 'expanded');
+          console.log('Operating Expenses section', isCollapsed ? 'collapsed' : 'expanded');
         });
         
-        console.log('✅ Cost Items collapsible section initialized successfully');
+        console.log('✅ Operating Expenses collapsible section initialized successfully');
         
         // Add click-to-expand functionality for collapsed section
-        this.addClickToExpandListener(costItemsSection, minimizeCostBtn);
+        this.addClickToExpandListener(operatingExpensesSection, minimizeOpExBtn);
       } else {
-        console.error('❌ Could not find Cost Items collapsible section elements');
+        console.error('❌ Could not find Operating Expenses collapsible section elements');
+      }
+      
+      // Capital Expenses section event handler
+      if (minimizeCapExBtn && capitalExpensesSection) {
+        minimizeCapExBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          console.log('Capital Expenses minimize button clicked');
+          
+          // Toggle collapsed class
+          capitalExpensesSection.classList.toggle('collapsed');
+          
+          // Update icon and aria-label for accessibility
+          const isCollapsed = capitalExpensesSection.classList.contains('collapsed');
+          const iconSpan = minimizeCapExBtn.querySelector('.minimize-icon');
+          
+          if (iconSpan) {
+            iconSpan.textContent = isCollapsed ? '+' : '−';
+          }
+          
+          minimizeCapExBtn.setAttribute('aria-label', 
+            isCollapsed ? 'Expand Capital Expenses' : 'Minimize Capital Expenses');
+          
+          console.log('Capital Expenses section', isCollapsed ? 'collapsed' : 'expanded');
+        });
+        
+        console.log('✅ Capital Expenses collapsible section initialized successfully');
+        
+        // Add click-to-expand functionality for collapsed section
+        this.addClickToExpandListener(capitalExpensesSection, minimizeCapExBtn);
+      } else {
+        console.error('❌ Could not find Capital Expenses collapsible section elements');
       }
       
       // Exit Assumptions section event handler
@@ -2504,109 +2567,242 @@ class MAModelingAddin {
 
   initializeCostItems() {
     console.log('Initializing cost items...');
+    this.initializeOperatingExpenses();
+    this.initializeCapitalExpenses();
+  }
+
+  initializeOperatingExpenses() {
+    console.log('Initializing operating expenses...');
     
     setTimeout(() => {
-      const costItemsContainer = document.getElementById('costItemsContainer');
-      const addCostItemBtn = document.getElementById('addCostItem');
+      const operatingExpensesContainer = document.getElementById('operatingExpensesContainer');
+      const addOperatingExpenseBtn = document.getElementById('addOperatingExpense');
       
-      console.log('Cost items elements found:', {
-        costItemsContainer: !!costItemsContainer,
-        addCostItemBtn: !!addCostItemBtn
+      console.log('Operating expenses elements found:', {
+        operatingExpensesContainer: !!operatingExpensesContainer,
+        addOperatingExpenseBtn: !!addOperatingExpenseBtn
       });
       
-      this.costItemCounter = 0;
+      this.opExCounter = 0;
       
-      // Function to create a new cost item
-      const createCostItem = (isRequired = false) => {
-        this.costItemCounter++;
-        const itemId = this.costItemCounter;
+      // Function to create a new operating expense item
+      const createOperatingExpense = (isRequired = false) => {
+        this.opExCounter++;
+        const itemId = this.opExCounter;
         
-        const costItem = document.createElement('div');
-        costItem.className = 'cost-item';
-        costItem.setAttribute('data-cost-id', itemId);
+        const opExItem = document.createElement('div');
+        opExItem.className = 'cost-item';
+        opExItem.setAttribute('data-cost-id', itemId);
         
-        costItem.innerHTML = `
+        opExItem.innerHTML = `
           <div class="cost-item-header">
-            <div class="cost-item-title">Cost Item ${itemId}${isRequired ? ' (Required)' : ''}</div>
+            <div class="cost-item-title">Operating Expense ${itemId}${isRequired ? ' (Required)' : ''}</div>
             ${!isRequired ? `<button class="remove-cost-item" data-cost-id="${itemId}">Remove</button>` : ''}
           </div>
           
           <div class="cost-item-fields">
             <div class="form-group">
-              <label>Cost Item Name</label>
-              <input type="text" id="costName_${itemId}" placeholder="e.g., Staff Expenses, Marketing Costs"/>
-              <small class="help-text">Name or description of this cost category</small>
+              <label>Operating Expense Name</label>
+              <input type="text" id="opExName_${itemId}" placeholder="e.g., Staff Expenses, Marketing Costs"/>
+              <small class="help-text">Name or description of this operating expense</small>
             </div>
             
             <div class="form-group">
               <label>Initial Value</label>
-              <input type="number" id="costValue_${itemId}" placeholder="e.g., 5000000" step="100000"/>
-              <small class="help-text">Starting cost amount in selected currency</small>
+              <input type="number" id="opExValue_${itemId}" placeholder="e.g., 5000000" step="100000"/>
+              <small class="help-text">Starting expense amount in selected currency</small>
             </div>
           </div>
           
           <div class="cost-growth-config">
             <div class="form-group">
               <label>Growth Type</label>
-              <select id="costGrowthType_${itemId}">
+              <select id="opExGrowthType_${itemId}">
                 <option value="none">No Growth</option>
                 <option value="linear" selected>Linear Growth</option>
                 <option value="nonlinear">Non-Linear Growth</option>
               </select>
-              <small class="help-text">Select how this cost category grows over time</small>
+              <small class="help-text">Select how this expense grows over time</small>
             </div>
             
-            <div class="growth-inputs" id="costGrowthInputs_${itemId}">
+            <div class="growth-inputs" id="opExGrowthInputs_${itemId}">
               <!-- Growth-specific inputs will be inserted here -->
             </div>
           </div>
         `;
         
-        if (costItemsContainer) {
-          costItemsContainer.appendChild(costItem);
+        if (operatingExpensesContainer) {
+          operatingExpensesContainer.appendChild(opExItem);
         }
         
         // Set up event listeners for this item
-        this.setupCostItemListeners(itemId);
+        this.setupOpExListeners(itemId);
         
         // Initialize with linear growth by default
-        this.updateCostGrowthInputs(itemId, 'linear');
+        this.updateOpExGrowthInputs(itemId, 'linear');
         
-        console.log('Created cost item:', itemId);
+        console.log('Created operating expense:', itemId);
         return itemId;
       };
       
-      // Function to remove a cost item
-      const removeCostItem = (itemId) => {
-        const costItem = document.querySelector(`[data-cost-id="${itemId}"]`);
-        if (costItem) {
-          costItem.remove();
-          console.log('Removed cost item:', itemId);
+      // Function to remove an operating expense
+      const removeOperatingExpense = (itemId) => {
+        const opExItem = operatingExpensesContainer.querySelector(`[data-cost-id="${itemId}"]`);
+        if (opExItem) {
+          opExItem.remove();
+          console.log('Removed operating expense:', itemId);
         }
       };
       
-      // Add cost item button event listener
-      if (addCostItemBtn) {
-        addCostItemBtn.addEventListener('click', () => {
-          createCostItem(false);
+      // Add operating expense button event listener
+      if (addOperatingExpenseBtn) {
+        addOperatingExpenseBtn.addEventListener('click', () => {
+          createOperatingExpense(false);
         });
       }
       
       // Set up event delegation for remove buttons
-      if (costItemsContainer) {
-        costItemsContainer.addEventListener('click', (e) => {
+      if (operatingExpensesContainer) {
+        operatingExpensesContainer.addEventListener('click', (e) => {
           if (e.target.classList.contains('remove-cost-item')) {
             const itemId = e.target.getAttribute('data-cost-id');
-            removeCostItem(itemId);
+            removeOperatingExpense(itemId);
           }
         });
       }
       
-      // Create the first required cost item
-      createCostItem(true);
+      // Create the first required operating expense
+      createOperatingExpense(true);
       
-      console.log('✅ Cost items initialized successfully');
+      console.log('✅ Operating expenses initialized successfully');
     }, 500);
+  }
+
+  initializeCapitalExpenses() {
+    console.log('Initializing capital expenses...');
+    
+    setTimeout(() => {
+      const capitalExpensesContainer = document.getElementById('capitalExpensesContainer');
+      const addCapitalExpenseBtn = document.getElementById('addCapitalExpense');
+      
+      console.log('Capital expenses elements found:', {
+        capitalExpensesContainer: !!capitalExpensesContainer,
+        addCapitalExpenseBtn: !!addCapitalExpenseBtn
+      });
+      
+      this.capExCounter = 0;
+      
+      // Function to create a new capital expense item
+      const createCapitalExpense = (isRequired = false) => {
+        this.capExCounter++;
+        const itemId = this.capExCounter;
+        
+        const capExItem = document.createElement('div');
+        capExItem.className = 'cost-item';
+        capExItem.setAttribute('data-cost-id', itemId);
+        
+        capExItem.innerHTML = `
+          <div class="cost-item-header">
+            <div class="cost-item-title">Capital Expense ${itemId}${isRequired ? ' (Required)' : ''}</div>
+            ${!isRequired ? `<button class="remove-cost-item" data-cost-id="${itemId}">Remove</button>` : ''}
+          </div>
+          
+          <div class="cost-item-fields">
+            <div class="form-group">
+              <label>Capital Expense Name</label>
+              <input type="text" id="capExName_${itemId}" placeholder="e.g., Equipment, Building Improvements"/>
+              <small class="help-text">Name or description of this capital expense</small>
+            </div>
+            
+            <div class="form-group">
+              <label>Initial Value</label>
+              <input type="number" id="capExValue_${itemId}" placeholder="e.g., 1000000" step="100000"/>
+              <small class="help-text">Starting capital expense amount in selected currency</small>
+            </div>
+          </div>
+          
+          <div class="cost-growth-config">
+            <div class="form-group">
+              <label>Growth Type</label>
+              <select id="capExGrowthType_${itemId}">
+                <option value="none">No Growth</option>
+                <option value="linear" selected>Linear Growth</option>
+                <option value="nonlinear">Non-Linear Growth</option>
+              </select>
+              <small class="help-text">Select how this capital expense grows over time</small>
+            </div>
+            
+            <div class="growth-inputs" id="capExGrowthInputs_${itemId}">
+              <!-- Growth-specific inputs will be inserted here -->
+            </div>
+          </div>
+        `;
+        
+        if (capitalExpensesContainer) {
+          capitalExpensesContainer.appendChild(capExItem);
+        }
+        
+        // Set up event listeners for this item
+        this.setupCapExListeners(itemId);
+        
+        // Initialize with linear growth by default
+        this.updateCapExGrowthInputs(itemId, 'linear');
+        
+        console.log('Created capital expense:', itemId);
+        return itemId;
+      };
+      
+      // Function to remove a capital expense
+      const removeCapitalExpense = (itemId) => {
+        const capExItem = capitalExpensesContainer.querySelector(`[data-cost-id="${itemId}"]`);
+        if (capExItem) {
+          capExItem.remove();
+          console.log('Removed capital expense:', itemId);
+        }
+      };
+      
+      // Add capital expense button event listener
+      if (addCapitalExpenseBtn) {
+        addCapitalExpenseBtn.addEventListener('click', () => {
+          createCapitalExpense(false);
+        });
+      }
+      
+      // Set up event delegation for remove buttons
+      if (capitalExpensesContainer) {
+        capitalExpensesContainer.addEventListener('click', (e) => {
+          if (e.target.classList.contains('remove-cost-item')) {
+            const itemId = e.target.getAttribute('data-cost-id');
+            removeCapitalExpense(itemId);
+          }
+        });
+      }
+      
+      // Create the first required capital expense
+      createCapitalExpense(true);
+      
+      console.log('✅ Capital expenses initialized successfully');
+    }, 600);
+  }
+
+  setupOpExListeners(itemId) {
+    const opExGrowthTypeSelect = document.getElementById(`opExGrowthType_${itemId}`);
+    
+    if (opExGrowthTypeSelect) {
+      opExGrowthTypeSelect.addEventListener('change', (e) => {
+        this.updateOpExGrowthInputs(itemId, e.target.value);
+      });
+    }
+  }
+
+  setupCapExListeners(itemId) {
+    const capExGrowthTypeSelect = document.getElementById(`capExGrowthType_${itemId}`);
+    
+    if (capExGrowthTypeSelect) {
+      capExGrowthTypeSelect.addEventListener('change', (e) => {
+        this.updateCapExGrowthInputs(itemId, e.target.value);
+      });
+    }
   }
 
   setupCostItemListeners(itemId) {
@@ -2727,6 +2923,112 @@ class MAModelingAddin {
     }
     
     console.log('Updated cost growth inputs for item', itemId, 'with type', growthType);
+  }
+
+  updateOpExGrowthInputs(itemId, growthType) {
+    const growthInputsContainer = document.getElementById(`opExGrowthInputs_${itemId}`);
+    if (!growthInputsContainer) return;
+    
+    growthInputsContainer.innerHTML = '';
+    
+    switch (growthType) {
+      case 'none':
+        growthInputsContainer.innerHTML = `
+          <div class="form-group">
+            <small class="help-text">This operating expense will remain constant over time</small>
+          </div>
+        `;
+        break;
+        
+      case 'linear':
+        growthInputsContainer.innerHTML = `
+          <div class="form-group">
+            <label>Annual Growth Rate (%)</label>
+            <input type="number" id="linearGrowth_opEx_${itemId}" placeholder="e.g., 3" step="0.1" value="2"/>
+            <small class="help-text">Positive for expense increase, negative for expense reduction (e.g., 3% or -2%)</small>
+          </div>
+        `;
+        break;
+        
+      case 'nonlinear':
+        // Similar implementation to cost items but with opEx prefix
+        const projectStartDate = document.getElementById('projectStartDate')?.value;
+        const projectEndDate = document.getElementById('projectEndDate')?.value;
+        const modelPeriods = parseInt(document.getElementById('modelPeriods')?.value) || 12;
+        
+        if (projectStartDate && projectEndDate) {
+          const startDate = new Date(projectStartDate);
+          const endDate = new Date(projectEndDate);
+          const totalMonths = (endDate.getFullYear() - startDate.getFullYear()) * 12 + (endDate.getMonth() - startDate.getMonth());
+          const totalPeriods = Math.ceil(totalMonths / modelPeriods) || 1;
+          
+          growthInputsContainer.innerHTML = `
+            <div class="form-group">
+              <label>Period-specific Growth Rates</label>
+              <small class="help-text">Set different growth rates for different time periods</small>
+              <div class="period-groups-container" id="opExPeriodGroups_${itemId}"></div>
+            </div>
+          `;
+          
+          setTimeout(() => this.addOpExPeriodGroup(itemId, totalPeriods, modelPeriods), 100);
+        }
+        break;
+    }
+    
+    console.log('Updated operating expense growth inputs for item', itemId, 'with type', growthType);
+  }
+
+  updateCapExGrowthInputs(itemId, growthType) {
+    const growthInputsContainer = document.getElementById(`capExGrowthInputs_${itemId}`);
+    if (!growthInputsContainer) return;
+    
+    growthInputsContainer.innerHTML = '';
+    
+    switch (growthType) {
+      case 'none':
+        growthInputsContainer.innerHTML = `
+          <div class="form-group">
+            <small class="help-text">This capital expense will remain constant over time</small>
+          </div>
+        `;
+        break;
+        
+      case 'linear':
+        growthInputsContainer.innerHTML = `
+          <div class="form-group">
+            <label>Annual Growth Rate (%)</label>
+            <input type="number" id="linearGrowth_capEx_${itemId}" placeholder="e.g., 3" step="0.1" value="2"/>
+            <small class="help-text">Positive for expense increase, negative for expense reduction (e.g., 3% or -2%)</small>
+          </div>
+        `;
+        break;
+        
+      case 'nonlinear':
+        // Similar implementation to cost items but with capEx prefix
+        const projectStartDate = document.getElementById('projectStartDate')?.value;
+        const projectEndDate = document.getElementById('projectEndDate')?.value;
+        const modelPeriods = parseInt(document.getElementById('modelPeriods')?.value) || 12;
+        
+        if (projectStartDate && projectEndDate) {
+          const startDate = new Date(projectStartDate);
+          const endDate = new Date(projectEndDate);
+          const totalMonths = (endDate.getFullYear() - startDate.getFullYear()) * 12 + (endDate.getMonth() - startDate.getMonth());
+          const totalPeriods = Math.ceil(totalMonths / modelPeriods) || 1;
+          
+          growthInputsContainer.innerHTML = `
+            <div class="form-group">
+              <label>Period-specific Growth Rates</label>
+              <small class="help-text">Set different growth rates for different time periods</small>
+              <div class="period-groups-container" id="capExPeriodGroups_${itemId}"></div>
+            </div>
+          `;
+          
+          setTimeout(() => this.addCapExPeriodGroup(itemId, totalPeriods, modelPeriods), 100);
+        }
+        break;
+    }
+    
+    console.log('Updated capital expense growth inputs for item', itemId, 'with type', growthType);
   }
 
   addCostPeriodGroup(itemId, totalPeriods, modelPeriods) {
@@ -2907,6 +3209,8 @@ class MAModelingAddin {
         dealAssumptions: null,
         revenueItems: [],
         costItems: [],
+        operatingExpenses: [],
+        capitalExpenses: [],
         exitAssumptions: null
       };
 
@@ -2940,6 +3244,32 @@ class MAModelingAddin {
         console.log('✅ Cost items found:', extractedData.costItems.length);
       } else {
         console.warn('⚠️ No cost data returned from batch processing');
+      }
+
+      // Step 4a: Process Operating Expenses (separate batch)
+      console.log('Step 4a: Processing operating expenses...');
+      progressDiv.querySelector('p').textContent = 'Extracting operating expenses...';
+
+      const operatingData = await this.processBatchExtraction(fileContents, 'operatingExpenses');
+      console.log('🔍 Operating expenses batch returned:', operatingData);
+      if (operatingData && operatingData.operatingExpenses) {
+        extractedData.operatingExpenses = operatingData.operatingExpenses;
+        console.log('✅ Operating expenses found:', extractedData.operatingExpenses.length);
+      } else {
+        console.warn('⚠️ No operating expenses data returned from batch processing');
+      }
+
+      // Step 4b: Process Capital Expenses (separate batch)
+      console.log('Step 4b: Processing capital expenses...');
+      progressDiv.querySelector('p').textContent = 'Extracting capital expenses...';
+
+      const capitalData = await this.processBatchExtraction(fileContents, 'capitalExpenses');
+      console.log('🔍 Capital expenses batch returned:', capitalData);
+      if (capitalData && capitalData.capitalExpenses) {
+        extractedData.capitalExpenses = capitalData.capitalExpenses;
+        console.log('✅ Capital expenses found:', extractedData.capitalExpenses.length);
+      } else {
+        console.warn('⚠️ No capital expenses data returned from batch processing');
       }
 
       // Step 5: Process Exit Assumptions (separate batch)
@@ -3041,6 +3371,14 @@ class MAModelingAddin {
       case 'cost':
         prompt = this.createCostExtractionPrompt();
         expectedFields = ['costItems'];
+        break;
+      case 'operatingExpenses':
+        prompt = this.createOperatingExpensesExtractionPrompt();
+        expectedFields = ['operatingExpenses'];
+        break;
+      case 'capitalExpenses':
+        prompt = this.createCapitalExpensesExtractionPrompt();
+        expectedFields = ['capitalExpenses'];
         break;
       case 'exit':
         prompt = this.createExitExtractionPrompt();
@@ -3149,6 +3487,54 @@ EXTRACTION FOCUS:
 - Match growth rates: "Rent Growth 1: 2%" → Revenue Item 1 gets 2% linear growth
 - Use business context for meaningful names
 - If no revenue items found, return empty array []`;
+  }
+
+  createOperatingExpensesExtractionPrompt() {
+    return `Extract operating expenses from the documents. Look for recurring operational costs like staff expenses, marketing costs, utilities, rent, etc.
+
+REQUIRED JSON:
+{
+  "extractedData": {
+    "operatingExpenses": [
+      {
+        "name": "Staff Expenses",
+        "initialValue": 200000,
+        "growthType": "linear",
+        "growthRate": 2
+      }
+    ]
+  }
+}
+
+EXTRACTION:
+- Find recurring operational costs (salaries, rent, utilities, marketing)
+- Look for "OpEx" or "Operating Expenses" sections
+- Check for annual operating cost inflation rates
+- Return empty array [] if no operating expenses found`;
+  }
+
+  createCapitalExpensesExtractionPrompt() {
+    return `Extract capital expenses from the documents. Look for one-time investments like equipment, building improvements, technology infrastructure, etc.
+
+REQUIRED JSON:
+{
+  "extractedData": {
+    "capitalExpenses": [
+      {
+        "name": "Equipment Purchase",
+        "initialValue": 500000,
+        "growthType": "linear",
+        "growthRate": 0
+      }
+    ]
+  }
+}
+
+EXTRACTION:
+- Find capital investments (equipment, buildings, technology, machinery)
+- Look for "CapEx" or "Capital Expenditure" sections
+- Check for asset purchase costs and infrastructure investments
+- Return empty array [] if no capital expenses found`;
   }
 
   createCostExtractionPrompt() {
@@ -3601,6 +3987,48 @@ IMPORTANT:
         console.warn('❌ CostItems value:', extractedData.costItems);
       }
 
+      // Apply Operating Expenses
+      console.log('🔍 DEBUG - Checking for operating expenses in extracted data...');
+      console.log('🔍 DEBUG - extractedData.operatingExpenses exists?', !!extractedData.operatingExpenses);
+      console.log('🔍 DEBUG - extractedData.operatingExpenses value:', extractedData.operatingExpenses);
+      if (extractedData.operatingExpenses && Array.isArray(extractedData.operatingExpenses)) {
+        if (extractedData.operatingExpenses.length > 0) {
+          console.log('✅ Found operating expenses in extracted data:', extractedData.operatingExpenses);
+          console.log('Number of operating expenses to apply:', extractedData.operatingExpenses.length);
+          await this.applyOperatingExpenses(extractedData.operatingExpenses);
+          console.log('✅ Operating expenses applied successfully');
+        } else {
+          console.log('📋 No operating expenses found in document - leaving Operating Expenses section empty');
+        }
+      } else {
+        console.warn('❌ No operatingExpenses found in extracted data');
+        console.warn('❌ Full extracted data structure:', extractedData);
+        console.warn('❌ OperatingExpenses field exists?', 'operatingExpenses' in extractedData);
+        console.warn('❌ OperatingExpenses is array?', Array.isArray(extractedData.operatingExpenses));
+        console.warn('❌ OperatingExpenses value:', extractedData.operatingExpenses);
+      }
+
+      // Apply Capital Expenses
+      console.log('🔍 DEBUG - Checking for capital expenses in extracted data...');
+      console.log('🔍 DEBUG - extractedData.capitalExpenses exists?', !!extractedData.capitalExpenses);
+      console.log('🔍 DEBUG - extractedData.capitalExpenses value:', extractedData.capitalExpenses);
+      if (extractedData.capitalExpenses && Array.isArray(extractedData.capitalExpenses)) {
+        if (extractedData.capitalExpenses.length > 0) {
+          console.log('✅ Found capital expenses in extracted data:', extractedData.capitalExpenses);
+          console.log('Number of capital expenses to apply:', extractedData.capitalExpenses.length);
+          await this.applyCapitalExpenses(extractedData.capitalExpenses);
+          console.log('✅ Capital expenses applied successfully');
+        } else {
+          console.log('📋 No capital expenses found in document - leaving Capital Expenses section empty');
+        }
+      } else {
+        console.warn('❌ No capitalExpenses found in extracted data');
+        console.warn('❌ Full extracted data structure:', extractedData);
+        console.warn('❌ CapitalExpenses field exists?', 'capitalExpenses' in extractedData);
+        console.warn('❌ CapitalExpenses is array?', Array.isArray(extractedData.capitalExpenses));
+        console.warn('❌ CapitalExpenses value:', extractedData.capitalExpenses);
+      }
+
       // Apply Exit Assumptions
       if (extractedData.exitAssumptions) {
         const exit = extractedData.exitAssumptions;
@@ -3711,6 +4139,80 @@ IMPORTANT:
       
       if (item.growthType === 'linear' && item.growthRate) {
         this.setInputValue(`costLinearGrowth_${itemId}`, item.growthRate);
+      }
+    }
+  }
+
+  async applyOperatingExpenses(operatingExpenses) {
+    // Clear existing operating expenses first (keep required one)
+    const opExContainer = document.getElementById('operatingExpensesContainer');
+    if (opExContainer) {
+      // Remove all but the first (required) operating expense
+      const existingItems = opExContainer.querySelectorAll('.cost-item');
+      for (let i = 1; i < existingItems.length; i++) {
+        existingItems[i].remove();
+      }
+    }
+
+    // Apply operating expenses
+    for (let i = 0; i < operatingExpenses.length; i++) {
+      const item = operatingExpenses[i];
+      
+      // For the first item, use existing required item
+      let itemId = 1;
+      if (i > 0) {
+        // Create new operating expense
+        const addBtn = document.getElementById('addOperatingExpense');
+        if (addBtn) {
+          addBtn.click();
+          itemId = this.opExCounter;
+        }
+      }
+
+      // Apply data to operating expense
+      this.setInputValue(`opExName_${itemId}`, item.name);
+      this.setInputValue(`opExValue_${itemId}`, item.initialValue);
+      this.setInputValue(`opExGrowthType_${itemId}`, item.growthType);
+      
+      if (item.growthType === 'linear' && item.growthRate) {
+        this.setInputValue(`linearGrowth_opEx_${itemId}`, item.growthRate);
+      }
+    }
+  }
+
+  async applyCapitalExpenses(capitalExpenses) {
+    // Clear existing capital expenses first (keep required one)
+    const capExContainer = document.getElementById('capitalExpensesContainer');
+    if (capExContainer) {
+      // Remove all but the first (required) capital expense
+      const existingItems = capExContainer.querySelectorAll('.cost-item');
+      for (let i = 1; i < existingItems.length; i++) {
+        existingItems[i].remove();
+      }
+    }
+
+    // Apply capital expenses
+    for (let i = 0; i < capitalExpenses.length; i++) {
+      const item = capitalExpenses[i];
+      
+      // For the first item, use existing required item
+      let itemId = 1;
+      if (i > 0) {
+        // Create new capital expense
+        const addBtn = document.getElementById('addCapitalExpense');
+        if (addBtn) {
+          addBtn.click();
+          itemId = this.capExCounter;
+        }
+      }
+
+      // Apply data to capital expense
+      this.setInputValue(`capExName_${itemId}`, item.name);
+      this.setInputValue(`capExValue_${itemId}`, item.initialValue);
+      this.setInputValue(`capExGrowthType_${itemId}`, item.growthType);
+      
+      if (item.growthType === 'linear' && item.growthRate) {
+        this.setInputValue(`linearGrowth_capEx_${itemId}`, item.growthRate);
       }
     }
   }
