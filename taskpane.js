@@ -2360,13 +2360,6 @@ class MAModelingAddin {
     
     if (autoFillBtn) {
       autoFillBtn.disabled = true;
-      autoFillBtn.innerHTML = `
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M9 12l2 2 4-4"></path>
-          <circle cx="12" cy="12" r="9"></circle>
-        </svg>
-        Processing...
-      `;
     }
 
     try {
@@ -2484,7 +2477,13 @@ class MAModelingAddin {
     console.log(`🔄 Processing batch: ${batchType}`);
     
     // Limit file content size per batch to prevent memory issues
-    const maxContentLength = 10000; // Reduced to prevent 502 errors
+    let maxContentLength = 10000;
+    
+    // Use even smaller content for exit assumptions to prevent timeouts
+    if (batchType === 'exit') {
+      maxContentLength = 5000;
+    }
+    
     let processedContent = fileContents.join('\n\n');
     
     if (processedContent.length > maxContentLength) {
@@ -2644,9 +2643,9 @@ EXTRACTION:
   }
 
   createExitExtractionPrompt() {
-    return `Extract exit assumptions from the documents. Look for disposal costs and terminal cap rates.
+    return `Extract disposal cost and terminal cap rate.
 
-REQUIRED JSON:
+JSON REQUIRED:
 {
   "extractedData": {
     "exitAssumptions": {
@@ -2656,11 +2655,8 @@ REQUIRED JSON:
   }
 }
 
-EXTRACTION:
-- Disposal Cost: Look for "disposal cost", "exit cost", "transaction fees at exit", "selling costs"
-- Terminal Cap Rate: Look for "terminal cap", "exit cap rate", "terminal yield", "exit yield"
-- Convert percentages to numbers: "2.5%" → 2.5
-- Use industry defaults if not found: disposal 2.5%, terminal cap 8.5%`;
+Look for: disposal cost, exit fees, terminal cap rate, exit yield
+Convert % to numbers: 2.5% → 2.5`;
   }
 
   createExtractionSummary(data) {
