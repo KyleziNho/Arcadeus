@@ -112,6 +112,36 @@ REVENUE ITEMS EXTRACTION - CRITICAL:
     - If file shows 0 revenue items, return empty array []
     - NEVER invent or estimate revenue items not in the file
 
+COST ITEMS EXTRACTION - CRITICAL:
+16. Search for ALL cost/expense items in the document - look for patterns like:
+    - "Cost Item 1", "Cost Item 2", etc.
+    - "Staff expenses", "Rent", "Utilities", "Marketing costs"
+    - Any expense categories with associated values
+    - Operating expenses (OpEx) and Capital expenses (CapEx)
+    - Any line items that represent costs or expenses
+17. For EACH cost item found, extract:
+    - Name: Use the EXACT name from the document (e.g., "Cost Item 1" or "Staff expenses")
+    - Initial Value: The number associated with that cost item (convert to plain number)
+    - Growth Type: Determine based on data:
+      * "linear" - if inflation/growth rate is consistent (e.g., "2% annual inflation")
+      * "nonlinear" - if costs vary by year or follow a curve
+      * "no_growth" - if no inflation/growth is mentioned or is 0%
+    - Growth Rate: Extract the exact percentage (only for linear growth, e.g., 2 for 2%)
+18. Growth rate matching patterns for costs:
+    - "OpEx Cost Inflation: 2%" → Apply to all OpEx items
+    - "CapEx Cost Inflation: 1.5%" → Apply to all CapEx items
+    - "Salary Growth (p.a.): 0.5%" → Apply to staff expenses
+    - "Cost Item 1 inflation: 3%" → Apply to specific cost item
+    - General inflation rates that apply to all costs
+19. Special cost patterns to recognize:
+    - "Staff expenses: 60,000 with Salary Growth (p.a.): 0.50%"
+    - Separate OpEx and CapEx items when specified
+    - Match inflation rates by cost type or specific item number
+20. MANDATORY: Extract the EXACT number of cost items shown in the file
+    - If file shows 4 cost items, return exactly 4
+    - If file shows 0 cost items, return empty array []
+    - NEVER create generic cost items not in the file
+
 REQUIRED DATA STRUCTURE:
 {
   "extractedData": {
@@ -143,10 +173,22 @@ REQUIRED DATA STRUCTURE:
     ],
     "costItems": [
       {
-        "name": "Cost category name",
-        "initialValue": "Current/base year cost",
-        "growthType": "linear or nonlinear",
-        "growthRate": "Annual growth percentage if linear"
+        "name": "Staff expenses",
+        "initialValue": 60000,
+        "growthType": "linear",
+        "growthRate": 0.5
+      },
+      {
+        "name": "Cost Item 1",
+        "initialValue": 200000,
+        "growthType": "linear",
+        "growthRate": 2
+      },
+      {
+        "name": "Cost Item 2",
+        "initialValue": 1000,
+        "growthType": "no_growth",
+        "growthRate": 0
       }
     ],
     "exitAssumptions": {
@@ -169,6 +211,16 @@ CRITICAL REVENUE EXTRACTION RULES:
 - Analyze growth patterns: if consistent % year-over-year = "linear", if varying = "nonlinear", if no growth mentioned = "no_growth"
 - Extract exact values as numbers (remove commas, currency symbols)
 - Match growth rates to specific revenue items when labeled (e.g., "Rent Growth 1" → "Revenue Item 1")
+
+CRITICAL COST EXTRACTION RULES:
+- You MUST extract the EXACT cost items from the uploaded files
+- Look for any expense-related line items with values
+- Common patterns: "Cost Item 1: 200,000", "Staff expenses: 60,000", "Rent: 50,000"
+- Extract inflation rates: "OpEx Cost Inflation: 2%", "Salary Growth: 0.5%"
+- Count ALL cost items and create that exact number
+- Match inflation rates to specific costs when possible
+- If you see "Staff expenses: 60,000 with Salary Growth (p.a.): 0.50%" extract both value and growth
+- Default to "no_growth" if no inflation/growth rate is specified
 
 Document Content to Analyze:
 ${documentContext}`;

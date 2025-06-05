@@ -2522,6 +2522,18 @@ class MAModelingAddin {
         summary += ')<br>';
       });
     }
+
+    // Cost Items
+    if (data.costItems && Array.isArray(data.costItems) && data.costItems.length > 0) {
+      summary += '<br><strong>Cost Items:</strong><br>';
+      data.costItems.forEach((item, index) => {
+        summary += `• ${item.name}: ${this.formatCurrency(item.initialValue)} (${item.growthType}`;
+        if (item.growthType === 'linear' && item.growthRate) {
+          summary += ` ${item.growthRate}%`;
+        }
+        summary += ')<br>';
+      });
+    }
     
     return summary;
   }
@@ -2837,6 +2849,24 @@ IMPORTANT:
         console.warn('❌ RevenueItems field exists?', 'revenueItems' in extractedData);
         console.warn('❌ RevenueItems is array?', Array.isArray(extractedData.revenueItems));
         console.warn('❌ RevenueItems value:', extractedData.revenueItems);
+      }
+
+      // Apply Cost Items
+      if (extractedData.costItems && Array.isArray(extractedData.costItems)) {
+        if (extractedData.costItems.length > 0) {
+          console.log('✅ Found cost items in extracted data:', extractedData.costItems);
+          console.log('Number of cost items to apply:', extractedData.costItems.length);
+          await this.applyCostItems(extractedData.costItems);
+          console.log('✅ Cost items applied successfully');
+        } else {
+          console.log('📋 No cost items found in document - leaving Cost Items section empty');
+        }
+      } else {
+        console.warn('❌ No costItems found in extracted data');
+        console.warn('❌ Full extracted data structure:', extractedData);
+        console.warn('❌ CostItems field exists?', 'costItems' in extractedData);
+        console.warn('❌ CostItems is array?', Array.isArray(extractedData.costItems));
+        console.warn('❌ CostItems value:', extractedData.costItems);
       }
 
       console.log('✅ Successfully applied extracted data to all sections');

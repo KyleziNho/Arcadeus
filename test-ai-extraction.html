@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test AI Revenue Extraction</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; }
+        .test-section { border: 1px solid #ccc; padding: 15px; margin: 10px 0; }
+        textarea { width: 100%; height: 150px; margin: 10px 0; }
+        button { padding: 10px 20px; background: #007bff; color: white; border: none; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .result { background: #f8f9fa; padding: 15px; margin: 10px 0; white-space: pre-wrap; font-family: monospace; }
+        .success { color: green; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    <h1>Test AI Revenue Extraction</h1>
+    
+    <div class="test-section">
+        <h3>1. Test CSV Content</h3>
+        <textarea id="csvContent">Revenue Item 1,500000
+Revenue Item 2,766000
+Rent Growth 1,2
+Rent Growth 2,3</textarea>
+        <button onclick="testExtraction()">Test AI Extraction</button>
+    </div>
+    
+    <div class="test-section">
+        <h3>2. AI Response</h3>
+        <div id="aiResponse" class="result">Click "Test AI Extraction" to see response...</div>
+    </div>
+    
+    <div class="test-section">
+        <h3>3. Extracted Revenue Items</h3>
+        <div id="revenueItems" class="result">Revenue items will appear here...</div>
+    </div>
+
+    <script>
+        async function testExtraction() {
+            const csvContent = document.getElementById('csvContent').value;
+            const responseDiv = document.getElementById('aiResponse');
+            const revenueDiv = document.getElementById('revenueItems');
+            
+            responseDiv.innerHTML = 'Calling AI...';
+            revenueDiv.innerHTML = '';
+            
+            try {
+                const response = await fetch('/.netlify/functions/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message: "Extract revenue items from this CSV",
+                        fileContents: [csvContent],
+                        autoFillMode: true
+                    })
+                });
+                
+                const data = await response.json();
+                responseDiv.innerHTML = JSON.stringify(data, null, 2);
+                
+                if (data.extractedData && data.extractedData.revenueItems) {
+                    const items = data.extractedData.revenueItems;
+                    let itemsHtml = `<span class="success">✅ Found ${items.length} revenue items:</span>\n\n`;
+                    
+                    items.forEach((item, index) => {
+                        itemsHtml += `Revenue Item ${index + 1}:\n`;
+                        itemsHtml += `  Name: ${item.name}\n`;
+                        itemsHtml += `  Initial Value: $${item.initialValue.toLocaleString()}\n`;
+                        itemsHtml += `  Growth Type: ${item.growthType}\n`;
+                        if (item.growthRate) {
+                            itemsHtml += `  Growth Rate: ${item.growthRate}%\n`;
+                        }
+                        itemsHtml += '\n';
+                    });
+                    
+                    revenueDiv.innerHTML = itemsHtml;
+                } else {
+                    revenueDiv.innerHTML = '<span class="error">❌ No revenue items found in response</span>';
+                }
+                
+            } catch (error) {
+                responseDiv.innerHTML = `<span class="error">Error: ${error.message}</span>`;
+                revenueDiv.innerHTML = '<span class="error">Failed to extract revenue items</span>';
+            }
+        }
+        
+        // Test different scenarios
+        function loadScenario(scenario) {
+            const scenarios = {
+                simple: `Revenue Item 1,500000
+Revenue Item 2,766000
+Rent Growth 1,2
+Rent Growth 2,3`,
+                
+                detailed: `Company Revenue Breakdown
+Product Sales,1200000,Annual Growth 5%
+Service Revenue,450000,No growth expected
+Licensing Fees,230000,CAGR 8%`,
+                
+                realEstate: `Rental Income Details
+Office Space Rental,2500000
+Retail Space Rental,1800000
+Parking Revenue,300000
+Annual Rent Escalation,3%`
+            };
+            
+            document.getElementById('csvContent').value = scenarios[scenario] || scenarios.simple;
+        }
+    </script>
+    
+    <div class="test-section">
+        <h3>Quick Test Scenarios</h3>
+        <button onclick="loadScenario('simple')">Simple Revenue Items</button>
+        <button onclick="loadScenario('detailed')">Detailed Revenue</button>
+        <button onclick="loadScenario('realEstate')">Real Estate Revenue</button>
+    </div>
+</body>
+</html>
