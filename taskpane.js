@@ -2359,7 +2359,7 @@ class MAModelingAddin {
     }
     
     if (autoFillBtn) {
-      autoFillBtn.disabled = true;
+      autoFillBtn.style.display = 'none';
     }
 
     try {
@@ -2460,6 +2460,7 @@ class MAModelingAddin {
       // Reset button after delay
       setTimeout(() => {
         if (autoFillBtn) {
+          autoFillBtn.style.display = 'inline-flex';
           autoFillBtn.disabled = false;
           autoFillBtn.innerHTML = `
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
