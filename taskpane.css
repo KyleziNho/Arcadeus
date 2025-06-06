@@ -648,8 +648,8 @@ select:focus {
 
 .files-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: var(--space-4);
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: var(--space-3);
   margin-bottom: var(--space-6);
 }
 
@@ -671,6 +671,84 @@ select:focus {
 .file-size {
   color: var(--gray-500);
   font-size: 11px;
+}
+
+/* Modern File Cards */
+.file-card {
+  background: var(--white);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  position: relative;
+  transition: all var(--transition-fast);
+}
+
+.file-card:hover {
+  border-color: var(--black);
+  box-shadow: var(--shadow-sm);
+}
+
+.file-card-icon {
+  width: 24px;
+  height: 24px;
+  stroke: var(--gray-600);
+  stroke-width: 1.5;
+  flex-shrink: 0;
+}
+
+.file-card-info {
+  text-align: center;
+  width: 100%;
+}
+
+.file-card-name {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--gray-900);
+  margin-bottom: var(--space-1);
+  word-break: break-word;
+  line-height: 1.2;
+}
+
+.file-card-size {
+  font-size: 10px;
+  color: var(--gray-500);
+}
+
+.file-card-remove {
+  position: absolute;
+  top: var(--space-1);
+  right: var(--space-1);
+  background: var(--white);
+  border: 1px solid var(--gray-300);
+  border-radius: var(--radius-sm);
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  opacity: 0;
+}
+
+.file-card:hover .file-card-remove {
+  opacity: 1;
+}
+
+.file-card-remove:hover {
+  background: var(--black);
+  color: var(--white);
+  border-color: var(--black);
+}
+
+.file-card-remove svg {
+  width: 10px;
+  height: 10px;
 }
 
 /* Auto-fill section */
