@@ -51,7 +51,7 @@
                         Browse Files
                     </button>
                 </div>
-                <input type="file" id="mainFileInput" multiple accept=".pdf,.csv,.png,.jpg,.jpeg" style="display: none;">
+                <input type="file" id="mainFileInput" multiple accept=".pdf,.csv,.png,.jpg,.jpeg">
             </div>
             
             <div class="uploaded-files-display" id="uploadedFilesDisplay" style="display: none;">
@@ -74,7 +74,16 @@
             <button class="minimize-btn" id="minimizeHighLevel" aria-label="Minimize High-Level Parameters">
                 <span class="minimize-icon">−</span>
             </button>
-            <h3 data-emoji="⚙️">High-Level Parameters<span class="section-completion-indicator incomplete" id="highLevelIndicator">!</span></h3>
+            <h3>
+                <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M12 1v6m0 6v6"></path>
+                    <path d="m21 12-6-3 6-3"></path>
+                    <path d="m3 12 6 3-6 3"></path>
+                    <path d="m21 7.5-6-1.5-6 1.5"></path>
+                </svg>
+                High-Level Parameters
+            </h3>
             <div class="section-content" id="highLevelContent">
                 <div class="form-group">
                     <label>Currency</label>
@@ -124,7 +133,14 @@
             <button class="minimize-btn" id="minimizeAssumptions" aria-label="Minimize Deal Assumptions">
                 <span class="minimize-icon">−</span>
             </button>
-            <h3 data-emoji="📊">Deal Assumptions<span class="section-completion-indicator incomplete" id="dealAssumptionsIndicator">!</span></h3>
+            <h3>
+                <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+                    <path d="m2 17 10 5 10-5"></path>
+                    <path d="m2 12 10 5 10-5"></path>
+                </svg>
+                Deal Assumptions
+            </h3>
             <div class="section-content" id="assumptionsContent">
             <div class="form-group">
                 <label>Deal Name</label>
@@ -163,7 +179,13 @@
             <button class="minimize-btn" id="minimizeRevenue" aria-label="Minimize Revenue Items">
                 <span class="minimize-icon">−</span>
             </button>
-            <h3 data-emoji="📈">Revenue Items<span class="section-completion-indicator incomplete" id="revenueItemsIndicator">!</span></h3>
+            <h3>
+                <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="12" y1="1" x2="12" y2="23"></line>
+                    <path d="m17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                </svg>
+                Revenue Items
+            </h3>
             <div class="section-content" id="revenueContent">
                 <div class="revenue-items-container" id="revenueItemsContainer">
                     <!-- Revenue items will be dynamically added here -->
@@ -185,7 +207,13 @@
             <button class="minimize-btn" id="minimizeOpEx" aria-label="Minimize Operating Expenses">
                 <span class="minimize-icon">−</span>
             </button>
-            <h3 data-emoji="💸">Operating Expenses<span class="section-completion-indicator incomplete" id="operatingExpensesIndicator">!</span></h3>
+            <h3>
+                <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 3v18h18"></path>
+                    <path d="m19 9-5 5-4-4-3 3"></path>
+                </svg>
+                Operating Expenses
+            </h3>
             <div class="section-content" id="opExContent">
                 <div class="cost-items-container" id="operatingExpensesContainer">
                     <!-- Operating expenses will be dynamically added here -->
@@ -207,7 +235,17 @@
             <button class="minimize-btn" id="minimizeCapEx" aria-label="Minimize Capital Expenses">
                 <span class="minimize-icon">−</span>
             </button>
-            <h3 data-emoji="🏗️">Capital Expenses<span class="section-completion-indicator incomplete" id="capitalExpensesIndicator">!</span></h3>
+            <h3>
+                <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                    <polyline points="7.5,4.21 12,6.81 16.5,4.21"></polyline>
+                    <polyline points="7.5,19.79 7.5,14.6 3,12"></polyline>
+                    <polyline points="21,12 16.5,14.6 16.5,19.79"></polyline>
+                    <polyline points="3.27,6.96 12,12.01 20.73,6.96"></polyline>
+                    <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                </svg>
+                Capital Expenses
+            </h3>
             <div class="section-content" id="capExContent">
                 <div class="cost-items-container" id="capitalExpensesContainer">
                     <!-- Capital expenses will be dynamically added here -->
@@ -229,7 +267,14 @@
             <button class="minimize-btn" id="minimizeExit" aria-label="Minimize Exit Assumptions">
                 <span class="minimize-icon">−</span>
             </button>
-            <h3 data-emoji="🚪">Exit Assumptions<span class="section-completion-indicator incomplete" id="exitAssumptionsIndicator">!</span></h3>
+            <h3>
+                <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                    <polyline points="16,17 21,12 16,7"></polyline>
+                    <line x1="21" y1="12" x2="9" y2="12"></line>
+                </svg>
+                Exit Assumptions
+            </h3>
             <div class="section-content" id="exitContent">
                 <div class="form-group">
                     <label>Disposal Cost (%)</label>
@@ -249,7 +294,14 @@
             <button class="minimize-btn" id="minimizeDebtModel" aria-label="Minimize Debt Model">
                 <span class="minimize-icon">−</span>
             </button>
-            <h3 data-emoji="💰">Debt Model<span class="section-completion-indicator partial" id="debtModelIndicator">~</span></h3>
+            <h3>
+                <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="1" y="3" width="15" height="13"></rect>
+                    <path d="m16 8 2 0 0 8-2 0"></path>
+                    <path d="m21 9-3 0 0 6 3 0"></path>
+                </svg>
+                Debt Model
+            </h3>
             <div class="section-content" id="debtModelContent">
                 
                 <!-- Debt Configuration -->
