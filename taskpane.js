@@ -47,12 +47,16 @@ class MAModelingAddin {
     const validateModelBtn = document.getElementById('validateModelBtn');
     const sendChatBtn = document.getElementById('sendChatBtn');
     const chatInput = document.getElementById('chatInput');
+    const saveDataBtn = document.getElementById('saveDataBtn');
+    const loadDataBtn = document.getElementById('loadDataBtn');
     
     console.log('DOM elements found:', {
       generateModelBtn: !!generateModelBtn,
       validateModelBtn: !!validateModelBtn,
       sendChatBtn: !!sendChatBtn,
-      chatInput: !!chatInput
+      chatInput: !!chatInput,
+      saveDataBtn: !!saveDataBtn,
+      loadDataBtn: !!loadDataBtn
     });
     if (generateModelBtn) {
       generateModelBtn.addEventListener('click', () => this.generateModel());
@@ -65,6 +69,14 @@ class MAModelingAddin {
     if (sendChatBtn) {
       sendChatBtn.addEventListener('click', () => this.sendChatMessage());
       console.log('Send chat button listener added');
+    }
+    if (saveDataBtn) {
+      saveDataBtn.addEventListener('click', () => this.saveData());
+      console.log('Save data button listener added');
+    }
+    if (loadDataBtn) {
+      loadDataBtn.addEventListener('click', () => this.loadData());
+      console.log('Load data button listener added');
     }
     
     // Allow Enter key in chat input
@@ -94,6 +106,12 @@ class MAModelingAddin {
 
     // Collapsible sections
     this.initializeCollapsibleSections();
+    
+    // Section completion monitoring
+    this.initializeSectionMonitoring();
+    
+    // Auto-load saved data
+    this.autoLoadSavedData();
 
     // Debt model functionality
     this.initializeDebtModel();
@@ -511,6 +529,17 @@ class MAModelingAddin {
   async generateModel() {
     console.log('Generate model clicked');
     
+    // Auto-save data before generating
+    try {
+      console.log('Auto-saving data before generation...');
+      const formData = this.collectAllFormData();
+      localStorage.setItem('maModelingData', JSON.stringify(formData));
+      console.log('Data auto-saved successfully');
+    } catch (saveError) {
+      console.warn('Auto-save failed:', saveError);
+      // Continue with generation even if save fails
+    }
+    
     // First validate all required fields are filled
     const validation = this.validateAllFields();
     if (!validation.isValid) {
@@ -520,30 +549,45 @@ class MAModelingAddin {
 
     try {
       await Excel.run(async (context) => {
+        console.log('Starting Excel.run...');
+        
         // Create a new worksheet named "Assumptions"
         const sheets = context.workbook.worksheets;
         let assumptionsSheet;
+        
+        console.log('Got worksheets collection');
         
         try {
           // Try to get existing sheet
           assumptionsSheet = sheets.getItem("Assumptions");
           assumptionsSheet.delete();
           await context.sync();
+          console.log('Deleted existing Assumptions sheet');
         } catch (e) {
-          // Sheet doesn't exist, that's fine
+          console.log('No existing Assumptions sheet to delete');
         }
         
         // Create new sheet
+        console.log('Creating new Assumptions sheet...');
         assumptionsSheet = sheets.add("Assumptions");
+        await context.sync();
+        console.log('Assumptions sheet created successfully');
+        
         assumptionsSheet.activate();
+        console.log('Assumptions sheet activated');
         
         // Collect all data
+        console.log('Collecting model data...');
         const modelData = this.collectAllModelData();
+        console.log('Model data collected:', modelData);
         
         // Generate the assumptions page layout
+        console.log('Starting assumptions layout creation...');
         await this.createAssumptionsLayout(context, assumptionsSheet, modelData);
+        console.log('Assumptions layout completed');
         
         await context.sync();
+        console.log('Assumptions context synced');
         
         this.addChatMessage('assistant', '✅ Assumptions page generated! Now creating Profit & Loss statement...');
         
@@ -568,17 +612,18 @@ class MAModelingAddin {
           await context.sync();
           console.log('P&L sheet created successfully');
           
-          // Test basic operations first
-          console.log('Testing basic cell operations...');
-          plSheet.getRange("A1").values = [["Profit & Loss Statement"]];
-          plSheet.getRange("A2").values = [["Test"]];
+          // Generate the P&L statement layout
+          console.log('Starting P&L layout generation...');
+          await this.createProfitLossLayout(context, plSheet, modelData);
+          console.log('P&L layout completed');
+          
           await context.sync();
-          console.log('Basic operations successful');
+          console.log('P&L context synced');
           
           // Activate the Assumptions sheet to show it first
           assumptionsSheet.activate();
           
-          this.addChatMessage('assistant', '✅ Model assumptions page and basic Profit & Loss statement created successfully!');
+          this.addChatMessage('assistant', '✅ Model assumptions page and Profit & Loss statement generated successfully in Excel!');
           
         } catch (plError) {
           console.error('Error creating P&L statement:', plError);
@@ -657,6 +702,9 @@ class MAModelingAddin {
       
       // Acquisition Assumptions
       acquisitionDate: this.formatDateForExcel(document.getElementById('projectStartDate').value),
+      projectStartDate: document.getElementById('projectStartDate').value,
+      projectEndDate: document.getElementById('projectEndDate').value,
+      modelPeriods: parseInt(document.getElementById('modelPeriods').value) || 12,
       holdingPeriod: this.calculateHoldingPeriod(),
       currency: document.getElementById('currency').value,
       transactionFee: parseFloat(document.getElementById('transactionFee').value) || 0,
@@ -1182,15 +1230,6 @@ class MAModelingAddin {
     
     console.log('P&L Layout: Period headers created successfully');
     
-    // Test: Let's create a simple test to see if basic functionality works
-    sheet.getRange("A10").values = [["Test P&L Creation"]];
-    sheet.getRange("B10").values = [["SUCCESS"]];
-    
-    console.log('P&L Layout: Basic test complete - if you see this, P&L sheet creation works');
-    
-    // For now, let's return early to test basic functionality
-    return;
-    
     currentRow++;
     
     // Date headers
@@ -1501,6 +1540,237 @@ class MAModelingAddin {
   async validateModel() {
     console.log('Validate model clicked');
     this.addChatMessage('assistant', 'Model validation feature coming soon! This will check all formulas and cross-references for accuracy.');
+  }
+
+  async saveData() {
+    console.log('Save data clicked');
+    
+    try {
+      // Collect all form data
+      const formData = this.collectAllFormData();
+      
+      // Save to localStorage
+      localStorage.setItem('maModelingData', JSON.stringify(formData));
+      
+      // Show success message
+      this.showSaveStatus('Data saved successfully!', 'success');
+      
+      console.log('Data saved to localStorage');
+      
+    } catch (error) {
+      console.error('Error saving data:', error);
+      this.showSaveStatus('Error saving data: ' + error.message, 'error');
+    }
+  }
+
+  async loadData() {
+    console.log('Load data clicked');
+    
+    try {
+      // Get data from localStorage
+      const savedData = localStorage.getItem('maModelingData');
+      
+      if (!savedData) {
+        this.showSaveStatus('No saved data found', 'error');
+        return;
+      }
+      
+      const formData = JSON.parse(savedData);
+      
+      // Populate all form fields
+      this.populateAllFormData(formData);
+      
+      // Show success message
+      this.showSaveStatus('Data loaded successfully!', 'success');
+      
+      console.log('Data loaded from localStorage');
+      
+    } catch (error) {
+      console.error('Error loading data:', error);
+      this.showSaveStatus('Error loading data: ' + error.message, 'error');
+    }
+  }
+
+  showSaveStatus(message, type) {
+    const statusElement = document.getElementById('saveStatus');
+    if (statusElement) {
+      statusElement.textContent = message;
+      statusElement.className = `save-status ${type}`;
+      
+      // Clear message after 3 seconds
+      setTimeout(() => {
+        statusElement.textContent = '';
+        statusElement.className = 'save-status';
+      }, 3000);
+    }
+  }
+
+  collectAllFormData() {
+    const data = {};
+    
+    // Collect all input values
+    const inputs = document.querySelectorAll('input, select, textarea');
+    inputs.forEach(input => {
+      if (input.id) {
+        if (input.type === 'checkbox' || input.type === 'radio') {
+          data[input.id] = input.checked;
+        } else {
+          data[input.id] = input.value;
+        }
+      }
+    });
+    
+    // Collect dynamic items (revenue items, operating expenses, capital expenses)
+    data.revenueItems = this.collectRevenueItems();
+    data.operatingExpenses = this.collectOperatingExpenses();
+    data.capitalExpenses = this.collectCapitalExpenses();
+    data.costItems = this.collectCostItems(); // Legacy support
+    
+    // Add timestamp
+    data.savedAt = new Date().toISOString();
+    
+    return data;
+  }
+
+  populateAllFormData(data) {
+    // Populate basic form fields
+    Object.keys(data).forEach(key => {
+      const element = document.getElementById(key);
+      if (element && !['revenueItems', 'operatingExpenses', 'capitalExpenses', 'costItems', 'savedAt'].includes(key)) {
+        if (element.type === 'checkbox' || element.type === 'radio') {
+          element.checked = data[key];
+        } else {
+          element.value = data[key];
+        }
+      }
+    });
+    
+    // Populate dynamic items
+    if (data.revenueItems) {
+      this.populateRevenueItems(data.revenueItems);
+    }
+    
+    if (data.operatingExpenses) {
+      this.populateOperatingExpenses(data.operatingExpenses);
+    }
+    
+    if (data.capitalExpenses) {
+      this.populateCapitalExpenses(data.capitalExpenses);
+    }
+    
+    // Trigger any necessary recalculations
+    this.triggerCalculations();
+  }
+
+  populateRevenueItems(items) {
+    // Clear existing items except the first required one
+    const container = document.getElementById('revenueItemsContainer');
+    if (container) {
+      const existingItems = container.querySelectorAll('.revenue-item');
+      for (let i = 1; i < existingItems.length; i++) {
+        existingItems[i].remove();
+      }
+    }
+    
+    // Populate items
+    items.forEach((item, index) => {
+      let itemId = index + 1;
+      
+      if (index > 0) {
+        // Add new item
+        const addBtn = document.getElementById('addRevenueItem');
+        if (addBtn) {
+          addBtn.click();
+          itemId = this.revenueItemCounter;
+        }
+      }
+      
+      // Set values
+      this.setInputValue(`revenueName_${itemId}`, item.name);
+      this.setInputValue(`revenueValue_${itemId}`, item.value);
+      this.setInputValue(`revenueGrowthType_${itemId}`, item.growthType);
+      
+      if (item.growth !== undefined) {
+        this.setInputValue(`linearGrowth_revenue_${itemId}`, item.growth);
+      }
+    });
+  }
+
+  populateOperatingExpenses(items) {
+    // Clear existing items except the first required one
+    const container = document.getElementById('operatingExpensesContainer');
+    if (container) {
+      const existingItems = container.querySelectorAll('.cost-item');
+      for (let i = 1; i < existingItems.length; i++) {
+        existingItems[i].remove();
+      }
+    }
+    
+    // Populate items
+    items.forEach((item, index) => {
+      let itemId = index + 1;
+      
+      if (index > 0) {
+        // Add new item
+        const addBtn = document.getElementById('addOperatingExpense');
+        if (addBtn) {
+          addBtn.click();
+          itemId = this.opExCounter;
+        }
+      }
+      
+      // Set values
+      this.setInputValue(`opExName_${itemId}`, item.name);
+      this.setInputValue(`opExValue_${itemId}`, item.value);
+      this.setInputValue(`opExGrowthType_${itemId}`, item.growthType);
+      
+      if (item.growth !== undefined) {
+        this.setInputValue(`linearGrowth_opEx_${itemId}`, item.growth);
+      }
+    });
+  }
+
+  populateCapitalExpenses(items) {
+    // Clear existing items except the first required one
+    const container = document.getElementById('capitalExpensesContainer');
+    if (container) {
+      const existingItems = container.querySelectorAll('.cost-item');
+      for (let i = 1; i < existingItems.length; i++) {
+        existingItems[i].remove();
+      }
+    }
+    
+    // Populate items
+    items.forEach((item, index) => {
+      let itemId = index + 1;
+      
+      if (index > 0) {
+        // Add new item
+        const addBtn = document.getElementById('addCapitalExpense');
+        if (addBtn) {
+          addBtn.click();
+          itemId = this.capExCounter;
+        }
+      }
+      
+      // Set values
+      this.setInputValue(`capExName_${itemId}`, item.name);
+      this.setInputValue(`capExValue_${itemId}`, item.value);
+      this.setInputValue(`capExGrowthType_${itemId}`, item.growthType);
+      
+      if (item.growth !== undefined) {
+        this.setInputValue(`linearGrowth_capEx_${itemId}`, item.growth);
+      }
+    });
+  }
+
+  setInputValue(id, value) {
+    const element = document.getElementById(id);
+    if (element) {
+      element.value = value;
+      // Trigger change event in case there are listeners
+      element.dispatchEvent(new Event('change', { bubbles: true }));
+    }
   }
 
   async sendChatMessage() {
@@ -3570,6 +3840,234 @@ class MAModelingAddin {
       
       console.log('✅ Exit assumptions initialized successfully');
     }, 500);
+  }
+
+  initializeSectionMonitoring() {
+    console.log('Initializing section completion monitoring...');
+    
+    // Set up event listeners to monitor form changes
+    setTimeout(() => {
+      // Monitor all input changes
+      const inputs = document.querySelectorAll('input, select, textarea');
+      inputs.forEach(input => {
+        input.addEventListener('input', () => this.debounceUpdateSectionIndicators());
+        input.addEventListener('change', () => this.debounceUpdateSectionIndicators());
+      });
+      
+      // Monitor dynamic item additions/removals
+      const addButtons = document.querySelectorAll('[id*="add"]');
+      addButtons.forEach(button => {
+        button.addEventListener('click', () => {
+          setTimeout(() => this.updateSectionIndicators(), 500);
+        });
+      });
+      
+      // Initial update
+      this.updateSectionIndicators();
+      
+      console.log('✅ Section monitoring initialized successfully');
+    }, 1000);
+  }
+
+  debounceUpdateSectionIndicators() {
+    clearTimeout(this.sectionUpdateTimeout);
+    this.sectionUpdateTimeout = setTimeout(() => {
+      this.updateSectionIndicators();
+    }, 300);
+  }
+
+  updateSectionIndicators() {
+    // High-Level Parameters
+    const highLevelComplete = this.checkHighLevelParametersCompletion();
+    this.updateSectionIndicator('highLevelIndicator', 'highLevelParametersSection', highLevelComplete);
+    
+    // Deal Assumptions
+    const dealAssumptionsComplete = this.checkDealAssumptionsCompletion();
+    this.updateSectionIndicator('dealAssumptionsIndicator', 'dealAssumptionsSection', dealAssumptionsComplete);
+    
+    // Revenue Items
+    const revenueItemsComplete = this.checkRevenueItemsCompletion();
+    this.updateSectionIndicator('revenueItemsIndicator', 'revenueItemsSection', revenueItemsComplete);
+    
+    // Operating Expenses
+    const operatingExpensesComplete = this.checkOperatingExpensesCompletion();
+    this.updateSectionIndicator('operatingExpensesIndicator', 'operatingExpensesSection', operatingExpensesComplete);
+    
+    // Capital Expenses
+    const capitalExpensesComplete = this.checkCapitalExpensesCompletion();
+    this.updateSectionIndicator('capitalExpensesIndicator', 'capitalExpensesSection', capitalExpensesComplete);
+    
+    // Exit Assumptions
+    const exitAssumptionsComplete = this.checkExitAssumptionsCompletion();
+    this.updateSectionIndicator('exitAssumptionsIndicator', 'exitAssumptionsSection', exitAssumptionsComplete);
+    
+    // Debt Model (optional section)
+    const debtModelComplete = this.checkDebtModelCompletion();
+    this.updateSectionIndicator('debtModelIndicator', 'debtModelSection', debtModelComplete);
+  }
+
+  updateSectionIndicator(indicatorId, sectionId, completionStatus) {
+    const indicator = document.getElementById(indicatorId);
+    const section = document.getElementById(sectionId);
+    
+    if (indicator && section) {
+      // Remove all existing classes
+      indicator.classList.remove('complete', 'incomplete', 'partial');
+      section.classList.remove('complete', 'incomplete', 'partial');
+      
+      // Add new classes based on completion status
+      if (completionStatus === 'complete') {
+        indicator.classList.add('complete');
+        section.classList.add('complete');
+        indicator.textContent = '✓';
+      } else if (completionStatus === 'partial') {
+        indicator.classList.add('partial');
+        section.classList.add('partial');
+        indicator.textContent = '~';
+      } else {
+        indicator.classList.add('incomplete');
+        section.classList.add('incomplete');
+        indicator.textContent = '!';
+      }
+    }
+  }
+
+  checkHighLevelParametersCompletion() {
+    const currency = document.getElementById('currency')?.value;
+    const projectStartDate = document.getElementById('projectStartDate')?.value;
+    const projectEndDate = document.getElementById('projectEndDate')?.value;
+    const modelPeriods = document.getElementById('modelPeriods')?.value;
+    
+    const requiredFields = [currency, projectStartDate, projectEndDate, modelPeriods];
+    const completedFields = requiredFields.filter(field => field && field.trim() !== '').length;
+    
+    if (completedFields === requiredFields.length) return 'complete';
+    if (completedFields > 0) return 'partial';
+    return 'incomplete';
+  }
+
+  checkDealAssumptionsCompletion() {
+    const dealName = document.getElementById('dealName')?.value;
+    const dealValue = document.getElementById('dealValue')?.value;
+    const transactionFee = document.getElementById('transactionFee')?.value;
+    const dealLTV = document.getElementById('dealLTV')?.value;
+    
+    const requiredFields = [dealName, dealValue, transactionFee, dealLTV];
+    const completedFields = requiredFields.filter(field => field && field.trim() !== '').length;
+    
+    if (completedFields === requiredFields.length) return 'complete';
+    if (completedFields > 0) return 'partial';
+    return 'incomplete';
+  }
+
+  checkRevenueItemsCompletion() {
+    const revenueItems = this.collectRevenueItems();
+    if (revenueItems.length === 0) return 'incomplete';
+    
+    const completeItems = revenueItems.filter(item => 
+      item.name && item.name.trim() !== '' && 
+      item.value && item.value > 0
+    ).length;
+    
+    if (completeItems === revenueItems.length) return 'complete';
+    if (completeItems > 0) return 'partial';
+    return 'incomplete';
+  }
+
+  checkOperatingExpensesCompletion() {
+    const operatingExpenses = this.collectOperatingExpenses();
+    if (operatingExpenses.length === 0) return 'incomplete';
+    
+    const completeItems = operatingExpenses.filter(item => 
+      item.name && item.name.trim() !== '' && 
+      item.value && item.value > 0
+    ).length;
+    
+    if (completeItems === operatingExpenses.length) return 'complete';
+    if (completeItems > 0) return 'partial';
+    return 'incomplete';
+  }
+
+  checkCapitalExpensesCompletion() {
+    const capitalExpenses = this.collectCapitalExpenses();
+    if (capitalExpenses.length === 0) return 'incomplete';
+    
+    const completeItems = capitalExpenses.filter(item => 
+      item.name && item.name.trim() !== '' && 
+      item.value && item.value > 0
+    ).length;
+    
+    if (completeItems === capitalExpenses.length) return 'complete';
+    if (completeItems > 0) return 'partial';
+    return 'incomplete';
+  }
+
+  checkExitAssumptionsCompletion() {
+    const disposalCost = document.getElementById('disposalCost')?.value;
+    const terminalCapRate = document.getElementById('terminalCapRate')?.value;
+    
+    const requiredFields = [disposalCost, terminalCapRate];
+    const completedFields = requiredFields.filter(field => field && field.trim() !== '').length;
+    
+    if (completedFields === requiredFields.length) return 'complete';
+    if (completedFields > 0) return 'partial';
+    return 'incomplete';
+  }
+
+  checkDebtModelCompletion() {
+    const debtYes = document.getElementById('debtYes')?.checked;
+    const debtNo = document.getElementById('debtNo')?.checked;
+    
+    if (debtNo) return 'complete'; // No debt selected is considered complete
+    
+    if (debtYes) {
+      // Check debt-specific fields
+      const marginRate = document.getElementById('marginRate')?.value;
+      const arrangementFee = document.getElementById('arrangementFee')?.value;
+      
+      if (marginRate && arrangementFee) return 'complete';
+      if (marginRate || arrangementFee) return 'partial';
+      return 'incomplete';
+    }
+    
+    return 'partial'; // Neither option selected
+  }
+
+  autoLoadSavedData() {
+    console.log('Checking for saved data to auto-load...');
+    
+    setTimeout(() => {
+      try {
+        const savedData = localStorage.getItem('maModelingData');
+        
+        if (savedData) {
+          const formData = JSON.parse(savedData);
+          console.log('Found saved data, auto-loading...');
+          
+          // Only auto-load basic fields, not dynamic items (user can manually load those)
+          Object.keys(formData).forEach(key => {
+            const element = document.getElementById(key);
+            if (element && !['revenueItems', 'operatingExpenses', 'capitalExpenses', 'costItems', 'savedAt'].includes(key)) {
+              if (element.type === 'checkbox' || element.type === 'radio') {
+                element.checked = formData[key];
+              } else {
+                element.value = formData[key];
+              }
+            }
+          });
+          
+          // Trigger recalculations and update indicators
+          this.triggerCalculations();
+          setTimeout(() => this.updateSectionIndicators(), 500);
+          
+          console.log('Auto-load completed');
+        } else {
+          console.log('No saved data found');
+        }
+      } catch (error) {
+        console.warn('Error auto-loading saved data:', error);
+      }
+    }, 1500); // Load after all other initialization is complete
   }
 
   async processAutoFill() {

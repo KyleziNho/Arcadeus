@@ -941,6 +941,102 @@ input[readonly] {
   gap: var(--spacing-md);
 }
 
+/* Save/Load Section */
+.save-load-section {
+  text-align: center;
+  padding: var(--spacing-lg);
+  background: var(--surface-secondary);
+  border-radius: var(--radius-large);
+  margin: var(--spacing-xl) 0 var(--spacing-md) 0;
+  border: 1px solid var(--surface-tertiary);
+}
+
+.button-group {
+  display: flex;
+  gap: var(--spacing-md);
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.save-status {
+  margin-top: var(--spacing-md);
+  font-size: 14px;
+  color: var(--text-tertiary);
+  font-style: italic;
+  min-height: 20px;
+}
+
+.save-status.success {
+  color: var(--accent-green);
+  font-weight: 500;
+  font-style: normal;
+}
+
+.save-status.error {
+  color: var(--accent-red);
+  font-weight: 500;
+  font-style: normal;
+}
+
+/* Section completion indicators */
+.section-completion-indicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  margin-left: var(--spacing-sm);
+  font-size: 12px;
+  font-weight: bold;
+  transition: all var(--transition-normal);
+}
+
+.section-completion-indicator.complete {
+  background-color: var(--accent-green);
+  color: white;
+}
+
+.section-completion-indicator.incomplete {
+  background-color: var(--accent-red);
+  color: white;
+}
+
+.section-completion-indicator.partial {
+  background-color: var(--accent-orange);
+  color: white;
+}
+
+/* Section visual states */
+.collapsible-section.incomplete {
+  border-left: 4px solid var(--accent-red);
+}
+
+.collapsible-section.complete {
+  border-left: 4px solid var(--accent-green);
+}
+
+.collapsible-section.partial {
+  border-left: 4px solid var(--accent-orange);
+}
+
+/* Pulse animation for incomplete sections */
+.collapsible-section.incomplete .section-completion-indicator {
+  animation: pulse-red 2s infinite;
+}
+
+@keyframes pulse-red {
+  0% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+  }
+}
+
 .status-message {
   font-size: 14px;
   color: var(--text-tertiary);

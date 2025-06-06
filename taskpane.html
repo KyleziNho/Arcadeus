@@ -74,7 +74,7 @@
             <button class="minimize-btn" id="minimizeHighLevel" aria-label="Minimize High-Level Parameters">
                 <span class="minimize-icon">−</span>
             </button>
-            <h3 data-emoji="⚙️">High-Level Parameters</h3>
+            <h3 data-emoji="⚙️">High-Level Parameters<span class="section-completion-indicator incomplete" id="highLevelIndicator">!</span></h3>
             <div class="section-content" id="highLevelContent">
                 <div class="form-group">
                     <label>Currency</label>
@@ -124,7 +124,7 @@
             <button class="minimize-btn" id="minimizeAssumptions" aria-label="Minimize Deal Assumptions">
                 <span class="minimize-icon">−</span>
             </button>
-            <h3 data-emoji="📊">Deal Assumptions</h3>
+            <h3 data-emoji="📊">Deal Assumptions<span class="section-completion-indicator incomplete" id="dealAssumptionsIndicator">!</span></h3>
             <div class="section-content" id="assumptionsContent">
             <div class="form-group">
                 <label>Deal Name</label>
@@ -163,7 +163,7 @@
             <button class="minimize-btn" id="minimizeRevenue" aria-label="Minimize Revenue Items">
                 <span class="minimize-icon">−</span>
             </button>
-            <h3 data-emoji="📈">Revenue Items</h3>
+            <h3 data-emoji="📈">Revenue Items<span class="section-completion-indicator incomplete" id="revenueItemsIndicator">!</span></h3>
             <div class="section-content" id="revenueContent">
                 <div class="revenue-items-container" id="revenueItemsContainer">
                     <!-- Revenue items will be dynamically added here -->
@@ -185,7 +185,7 @@
             <button class="minimize-btn" id="minimizeOpEx" aria-label="Minimize Operating Expenses">
                 <span class="minimize-icon">−</span>
             </button>
-            <h3 data-emoji="💸">Operating Expenses</h3>
+            <h3 data-emoji="💸">Operating Expenses<span class="section-completion-indicator incomplete" id="operatingExpensesIndicator">!</span></h3>
             <div class="section-content" id="opExContent">
                 <div class="cost-items-container" id="operatingExpensesContainer">
                     <!-- Operating expenses will be dynamically added here -->
@@ -207,7 +207,7 @@
             <button class="minimize-btn" id="minimizeCapEx" aria-label="Minimize Capital Expenses">
                 <span class="minimize-icon">−</span>
             </button>
-            <h3 data-emoji="🏗️">Capital Expenses</h3>
+            <h3 data-emoji="🏗️">Capital Expenses<span class="section-completion-indicator incomplete" id="capitalExpensesIndicator">!</span></h3>
             <div class="section-content" id="capExContent">
                 <div class="cost-items-container" id="capitalExpensesContainer">
                     <!-- Capital expenses will be dynamically added here -->
@@ -229,7 +229,7 @@
             <button class="minimize-btn" id="minimizeExit" aria-label="Minimize Exit Assumptions">
                 <span class="minimize-icon">−</span>
             </button>
-            <h3 data-emoji="🚪">Exit Assumptions</h3>
+            <h3 data-emoji="🚪">Exit Assumptions<span class="section-completion-indicator incomplete" id="exitAssumptionsIndicator">!</span></h3>
             <div class="section-content" id="exitContent">
                 <div class="form-group">
                     <label>Disposal Cost (%)</label>
@@ -249,7 +249,7 @@
             <button class="minimize-btn" id="minimizeDebtModel" aria-label="Minimize Debt Model">
                 <span class="minimize-icon">−</span>
             </button>
-            <h3 data-emoji="💰">Debt Model</h3>
+            <h3 data-emoji="💰">Debt Model<span class="section-completion-indicator partial" id="debtModelIndicator">~</span></h3>
             <div class="section-content" id="debtModelContent">
                 
                 <!-- Debt Configuration -->
@@ -350,6 +350,31 @@
                 </div>
 
             </div>
+        </div>
+
+        <!-- Save/Load Section -->
+        <div class="save-load-section">
+            <div class="button-group">
+                <button class="button button-secondary" id="saveDataBtn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                        <polyline points="17,21 17,13 7,13 7,21"></polyline>
+                        <polyline points="7,3 7,8 15,8"></polyline>
+                    </svg>
+                    Save Inputs
+                </button>
+                <button class="button button-secondary" id="loadDataBtn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14,2 14,8 20,8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                        <polyline points="10,9 9,9 8,9"></polyline>
+                    </svg>
+                    Load Inputs
+                </button>
+            </div>
+            <div class="save-status" id="saveStatus"></div>
         </div>
 
         <!-- Generate Model Button -->
