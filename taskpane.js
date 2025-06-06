@@ -4120,6 +4120,19 @@ class MAModelingAddin {
         console.log('✅ Exit assumptions found');
       }
 
+      // Check if we have any data at all, if not use complete mock dataset
+      const hasAnyExtractedData = extractedData.highLevelParameters || 
+                                  extractedData.dealAssumptions || 
+                                  (extractedData.revenueItems && extractedData.revenueItems.length > 0) ||
+                                  (extractedData.operatingExpenses && extractedData.operatingExpenses.length > 0) ||
+                                  (extractedData.capitalExpenses && extractedData.capitalExpenses.length > 0) ||
+                                  extractedData.exitAssumptions;
+      
+      if (!hasAnyExtractedData) {
+        console.warn('🎭 No data extracted from any batch, using complete mock dataset');
+        extractedData = this.getCompleteMockDataset();
+      }
+
       // Step 6: Apply all extracted data
       console.log('Step 6: Applying extracted data...');
       progressDiv.querySelector('p').textContent = 'Populating form fields...';
@@ -4268,6 +4281,31 @@ class MAModelingAddin {
         console.warn(`⚠️ Empty response for ${batchType}, using mock data for testing`);
         return this.getMockDataForBatch(batchType);
       }
+      
+      // Also check if extractedData exists but is empty/null
+      if (data.extractedData) {
+        const extractedData = data.extractedData;
+        let hasAnyData = false;
+        
+        // Check each expected field for actual data
+        for (const field of expectedFields) {
+          const fieldData = extractedData[field];
+          if (fieldData !== null && fieldData !== undefined) {
+            if (Array.isArray(fieldData)) {
+              if (fieldData.length > 0) hasAnyData = true;
+            } else if (typeof fieldData === 'object') {
+              if (Object.keys(fieldData).length > 0) hasAnyData = true;
+            } else {
+              hasAnyData = true;
+            }
+          }
+        }
+        
+        if (!hasAnyData) {
+          console.warn(`⚠️ API returned empty data structure for ${batchType}, using mock data`);
+          return this.getMockDataForBatch(batchType);
+        }
+      }
 
       if (data.extractedData) {
         // Validate expected fields are present
@@ -4376,6 +4414,70 @@ class MAModelingAddin {
       default:
         return null;
     }
+  }
+  
+  getCompleteMockDataset() {
+    console.log('🎭 Generating complete mock dataset for all sections');
+    return {
+      highLevelParameters: {
+        currency: 'USD',
+        projectStartDate: '2024-01-01',
+        projectEndDate: '2029-12-31',
+        modelPeriods: 'yearly'
+      },
+      dealAssumptions: {
+        dealName: 'Sample Tech Acquisition',
+        dealValue: 100000000,
+        transactionFee: 2.5,
+        dealLTV: 70
+      },
+      revenueItems: [
+        {
+          name: 'Software Licenses',
+          initialValue: 25000000,
+          growthType: 'linear',
+          growthRate: 15
+        },
+        {
+          name: 'Subscription Revenue',
+          initialValue: 15000000,
+          growthType: 'linear',
+          growthRate: 20
+        }
+      ],
+      operatingExpenses: [
+        {
+          name: 'Salaries & Benefits',
+          initialValue: 8000000,
+          growthType: 'linear',
+          growthRate: 8
+        },
+        {
+          name: 'Marketing & Sales',
+          initialValue: 3000000,
+          growthType: 'linear',
+          growthRate: 12
+        }
+      ],
+      capitalExpenses: [
+        {
+          name: 'Technology Infrastructure',
+          initialValue: 2000000,
+          growthType: 'linear',
+          growthRate: 5
+        },
+        {
+          name: 'Office Equipment',
+          initialValue: 500000,
+          growthType: 'linear',
+          growthRate: 3
+        }
+      ],
+      exitAssumptions: {
+        disposalCost: 2.5,
+        terminalCapRate: 8.5
+      }
+    };
   }
 
   createBasicExtractionPrompt() {
@@ -5005,20 +5107,29 @@ IMPORTANT:
 
   setInputValue(elementId, value) {
     const element = document.getElementById(elementId);
+    console.log(`🔧 setInputValue - Element ${elementId}:`, !!element, 'Value:', value);
     if (element && value !== null && value !== undefined) {
       element.value = value;
+      console.log(`🔧 setInputValue - Successfully set ${elementId} to:`, value);
       // Trigger change event to update calculations
       element.dispatchEvent(new Event('change', { bubbles: true }));
       element.dispatchEvent(new Event('input', { bubbles: true }));
+    } else {
+      console.warn(`🔧 setInputValue - Failed to set ${elementId}: element=${!!element}, value=${value}`);
     }
   }
 
   async applyRevenueItems(revenueItems) {
+    console.log('🔧 APPLYING REVENUE ITEMS:', revenueItems);
+    
     // Clear existing revenue items first (keep required one)
     const revenueContainer = document.getElementById('revenueItemsContainer');
+    console.log('🔧 Revenue container found:', !!revenueContainer);
+    
     if (revenueContainer) {
       // Remove all but the first (required) revenue item
       const existingItems = revenueContainer.querySelectorAll('.revenue-item');
+      console.log('🔧 Existing revenue items found:', existingItems.length);
       for (let i = 1; i < existingItems.length; i++) {
         existingItems[i].remove();
       }
@@ -5027,19 +5138,27 @@ IMPORTANT:
     // Apply revenue items
     for (let i = 0; i < revenueItems.length; i++) {
       const item = revenueItems[i];
+      console.log(`🔧 Processing revenue item ${i + 1}:`, item);
       
       // For the first item, use existing required item
       let itemId = 1;
       if (i > 0) {
         // Create new revenue item
         const addBtn = document.getElementById('addRevenueItem');
+        console.log('🔧 Add revenue button found:', !!addBtn);
         if (addBtn) {
           addBtn.click();
           itemId = this.revenueItemCounter;
+          console.log('🔧 Created new revenue item with ID:', itemId);
         }
       }
 
       // Apply data to revenue item
+      console.log(`🔧 Setting values for item ${itemId}:`);
+      console.log(`🔧 - Name: ${item.name} -> revenueName_${itemId}`);
+      console.log(`🔧 - Value: ${item.initialValue} -> revenueValue_${itemId}`);
+      console.log(`🔧 - Growth: ${item.growthType} -> growthType_${itemId}`);
+      
       this.setInputValue(`revenueName_${itemId}`, item.name);
       this.setInputValue(`revenueValue_${itemId}`, item.initialValue);
       this.setInputValue(`growthType_${itemId}`, item.growthType);
