@@ -2144,23 +2144,9 @@ class MAModelingAddin {
       if (minimizeBtn && dealAssumptionsSection) {
         minimizeBtn.addEventListener('click', (e) => {
           e.preventDefault();
-          console.log('Minimize button clicked');
-          
-          // Toggle collapsed class
-          dealAssumptionsSection.classList.toggle('collapsed');
-          
-          // Update icon and aria-label for accessibility
-          const isCollapsed = dealAssumptionsSection.classList.contains('collapsed');
-          const iconSpan = minimizeBtn.querySelector('.minimize-icon');
-          
-          if (iconSpan) {
-            iconSpan.textContent = isCollapsed ? '+' : '−';
-          }
-          
-          minimizeBtn.setAttribute('aria-label', 
-            isCollapsed ? 'Expand Deal Assumptions' : 'Minimize Deal Assumptions');
-          
-          console.log('Deal Assumptions section', isCollapsed ? 'collapsed' : 'expanded');
+          e.stopPropagation();
+          console.log('Deal Assumptions minimize button clicked');
+          this.toggleSection(dealAssumptionsSection, minimizeBtn);
         });
         
         console.log('✅ Deal Assumptions collapsible section initialized successfully');
@@ -2175,23 +2161,9 @@ class MAModelingAddin {
       if (minimizeHighLevelBtn && highLevelParametersSection) {
         minimizeHighLevelBtn.addEventListener('click', (e) => {
           e.preventDefault();
+          e.stopPropagation();
           console.log('High-Level Parameters minimize button clicked');
-          
-          // Toggle collapsed class
-          highLevelParametersSection.classList.toggle('collapsed');
-          
-          // Update icon and aria-label for accessibility
-          const isCollapsed = highLevelParametersSection.classList.contains('collapsed');
-          const iconSpan = minimizeHighLevelBtn.querySelector('.minimize-icon');
-          
-          if (iconSpan) {
-            iconSpan.textContent = isCollapsed ? '+' : '−';
-          }
-          
-          minimizeHighLevelBtn.setAttribute('aria-label', 
-            isCollapsed ? 'Expand High-Level Parameters' : 'Minimize High-Level Parameters');
-          
-          console.log('High-Level Parameters section', isCollapsed ? 'collapsed' : 'expanded');
+          this.toggleSection(highLevelParametersSection, minimizeHighLevelBtn);
         });
         
         console.log('✅ High-Level Parameters collapsible section initialized successfully');
@@ -2206,23 +2178,9 @@ class MAModelingAddin {
       if (minimizeRevenueBtn && revenueItemsSection) {
         minimizeRevenueBtn.addEventListener('click', (e) => {
           e.preventDefault();
+          e.stopPropagation();
           console.log('Revenue Items minimize button clicked');
-          
-          // Toggle collapsed class
-          revenueItemsSection.classList.toggle('collapsed');
-          
-          // Update icon and aria-label for accessibility
-          const isCollapsed = revenueItemsSection.classList.contains('collapsed');
-          const iconSpan = minimizeRevenueBtn.querySelector('.minimize-icon');
-          
-          if (iconSpan) {
-            iconSpan.textContent = isCollapsed ? '+' : '−';
-          }
-          
-          minimizeRevenueBtn.setAttribute('aria-label', 
-            isCollapsed ? 'Expand Revenue Items' : 'Minimize Revenue Items');
-          
-          console.log('Revenue Items section', isCollapsed ? 'collapsed' : 'expanded');
+          this.toggleSection(revenueItemsSection, minimizeRevenueBtn);
         });
         
         console.log('✅ Revenue Items collapsible section initialized successfully');
@@ -2237,23 +2195,9 @@ class MAModelingAddin {
       if (minimizeOpExBtn && operatingExpensesSection) {
         minimizeOpExBtn.addEventListener('click', (e) => {
           e.preventDefault();
+          e.stopPropagation();
           console.log('Operating Expenses minimize button clicked');
-          
-          // Toggle collapsed class
-          operatingExpensesSection.classList.toggle('collapsed');
-          
-          // Update icon and aria-label for accessibility
-          const isCollapsed = operatingExpensesSection.classList.contains('collapsed');
-          const iconSpan = minimizeOpExBtn.querySelector('.minimize-icon');
-          
-          if (iconSpan) {
-            iconSpan.textContent = isCollapsed ? '+' : '−';
-          }
-          
-          minimizeOpExBtn.setAttribute('aria-label', 
-            isCollapsed ? 'Expand Operating Expenses' : 'Minimize Operating Expenses');
-          
-          console.log('Operating Expenses section', isCollapsed ? 'collapsed' : 'expanded');
+          this.toggleSection(operatingExpensesSection, minimizeOpExBtn);
         });
         
         console.log('✅ Operating Expenses collapsible section initialized successfully');
@@ -2268,23 +2212,9 @@ class MAModelingAddin {
       if (minimizeCapExBtn && capitalExpensesSection) {
         minimizeCapExBtn.addEventListener('click', (e) => {
           e.preventDefault();
+          e.stopPropagation();
           console.log('Capital Expenses minimize button clicked');
-          
-          // Toggle collapsed class
-          capitalExpensesSection.classList.toggle('collapsed');
-          
-          // Update icon and aria-label for accessibility
-          const isCollapsed = capitalExpensesSection.classList.contains('collapsed');
-          const iconSpan = minimizeCapExBtn.querySelector('.minimize-icon');
-          
-          if (iconSpan) {
-            iconSpan.textContent = isCollapsed ? '+' : '−';
-          }
-          
-          minimizeCapExBtn.setAttribute('aria-label', 
-            isCollapsed ? 'Expand Capital Expenses' : 'Minimize Capital Expenses');
-          
-          console.log('Capital Expenses section', isCollapsed ? 'collapsed' : 'expanded');
+          this.toggleSection(capitalExpensesSection, minimizeCapExBtn);
         });
         
         console.log('✅ Capital Expenses collapsible section initialized successfully');
@@ -2299,23 +2229,9 @@ class MAModelingAddin {
       if (minimizeExitBtn && exitAssumptionsSection) {
         minimizeExitBtn.addEventListener('click', (e) => {
           e.preventDefault();
+          e.stopPropagation();
           console.log('Exit Assumptions minimize button clicked');
-          
-          // Toggle collapsed class
-          exitAssumptionsSection.classList.toggle('collapsed');
-          
-          // Update icon and aria-label for accessibility
-          const isCollapsed = exitAssumptionsSection.classList.contains('collapsed');
-          const iconSpan = minimizeExitBtn.querySelector('.minimize-icon');
-          
-          if (iconSpan) {
-            iconSpan.textContent = isCollapsed ? '+' : '−';
-          }
-          
-          minimizeExitBtn.setAttribute('aria-label', 
-            isCollapsed ? 'Expand Exit Assumptions' : 'Minimize Exit Assumptions');
-          
-          console.log('Exit Assumptions section', isCollapsed ? 'collapsed' : 'expanded');
+          this.toggleSection(exitAssumptionsSection, minimizeExitBtn);
         });
         
         console.log('✅ Exit Assumptions collapsible section initialized successfully');
@@ -2330,23 +2246,9 @@ class MAModelingAddin {
       if (minimizeDebtBtn && debtModelSection) {
         minimizeDebtBtn.addEventListener('click', (e) => {
           e.preventDefault();
+          e.stopPropagation();
           console.log('Debt Model minimize button clicked');
-          
-          // Toggle collapsed class
-          debtModelSection.classList.toggle('collapsed');
-          
-          // Update icon and aria-label for accessibility
-          const isCollapsed = debtModelSection.classList.contains('collapsed');
-          const iconSpan = minimizeDebtBtn.querySelector('.minimize-icon');
-          
-          if (iconSpan) {
-            iconSpan.textContent = isCollapsed ? '+' : '−';
-          }
-          
-          minimizeDebtBtn.setAttribute('aria-label', 
-            isCollapsed ? 'Expand Debt Model' : 'Minimize Debt Model');
-          
-          console.log('Debt Model section', isCollapsed ? 'collapsed' : 'expanded');
+          this.toggleSection(debtModelSection, minimizeDebtBtn);
         });
         
         console.log('✅ Debt Model collapsible section initialized successfully');
@@ -2367,35 +2269,65 @@ class MAModelingAddin {
 
   addClickToExpandListener(section, minimizeBtn) {
     if (section && minimizeBtn) {
-      section.addEventListener('click', (e) => {
-        // Only expand if section is collapsed and click wasn't on the minimize button
-        if (section.classList.contains('collapsed') && !minimizeBtn.contains(e.target)) {
-          e.preventDefault();
+      // Add click listener to the h3 header for toggle functionality
+      const sectionHeader = section.querySelector('h3');
+      if (sectionHeader) {
+        sectionHeader.addEventListener('click', (e) => {
+          // Prevent event bubbling
+          e.stopPropagation();
           
-          // Trigger the minimize button click to expand
-          section.classList.remove('collapsed');
-          
-          // Update icon and aria-label
-          const iconSpan = minimizeBtn.querySelector('.minimize-icon');
-          if (iconSpan) {
-            iconSpan.textContent = '−';
+          // Don't trigger if clicking on the minimize button
+          if (minimizeBtn.contains(e.target)) {
+            return;
           }
           
-          // Update aria-label based on section
-          let sectionName = 'Section';
-          if (section.id.includes('highLevel')) sectionName = 'High-Level Parameters';
-          else if (section.id.includes('dealAssumptions')) sectionName = 'Deal Assumptions';
-          else if (section.id.includes('revenue')) sectionName = 'Revenue Items';
-          else if (section.id.includes('cost')) sectionName = 'Cost Items';
-          else if (section.id.includes('exit')) sectionName = 'Exit Assumptions';
-          else if (section.id.includes('debt')) sectionName = 'Debt Model';
-          
-          minimizeBtn.setAttribute('aria-label', `Minimize ${sectionName}`);
-          
-          console.log(`${sectionName} section expanded by click`);
+          // Toggle the section
+          this.toggleSection(section, minimizeBtn);
+        });
+        
+        // Add visual feedback cursor
+        sectionHeader.style.cursor = 'pointer';
+      }
+      
+      // Enhanced section click listener (for when collapsed)
+      section.addEventListener('click', (e) => {
+        // Only expand if section is collapsed and click wasn't on the minimize button or input elements
+        if (section.classList.contains('collapsed') && 
+            !minimizeBtn.contains(e.target) && 
+            !e.target.matches('input, select, textarea, button, a, [contenteditable]')) {
+          e.preventDefault();
+          this.toggleSection(section, minimizeBtn);
         }
       });
     }
+  }
+  
+  toggleSection(section, minimizeBtn) {
+    // Toggle collapsed class
+    section.classList.toggle('collapsed');
+    
+    // Update icon and aria-label
+    const isCollapsed = section.classList.contains('collapsed');
+    const iconSpan = minimizeBtn.querySelector('.minimize-icon');
+    if (iconSpan) {
+      iconSpan.textContent = isCollapsed ? '+' : '−';
+    }
+    
+    // Update aria-label based on section
+    let sectionName = 'Section';
+    if (section.id.includes('highLevel')) sectionName = 'High-Level Parameters';
+    else if (section.id.includes('dealAssumptions')) sectionName = 'Deal Assumptions';
+    else if (section.id.includes('revenue')) sectionName = 'Revenue Items';
+    else if (section.id.includes('operatingExpenses')) sectionName = 'Operating Expenses';
+    else if (section.id.includes('capitalExpenses')) sectionName = 'Capital Expenses';
+    else if (section.id.includes('exit')) sectionName = 'Exit Assumptions';
+    else if (section.id.includes('debt')) sectionName = 'Debt Model';
+    
+    minimizeBtn.setAttribute('aria-label', 
+      isCollapsed ? `Expand ${sectionName}` : `Minimize ${sectionName}`
+    );
+    
+    console.log(`${sectionName} section`, isCollapsed ? 'collapsed' : 'expanded');
   }
 
   initializeDebtModel() {
