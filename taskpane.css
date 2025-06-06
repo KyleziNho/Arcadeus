@@ -460,11 +460,53 @@ input::placeholder {
   margin-bottom: var(--space-4);
   background: var(--white);
   transition: all var(--transition-fast);
+  position: relative;
 }
 
 .revenue-item:hover, .cost-item:hover {
   box-shadow: var(--shadow-sm);
-  border-color: var(--gray-300);
+  border-color: var(--black);
+}
+
+.revenue-item-header, .cost-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-4);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--gray-100);
+  position: relative;
+}
+
+.revenue-item-title, .cost-item-title {
+  font-weight: 600;
+  color: var(--gray-900);
+  font-size: 15px;
+}
+
+.remove-revenue-item, .remove-cost-item {
+  position: absolute;
+  top: -var(--space-3);
+  right: -var(--space-3);
+  background: var(--white);
+  border: 1px solid var(--gray-300);
+  color: var(--gray-500);
+  cursor: pointer;
+  padding: var(--space-1);
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+  font-size: 12px;
+  min-width: 60px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.remove-revenue-item:hover, .remove-cost-item:hover {
+  background: var(--black);
+  color: var(--white);
+  border-color: var(--black);
 }
 
 .item-header {
@@ -544,6 +586,26 @@ input[type="radio"] {
 }
 
 /* Action Sections */
+.action-section {
+  background: var(--white);
+  border-radius: var(--radius-md);
+  padding: var(--space-6);
+  text-align: center;
+  margin: var(--space-6) var(--space-6);
+  border: 1px solid var(--black);
+}
+
+.button-group-horizontal {
+  display: flex;
+  gap: var(--space-4);
+  justify-content: center;
+  margin-bottom: var(--space-4);
+}
+
+.generate-button-container {
+  margin-top: var(--space-4);
+}
+
 .save-load-section, .generate-model-section {
   background: var(--white);
   border-radius: var(--radius-md);
