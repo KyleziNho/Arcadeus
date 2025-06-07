@@ -224,17 +224,7 @@ body {
   background: var(--gray-800);
 }
 
-/* Hidden file input */
-#mainFileInput {
-  position: absolute;
-  opacity: 0;
-  width: 100%;
-  height: 100%;
-  cursor: pointer;
-  top: 0;
-  left: 0;
-  z-index: 10;
-}
+/* Hidden file input - removed absolute positioning for Excel Online compatibility */
 
 /* Sections - Clean Minimal Cards */
 .section {

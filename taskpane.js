@@ -168,6 +168,15 @@ class MAModelingAddin {
     // Initialize main uploaded files array
     this.mainUploadedFiles = [];
 
+    // Check if we're in Excel Online
+    const isExcelOnline = window.location.hostname.includes('officeapps.live.com') || 
+                         window.location.hostname.includes('excel.officeapps.live.com') ||
+                         window.location.hostname.includes('excel.cloud.microsoft');
+    
+    if (isExcelOnline) {
+      console.log('⚠️ Running in Excel Online - using alternative file handling');
+    }
+
     // Main upload zone click handler
     if (mainUploadZone) {
       mainUploadZone.addEventListener('click', (e) => {
@@ -178,7 +187,24 @@ class MAModelingAddin {
         }
         if (mainFileInput) {
           console.log('Triggering main file input click');
-          mainFileInput.click();
+          try {
+            // Try different methods to trigger file input
+            if (mainFileInput.click) {
+              mainFileInput.click();
+            } else {
+              // Fallback: dispatch a click event
+              const evt = new MouseEvent('click', {
+                bubbles: true,
+                cancelable: true,
+                view: window
+              });
+              mainFileInput.dispatchEvent(evt);
+            }
+          } catch (error) {
+            console.error('Error triggering file input:', error);
+            // Show a message for Excel Online users
+            this.showMainUploadMessage('Please use the Browse Files button or drag and drop files.', 'info');
+          }
         }
       });
     }
@@ -191,7 +217,24 @@ class MAModelingAddin {
         e.stopPropagation();
         if (mainFileInput) {
           console.log('Triggering file input from browse button');
-          mainFileInput.click();
+          try {
+            // Try different methods to trigger file input
+            if (mainFileInput.click) {
+              mainFileInput.click();
+            } else {
+              // Fallback: dispatch a click event
+              const evt = new MouseEvent('click', {
+                bubbles: true,
+                cancelable: true,
+                view: window
+              });
+              mainFileInput.dispatchEvent(evt);
+            }
+          } catch (error) {
+            console.error('Error triggering file input from button:', error);
+            // Show a message for Excel Online users
+            this.showMainUploadMessage('File upload may be restricted in Excel Online. Try drag and drop.', 'info');
+          }
         }
       });
     }
