@@ -156,6 +156,15 @@ body {
   cursor: pointer;
   position: relative;
   margin-bottom: var(--space-6);
+  user-select: none;
+}
+
+.upload-zone * {
+  pointer-events: none;
+}
+
+.upload-zone .browse-files-btn {
+  pointer-events: auto;
 }
 
 .upload-zone:hover {
@@ -224,6 +233,7 @@ body {
   cursor: pointer;
   top: 0;
   left: 0;
+  z-index: 10;
 }
 
 /* Sections - Clean Minimal Cards */

@@ -172,7 +172,10 @@ class MAModelingAddin {
     if (mainUploadZone) {
       mainUploadZone.addEventListener('click', (e) => {
         console.log('Main upload zone clicked');
-        e.preventDefault();
+        // Don't prevent default if clicking on the actual file input
+        if (e.target !== mainFileInput) {
+          e.preventDefault();
+        }
         if (mainFileInput) {
           console.log('Triggering main file input click');
           mainFileInput.click();
@@ -187,6 +190,7 @@ class MAModelingAddin {
         e.preventDefault();
         e.stopPropagation();
         if (mainFileInput) {
+          console.log('Triggering file input from browse button');
           mainFileInput.click();
         }
       });
