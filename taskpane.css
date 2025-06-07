@@ -600,11 +600,11 @@ input[type="radio"] {
   display: flex;
   gap: var(--space-4);
   justify-content: center;
-  margin-bottom: var(--space-4);
+  margin-bottom: var(--space-2);
 }
 
 .generate-button-container {
-  margin-top: var(--space-4);
+  margin-top: var(--space-2);
 }
 
 .save-load-section, .generate-model-section {
