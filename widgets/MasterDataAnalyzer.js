@@ -353,13 +353,14 @@ RETURN ONLY THE JSON STRUCTURE - NO OTHER TEXT.`;
         // Look for company name in CSV content
         const lines = file.content.split('\n');
         for (const line of lines) {
-          // Look for patterns like "Financial Model Data,Company Name"
-          if (line.includes('Financial Model Data') || line.includes('Company')) {
-            const parts = line.split(',');
-            if (parts.length > 1 && parts[1].trim()) {
-              const companyName = parts[1].trim();
-              if (companyName.length > 2) {
-                console.log(`📊 Found company name in CSV: ${companyName}`);
+          // Handle different CSV formats: "Label,Value" or "Label,,,,,Value"
+          if (line.toLowerCase().includes('company') || line.toLowerCase().includes('assumptions')) {
+            // Try to extract company name from header line like "Sample Company Ltd. - Key Assumptions"
+            if (line.includes(' - ') || line.includes('Ltd') || line.includes('Inc') || line.includes('Corp')) {
+              const parts = line.split(',');
+              const companyName = parts[0].trim().replace(' - Key Assumptions', '').replace(' - Assumptions', '');
+              if (companyName.length > 2 && !companyName.toLowerCase().includes('sample')) {
+                console.log(`📊 Found company name in CSV header: ${companyName}`);
                 return companyName;
               }
             }
@@ -388,20 +389,56 @@ RETURN ONLY THE JSON STRUCTURE - NO OTHER TEXT.`;
       console.log('📊 Extracting deal value from text length:', text.length);
       console.log('📊 Text preview:', text.substring(0, 500));
       
-      // Look for CSV format: "Deal Value,50000000"
+      // Look for both Equity Contribution and Debt Financing to calculate total deal value
       const lines = text.split('\n');
+      let equityContribution = 0;
+      let debtFinancing = 0;
+      
       for (const line of lines) {
-        if (line.toLowerCase().includes('deal value')) {
+        if (line.toLowerCase().includes('equity contribution')) {
           const parts = line.split(',');
-          if (parts.length > 1) {
-            const valueStr = parts[1].trim().replace(/[^0-9.]/g, '');
-            const value = parseFloat(valueStr);
-            if (!isNaN(value) && value > 0) {
-              console.log(`📊 Found deal value in CSV: ${value}`);
-              return value;
+          // Find the last non-empty part (handles multiple commas)
+          for (let i = parts.length - 1; i >= 0; i--) {
+            if (parts[i].trim()) {
+              let valueStr = parts[i].trim().replace(/["£€¥\$,]/g, ''); // Remove quotes, currency symbols, commas
+              const value = parseFloat(valueStr);
+              if (!isNaN(value) && value > 0) {
+                equityContribution = value;
+                console.log(`📊 Found equity contribution in CSV: ${value}`);
+              }
+              break;
             }
           }
         }
+        
+        if (line.toLowerCase().includes('debt financing')) {
+          const parts = line.split(',');
+          // Find the last non-empty part (handles multiple commas)
+          for (let i = parts.length - 1; i >= 0; i--) {
+            if (parts[i].trim()) {
+              let valueStr = parts[i].trim().replace(/["£€¥\$,]/g, ''); // Remove quotes, currency symbols, commas
+              const value = parseFloat(valueStr);
+              if (!isNaN(value) && value > 0) {
+                debtFinancing = value;
+                console.log(`📊 Found debt financing in CSV: ${value}`);
+              }
+              break;
+            }
+          }
+        }
+      }
+      
+      // Calculate total deal value
+      if (equityContribution > 0 && debtFinancing > 0) {
+        const totalDealValue = equityContribution + debtFinancing;
+        console.log(`📊 Calculated total deal value: ${totalDealValue} (Equity: ${equityContribution} + Debt: ${debtFinancing})`);
+        return totalDealValue;
+      } else if (equityContribution > 0) {
+        console.log(`📊 Using equity contribution as deal value: ${equityContribution}`);
+        return equityContribution;
+      } else if (debtFinancing > 0) {
+        console.log(`📊 Using debt financing as deal value: ${debtFinancing}`);
+        return debtFinancing;
       }
       
       // Fallback to regex patterns
@@ -441,16 +478,28 @@ RETURN ONLY THE JSON STRUCTURE - NO OTHER TEXT.`;
       console.log('📊 Extracting currency from text length:', text.length);
       console.log('📊 Text preview for currency:', text.substring(0, 200));
       
-      // Look for CSV format: "Currency,USD"
+      // Look for CSV format: "Currency,USD" or "Currency·,,,,,£"
       const lines = text.split('\n');
       for (const line of lines) {
         if (line.toLowerCase().includes('currency')) {
           const parts = line.split(',');
-          if (parts.length > 1) {
-            const currency = parts[1].trim().toUpperCase();
-            if (['USD', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD', 'CHF', 'CNY'].includes(currency)) {
-              console.log(`📊 Found currency in CSV: ${currency}`);
-              return currency;
+          // Find the last non-empty part
+          for (let i = parts.length - 1; i >= 0; i--) {
+            if (parts[i].trim()) {
+              const currencyText = parts[i].trim();
+              if (currencyText.includes('£') || currencyText.toLowerCase().includes('gbp')) {
+                console.log(`📊 Found currency in CSV: GBP`);
+                return 'GBP';
+              }
+              if (currencyText.includes('€') || currencyText.toLowerCase().includes('eur')) {
+                console.log(`📊 Found currency in CSV: EUR`);
+                return 'EUR';
+              }
+              if (currencyText.includes('$') || currencyText.toLowerCase().includes('usd')) {
+                console.log(`📊 Found currency in CSV: USD`);
+                return 'USD';
+              }
+              break;
             }
           }
         }
@@ -475,17 +524,21 @@ RETURN ONLY THE JSON STRUCTURE - NO OTHER TEXT.`;
       
       console.log('📊 Extracting transaction fee from text');
       
-      // Look for CSV format: "Transaction Fee,2.5%"
+      // Look for CSV format: "Transaction Fees,,,,,1.50%"
       const lines = text.split('\n');
       for (const line of lines) {
-        if (line.toLowerCase().includes('transaction fee') || line.toLowerCase().includes('fee')) {
+        if (line.toLowerCase().includes('transaction fee') || (line.toLowerCase().includes('fee') && !line.toLowerCase().includes('issuance'))) {
           const parts = line.split(',');
-          if (parts.length > 1) {
-            const feeStr = parts[1].trim().replace(/[^0-9.]/g, '');
-            const fee = parseFloat(feeStr);
-            if (!isNaN(fee) && fee >= 0 && fee <= 10) {
-              console.log(`📊 Found transaction fee in CSV: ${fee}%`);
-              return fee;
+          // Find the last non-empty part
+          for (let i = parts.length - 1; i >= 0; i--) {
+            if (parts[i].trim()) {
+              const feeStr = parts[i].trim().replace(/[^0-9.]/g, '');
+              const fee = parseFloat(feeStr);
+              if (!isNaN(fee) && fee >= 0 && fee <= 10) {
+                console.log(`📊 Found transaction fee in CSV: ${fee}%`);
+                return fee;
+              }
+              break;
             }
           }
         }
@@ -504,17 +557,21 @@ RETURN ONLY THE JSON STRUCTURE - NO OTHER TEXT.`;
       
       console.log('📊 Extracting LTV ratio from text');
       
-      // Look for CSV format: "LTV Ratio,70%"
+      // Look for CSV format: "Acquisition LTV,,,,,80.00%"
       const lines = text.split('\n');
       for (const line of lines) {
         if (line.toLowerCase().includes('ltv') || line.toLowerCase().includes('loan to value')) {
           const parts = line.split(',');
-          if (parts.length > 1) {
-            const ltvStr = parts[1].trim().replace(/[^0-9.]/g, '');
-            const ltv = parseFloat(ltvStr);
-            if (!isNaN(ltv) && ltv >= 0 && ltv <= 100) {
-              console.log(`📊 Found LTV ratio in CSV: ${ltv}%`);
-              return ltv;
+          // Find the last non-empty part
+          for (let i = parts.length - 1; i >= 0; i--) {
+            if (parts[i].trim()) {
+              const ltvStr = parts[i].trim().replace(/[^0-9.]/g, '');
+              const ltv = parseFloat(ltvStr);
+              if (!isNaN(ltv) && ltv >= 0 && ltv <= 100) {
+                console.log(`📊 Found LTV ratio in CSV: ${ltv}%`);
+                return ltv;
+              }
+              break;
             }
           }
         }
@@ -533,18 +590,32 @@ RETURN ONLY THE JSON STRUCTURE - NO OTHER TEXT.`;
       
       console.log('📊 Extracting start date from text');
       
-      // Look for CSV format: "Project Start Date,2024-01-01" or "Acquisition Date,January 15 2024"
+      // Look for CSV format: "Acquisition date,,,,,31/03/2025"
       const lines = text.split('\n');
       for (const line of lines) {
-        if (line.toLowerCase().includes('start date') || line.toLowerCase().includes('acquisition date')) {
+        if (line.toLowerCase().includes('acquisition date') || line.toLowerCase().includes('start date')) {
           const parts = line.split(',');
-          if (parts.length > 1) {
-            const dateStr = parts[1].trim();
-            const date = new Date(dateStr);
-            if (!isNaN(date.getTime())) {
-              const isoDate = date.toISOString().split('T')[0];
-              console.log(`📊 Found start date in CSV: ${isoDate}`);
-              return isoDate;
+          // Find the last non-empty part
+          for (let i = parts.length - 1; i >= 0; i--) {
+            if (parts[i].trim()) {
+              const dateStr = parts[i].trim();
+              // Handle DD/MM/YYYY format
+              let date;
+              if (dateStr.includes('/')) {
+                const dateParts = dateStr.split('/');
+                if (dateParts.length === 3) {
+                  // Assume DD/MM/YYYY format
+                  date = new Date(dateParts[2], dateParts[1] - 1, dateParts[0]);
+                }
+              } else {
+                date = new Date(dateStr);
+              }
+              if (date && !isNaN(date.getTime())) {
+                const isoDate = date.toISOString().split('T')[0];
+                console.log(`📊 Found start date in CSV: ${isoDate}`);
+                return isoDate;
+              }
+              break;
             }
           }
         }
@@ -564,21 +635,56 @@ RETURN ONLY THE JSON STRUCTURE - NO OTHER TEXT.`;
       
       console.log('📊 Extracting end date from text');
       
-      // Look for CSV format: "Project End Date,2029-12-31" or "Target Exit Date,December 2029"
+      // Look for CSV format or calculate from acquisition date + holding period
       const lines = text.split('\n');
+      let acquisitionDate = null;
+      let holdingPeriodMonths = null;
+      
+      // First try to find holding period and acquisition date
       for (const line of lines) {
-        if (line.toLowerCase().includes('end date') || line.toLowerCase().includes('exit date') || line.toLowerCase().includes('target exit')) {
+        if (line.toLowerCase().includes('holding period')) {
           const parts = line.split(',');
-          if (parts.length > 1) {
-            const dateStr = parts[1].trim();
-            const date = new Date(dateStr);
-            if (!isNaN(date.getTime())) {
-              const isoDate = date.toISOString().split('T')[0];
-              console.log(`📊 Found end date in CSV: ${isoDate}`);
-              return isoDate;
+          for (let i = parts.length - 1; i >= 0; i--) {
+            if (parts[i].trim()) {
+              const monthsStr = parts[i].trim().replace(/[^0-9.]/g, '');
+              const months = parseFloat(monthsStr);
+              if (!isNaN(months) && months > 0) {
+                holdingPeriodMonths = months;
+                console.log(`📊 Found holding period: ${months} months`);
+                break;
+              }
             }
           }
         }
+        if (line.toLowerCase().includes('acquisition date')) {
+          const parts = line.split(',');
+          for (let i = parts.length - 1; i >= 0; i--) {
+            if (parts[i].trim()) {
+              const dateStr = parts[i].trim();
+              if (dateStr.includes('/')) {
+                const dateParts = dateStr.split('/');
+                if (dateParts.length === 3) {
+                  acquisitionDate = new Date(dateParts[2], dateParts[1] - 1, dateParts[0]);
+                }
+              } else {
+                acquisitionDate = new Date(dateStr);
+              }
+              if (acquisitionDate && !isNaN(acquisitionDate.getTime())) {
+                console.log(`📊 Found acquisition date: ${acquisitionDate.toISOString().split('T')[0]}`);
+                break;
+              }
+            }
+          }
+        }
+      }
+      
+      // Calculate end date from acquisition date + holding period
+      if (acquisitionDate && holdingPeriodMonths) {
+        const endDate = new Date(acquisitionDate);
+        endDate.setMonth(endDate.getMonth() + holdingPeriodMonths);
+        const isoDate = endDate.toISOString().split('T')[0];
+        console.log(`📊 Calculated end date: ${isoDate} (${holdingPeriodMonths} months after acquisition)`);
+        return isoDate;
       }
     } catch (error) {
       console.warn('Error extracting end date:', error);
@@ -595,20 +701,47 @@ RETURN ONLY THE JSON STRUCTURE - NO OTHER TEXT.`;
       
       console.log('📊 Extracting reporting period from text');
       
-      // Look for CSV format: "Reporting Period,Monthly"
+      // For this CSV format, default to monthly for real estate deals
+      console.log('📊 No specific reporting period found, defaulting to monthly for real estate');
+      return 'monthly';
+    } catch (error) {
+      console.warn('Error extracting reporting period:', error);
+    }
+    console.log('📊 Using default reporting period: monthly');
+    return 'monthly';
+  }
+  
+  // Override reporting period method
+  extractReportingPeriod(text) {
+    try {
+      if (!text || typeof text !== 'string') return 'monthly';
+      
+      console.log('📊 Extracting reporting period from text');
+      
+      // Look for CSV format: "Reporting Period,Monthly" 
       const lines = text.split('\n');
       for (const line of lines) {
-        if (line.toLowerCase().includes('reporting period') || line.toLowerCase().includes('period')) {
+        if (line.toLowerCase().includes('reporting period') || line.toLowerCase().includes('frequency')) {
           const parts = line.split(',');
-          if (parts.length > 1) {
-            const period = parts[1].trim().toLowerCase();
-            if (['daily', 'monthly', 'quarterly', 'yearly', 'annual'].includes(period)) {
-              const mapped = period === 'annual' ? 'yearly' : period;
-              console.log(`📊 Found reporting period in CSV: ${mapped}`);
-              return mapped;
+          // Find the last non-empty part
+          for (let i = parts.length - 1; i >= 0; i--) {
+            if (parts[i].trim()) {
+              const period = parts[i].trim().toLowerCase();
+              if (['daily', 'monthly', 'quarterly', 'yearly', 'annual'].includes(period)) {
+                const mapped = period === 'annual' ? 'yearly' : period;
+                console.log(`📊 Found reporting period in CSV: ${mapped}`);
+                return mapped;
+              }
+              break;
             }
           }
         }
+      }
+      
+      // For real estate deals, typically monthly
+      if (text.toLowerCase().includes('real estate') || text.toLowerCase().includes('office')) {
+        console.log('📊 Real estate deal detected, using monthly reporting');
+        return 'monthly';
       }
     } catch (error) {
       console.warn('Error extracting reporting period:', error);
