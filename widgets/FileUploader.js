@@ -488,11 +488,15 @@ class FileUploader {
         
         console.log(`📖 Successfully read ${file.name}, content length: ${content.length}`);
         
+        // DEBUG: Show first 300 characters of file content to verify we're reading the right file
+        console.log(`📖 File content preview (${file.name}):`, content.substring(0, 300));
+        
       } catch (error) {
         console.error(`📖 Error reading file ${file.name}:`, error);
       }
     }
 
+    console.log(`📖 Total files read: ${fileContents.length}`);
     return fileContents;
   }
 
