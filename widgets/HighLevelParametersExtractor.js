@@ -71,11 +71,8 @@ Return ONLY the JSON response, no other text.`;
     console.log('🔍 Extracting high-level parameters from files...');
     
     try {
-      // Create extraction prompt
-      const prompt = this.createExtractionPrompt(fileContents);
-      
       // Try to call AI service first
-      let extractedData = await this.callAIService(prompt);
+      let extractedData = await this.callAIService(fileContents);
       
       // If AI service fails, use intelligent fallback parsing
       if (!extractedData) {
@@ -96,21 +93,31 @@ Return ONLY the JSON response, no other text.`;
     }
   }
 
-  // Call AI service (Claude, OpenAI, etc.)
-  async callAIService(prompt) {
+  // Call AI service (GPT-4 via existing chat function)
+  async callAIService(fileContents) {
     try {
-      console.log('🤖 Calling AI service for parameter extraction...');
+      console.log('🤖 Calling GPT-4 for high-level parameters extraction...');
       
       // Check if we're running locally or on Netlify
       const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-      const apiUrl = isLocal ? 'http://localhost:8888/.netlify/functions/extract-parameters' : '/.netlify/functions/extract-parameters';
+      const apiUrl = isLocal ? 'http://localhost:8888/.netlify/functions/chat' : '/.netlify/functions/chat';
+      
+      // Format file contents for the chat API
+      const formattedContents = fileContents.map(file => 
+        `File: ${file.name}\n${file.content}`
+      );
       
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ prompt: prompt })
+        body: JSON.stringify({
+          message: 'Extract high-level parameters from the uploaded documents.',
+          fileContents: formattedContents,
+          autoFillMode: true,
+          batchType: 'basic'
+        })
       });
       
       if (!response.ok) {
@@ -123,7 +130,12 @@ Return ONLY the JSON response, no other text.`;
         throw new Error(data.error);
       }
       
-      return data.parameters;
+      // Extract high-level parameters from the response
+      if (data.extractedData && data.extractedData.highLevelParameters) {
+        return data.extractedData.highLevelParameters;
+      }
+      
+      return null;
       
     } catch (error) {
       console.error('AI service call failed:', error);
