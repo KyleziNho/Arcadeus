@@ -675,95 +675,107 @@ class MAModelingAddin {
         await context.sync();
         console.log('Assumptions context synced');
         
-        this.addChatMessage('assistant', '✅ Assumptions page generated! Now creating Profit & Loss statement...');
+        // Activate the Assumptions sheet to show it first
+        assumptionsSheet.activate();
         
-        // Create P&L Statement
-        let plSheet;
-        try {
-          console.log('Starting P&L creation...');
-          
-          // Create cell reference tracker
-          this.cellTracker = new CellReferenceTracker();
-          
-          try {
-            // Try to get existing P&L sheet
-            plSheet = sheets.getItem("ProfitLoss");
-            plSheet.delete();
-            await context.sync();
-            console.log('Deleted existing P&L sheet');
-          } catch (e) {
-            console.log('No existing P&L sheet to delete');
-          }
-          
-          // Create new P&L sheet - using simpler name without spaces/special chars
-          console.log('Creating new P&L sheet...');
-          plSheet = sheets.add("ProfitLoss");
-          await context.sync();
-          console.log('P&L sheet created successfully');
-          
-          // Generate the P&L statement layout
-          console.log('Starting P&L layout generation...');
-          await this.createProfitLossLayout(context, plSheet, modelData);
-          console.log('P&L layout completed');
-          
-          await context.sync();
-          console.log('P&L context synced');
-          
-          // Create FCF Statement
-          let fcfSheet;
-          try {
-            console.log('Starting FCF creation...');
-            
-            try {
-              // Try to get existing FCF sheet
-              fcfSheet = sheets.getItem("Cashflows");
-              fcfSheet.delete();
-              await context.sync();
-              console.log('Deleted existing FCF sheet');
-            } catch (e) {
-              console.log('No existing FCF sheet to delete');
-            }
-            
-            // Create new FCF sheet
-            console.log('Creating new FCF sheet...');
-            fcfSheet = sheets.add("Cashflows");
-            await context.sync();
-            console.log('FCF sheet created successfully');
-            
-            // Generate the FCF statement layout
-            console.log('Starting FCF layout generation...');
-            await this.createCashflowsLayout(context, fcfSheet, modelData);
-            console.log('FCF layout completed');
-            
-            await context.sync();
-            console.log('FCF context synced');
-            
-          } catch (fcfError) {
-            console.error('Error creating FCF statement:', fcfError);
-            this.addChatMessage('assistant', `⚠️ P&L created successfully, but there was an error creating the FCF statement: ${fcfError.message}`);
-          }
-          
-          // Activate the Assumptions sheet to show it first
-          assumptionsSheet.activate();
-          
-          this.addChatMessage('assistant', '✅ Model assumptions page, Profit & Loss statement, and Cashflows statement generated successfully in Excel!');
-          
-        } catch (plError) {
-          console.error('Error creating P&L statement:', plError);
-          console.error('Full error details:', {
-            message: plError.message,
-            stack: plError.stack,
-            name: plError.name
-          });
-          this.addChatMessage('assistant', `⚠️ Assumptions page created successfully, but there was an error creating the P&L statement: ${plError.message}`);
-          
-          // Still activate the assumptions sheet
-          assumptionsSheet.activate();
-        }
+        this.addChatMessage('assistant', '✅ Assumptions page generated! Creating Profit & Loss statement...');
+        
+        // Now create P&L sheet in a separate Excel.run context
+        setTimeout(async () => {
+          await this.generatePLSheet(modelData);
+        }, 1000); // Wait 1 second for assumptions to be fully ready
       });
     } catch (error) {
       console.error('Error generating model:', error);
       this.addChatMessage('assistant', `❌ Error generating model: ${error.message}`);
+    }
+  }
+
+  async generatePLSheet(modelData) {
+    try {
+      await Excel.run(async (context) => {
+        const sheets = context.workbook.worksheets;
+        
+        // Create cell reference tracker
+        this.cellTracker = new CellReferenceTracker();
+        
+        let plSheet;
+        try {
+          // Try to get existing P&L sheet
+          plSheet = sheets.getItem("ProfitLoss");
+          plSheet.delete();
+          await context.sync();
+          console.log('Deleted existing P&L sheet');
+        } catch (e) {
+          console.log('No existing P&L sheet to delete');
+        }
+        
+        // Create new P&L sheet
+        console.log('Creating new P&L sheet...');
+        plSheet = sheets.add("ProfitLoss");
+        await context.sync();
+        console.log('P&L sheet created successfully');
+        
+        // Generate the P&L statement layout
+        console.log('Starting P&L layout generation...');
+        await this.createProfitLossLayout(context, plSheet, modelData);
+        console.log('P&L layout completed');
+        
+        await context.sync();
+        console.log('P&L context synced');
+        
+        this.addChatMessage('assistant', '✅ Profit & Loss statement generated! Creating Cashflows statement...');
+        
+        // Now create FCF sheet in another separate context
+        setTimeout(async () => {
+          await this.generateFCFSheet(modelData);
+        }, 1000); // Wait for P&L to be fully ready
+      });
+    } catch (error) {
+      console.error('Error generating P&L sheet:', error);
+      this.addChatMessage('assistant', `❌ Error generating P&L sheet: ${error.message}`);
+    }
+  }
+
+  async generateFCFSheet(modelData) {
+    try {
+      await Excel.run(async (context) => {
+        const sheets = context.workbook.worksheets;
+        
+        let fcfSheet;
+        try {
+          // Try to get existing FCF sheet
+          fcfSheet = sheets.getItem("Cashflows");
+          fcfSheet.delete();
+          await context.sync();
+          console.log('Deleted existing FCF sheet');
+        } catch (e) {
+          console.log('No existing FCF sheet to delete');
+        }
+        
+        // Create new FCF sheet
+        console.log('Creating new FCF sheet...');
+        fcfSheet = sheets.add("Cashflows");
+        await context.sync();
+        console.log('FCF sheet created successfully');
+        
+        // Generate the FCF statement layout
+        console.log('Starting FCF layout generation...');
+        await this.createCashflowsLayout(context, fcfSheet, modelData);
+        console.log('FCF layout completed');
+        
+        await context.sync();
+        console.log('FCF context synced');
+        
+        // Activate the Assumptions sheet to show the complete model
+        const assumptionsSheet = sheets.getItem("Assumptions");
+        assumptionsSheet.activate();
+        
+        this.addChatMessage('assistant', '✅ Complete financial model generated successfully! All three sheets (Assumptions, P&L, and Cashflows) are ready in Excel.');
+      });
+    } catch (error) {
+      console.error('Error generating FCF sheet:', error);
+      this.addChatMessage('assistant', `❌ Error generating FCF sheet: ${error.message}`);
     }
   }
 
