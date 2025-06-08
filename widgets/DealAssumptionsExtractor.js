@@ -85,7 +85,9 @@ Return ONLY the JSON response, no other text.`;
       }
       
       // Validate and clean the extracted data
+      console.log('🔍 DEBUG: Data before validation:', extractedData);
       const validatedData = this.validateDealAssumptions(extractedData);
+      console.log('🔍 DEBUG: Data after validation:', validatedData);
       
       // Calculate derived values
       const completeData = this.calculateDerivedValues(validatedData);
@@ -103,18 +105,31 @@ Return ONLY the JSON response, no other text.`;
   // Extract deal assumptions from standardized data table
   extractFromStandardizedData(standardizedData) {
     console.log('🔍 Extracting deal assumptions from standardized data:', standardizedData);
+    console.log('🔍 DEBUG: standardizedData structure check:', {
+      hasCompanyOverview: !!(standardizedData && standardizedData.companyOverview),
+      hasTransactionDetails: !!(standardizedData && standardizedData.transactionDetails),
+      hasFinancingStructure: !!(standardizedData && standardizedData.financingStructure)
+    });
     
     try {
       const company = standardizedData.companyOverview || {};
       const transaction = standardizedData.transactionDetails || {};
       const financing = standardizedData.financingStructure || {};
       
+      console.log('🔍 DEBUG: Extracted values before validation:', {
+        dealName: transaction.dealName || company.companyName,
+        dealValue: transaction.dealValue || financing.totalDealValue,
+        currency: transaction.currency,
+        transactionFees: transaction.transactionFees,
+        debtLTV: financing.debtLTV
+      });
+      
       return {
-        dealName: transaction.dealName || company.companyName || 'Unknown Deal',
-        dealValue: transaction.dealValue || financing.totalDealValue || 50000000,
-        dealCurrency: transaction.currency || 'USD',
-        transactionFee: transaction.transactionFees || 2.5,
-        dealLTV: financing.debtLTV || 70,
+        dealName: transaction.dealName || company.companyName || null,
+        dealValue: transaction.dealValue || financing.totalDealValue || null,
+        dealCurrency: transaction.currency || null,
+        transactionFee: transaction.transactionFees || null,
+        dealLTV: financing.debtLTV || null,
         confidence: {
           dealName: (transaction.dealName || company.companyName) ? 0.9 : 0.3,
           dealValue: transaction.dealValue ? 0.9 : 0.3,
@@ -373,16 +388,22 @@ Return ONLY the JSON response, no other text.`;
 
   // Validation methods
   validateDealName(name) {
+    if (name === null || name === undefined) {
+      return null; // No default - leave blank
+    }
     if (!name || typeof name !== 'string' || name.trim().length < 2) {
-      return 'Sample M&A Transaction';
+      return null; // No default - leave blank
     }
     return name.trim().substring(0, 100); // Limit length
   }
 
   validateDealValue(value) {
+    if (value === null || value === undefined) {
+      return null; // No default - leave blank
+    }
     const numValue = parseFloat(value);
     if (isNaN(numValue) || numValue <= 0) {
-      return 50000000; // Default $50M
+      return null; // No default - leave blank
     }
     if (numValue < 1000000) return numValue * 1000000; // Convert to millions if needed
     if (numValue > 1000000000000) return 1000000000000; // Cap at 1T
@@ -390,25 +411,34 @@ Return ONLY the JSON response, no other text.`;
   }
 
   validateCurrency(currency) {
+    if (currency === null || currency === undefined) {
+      return null; // No default - leave blank
+    }
     const validCurrencies = ['USD', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD', 'CHF', 'CNY', 'SEK', 'NOK'];
     if (validCurrencies.includes(currency)) {
       return currency;
     }
-    return 'USD'; // Default
+    return null; // No default - leave blank
   }
 
   validateTransactionFee(fee) {
+    if (fee === null || fee === undefined) {
+      return null; // No default - leave blank
+    }
     const numFee = parseFloat(fee);
     if (isNaN(numFee) || numFee < 0 || numFee > 15) {
-      return 2.5; // Default 2.5%
+      return null; // No default - leave blank
     }
     return numFee;
   }
 
   validateDealLTV(ltv) {
+    if (ltv === null || ltv === undefined) {
+      return null; // No default - leave blank
+    }
     const numLtv = parseFloat(ltv);
     if (isNaN(numLtv) || numLtv < 0 || numLtv > 100) {
-      return 70; // Default 70%
+      return null; // No default - leave blank
     }
     return numLtv;
   }

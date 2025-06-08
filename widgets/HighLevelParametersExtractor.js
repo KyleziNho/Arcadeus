@@ -104,10 +104,10 @@ Return ONLY the JSON response, no other text.`;
       const projections = standardizedData.projectionAssumptions || {};
       
       return {
-        currency: transaction.currency || 'USD',
-        projectStartDate: transaction.closingDate || new Date().toISOString().split('T')[0],
-        projectEndDate: transaction.expectedExitDate || new Date(Date.now() + 5*365*24*60*60*1000).toISOString().split('T')[0],
-        modelPeriods: projections.reportingFrequency || 'monthly',
+        currency: transaction.currency || null,
+        projectStartDate: transaction.closingDate || null,
+        projectEndDate: transaction.expectedExitDate || null,
+        modelPeriods: projections.reportingFrequency || null,
         confidence: {
           currency: transaction.currency ? 0.9 : 0.3,
           projectStartDate: transaction.closingDate ? 0.9 : 0.3,
@@ -322,25 +322,31 @@ Return ONLY the JSON response, no other text.`;
 
   // Validate currency code
   validateCurrency(currency) {
+    if (currency === null || currency === undefined) {
+      return null; // No default - leave blank
+    }
     const validCurrencies = ['USD', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD', 'CHF', 'CNY', 'SEK', 'NOK'];
     if (validCurrencies.includes(currency)) {
       return currency;
     }
-    return 'USD'; // Default
+    return null; // No default - leave blank
   }
 
   // Validate date format
   validateDate(dateStr) {
-    if (!dateStr) return new Date().toISOString().split('T')[0];
+    if (dateStr === null || dateStr === undefined) {
+      return null; // No default - leave blank
+    }
+    if (!dateStr) return null; // No default - leave blank
     
     const date = new Date(dateStr);
     if (isNaN(date.getTime())) {
-      return new Date().toISOString().split('T')[0];
+      return null; // No default - leave blank
     }
     
     // Ensure date is reasonable (between 2020 and 2040)
     if (date.getFullYear() < 2020 || date.getFullYear() > 2040) {
-      return new Date().toISOString().split('T')[0];
+      return null; // No default - leave blank
     }
     
     return date.toISOString().split('T')[0];
@@ -348,11 +354,14 @@ Return ONLY the JSON response, no other text.`;
 
   // Validate periods
   validatePeriods(periods) {
+    if (periods === null || periods === undefined) {
+      return null; // No default - leave blank
+    }
     const validPeriods = ['daily', 'monthly', 'quarterly', 'yearly'];
     if (validPeriods.includes(periods)) {
       return periods;
     }
-    return 'monthly'; // Default
+    return null; // No default - leave blank
   }
 
   // Get fallback parameters when extraction fails
