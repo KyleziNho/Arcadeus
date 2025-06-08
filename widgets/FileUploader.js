@@ -369,6 +369,22 @@ class FileUploader {
         console.log('🤖 HighLevelParametersExtractor not available');
         this.showUploadMessage('AI extraction services not available.', 'error');
       }
+      
+      // Extract deal assumptions using dedicated extractor
+      if (window.dealAssumptionsExtractor) {
+        console.log('🤖 Extracting deal assumptions...');
+        const dealAssumptions = await window.dealAssumptionsExtractor.extractDealAssumptions(fileContents);
+        
+        if (dealAssumptions) {
+          console.log('🤖 Applying deal assumptions...');
+          await window.dealAssumptionsExtractor.applyDealAssumptions(dealAssumptions);
+          this.showUploadMessage('Deal assumptions extracted and applied!', 'success');
+        } else {
+          this.showUploadMessage('Could not extract deal assumptions.', 'error');
+        }
+      } else {
+        console.log('🤖 DealAssumptionsExtractor not available');
+      }
 
     } catch (error) {
       console.error('Error during auto-fill:', error);

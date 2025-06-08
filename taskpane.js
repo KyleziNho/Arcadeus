@@ -14,6 +14,7 @@ class MAModelingAddin {
     
     // AI Extraction widgets
     this.highLevelParametersExtractor = null;
+    this.dealAssumptionsExtractor = null;
 
     console.log('MAModelingAddin constructor called');
     
@@ -125,6 +126,13 @@ class MAModelingAddin {
       this.highLevelParametersExtractor.initialize();
       window.highLevelParametersExtractor = this.highLevelParametersExtractor;
       console.log('✅ HighLevelParametersExtractor initialized');
+    }
+    
+    if (typeof DealAssumptionsExtractor !== 'undefined') {
+      this.dealAssumptionsExtractor = new DealAssumptionsExtractor();
+      this.dealAssumptionsExtractor.initialize();
+      window.dealAssumptionsExtractor = this.dealAssumptionsExtractor;
+      console.log('✅ DealAssumptionsExtractor initialized');
     }
     
     // Auto-load saved data
