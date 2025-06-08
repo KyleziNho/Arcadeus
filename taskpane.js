@@ -899,13 +899,15 @@ class MAModelingAddin {
     revenueContainers.forEach((container, index) => {
       const nameInput = container.querySelector(`#revenueName_${index + 1}`);
       const valueInput = container.querySelector(`#revenueValue_${index + 1}`);
+      const growthTypeInput = container.querySelector(`#growthType_${index + 1}`);
       const growthInput = container.querySelector(`#linearGrowth_${index + 1}`);
       
       if (nameInput && valueInput) {
         items.push({
           name: nameInput.value || `Revenue Item ${index + 1}`,
           value: parseFloat(valueInput.value) || 0,
-          growth: parseFloat(growthInput?.value) || 0
+          growth: parseFloat(growthInput?.value) || 0,
+          growthType: growthTypeInput?.value || 'linear'
         });
       }
     });
@@ -935,13 +937,15 @@ class MAModelingAddin {
     costContainers.forEach((container, index) => {
       const nameInput = container.querySelector(`#opExName_${index + 1}`);
       const valueInput = container.querySelector(`#opExValue_${index + 1}`);
+      const growthTypeInput = container.querySelector(`#opExGrowthType_${index + 1}`);
       const growthInput = container.querySelector(`#linearGrowth_opEx_${index + 1}`);
       
       if (nameInput && valueInput) {
         const item = {
           name: nameInput.value || `Operating Expense ${index + 1}`,
           value: parseFloat(valueInput.value) || 0,
-          growth: parseFloat(growthInput?.value) || 2.0
+          growth: parseFloat(growthInput?.value) || 2.0,
+          growthType: growthTypeInput?.value || 'linear'
         };
         items.push(item);
       }
@@ -960,13 +964,15 @@ class MAModelingAddin {
     costContainers.forEach((container, index) => {
       const nameInput = container.querySelector(`#capExName_${index + 1}`);
       const valueInput = container.querySelector(`#capExValue_${index + 1}`);
+      const growthTypeInput = container.querySelector(`#capExGrowthType_${index + 1}`);
       const growthInput = container.querySelector(`#linearGrowth_capEx_${index + 1}`);
       
       if (nameInput && valueInput) {
         const item = {
           name: nameInput.value || `Capital Expense ${index + 1}`,
           value: parseFloat(valueInput.value) || 0,
-          growth: parseFloat(growthInput?.value) || 2.0
+          growth: parseFloat(growthInput?.value) || 2.0,
+          growthType: growthTypeInput?.value || 'linear'
         };
         items.push(item);
       }
@@ -1330,7 +1336,14 @@ class MAModelingAddin {
     console.log('P&L Layout: Calculated periods:', { totalMonths, totalPeriods });
     
     // Clear any existing content
-    sheet.getUsedRange()?.clear();
+    try {
+      const usedRange = sheet.getUsedRange();
+      if (usedRange) {
+        usedRange.clear();
+      }
+    } catch (e) {
+      console.log('No content to clear in P&L sheet');
+    }
     
     // Set up title and headers
     sheet.getRange("A1").values = [["Profit & Loss Statement"]];
@@ -1412,17 +1425,18 @@ class MAModelingAddin {
       this.cellTracker.trackAssumptionCell(`${item.name}_Growth`, `Assumptions!D${this.getRevenueItemAssumptionRow(index)}`, 'ProfitLoss');
       
       // Create formulas for each period
+      const baseValueRef = this.cellTracker.getReference(`${item.name}_Value`, 'ProfitLoss');
+      const growthRef = this.cellTracker.getReference(`${item.name}_Growth`, 'ProfitLoss');
+      
       for (let period = 1; period <= totalPeriods; period++) {
         const col = String.fromCharCode(65 + period);
         
         if (period === 1) {
           // First period uses base value from assumptions
-          const baseValueRef = this.cellTracker.getReference(`${item.name}_Value`, 'ProfitLoss');
           sheet.getRange(col + currentRow).formulas = [[`=${baseValueRef || 'Assumptions!C' + this.getRevenueItemAssumptionRow(index)}`]];
         } else {
           // Subsequent periods apply growth
           const prevCol = String.fromCharCode(65 + period - 1);
-          const growthRef = this.cellTracker.getReference(`${item.name}_Growth`, 'ProfitLoss');
           
           if (item.growthType === 'linear') {
             sheet.getRange(col + currentRow).formulas = [[`=${prevCol}${currentRow}*(1+(${growthRef || 'Assumptions!D' + this.getRevenueItemAssumptionRow(index)})/100)`]];
@@ -1491,23 +1505,23 @@ class MAModelingAddin {
         this.cellTracker.trackAssumptionCell(`${item.name}_OpEx_Growth`, `Assumptions!D${this.getOpExItemAssumptionRow(index)}`, 'ProfitLoss');
         
         // Create formulas for each period
+        const baseValueRef = this.cellTracker.getReference(`${item.name}_OpEx_Value`, 'ProfitLoss');
+        const growthRef = this.cellTracker.getReference(`${item.name}_OpEx_Growth`, 'ProfitLoss');
+        
         for (let period = 1; period <= totalPeriods; period++) {
           const col = String.fromCharCode(65 + period);
           
           if (period === 1) {
             // First period uses base value from assumptions
-            const baseValueRef = this.cellTracker.getReference(`${item.name}_OpEx_Value`, 'ProfitLoss');
             sheet.getRange(col + currentRow).formulas = [[`=-ABS(${baseValueRef || 'Assumptions!C' + this.getOpExItemAssumptionRow(index)})`]];
           } else {
             // Subsequent periods apply inflation/growth
             const prevCol = String.fromCharCode(65 + period - 1);
-            const growthRef = this.cellTracker.getReference(`${item.name}_OpEx_Growth`, 'ProfitLoss');
             
             if (item.growthType === 'linear') {
               sheet.getRange(col + currentRow).formulas = [[`=${prevCol}${currentRow}*(1+(${growthRef || 'Assumptions!D' + this.getOpExItemAssumptionRow(index)})/100)`]];
             } else {
               // For non-linear growth, use the base value reference
-              const baseValueRef = this.cellTracker.getReference(`${item.name}_OpEx_Value`, 'ProfitLoss');
               sheet.getRange(col + currentRow).formulas = [[`=-ABS(${baseValueRef || 'Assumptions!C' + this.getOpExItemAssumptionRow(index)})`]];
             }
           }
@@ -1706,7 +1720,14 @@ class MAModelingAddin {
     console.log('Creating Cashflows layout with data:', modelData);
     
     // Clear any existing content
-    sheet.getUsedRange()?.clear();
+    try {
+      const usedRange = sheet.getUsedRange();
+      if (usedRange) {
+        usedRange.clear();
+      }
+    } catch (e) {
+      console.log('No content to clear in FCF sheet');
+    }
     
     // Get total periods from model data
     const startDate = new Date(modelData.projectStartDate);
