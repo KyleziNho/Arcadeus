@@ -130,6 +130,7 @@ class FileUploader {
     // Auto Fill button handler
     if (autoFillBtn) {
       autoFillBtn.addEventListener('click', () => {
+        console.log('🔥 AUTO FILL BUTTON CLICKED!');
         this.processAutoFill();
       });
       autoFillBtn.disabled = true;
@@ -321,8 +322,11 @@ class FileUploader {
 
   async processAutoFill() {
     console.log('🤖 Processing auto-fill...');
+    console.log('🤖 Uploaded files:', this.mainUploadedFiles);
+    console.log('🤖 Number of files:', this.mainUploadedFiles ? this.mainUploadedFiles.length : 0);
     
     if (!this.mainUploadedFiles || this.mainUploadedFiles.length === 0) {
+      console.log('🤖 No files to process!');
       this.showUploadMessage('No files uploaded for processing.', 'error');
       return;
     }
@@ -343,13 +347,18 @@ class FileUploader {
       this.showUploadMessage('Processing files with AI...', 'info');
 
       // Process files and extract data
+      console.log('🤖 About to process uploaded files...');
       const extractedData = await this.processUploadedFiles();
+      console.log('🤖 Extracted data:', extractedData);
       
       if (extractedData) {
         // Apply extracted data to form
+        console.log('🤖 About to apply extracted data...');
         await this.applyExtractedData(extractedData);
+        console.log('🤖 Data applied successfully!');
         this.showUploadMessage('Auto-fill completed successfully!', 'success');
       } else {
+        console.log('🤖 No extracted data received!');
         this.showUploadMessage('Could not extract data from files. Please try manually filling the form.', 'error');
       }
 
@@ -488,9 +497,11 @@ class FileUploader {
   }
 
   async applyExtractedData(data) {
-    console.log('Applying extracted data to form...');
+    console.log('🎯 Applying extracted data to form...');
+    console.log('🎯 Data to apply:', data);
     
     // Apply high-level parameters
+    console.log('🎯 Applying high-level parameters...');
     if (data.currency) this.setInputValue('currency', data.currency);
     if (data.projectStartDate) this.setInputValue('projectStartDate', data.projectStartDate);
     if (data.projectEndDate) this.setInputValue('projectEndDate', data.projectEndDate);
@@ -530,20 +541,26 @@ class FileUploader {
   }
 
   async applyRevenueItems(items) {
-    console.log('Applying revenue items:', items.length);
+    console.log('🎯 Applying revenue items:', items.length);
+    console.log('🎯 Items to apply:', items);
     
     // Clear existing revenue items
     const container = document.getElementById('revenueItemsContainer');
     if (container) {
       container.innerHTML = '';
+      console.log('🎯 Cleared existing revenue items');
+    } else {
+      console.log('🎯 Revenue container not found!');
     }
     
     // Add new revenue items
     for (let i = 0; i < items.length; i++) {
       const item = items[i];
+      console.log(`🎯 Processing revenue item ${i + 1}:`, item);
       
       // Add revenue item using FormHandler
       if (window.formHandler) {
+        console.log('🎯 FormHandler available, adding revenue item...');
         window.formHandler.addRevenueItem();
         
         // Wait a bit for DOM update
@@ -654,11 +671,15 @@ class FileUploader {
   }
 
   setInputValue(elementId, value) {
+    console.log(`🔧 Setting ${elementId} = ${value}`);
     const element = document.getElementById(elementId);
     if (element && value !== null && value !== undefined) {
       element.value = value;
       element.dispatchEvent(new Event('change', { bubbles: true }));
       element.dispatchEvent(new Event('input', { bubbles: true }));
+      console.log(`🔧 Successfully set ${elementId}`);
+    } else {
+      console.log(`🔧 Failed to set ${elementId}: element=${!!element}, value=${value}`);
     }
   }
 

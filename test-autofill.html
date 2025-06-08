@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Auto-Fill Test</title>
+</head>
+<body>
+    <h1>Auto-Fill Test</h1>
+    <p>Open the browser console and check if the auto-fill button works.</p>
+    
+    <script>
+        console.log('Test page loaded');
+        
+        // Test if widgets are available
+        setTimeout(() => {
+            console.log('Window objects:');
+            console.log('- window.fileUploader:', typeof window.fileUploader);
+            console.log('- window.formHandler:', typeof window.formHandler);
+            console.log('- window.maModelingAddin:', typeof window.maModelingAddin);
+            
+            if (window.fileUploader) {
+                console.log('FileUploader instance found!');
+                console.log('- mainUploadedFiles:', window.fileUploader.mainUploadedFiles);
+                console.log('- methods:', Object.getOwnPropertyNames(Object.getPrototypeOf(window.fileUploader)));
+            }
+            
+            // Check if auto-fill button exists
+            const autoFillBtn = document.getElementById('autoFillBtn');
+            console.log('Auto-fill button found:', !!autoFillBtn);
+            if (autoFillBtn) {
+                console.log('Button disabled:', autoFillBtn.disabled);
+                console.log('Button text:', autoFillBtn.textContent);
+            }
+        }, 2000);
+    </script>
+</body>
+</html>
