@@ -457,9 +457,9 @@ Return ONLY the JSON response, no other text.`;
         return false;
       }
       
-      if (value === null || value === undefined) {
-        console.warn(`🔧 Invalid value for ${elementId}:`, value);
-        return false;
+      if (value === null || value === undefined || value === '') {
+        console.log(`🔧 Skipping ${elementId} - no value extracted`);
+        return true; // Consider it successful to skip
       }
       
       // Different handling for different input types

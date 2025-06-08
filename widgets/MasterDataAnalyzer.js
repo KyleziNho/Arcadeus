@@ -248,11 +248,37 @@ RETURN ONLY THE JSON STRUCTURE - NO OTHER TEXT.`;
         dealValue = this.extractDealValue(allText);
         currency = this.extractCurrency(allText);
         
-        console.log('📊 Extracted from CSV:', {
+        // Extract all values and show comprehensive summary
+        const transactionFee = this.extractTransactionFee(allText);
+        const ltvRatio = this.extractLTVRatio(allText);
+        const startDate = this.extractStartDate(allText);
+        const endDate = this.extractEndDate(allText);
+        const reportingPeriod = this.extractReportingPeriod(allText);
+        
+        const extractionSummary = {
           companyName,
           dealValue,
-          currency
-        });
+          currency,
+          transactionFee,
+          ltvRatio,
+          startDate,
+          endDate,
+          reportingPeriod
+        };
+        
+        console.log('📊 ========== FULL EXTRACTION SUMMARY ==========');
+        console.log('📊 Company Name:', companyName || '(blank)');
+        console.log('📊 Deal Value:', dealValue || '(blank)');
+        console.log('📊 Currency:', currency || '(blank)');
+        console.log('📊 Transaction Fee:', transactionFee || '(blank)');
+        console.log('📊 LTV Ratio:', ltvRatio || '(blank)');
+        console.log('📊 Start Date:', startDate || '(blank)');
+        console.log('📊 End Date:', endDate || '(blank)');
+        console.log('📊 Reporting Period:', reportingPeriod || '(blank)');
+        console.log('📊 ============================================');
+        
+        // Show this summary to user via UI
+        this.showExtractionSummaryToUser(extractionSummary);
       }
     } catch (extractError) {
       console.warn('🔍 Error in basic extraction:', extractError);
@@ -260,25 +286,25 @@ RETURN ONLY THE JSON STRUCTURE - NO OTHER TEXT.`;
     
     const fallbackData = {
       companyOverview: {
-        companyName: companyName || 'Target Company',
-        industry: "Technology",
-        businessDescription: "Business details to be confirmed",
-        keyBusinessMetrics: "Revenue and growth metrics to be analyzed"
+        companyName: companyName || '',
+        industry: '',
+        businessDescription: '',
+        keyBusinessMetrics: ''
       },
       transactionDetails: {
-        dealName: companyName + " Acquisition",
-        dealValue: dealValue,
-        currency: currency,
-        transactionType: "Acquisition",
-        transactionFees: this.extractTransactionFee(allText),
-        closingDate: this.extractStartDate(allText),
-        expectedExitDate: this.extractEndDate(allText)
+        dealName: companyName ? companyName + ' Acquisition' : '',
+        dealValue: dealValue || null,
+        currency: currency || null,
+        transactionType: '',
+        transactionFees: transactionFee,
+        closingDate: startDate,
+        expectedExitDate: endDate
       },
       financingStructure: {
         totalDealValue: dealValue,
-        debtLTV: this.extractLTVRatio(allText),
-        equityContribution: dealValue * (1 - this.extractLTVRatio(allText) / 100),
-        debtFinancing: dealValue * (this.extractLTVRatio(allText) / 100),
+        debtLTV: ltvRatio,
+        equityContribution: dealValue && ltvRatio ? dealValue * (1 - ltvRatio / 100) : null,
+        debtFinancing: dealValue && ltvRatio ? dealValue * (ltvRatio / 100) : null,
         interestRate: 5.5,
         loanTerms: "5-year term loan"
       },
@@ -467,8 +493,8 @@ RETURN ONLY THE JSON STRUCTURE - NO OTHER TEXT.`;
     } catch (error) {
       console.warn('Error extracting deal value:', error);
     }
-    console.log('📊 Using default deal value: 50000000');
-    return 50000000; // Default $50M
+    console.log('📊 No deal value found in CSV!');
+    return null; // No default - force user to see what's wrong
   }
 
   extractCurrency(text) {
@@ -513,8 +539,8 @@ RETURN ONLY THE JSON STRUCTURE - NO OTHER TEXT.`;
     } catch (error) {
       console.warn('Error extracting currency:', error);
     }
-    console.log('📊 Using default currency: USD');
-    return 'USD';
+    console.log('📊 No currency found in CSV!');
+    return null; // No default
   }
 
   // Extract transaction fee from CSV
@@ -546,8 +572,8 @@ RETURN ONLY THE JSON STRUCTURE - NO OTHER TEXT.`;
     } catch (error) {
       console.warn('Error extracting transaction fee:', error);
     }
-    console.log('📊 Using default transaction fee: 2.5%');
-    return 2.5;
+    console.log('📊 No transaction fee found in CSV!');
+    return null; // No default
   }
 
   // Extract LTV ratio from CSV
@@ -579,8 +605,8 @@ RETURN ONLY THE JSON STRUCTURE - NO OTHER TEXT.`;
     } catch (error) {
       console.warn('Error extracting LTV ratio:', error);
     }
-    console.log('📊 Using default LTV ratio: 70%');
-    return 70;
+    console.log('📊 No LTV ratio found in CSV!');
+    return null; // No default
   }
 
   // Extract start date from CSV
@@ -623,9 +649,8 @@ RETURN ONLY THE JSON STRUCTURE - NO OTHER TEXT.`;
     } catch (error) {
       console.warn('Error extracting start date:', error);
     }
-    const defaultDate = new Date().toISOString().split('T')[0];
-    console.log(`📊 Using default start date: ${defaultDate}`);
-    return defaultDate;
+    console.log('📊 No start date found in CSV!');
+    return null; // No default
   }
 
   // Extract end date from CSV
@@ -689,9 +714,8 @@ RETURN ONLY THE JSON STRUCTURE - NO OTHER TEXT.`;
     } catch (error) {
       console.warn('Error extracting end date:', error);
     }
-    const defaultDate = new Date(Date.now() + 5*365*24*60*60*1000).toISOString().split('T')[0];
-    console.log(`📊 Using default end date: ${defaultDate}`);
-    return defaultDate;
+    console.log('📊 No end date found in CSV!');
+    return null; // No default
   }
 
   // Extract reporting period from CSV
@@ -748,6 +772,30 @@ RETURN ONLY THE JSON STRUCTURE - NO OTHER TEXT.`;
     }
     console.log('📊 Using default reporting period: monthly');
     return 'monthly';
+  }
+
+  // Show extraction summary to user via UI alert/console
+  showExtractionSummaryToUser(summary) {
+    const summaryText = `
+🔍 AI EXTRACTION RESULTS:
+
+Company: ${summary.companyName || ''}
+Deal Value: ${summary.dealValue || ''}
+Currency: ${summary.currency || ''}
+Transaction Fee: ${summary.transactionFee ? summary.transactionFee + '%' : ''}
+LTV Ratio: ${summary.ltvRatio ? summary.ltvRatio + '%' : ''}
+Start Date: ${summary.startDate || ''}
+End Date: ${summary.endDate || ''}
+Reporting: ${summary.reportingPeriod || ''}
+
+Check console for detailed parsing logs.`;
+    
+    // Show to user via alert (you can change this to a better UI element)
+    setTimeout(() => {
+      alert(summaryText);
+    }, 1000);
+    
+    return summary;
   }
 
   // Get the standardized data for other extractors to use
