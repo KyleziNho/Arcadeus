@@ -472,11 +472,19 @@ class FileUploader {
         if (file.type === 'text/csv' || file.name.endsWith('.csv')) {
           content = await this.readTextFile(file);
         } else if (file.type === 'application/pdf') {
-          content = `PDF file: ${file.name} (${this.formatFileSize(file.size)}) - Content extraction would require PDF parser`;
+          content = `PDF file: ${file.name} (${this.formatFileSize(file.size)}) - Please upload CSV files for data extraction. PDFs require specialized parsing.`;
+          console.warn(`📖 PDF file uploaded: ${file.name} - Cannot extract data from PDFs without specialized parser`);
         } else if (file.type.startsWith('image/')) {
-          content = `Image file: ${file.name} (${this.formatFileSize(file.size)}) - Content extraction would require OCR`;
+          content = `Image file: ${file.name} (${this.formatFileSize(file.size)}) - Please upload CSV files for data extraction. Images require OCR processing.`;
+          console.warn(`📖 Image file uploaded: ${file.name} - Cannot extract data from images without OCR`);
         } else {
-          content = await this.readTextFile(file);
+          // Try to read as text file
+          try {
+            content = await this.readTextFile(file);
+          } catch (error) {
+            content = `File: ${file.name} (${this.formatFileSize(file.size)}) - Could not read file content: ${error.message}`;
+            console.error(`📖 Could not read file ${file.name}:`, error);
+          }
         }
         
         fileContents.push({
@@ -490,6 +498,12 @@ class FileUploader {
         
         // DEBUG: Show first 300 characters of file content to verify we're reading the right file
         console.log(`📖 File content preview (${file.name}):`, content.substring(0, 300));
+        
+        // CRITICAL: Check if content is actually empty
+        if (!content || content.trim().length === 0) {
+          console.error(`📖 CRITICAL: File ${file.name} has no readable content!`);
+          console.error(`📖 File type: ${file.type}, File size: ${file.size}`);
+        }
         
       } catch (error) {
         console.error(`📖 Error reading file ${file.name}:`, error);

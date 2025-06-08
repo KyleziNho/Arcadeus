@@ -50,8 +50,10 @@ exports.handler = async (event, context) => {
     console.log('API Key check:', {
       hasKey: !!OPENAI_API_KEY,
       keyLength: OPENAI_API_KEY ? OPENAI_API_KEY.length : 0,
+      keyPreview: OPENAI_API_KEY ? OPENAI_API_KEY.substring(0, 10) + '...' : 'NO KEY',
       hasOpenAIKey: hasOpenAIKey,
-      batchType: batchType
+      batchType: batchType,
+      autoFillMode: autoFillMode
     });
     
     let documentContext = '';
@@ -72,104 +74,129 @@ exports.handler = async (event, context) => {
         // Adjust token limits and system prompts based on batch type
         if (batchType === 'basic') {
           maxTokens = 1500; // Smaller for basic info
-          systemPrompt = `You are an expert financial analyst AI. Extract ONLY high-level parameters and deal assumptions.
+          systemPrompt = `You are an expert financial analyst AI. Extract ONLY high-level parameters and deal assumptions from the provided documents.
 
-CRITICAL: Return ONLY the JSON structure below with the extracted data. Focus on basic deal information.
+CRITICAL INSTRUCTIONS:
+1. Analyze the actual document content provided below
+2. Extract ONLY real data found in the documents
+3. Do NOT use placeholder or example values
+4. If a value cannot be found, use null
+5. Return ONLY the JSON structure below with the ACTUAL extracted data
 
 REQUIRED JSON STRUCTURE:
 {
   "extractedData": {
     "highLevelParameters": {
-      "currency": "USD",
-      "projectStartDate": "2025-03-31",
-      "projectEndDate": "2030-03-31",
-      "modelPeriods": "monthly"
+      "currency": "extracted_currency_or_null",
+      "projectStartDate": "YYYY-MM-DD_or_null",
+      "projectEndDate": "YYYY-MM-DD_or_null", 
+      "modelPeriods": "daily|monthly|quarterly|yearly_or_null"
     },
     "dealAssumptions": {
-      "dealName": "Company Name",
-      "dealValue": 100000000,
-      "transactionFee": 2.5,
-      "dealLTV": 75
+      "dealName": "actual_company_name_or_null",
+      "dealValue": actual_number_or_null,
+      "transactionFee": actual_percentage_or_null,
+      "dealLTV": actual_percentage_or_null
     }
   }
 }
 
-Document Content: ${documentContext}`;
+ANALYZE THESE DOCUMENTS:
+${documentContext}`;
           
         } else if (batchType === 'revenue') {
           maxTokens = 2000; // Medium for revenue items
-          systemPrompt = `You are an expert financial analyst AI. Extract ONLY revenue items and growth rates.
+          systemPrompt = `You are an expert financial analyst AI. Extract revenue items and growth rates from the provided documents.
 
-CRITICAL: Return ONLY the JSON structure below with revenue data extracted from the documents.
+CRITICAL INSTRUCTIONS:
+1. Analyze the actual document content provided below
+2. Extract ONLY real revenue data found in the documents
+3. Do NOT use placeholder or example values
+4. If no revenue items found, return empty array []
 
 REQUIRED JSON STRUCTURE:
 {
   "extractedData": {
     "revenueItems": [
       {
-        "name": "Revenue Stream 1",
-        "initialValue": 500000,
-        "growthType": "linear",
-        "growthRate": 2
+        "name": "actual_revenue_stream_name",
+        "initialValue": actual_number_value,
+        "growthType": "linear|annual|custom",
+        "growthRate": actual_rate_value
       }
     ]
   }
 }
 
 EXTRACTION RULES:
-- Look for "Revenue Item 1", "Revenue Item 2", etc.
-- Extract exact values and growth rates
-- Match growth patterns to items by number
-- If no revenue items found, return empty array []
+- Look for revenue streams, sales, income items
+- Extract exact values and growth rates from the documents
+- Use actual names and values found in the content
+- Return empty array if no revenue data is found
 
-Document Content: ${documentContext}`;
+ANALYZE THESE DOCUMENTS:
+${documentContext}`;
           
         } else if (batchType === 'cost') {
           maxTokens = 2000; // Medium for cost items
-          systemPrompt = `You are an expert financial analyst AI. Extract ONLY cost items and inflation rates.
+          systemPrompt = `You are an expert financial analyst AI. Extract cost items and inflation rates from the provided documents.
 
-CRITICAL: Return ONLY the JSON structure below with cost data extracted from the documents.
+CRITICAL INSTRUCTIONS:
+1. Analyze the actual document content provided below
+2. Extract ONLY real cost data found in the documents
+3. Do NOT use placeholder or example values
+4. If no cost items found, return empty array []
 
 REQUIRED JSON STRUCTURE:
 {
   "extractedData": {
     "costItems": [
       {
-        "name": "Staff expenses",
-        "initialValue": 60000,
-        "growthType": "linear",
-        "growthRate": 0.5
+        "name": "actual_cost_item_name",
+        "initialValue": actual_number_value,
+        "growthType": "linear|annual|custom",
+        "growthRate": actual_rate_value
       }
     ]
   }
 }
 
 EXTRACTION RULES:
-- Look for "Cost Item 1", "Cost Item 2", "Staff expenses", operating expenses
-- Extract exact values and inflation rates
-- Match inflation to items by category
-- If no cost items found, return empty array []
+- Look for operating expenses, staff costs, rent, marketing expenses
+- Extract exact values and inflation rates from the documents
+- Use actual names and values found in the content
+- Return empty array if no cost data is found
 
-Document Content: ${documentContext}`;
+ANALYZE THESE DOCUMENTS:
+${documentContext}`;
           
         } else if (batchType === 'exit') {
           maxTokens = 800; // Smaller for exit assumptions
-          systemPrompt = `Extract disposal cost and terminal cap rate from the documents.
+          systemPrompt = `You are an expert financial analyst AI. Extract disposal cost and terminal cap rate from the provided documents.
+
+CRITICAL INSTRUCTIONS:
+1. Analyze the actual document content provided below
+2. Extract ONLY real data found in the documents
+3. Do NOT use placeholder or example values
+4. If values cannot be found, use null
 
 REQUIRED JSON:
 {
   "extractedData": {
     "exitAssumptions": {
-      "disposalCost": 2.5,
-      "terminalCapRate": 8.5
+      "disposalCost": actual_percentage_or_null,
+      "terminalCapRate": actual_percentage_or_null
     }
   }
 }
 
-Find: disposal cost, exit fees, terminal cap rate, exit yield
-Convert % to numbers: 2.5% → 2.5
+EXTRACTION RULES:
+- Find: disposal cost, exit fees, terminal cap rate, exit yield
+- Convert % to numbers: 2.5% → 2.5
+- Use null if values not found in documents
 
-Document Content: ${documentContext}`;
+ANALYZE THESE DOCUMENTS:
+${documentContext}`;
           
         } else if (batchType === 'master_analysis') {
           maxTokens = 4000; // Large for comprehensive analysis
@@ -404,6 +431,27 @@ ${documentContext}`;
     }
     
     // Fallback logic when no API key or API call fails
+    console.error('CRITICAL: Falling back to non-AI response - AI extraction will fail!');
+    console.error('Reason: No API key or API call failed');
+    console.error('Has API key:', hasOpenAIKey);
+    console.error('Auto-fill mode:', autoFillMode);
+    
+    if (autoFillMode) {
+      return {
+        statusCode: 500,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+          'Access-Control-Allow-Methods': 'POST, OPTIONS'
+        },
+        body: JSON.stringify({
+          error: "AI extraction failed - API key missing or invalid",
+          response: "AI extraction is not available. Please check API configuration.",
+          commands: []
+        })
+      };
+    }
+    
     return {
       statusCode: 200,
       headers: {

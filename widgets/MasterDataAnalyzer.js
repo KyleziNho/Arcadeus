@@ -19,7 +19,12 @@ class MasterDataAnalyzer {
       let result = await this.callMasterAnalysisAI(fileContents);
       
       if (!result) {
-        console.log('🔍 AI analysis failed, using fallback parsing...');
+        console.error('🔍 CRITICAL: AI analysis failed! This indicates a problem with API calls or parsing.');
+        console.error('🔍 File contents available:', fileContents ? fileContents.length : 0);
+        if (fileContents && fileContents.length > 0) {
+          console.error('🔍 Files that should be analyzed:', fileContents.map(f => `${f.name} (${f.content ? f.content.length : 0} chars)`));
+        }
+        console.log('🔍 Using fallback parsing...');
         result = this.createFallbackStandardizedData(fileContents);
       }
       
@@ -43,6 +48,13 @@ class MasterDataAnalyzer {
       console.log('🤖 Calling GPT-4 for master M&A analysis...');
       console.log('🤖 File contents to analyze:', fileContents.length, 'files');
       
+      // DEBUG: Log actual file content being sent to AI
+      fileContents.forEach((file, index) => {
+        console.log(`🤖 DEBUG - File ${index + 1}: ${file.name}`);
+        console.log(`🤖 DEBUG - Content preview: ${file.content ? file.content.substring(0, 500) : 'NO CONTENT'}`);
+        console.log(`🤖 DEBUG - Content length: ${file.content ? file.content.length : 0} characters`);
+      });
+      
       // Check if we're running locally or on Netlify
       const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
       const apiUrl = isLocal ? 'http://localhost:8888/.netlify/functions/chat' : '/.netlify/functions/chat';
@@ -60,6 +72,14 @@ class MasterDataAnalyzer {
         autoFillMode: true,
         batchType: 'master_analysis'
       };
+      
+      console.log('🤖 DEBUG: Request body structure:', {
+        messageLength: requestBody.message.length,
+        fileContentsCount: requestBody.fileContents.length,
+        autoFillMode: requestBody.autoFillMode,
+        batchType: requestBody.batchType,
+        firstFilePreview: requestBody.fileContents[0] ? requestBody.fileContents[0].substring(0, 200) : 'No files'
+      });
       
       console.log('🤖 Request body prepared, calling API...');
       
@@ -83,6 +103,8 @@ class MasterDataAnalyzer {
           errorText = 'Could not read error response';
         }
         console.error('🤖 API error response:', errorText);
+        console.error('🤖 Request URL:', apiUrl);
+        console.error('🤖 Request body preview:', JSON.stringify(requestBody).substring(0, 1000));
         throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
       }
       
@@ -98,8 +120,14 @@ class MasterDataAnalyzer {
       if (data.extractedData && data.extractedData.standardizedData) {
         console.log('🤖 Successfully extracted standardized data');
         return data.extractedData.standardizedData;
+      } else if (data.extractedData) {
+        console.log('🤖 Got extractedData but no standardizedData, checking structure:', data.extractedData);
+        // Sometimes the AI might return the data directly under extractedData
+        return data.extractedData;
       } else {
-        console.log('🤖 No standardized data in response, using fallback');
+        console.log('🤖 CRITICAL: AI extraction failed - no extractedData in response');
+        console.log('🤖 Full response data:', data);
+        alert('AI extraction failed. Check console for details. Using fallback parsing...');
         return null;
       }
       
@@ -225,6 +253,14 @@ RETURN ONLY THE JSON STRUCTURE - NO OTHER TEXT.`;
     console.log('🔍 Creating fallback standardized data...');
     console.log('🔍 File contents length:', fileContents ? fileContents.length : 0);
     
+    // CRITICAL: Check if we have actual file content to extract from
+    if (!fileContents || fileContents.length === 0) {
+      console.warn('🔍 No file contents provided - using minimal defaults');
+    } else {
+      console.log('🔍 ALERT: AI extraction failed but we have file content! This should be investigated.');
+      console.log('🔍 Files available for extraction:', fileContents.map(f => f.name));
+    }
+    
     // DEBUG: Show what files we received
     if (fileContents && fileContents.length > 0) {
       fileContents.forEach((file, index) => {
@@ -237,9 +273,14 @@ RETURN ONLY THE JSON STRUCTURE - NO OTHER TEXT.`;
     
     // Basic parsing of file contents to extract what we can
     let allText = '';
-    let companyName = 'Target Company';
-    let dealValue = 50000000;
-    let currency = 'USD';
+    let companyName = null;
+    let dealValue = null;
+    let currency = null;
+    let transactionFee = null;
+    let ltvRatio = null;
+    let startDate = null;
+    let endDate = null;
+    let reportingPeriod = null;
     
     try {
       if (fileContents && fileContents.length > 0) {
@@ -249,11 +290,11 @@ RETURN ONLY THE JSON STRUCTURE - NO OTHER TEXT.`;
         currency = this.extractCurrency(allText);
         
         // Extract all values and show comprehensive summary
-        const transactionFee = this.extractTransactionFee(allText);
-        const ltvRatio = this.extractLTVRatio(allText);
-        const startDate = this.extractStartDate(allText);
-        const endDate = this.extractEndDate(allText);
-        const reportingPeriod = this.extractReportingPeriod(allText);
+        transactionFee = this.extractTransactionFee(allText);
+        ltvRatio = this.extractLTVRatio(allText);
+        startDate = this.extractStartDate(allText);
+        endDate = this.extractEndDate(allText);
+        reportingPeriod = this.extractReportingPeriod(allText);
         
         const extractionSummary = {
           companyName,
@@ -286,16 +327,16 @@ RETURN ONLY THE JSON STRUCTURE - NO OTHER TEXT.`;
     
     const fallbackData = {
       companyOverview: {
-        companyName: companyName || '',
-        industry: '',
-        businessDescription: '',
-        keyBusinessMetrics: ''
+        companyName: companyName || 'Unknown Company',
+        industry: 'Unknown',
+        businessDescription: 'Extracted from uploaded files',
+        keyBusinessMetrics: 'Not available'
       },
       transactionDetails: {
-        dealName: companyName ? companyName + ' Acquisition' : '',
-        dealValue: dealValue || null,
-        currency: currency || null,
-        transactionType: '',
+        dealName: companyName ? companyName + ' Acquisition' : 'Unnamed Deal',
+        dealValue: dealValue,
+        currency: currency,
+        transactionType: 'Acquisition',
         transactionFees: transactionFee,
         closingDate: startDate,
         expectedExitDate: endDate
