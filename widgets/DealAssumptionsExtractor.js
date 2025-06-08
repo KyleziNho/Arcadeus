@@ -449,17 +449,55 @@ Return ONLY the JSON response, no other text.`;
     console.log('🎯 Deal data:', dealData);
     
     try {
-      // Apply basic deal parameters
-      this.setInputValue('dealName', dealData.dealName);
-      this.setInputValue('dealValue', dealData.dealValue);
-      this.setInputValue('transactionFee', dealData.transactionFee);
-      this.setInputValue('dealLTV', dealData.dealLTV);
-      
-      // Wait a moment for calculations to trigger
+      // Wait a moment to ensure DOM is ready
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      // The equity and debt contributions should be calculated automatically by the form
-      // but we can verify they match our calculations
+      // Check if all elements exist before setting values
+      const elements = {
+        dealName: document.getElementById('dealName'),
+        dealValue: document.getElementById('dealValue'),
+        transactionFee: document.getElementById('transactionFee'),
+        dealLTV: document.getElementById('dealLTV'),
+        equityContribution: document.getElementById('equityContribution'),
+        debtFinancing: document.getElementById('debtFinancing')
+      };
+      
+      console.log('🎯 Available elements:', {
+        dealName: !!elements.dealName,
+        dealValue: !!elements.dealValue,
+        transactionFee: !!elements.transactionFee,
+        dealLTV: !!elements.dealLTV,
+        equityContribution: !!elements.equityContribution,
+        debtFinancing: !!elements.debtFinancing
+      });
+      
+      // Apply basic deal parameters with delays and verification
+      const results = [];
+      
+      if (dealData.dealName) {
+        results.push(this.setInputValue('dealName', dealData.dealName));
+        await new Promise(resolve => setTimeout(resolve, 200));
+      }
+      
+      if (dealData.dealValue) {
+        results.push(this.setInputValue('dealValue', dealData.dealValue));
+        await new Promise(resolve => setTimeout(resolve, 200));
+      }
+      
+      if (dealData.transactionFee) {
+        results.push(this.setInputValue('transactionFee', dealData.transactionFee));
+        await new Promise(resolve => setTimeout(resolve, 200));
+      }
+      
+      if (dealData.dealLTV) {
+        results.push(this.setInputValue('dealLTV', dealData.dealLTV));
+        await new Promise(resolve => setTimeout(resolve, 200));
+      }
+      
+      // Wait for calculations to trigger
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Check calculated fields
       const equityElement = document.getElementById('equityContribution');
       const debtElement = document.getElementById('debtFinancing');
       
@@ -472,11 +510,13 @@ Return ONLY the JSON response, no other text.`;
       
       // Trigger form calculations
       if (window.formHandler) {
+        console.log('🎯 Triggering form calculations...');
         window.formHandler.triggerCalculations();
       }
       
-      console.log('🎯 Deal assumptions applied successfully');
-      return true;
+      const successCount = results.filter(Boolean).length;
+      console.log(`🎯 Applied ${successCount}/${results.length} deal assumptions successfully`);
+      return successCount > 0;
       
     } catch (error) {
       console.error('Error applying deal assumptions:', error);
@@ -484,17 +524,73 @@ Return ONLY the JSON response, no other text.`;
     }
   }
 
-  // Helper method to set input values
+  // Helper method to set input values (Excel Online compatible)
   setInputValue(elementId, value) {
     console.log(`🔧 Setting ${elementId} = ${value}`);
-    const element = document.getElementById(elementId);
-    if (element && value !== null && value !== undefined) {
-      element.value = value;
-      element.dispatchEvent(new Event('change', { bubbles: true }));
-      element.dispatchEvent(new Event('input', { bubbles: true }));
-      console.log(`🔧 Successfully set ${elementId}`);
-    } else {
-      console.log(`🔧 Failed to set ${elementId}: element=${!!element}, value=${value}`);
+    
+    try {
+      const element = document.getElementById(elementId);
+      console.log(`🔧 Element found:`, !!element, element ? element.tagName : 'null');
+      
+      if (!element) {
+        console.error(`🔧 Element not found: ${elementId}`);
+        return false;
+      }
+      
+      if (value === null || value === undefined) {
+        console.warn(`🔧 Invalid value for ${elementId}:`, value);
+        return false;
+      }
+      
+      // Different handling for different input types
+      if (element.tagName === 'SELECT') {
+        // For select elements, set the selected option
+        console.log(`🔧 Setting select element ${elementId}`);
+        element.value = value;
+        
+        // Verify the option exists
+        const option = Array.from(element.options).find(opt => opt.value === value);
+        if (option) {
+          option.selected = true;
+          console.log(`🔧 Selected option:`, option.text);
+        } else {
+          console.warn(`🔧 Option not found for value:`, value);
+        }
+      } else {
+        // For input elements
+        console.log(`🔧 Setting input element ${elementId}`);
+        element.value = value;
+      }
+      
+      // Force visual update - Excel Online sometimes needs this
+      element.focus();
+      element.blur();
+      
+      // Trigger multiple events to ensure change detection
+      const events = ['input', 'change', 'blur', 'keyup'];
+      events.forEach(eventType => {
+        const event = new Event(eventType, { 
+          bubbles: true, 
+          cancelable: true 
+        });
+        element.dispatchEvent(event);
+      });
+      
+      // Verify the value was actually set
+      const finalValue = element.value;
+      console.log(`🔧 Final value for ${elementId}:`, finalValue);
+      
+      if (finalValue === value.toString()) {
+        console.log(`🔧 Successfully set ${elementId}`);
+        return true;
+      } else {
+        console.error(`🔧 Value not set correctly for ${elementId}. Expected: ${value}, Actual: ${finalValue}`);
+        return false;
+      }
+      
+    } catch (error) {
+      console.error(`🔧 Error setting ${elementId}:`, error);
+      return false;
     }
   }
 

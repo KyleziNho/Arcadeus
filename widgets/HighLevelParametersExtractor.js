@@ -387,19 +387,56 @@ Return ONLY the JSON response, no other text.`;
     console.log('🎯 Parameters:', parameters);
     
     try {
-      // Apply each parameter to form
-      this.setInputValue('currency', parameters.currency);
-      this.setInputValue('projectStartDate', parameters.projectStartDate);
-      this.setInputValue('projectEndDate', parameters.projectEndDate);
-      this.setInputValue('modelPeriods', parameters.modelPeriods);
+      // Wait a moment to ensure DOM is ready
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Check if all elements exist before setting values
+      const elements = {
+        currency: document.getElementById('currency'),
+        projectStartDate: document.getElementById('projectStartDate'),
+        projectEndDate: document.getElementById('projectEndDate'),
+        modelPeriods: document.getElementById('modelPeriods')
+      };
+      
+      console.log('🎯 Available elements:', {
+        currency: !!elements.currency,
+        projectStartDate: !!elements.projectStartDate,
+        projectEndDate: !!elements.projectEndDate,
+        modelPeriods: !!elements.modelPeriods
+      });
+      
+      // Apply each parameter to form with delays
+      const results = [];
+      
+      if (parameters.currency) {
+        results.push(this.setInputValue('currency', parameters.currency));
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      
+      if (parameters.projectStartDate) {
+        results.push(this.setInputValue('projectStartDate', parameters.projectStartDate));
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      
+      if (parameters.projectEndDate) {
+        results.push(this.setInputValue('projectEndDate', parameters.projectEndDate));
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      
+      if (parameters.modelPeriods) {
+        results.push(this.setInputValue('modelPeriods', parameters.modelPeriods));
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
       
       // Trigger calculation of holding periods
       if (window.formHandler) {
+        console.log('🎯 Triggering form calculations...');
         window.formHandler.triggerCalculations();
       }
       
-      console.log('🎯 High-level parameters applied successfully');
-      return true;
+      const successCount = results.filter(Boolean).length;
+      console.log(`🎯 Applied ${successCount}/${results.length} high-level parameters successfully`);
+      return successCount > 0;
       
     } catch (error) {
       console.error('Error applying high-level parameters:', error);
@@ -407,17 +444,73 @@ Return ONLY the JSON response, no other text.`;
     }
   }
 
-  // Helper method to set input values
+  // Helper method to set input values (Excel Online compatible)
   setInputValue(elementId, value) {
     console.log(`🔧 Setting ${elementId} = ${value}`);
-    const element = document.getElementById(elementId);
-    if (element && value !== null && value !== undefined) {
-      element.value = value;
-      element.dispatchEvent(new Event('change', { bubbles: true }));
-      element.dispatchEvent(new Event('input', { bubbles: true }));
-      console.log(`🔧 Successfully set ${elementId}`);
-    } else {
-      console.log(`🔧 Failed to set ${elementId}: element=${!!element}, value=${value}`);
+    
+    try {
+      const element = document.getElementById(elementId);
+      console.log(`🔧 Element found:`, !!element, element ? element.tagName : 'null');
+      
+      if (!element) {
+        console.error(`🔧 Element not found: ${elementId}`);
+        return false;
+      }
+      
+      if (value === null || value === undefined) {
+        console.warn(`🔧 Invalid value for ${elementId}:`, value);
+        return false;
+      }
+      
+      // Different handling for different input types
+      if (element.tagName === 'SELECT') {
+        // For select elements, set the selected option
+        console.log(`🔧 Setting select element ${elementId}`);
+        element.value = value;
+        
+        // Verify the option exists
+        const option = Array.from(element.options).find(opt => opt.value === value);
+        if (option) {
+          option.selected = true;
+          console.log(`🔧 Selected option:`, option.text);
+        } else {
+          console.warn(`🔧 Option not found for value:`, value);
+        }
+      } else {
+        // For input elements
+        console.log(`🔧 Setting input element ${elementId}`);
+        element.value = value;
+      }
+      
+      // Force visual update - Excel Online sometimes needs this
+      element.focus();
+      element.blur();
+      
+      // Trigger multiple events to ensure change detection
+      const events = ['input', 'change', 'blur', 'keyup'];
+      events.forEach(eventType => {
+        const event = new Event(eventType, { 
+          bubbles: true, 
+          cancelable: true 
+        });
+        element.dispatchEvent(event);
+      });
+      
+      // Verify the value was actually set
+      const finalValue = element.value;
+      console.log(`🔧 Final value for ${elementId}:`, finalValue);
+      
+      if (finalValue === value.toString()) {
+        console.log(`🔧 Successfully set ${elementId}`);
+        return true;
+      } else {
+        console.error(`🔧 Value not set correctly for ${elementId}. Expected: ${value}, Actual: ${finalValue}`);
+        return false;
+      }
+      
+    } catch (error) {
+      console.error(`🔧 Error setting ${elementId}:`, error);
+      return false;
     }
   }
 
