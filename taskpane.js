@@ -11,6 +11,9 @@ class MAModelingAddin {
     this.chatHandler = null;
     this.dataManager = null;
     this.uiController = null;
+    
+    // AI Extraction widgets
+    this.highLevelParametersExtractor = null;
 
     console.log('MAModelingAddin constructor called');
     
@@ -114,6 +117,14 @@ class MAModelingAddin {
       this.uiController.initialize();
       window.uiController = this.uiController;
       console.log('✅ UIController initialized');
+    }
+    
+    // Initialize AI Extraction widgets
+    if (typeof HighLevelParametersExtractor !== 'undefined') {
+      this.highLevelParametersExtractor = new HighLevelParametersExtractor();
+      this.highLevelParametersExtractor.initialize();
+      window.highLevelParametersExtractor = this.highLevelParametersExtractor;
+      console.log('✅ HighLevelParametersExtractor initialized');
     }
     
     // Auto-load saved data

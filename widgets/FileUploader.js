@@ -346,20 +346,28 @@ class FileUploader {
 
       this.showUploadMessage('Processing files with AI...', 'info');
 
-      // Process files and extract data
-      console.log('🤖 About to process uploaded files...');
-      const extractedData = await this.processUploadedFiles();
-      console.log('🤖 Extracted data:', extractedData);
+      // Process files and extract data using AI extractors
+      console.log('🤖 Starting AI-powered extraction...');
       
-      if (extractedData) {
-        // Apply extracted data to form
-        console.log('🤖 About to apply extracted data...');
-        await this.applyExtractedData(extractedData);
-        console.log('🤖 Data applied successfully!');
-        this.showUploadMessage('Auto-fill completed successfully!', 'success');
+      // Read all files first
+      const fileContents = await this.readAllFiles();
+      console.log('🤖 Read file contents:', fileContents.map(f => f.name));
+      
+      // Extract high-level parameters using dedicated extractor
+      if (window.highLevelParametersExtractor) {
+        console.log('🤖 Extracting high-level parameters...');
+        const hlParameters = await window.highLevelParametersExtractor.extractParameters(fileContents);
+        
+        if (hlParameters) {
+          console.log('🤖 Applying high-level parameters...');
+          await window.highLevelParametersExtractor.applyParameters(hlParameters);
+          this.showUploadMessage('High-level parameters extracted and applied!', 'success');
+        } else {
+          this.showUploadMessage('Could not extract high-level parameters.', 'error');
+        }
       } else {
-        console.log('🤖 No extracted data received!');
-        this.showUploadMessage('Could not extract data from files. Please try manually filling the form.', 'error');
+        console.log('🤖 HighLevelParametersExtractor not available');
+        this.showUploadMessage('AI extraction services not available.', 'error');
       }
 
     } catch (error) {
@@ -381,23 +389,25 @@ class FileUploader {
     }
   }
 
-  async processUploadedFiles() {
-    console.log('Processing uploaded files for data extraction...');
+  async readAllFiles() {
+    console.log('📖 Reading all uploaded files...');
     
     const fileContents = [];
     
     // Read all files
     for (const file of this.mainUploadedFiles) {
       try {
-        console.log(`Reading file: ${file.name}`);
+        console.log(`📖 Reading file: ${file.name}`);
         let content = '';
         
         if (file.type === 'text/csv' || file.name.endsWith('.csv')) {
           content = await this.readTextFile(file);
         } else if (file.type === 'application/pdf') {
-          content = `PDF file: ${file.name} (${this.formatFileSize(file.size)})`;
+          content = `PDF file: ${file.name} (${this.formatFileSize(file.size)}) - Content extraction would require PDF parser`;
         } else if (file.type.startsWith('image/')) {
-          content = `Image file: ${file.name} (${this.formatFileSize(file.size)})`;
+          content = `Image file: ${file.name} (${this.formatFileSize(file.size)}) - Content extraction would require OCR`;
+        } else {
+          content = await this.readTextFile(file);
         }
         
         fileContents.push({
@@ -407,13 +417,21 @@ class FileUploader {
           size: file.size
         });
         
+        console.log(`📖 Successfully read ${file.name}, content length: ${content.length}`);
+        
       } catch (error) {
-        console.error(`Error reading file ${file.name}:`, error);
+        console.error(`📖 Error reading file ${file.name}:`, error);
       }
     }
 
+    return fileContents;
+  }
+
+  // Legacy method - keeping for backward compatibility but not used by new AI extractors
+  async processUploadedFiles() {
+    console.log('📖 Legacy processUploadedFiles called - redirecting to readAllFiles...');
+    const fileContents = await this.readAllFiles();
     // Create mock extracted data for demonstration
-    // In a real implementation, this would call an AI service
     return this.createMockExtractedData(fileContents);
   }
 
