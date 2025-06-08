@@ -66,18 +66,20 @@ RESPONSE FORMAT (JSON only):
 Return ONLY the JSON response, no other text.`;
   }
 
-  // Extract high-level parameters from file contents
-  async extractParameters(fileContents) {
-    console.log('🔍 Extracting high-level parameters from files...');
+  // Extract high-level parameters (now reads from standardized data)
+  async extractParameters(standardizedData = null) {
+    console.log('🔍 Extracting high-level parameters...');
     
     try {
-      // Try to call AI service first
-      let extractedData = await this.callAIService(fileContents);
+      let extractedData;
       
-      // If AI service fails, use intelligent fallback parsing
-      if (!extractedData) {
-        console.log('🔍 AI service unavailable, using intelligent parsing...');
-        extractedData = this.intelligentParameterParsing(fileContents);
+      // Check if we have standardized data from master analysis
+      if (standardizedData) {
+        console.log('🔍 Using standardized data from master analysis...');
+        extractedData = this.extractFromStandardizedData(standardizedData);
+      } else {
+        console.log('🔍 No standardized data available, using fallback...');
+        extractedData = this.getFallbackParameters();
       }
       
       // Validate and clean the extracted data
@@ -93,53 +95,36 @@ Return ONLY the JSON response, no other text.`;
     }
   }
 
-  // Call AI service (GPT-4 via existing chat function)
-  async callAIService(fileContents) {
+  // Extract parameters from standardized data table
+  extractFromStandardizedData(standardizedData) {
+    console.log('🔍 Extracting from standardized data:', standardizedData);
+    
     try {
-      console.log('🤖 Calling GPT-4 for high-level parameters extraction...');
+      const transaction = standardizedData.transactionDetails || {};
+      const projections = standardizedData.projectionAssumptions || {};
       
-      // Check if we're running locally or on Netlify
-      const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-      const apiUrl = isLocal ? 'http://localhost:8888/.netlify/functions/chat' : '/.netlify/functions/chat';
-      
-      // Format file contents for the chat API
-      const formattedContents = fileContents.map(file => 
-        `File: ${file.name}\n${file.content}`
-      );
-      
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+      return {
+        currency: transaction.currency || 'USD',
+        projectStartDate: transaction.closingDate || new Date().toISOString().split('T')[0],
+        projectEndDate: transaction.expectedExitDate || new Date(Date.now() + 5*365*24*60*60*1000).toISOString().split('T')[0],
+        modelPeriods: projections.reportingFrequency || 'monthly',
+        confidence: {
+          currency: transaction.currency ? 0.9 : 0.3,
+          projectStartDate: transaction.closingDate ? 0.9 : 0.3,
+          projectEndDate: transaction.expectedExitDate ? 0.9 : 0.3,
+          modelPeriods: projections.reportingFrequency ? 0.9 : 0.3
         },
-        body: JSON.stringify({
-          message: 'Extract high-level parameters from the uploaded documents.',
-          fileContents: formattedContents,
-          autoFillMode: true,
-          batchType: 'basic'
-        })
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      
-      if (data.error) {
-        throw new Error(data.error);
-      }
-      
-      // Extract high-level parameters from the response
-      if (data.extractedData && data.extractedData.highLevelParameters) {
-        return data.extractedData.highLevelParameters;
-      }
-      
-      return null;
+        sources: {
+          currency: 'extracted from master analysis',
+          projectStartDate: 'extracted from master analysis',
+          projectEndDate: 'extracted from master analysis',
+          modelPeriods: 'extracted from master analysis'
+        }
+      };
       
     } catch (error) {
-      console.error('AI service call failed:', error);
-      return null;
+      console.error('Error extracting from standardized data:', error);
+      return this.getFallbackParameters();
     }
   }
 

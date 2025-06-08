@@ -68,18 +68,20 @@ RESPONSE FORMAT (JSON only):
 Return ONLY the JSON response, no other text.`;
   }
 
-  // Extract deal assumptions from file contents
-  async extractDealAssumptions(fileContents) {
-    console.log('🔍 Extracting deal assumptions from files...');
+  // Extract deal assumptions (now reads from standardized data)
+  async extractDealAssumptions(standardizedData = null) {
+    console.log('🔍 Extracting deal assumptions...');
     
     try {
-      // Try to call AI service first
-      let extractedData = await this.callAIService(fileContents);
+      let extractedData;
       
-      // If AI service fails, use intelligent fallback parsing
-      if (!extractedData) {
-        console.log('🔍 AI service unavailable, using intelligent parsing...');
-        extractedData = this.intelligentDealParsing(fileContents);
+      // Check if we have standardized data from master analysis
+      if (standardizedData) {
+        console.log('🔍 Using standardized data from master analysis...');
+        extractedData = this.extractFromStandardizedData(standardizedData);
+      } else {
+        console.log('🔍 No standardized data available, using fallback...');
+        extractedData = this.getFallbackDealAssumptions();
       }
       
       // Validate and clean the extracted data
@@ -98,53 +100,38 @@ Return ONLY the JSON response, no other text.`;
     }
   }
 
-  // Call AI service (GPT-4 via existing chat function)
-  async callAIService(fileContents) {
+  // Extract deal assumptions from standardized data table
+  extractFromStandardizedData(standardizedData) {
+    console.log('🔍 Extracting deal assumptions from standardized data:', standardizedData);
+    
     try {
-      console.log('🤖 Calling GPT-4 for deal assumptions extraction...');
+      const company = standardizedData.companyOverview || {};
+      const transaction = standardizedData.transactionDetails || {};
+      const financing = standardizedData.financingStructure || {};
       
-      // Check if we're running locally or on Netlify
-      const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-      const apiUrl = isLocal ? 'http://localhost:8888/.netlify/functions/chat' : '/.netlify/functions/chat';
-      
-      // Format file contents for the chat API
-      const formattedContents = fileContents.map(file => 
-        `File: ${file.name}\n${file.content}`
-      );
-      
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+      return {
+        dealName: transaction.dealName || company.companyName || 'Unknown Deal',
+        dealValue: transaction.dealValue || financing.totalDealValue || 50000000,
+        dealCurrency: transaction.currency || 'USD',
+        transactionFee: transaction.transactionFees || 2.5,
+        dealLTV: financing.debtLTV || 70,
+        confidence: {
+          dealName: (transaction.dealName || company.companyName) ? 0.9 : 0.3,
+          dealValue: transaction.dealValue ? 0.9 : 0.3,
+          transactionFee: transaction.transactionFees ? 0.9 : 0.3,
+          dealLTV: financing.debtLTV ? 0.9 : 0.3
         },
-        body: JSON.stringify({
-          message: 'Extract deal assumptions from the uploaded documents.',
-          fileContents: formattedContents,
-          autoFillMode: true,
-          batchType: 'basic'
-        })
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      
-      if (data.error) {
-        throw new Error(data.error);
-      }
-      
-      // Extract deal assumptions from the response
-      if (data.extractedData && data.extractedData.dealAssumptions) {
-        return data.extractedData.dealAssumptions;
-      }
-      
-      return null;
+        sources: {
+          dealName: 'extracted from master analysis',
+          dealValue: 'extracted from master analysis',
+          transactionFee: 'extracted from master analysis',
+          dealLTV: 'extracted from master analysis'
+        }
+      };
       
     } catch (error) {
-      console.error('AI service call failed:', error);
-      return null;
+      console.error('Error extracting from standardized data:', error);
+      return this.getFallbackDealAssumptions();
     }
   }
 

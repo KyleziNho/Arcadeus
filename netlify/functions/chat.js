@@ -171,6 +171,81 @@ Convert % to numbers: 2.5% → 2.5
 
 Document Content: ${documentContext}`;
           
+        } else if (batchType === 'master_analysis') {
+          maxTokens = 4000; // Large for comprehensive analysis
+          systemPrompt = `You are an expert M&A analyst. Create a comprehensive, standardized data table from the provided documents for financial modeling.
+
+ACT AS: Senior M&A analyst reviewing deal documents
+TASK: Extract and organize ALL financial information systematically
+GOAL: Create standardized data for P&L, FCF, and IRR calculations
+
+ANALYZE FOR:
+- Company details and business metrics
+- Transaction structure and financing
+- Revenue streams and growth patterns
+- Operating and capital expenses
+- Exit strategy and valuation assumptions
+- Key financial ratios and projections
+
+REQUIRED JSON STRUCTURE:
+{
+  "extractedData": {
+    "standardizedData": {
+      "companyOverview": {
+        "companyName": "string",
+        "industry": "string",
+        "businessDescription": "string"
+      },
+      "transactionDetails": {
+        "dealName": "string",
+        "dealValue": number,
+        "currency": "string",
+        "transactionFees": number,
+        "closingDate": "YYYY-MM-DD"
+      },
+      "financingStructure": {
+        "debtLTV": number,
+        "equityContribution": number,
+        "debtFinancing": number
+      },
+      "historicalFinancials": {
+        "revenueStreams": [{
+          "name": "string",
+          "currentValue": number,
+          "growthRate": number
+        }],
+        "operatingExpenses": [{
+          "name": "string",
+          "currentValue": number,
+          "inflationRate": number
+        }],
+        "capitalExpenses": [{
+          "name": "string",
+          "currentValue": number
+        }]
+      },
+      "projectionAssumptions": {
+        "reportingFrequency": "monthly|quarterly|annually",
+        "projectionPeriod": "string"
+      },
+      "exitAssumptions": {
+        "exitStrategy": "string",
+        "disposalCosts": number,
+        "terminalValue": number
+      }
+    }
+  }
+}
+
+INSTRUCTIONS:
+1. Extract numerical values, percentages, dates
+2. Identify revenue streams and cost categories
+3. Note financing terms and deal structure
+4. Fill gaps with reasonable assumptions
+5. Return ONLY the JSON structure
+
+Document Content: ${documentContext}`;
+          
         } else {
           // Fallback to original large prompt (legacy support)
           maxTokens = 4000;

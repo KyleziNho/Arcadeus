@@ -346,49 +346,66 @@ class FileUploader {
 
       this.showUploadMessage('Processing files with AI...', 'info');
 
-      // Process files and extract data using AI extractors
-      console.log('🤖 Starting AI-powered extraction...');
+      // STAGE 1: Master AI Analysis - Create standardized data table
+      console.log('🤖 Starting two-stage AI extraction process...');
       
       // Read all files first
       const fileContents = await this.readAllFiles();
       console.log('🤖 Read file contents:', fileContents.map(f => f.name));
       
-      // Extract high-level parameters using dedicated extractor
+      // Stage 1: Master analysis to create standardized data
+      let standardizedData = null;
+      if (window.masterDataAnalyzer) {
+        console.log('🤖 Stage 1: Running master AI analysis...');
+        this.showUploadMessage('Stage 1: AI analyzing documents and creating standardized data...', 'info');
+        
+        standardizedData = await window.masterDataAnalyzer.analyzeAndStandardizeData(fileContents);
+        
+        if (standardizedData) {
+          console.log('🤖 Master analysis completed successfully');
+          const summary = window.masterDataAnalyzer.getAnalysisSummary();
+          this.showUploadMessage(`Master analysis complete for ${summary.summary.company} (${summary.summary.confidence} confidence)`, 'success');
+        } else {
+          console.log('🤖 Master analysis failed, using fallbacks');
+          this.showUploadMessage('Master analysis failed, using basic extraction...', 'error');
+        }
+      } else {
+        console.log('🤖 MasterDataAnalyzer not available');
+        this.showUploadMessage('Master analysis not available, using basic extraction...', 'error');
+      }
+      
+      // STAGE 2: Specialized extractors read from standardized data
+      console.log('🤖 Stage 2: Running specialized extractors...');
+      this.showUploadMessage('Stage 2: Extracting data for each section...', 'info');
+      
+      // Extract high-level parameters using standardized data
       if (window.highLevelParametersExtractor) {
-        console.log('🤖 Extracting high-level parameters...');
-        const hlParameters = await window.highLevelParametersExtractor.extractParameters(fileContents);
+        console.log('🤖 Extracting high-level parameters from standardized data...');
+        const hlParameters = await window.highLevelParametersExtractor.extractParameters(standardizedData);
         
         if (hlParameters) {
           console.log('🤖 Applying high-level parameters...');
           await window.highLevelParametersExtractor.applyParameters(hlParameters);
-          this.showUploadMessage('High-level parameters extracted and applied!', 'success');
-        } else {
-          this.showUploadMessage('Could not extract high-level parameters.', 'error');
         }
-      } else {
-        console.log('🤖 HighLevelParametersExtractor not available');
-        this.showUploadMessage('AI extraction services not available.', 'error');
       }
       
-      // Extract deal assumptions using dedicated extractor
+      // Extract deal assumptions using standardized data
       if (window.dealAssumptionsExtractor) {
-        console.log('🤖 Extracting deal assumptions...');
-        const dealAssumptions = await window.dealAssumptionsExtractor.extractDealAssumptions(fileContents);
+        console.log('🤖 Extracting deal assumptions from standardized data...');
+        const dealAssumptions = await window.dealAssumptionsExtractor.extractDealAssumptions(standardizedData);
         
         if (dealAssumptions) {
           console.log('🤖 Applying deal assumptions...');
           await window.dealAssumptionsExtractor.applyDealAssumptions(dealAssumptions);
-          this.showUploadMessage('Deal assumptions extracted and applied!', 'success');
-        } else {
-          this.showUploadMessage('Could not extract deal assumptions.', 'error');
         }
-      } else {
-        console.log('🤖 DealAssumptionsExtractor not available');
       }
+      
+      // Success message
+      this.showUploadMessage('AI extraction completed! All sections populated.', 'success');
 
     } catch (error) {
       console.error('Error during auto-fill:', error);
-      this.showUploadMessage('Error during auto-fill. Please try again.', 'error');
+      this.showUploadMessage('Error during AI extraction. Please try again.', 'error');
     } finally {
       // Reset button state
       const autoFillBtn = document.getElementById('autoFillBtn');

@@ -13,6 +13,7 @@ class MAModelingAddin {
     this.uiController = null;
     
     // AI Extraction widgets
+    this.masterDataAnalyzer = null;
     this.highLevelParametersExtractor = null;
     this.dealAssumptionsExtractor = null;
 
@@ -121,6 +122,13 @@ class MAModelingAddin {
     }
     
     // Initialize AI Extraction widgets
+    if (typeof MasterDataAnalyzer !== 'undefined') {
+      this.masterDataAnalyzer = new MasterDataAnalyzer();
+      this.masterDataAnalyzer.initialize();
+      window.masterDataAnalyzer = this.masterDataAnalyzer;
+      console.log('✅ MasterDataAnalyzer initialized');
+    }
+    
     if (typeof HighLevelParametersExtractor !== 'undefined') {
       this.highLevelParametersExtractor = new HighLevelParametersExtractor();
       this.highLevelParametersExtractor.initialize();
