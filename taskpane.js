@@ -1,11 +1,50 @@
 /* global Office, Excel */
 
+// Cell Reference Tracker for dynamic formula generation
+class CellReferenceTracker {
+  constructor() {
+    this.references = {
+      assumptions: {},
+      pnl: {},
+      fcf: {}
+    };
+  }
+
+  // Track where each assumption is placed
+  trackAssumptionCell(itemName, cellAddress, worksheet = 'Assumptions') {
+    if (!this.references[worksheet.toLowerCase()]) {
+      this.references[worksheet.toLowerCase()] = {};
+    }
+    this.references[worksheet.toLowerCase()][itemName] = {
+      cell: cellAddress,
+      worksheet: worksheet
+    };
+  }
+
+  // Get reference for formulas
+  getReference(itemName, currentWorksheet = null) {
+    // Check all worksheets for the reference
+    for (const [ws, items] of Object.entries(this.references)) {
+      if (items[itemName]) {
+        const ref = items[itemName];
+        // If we're on a different worksheet, include the worksheet name
+        if (currentWorksheet && currentWorksheet.toLowerCase() !== ws) {
+          return `${ref.worksheet}!${ref.cell}`;
+        }
+        return ref.cell;
+      }
+    }
+    return null;
+  }
+}
+
 class MAModelingAddin {
   constructor() {
     this.chatMessages = [];
     this.selectedRange = null;
     this.uploadedFiles = [];
     this.isInitialized = false;
+    this.cellTracker = null;
 
     // Initialize when Office is ready
     console.log('MAModelingAddin constructor called');
@@ -643,6 +682,9 @@ class MAModelingAddin {
         try {
           console.log('Starting P&L creation...');
           
+          // Create cell reference tracker
+          this.cellTracker = new CellReferenceTracker();
+          
           try {
             // Try to get existing P&L sheet
             plSheet = sheets.getItem("ProfitLoss");
@@ -667,10 +709,44 @@ class MAModelingAddin {
           await context.sync();
           console.log('P&L context synced');
           
+          // Create FCF Statement
+          let fcfSheet;
+          try {
+            console.log('Starting FCF creation...');
+            
+            try {
+              // Try to get existing FCF sheet
+              fcfSheet = sheets.getItem("Cashflows");
+              fcfSheet.delete();
+              await context.sync();
+              console.log('Deleted existing FCF sheet');
+            } catch (e) {
+              console.log('No existing FCF sheet to delete');
+            }
+            
+            // Create new FCF sheet
+            console.log('Creating new FCF sheet...');
+            fcfSheet = sheets.add("Cashflows");
+            await context.sync();
+            console.log('FCF sheet created successfully');
+            
+            // Generate the FCF statement layout
+            console.log('Starting FCF layout generation...');
+            await this.createCashflowsLayout(context, fcfSheet, modelData);
+            console.log('FCF layout completed');
+            
+            await context.sync();
+            console.log('FCF context synced');
+            
+          } catch (fcfError) {
+            console.error('Error creating FCF statement:', fcfError);
+            this.addChatMessage('assistant', `⚠️ P&L created successfully, but there was an error creating the FCF statement: ${fcfError.message}`);
+          }
+          
           // Activate the Assumptions sheet to show it first
           assumptionsSheet.activate();
           
-          this.addChatMessage('assistant', '✅ Model assumptions page and Profit & Loss statement generated successfully in Excel!');
+          this.addChatMessage('assistant', '✅ Model assumptions page, Profit & Loss statement, and Cashflows statement generated successfully in Excel!');
           
         } catch (plError) {
           console.error('Error creating P&L statement:', plError);
@@ -1232,16 +1308,20 @@ class MAModelingAddin {
   async createProfitLossLayout(context, sheet, data) {
     console.log('P&L Layout: Starting with data:', data);
     
+    // Initialize cell tracker for P&L sheet
+    this.cellTracker = new CellReferenceTracker();
+    
     // Calculate periods and dates
     const projectStartDate = new Date(data.projectStartDate);
     const projectEndDate = new Date(data.projectEndDate);
-    const modelPeriods = data.modelPeriods || 12;
+    const modelPeriods = data.modelPeriods === 'monthly' ? 1 : 
+                        data.modelPeriods === 'quarterly' ? 3 : 12;
     
     console.log('P&L Layout: Dates and periods:', { projectStartDate, projectEndDate, modelPeriods });
     
-    // Calculate total number of periods
+    // Calculate total number of periods based on actual period type
     const totalMonths = (projectEndDate.getFullYear() - projectStartDate.getFullYear()) * 12 + 
-                       (projectEndDate.getMonth() - projectStartDate.getMonth());
+                       (projectEndDate.getMonth() - projectStartDate.getMonth()) + 1;
     let totalPeriods = Math.ceil(totalMonths / modelPeriods);
     
     // Limit to maximum 20 periods to avoid Excel column limits
@@ -1249,13 +1329,17 @@ class MAModelingAddin {
     
     console.log('P&L Layout: Calculated periods:', { totalMonths, totalPeriods });
     
+    // Clear any existing content
+    sheet.getUsedRange()?.clear();
+    
     // Set up title and headers
     sheet.getRange("A1").values = [["Profit & Loss Statement"]];
     sheet.getRange("A1").format.font.bold = true;
     sheet.getRange("A1").format.font.name = "Times New Roman";
-    sheet.getRange("A1").format.font.size = 14;
+    sheet.getRange("A1").format.font.size = 16;
+    sheet.getRange("A1").format.horizontalAlignment = "Center";
+    sheet.getRangeByIndexes(0, 0, 1, totalPeriods + 1).merge();
     
-    // Set up period headers
     let currentRow = 3;
     
     // Period row
@@ -1280,29 +1364,27 @@ class MAModelingAddin {
     currentRow++;
     
     // Date headers
-    const currentDate = new Date(projectStartDate);
-    for (let period = 0; period <= totalPeriods; period++) {
-      const col = String.fromCharCode(65 + period); // A, B, C, D, etc.
-      
-      if (period === 0) {
-        // First column is empty or label
-        continue;
-      }
+    sheet.getRange("A" + currentRow).values = [[""]];
+    for (let period = 1; period <= totalPeriods; period++) {
+      const col = String.fromCharCode(65 + period); // B, C, D, etc.
       
       // Calculate date for this period
       const periodDate = new Date(projectStartDate);
-      periodDate.setMonth(periodDate.getMonth() + (period - 1) * modelPeriods);
+      if (data.modelPeriods === 'monthly') {
+        periodDate.setMonth(periodDate.getMonth() + period - 1);
+      } else if (data.modelPeriods === 'quarterly') {
+        periodDate.setMonth(periodDate.getMonth() + (period - 1) * 3);
+      } else {
+        periodDate.setFullYear(periodDate.getFullYear() + period - 1);
+      }
       
-      const dateStr = periodDate.toLocaleDateString('en-GB', { 
-        day: '2-digit', 
-        month: 'short', 
-        year: '2-digit' 
-      });
+      const dateStr = this.formatDateHeader(periodDate);
       
       sheet.getRange(col + currentRow).values = [[dateStr]];
       sheet.getRange(col + currentRow).format.font.name = "Times New Roman";
       sheet.getRange(col + currentRow).format.font.size = 10;
       sheet.getRange(col + currentRow).format.horizontalAlignment = "Center";
+      sheet.getRange(col + currentRow).format.font.color = "#666666";
     }
     
     currentRow += 2; // Add spacing
@@ -1313,7 +1395,10 @@ class MAModelingAddin {
     sheet.getRange("A" + currentRow).format.font.name = "Times New Roman";
     sheet.getRange("A" + currentRow).format.font.size = 12;
     sheet.getRange("A" + currentRow).format.font.color = "white";
-    sheet.getRange(`A${currentRow}:${String.fromCharCode(65 + totalPeriods)}${currentRow}`).format.fill.color = "#1F3A5F";
+    sheet.getRange(`A${currentRow}:${String.fromCharCode(65 + totalPeriods)}${currentRow}`).format.fill.color = "#5FB7B8";
+    
+    // Track revenue section start
+    const revenueStartRow = currentRow + 1;
     currentRow++;
     
     // Add revenue items with formulas
@@ -1322,19 +1407,29 @@ class MAModelingAddin {
       sheet.getRange("A" + currentRow).format.font.name = "Times New Roman";
       sheet.getRange("A" + currentRow).format.font.size = 12;
       
+      // Track this revenue item in our cell tracker
+      this.cellTracker.trackAssumptionCell(`${item.name}_Value`, `Assumptions!C${this.getRevenueItemAssumptionRow(index)}`, 'ProfitLoss');
+      this.cellTracker.trackAssumptionCell(`${item.name}_Growth`, `Assumptions!D${this.getRevenueItemAssumptionRow(index)}`, 'ProfitLoss');
+      
       // Create formulas for each period
       for (let period = 1; period <= totalPeriods; period++) {
         const col = String.fromCharCode(65 + period);
-        const assumptionsRowRef = this.getAssumptionsRowReference(item.name, 'revenue');
         
         if (period === 1) {
           // First period uses base value from assumptions
-          sheet.getRange(col + currentRow).formulas = [[`=Assumptions.B${assumptionsRowRef}`]];
+          const baseValueRef = this.cellTracker.getReference(`${item.name}_Value`, 'ProfitLoss');
+          sheet.getRange(col + currentRow).formulas = [[`=${baseValueRef || 'Assumptions!C' + this.getRevenueItemAssumptionRow(index)}`]];
         } else {
           // Subsequent periods apply growth
           const prevCol = String.fromCharCode(65 + period - 1);
-          const growthRef = this.getAssumptionsGrowthReference(item.name, 'revenue');
-          sheet.getRange(col + currentRow).formulas = [[`=${prevCol}${currentRow}*(1+Assumptions.B${growthRef}/100)`]];
+          const growthRef = this.cellTracker.getReference(`${item.name}_Growth`, 'ProfitLoss');
+          
+          if (item.growthType === 'linear') {
+            sheet.getRange(col + currentRow).formulas = [[`=${prevCol}${currentRow}*(1+(${growthRef || 'Assumptions!D' + this.getRevenueItemAssumptionRow(index)})/100)`]];
+          } else {
+            // For non-linear growth, use the base value reference
+            sheet.getRange(col + currentRow).formulas = [[`=${baseValueRef || 'Assumptions!C' + this.getRevenueItemAssumptionRow(index)}`]];
+          }
         }
         
         sheet.getRange(col + currentRow).numberFormat = [["#,##0"]];
@@ -1353,9 +1448,13 @@ class MAModelingAddin {
     sheet.getRange("A" + currentRow).format.font.size = 12;
     sheet.getRange("A" + currentRow).format.fill.color = "#E8F4F8";
     
+    // Track total revenue row for later reference
+    const totalRevenueRow = currentRow;
+    this.cellTracker.trackAssumptionCell('TotalRevenue', `B${currentRow}`, 'ProfitLoss');
+    
     for (let period = 1; period <= totalPeriods; period++) {
       const col = String.fromCharCode(65 + period);
-      const startRow = currentRow - data.revenueItems.length;
+      const startRow = revenueStartRow;
       const endRow = currentRow - 1;
       sheet.getRange(col + currentRow).formulas = [[`=SUM(${col}${startRow}:${col}${endRow})`]];
       sheet.getRange(col + currentRow).numberFormat = [["#,##0"]];
@@ -1368,44 +1467,61 @@ class MAModelingAddin {
     
     currentRow += 2; // Add spacing
     
-    // Cost Items Section
-    sheet.getRange("A" + currentRow).values = [["Cost Items"]];
+    // Operating Expenses Section
+    sheet.getRange("A" + currentRow).values = [["Operating Expenses"]];
     sheet.getRange("A" + currentRow).format.font.bold = true;
     sheet.getRange("A" + currentRow).format.font.name = "Times New Roman";
     sheet.getRange("A" + currentRow).format.font.size = 12;
     sheet.getRange("A" + currentRow).format.font.color = "white";
-    sheet.getRange(`A${currentRow}:${String.fromCharCode(65 + totalPeriods)}${currentRow}`).format.fill.color = "#1F3A5F";
+    sheet.getRange(`A${currentRow}:${String.fromCharCode(65 + totalPeriods)}${currentRow}`).format.fill.color = "#5FB7B8";
+    
+    // Track operating expenses section start
+    const opExStartRow = currentRow + 1;
     currentRow++;
     
     // Add operating expenses
-    data.costItems.opex.forEach((item, index) => {
-      sheet.getRange("A" + currentRow).values = [[item.name]];
-      sheet.getRange("A" + currentRow).format.font.name = "Times New Roman";
-      sheet.getRange("A" + currentRow).format.font.size = 12;
-      
-      // Create formulas for each period
-      for (let period = 1; period <= totalPeriods; period++) {
-        const col = String.fromCharCode(65 + period);
-        const assumptionsRowRef = this.getAssumptionsRowReference(item.name, 'opex');
+    if (data.costItems && data.costItems.opex) {
+      data.costItems.opex.forEach((item, index) => {
+        sheet.getRange("A" + currentRow).values = [[item.name]];
+        sheet.getRange("A" + currentRow).format.font.name = "Times New Roman";
+        sheet.getRange("A" + currentRow).format.font.size = 12;
         
-        if (period === 1) {
-          // First period uses base value from assumptions
-          sheet.getRange(col + currentRow).formulas = [[`=Assumptions.B${assumptionsRowRef}`]];
-        } else {
-          // Subsequent periods apply growth
-          const prevCol = String.fromCharCode(65 + period - 1);
-          const growthRef = this.getAssumptionsGrowthReference(item.name, 'opex');
-          sheet.getRange(col + currentRow).formulas = [[`=${prevCol}${currentRow}*(1+Assumptions.B${growthRef}/100)`]];
+        // Track this operating expense in our cell tracker
+        this.cellTracker.trackAssumptionCell(`${item.name}_OpEx_Value`, `Assumptions!C${this.getOpExItemAssumptionRow(index)}`, 'ProfitLoss');
+        this.cellTracker.trackAssumptionCell(`${item.name}_OpEx_Growth`, `Assumptions!D${this.getOpExItemAssumptionRow(index)}`, 'ProfitLoss');
+        
+        // Create formulas for each period
+        for (let period = 1; period <= totalPeriods; period++) {
+          const col = String.fromCharCode(65 + period);
+          
+          if (period === 1) {
+            // First period uses base value from assumptions
+            const baseValueRef = this.cellTracker.getReference(`${item.name}_OpEx_Value`, 'ProfitLoss');
+            sheet.getRange(col + currentRow).formulas = [[`=-ABS(${baseValueRef || 'Assumptions!C' + this.getOpExItemAssumptionRow(index)})`]];
+          } else {
+            // Subsequent periods apply inflation/growth
+            const prevCol = String.fromCharCode(65 + period - 1);
+            const growthRef = this.cellTracker.getReference(`${item.name}_OpEx_Growth`, 'ProfitLoss');
+            
+            if (item.growthType === 'linear') {
+              sheet.getRange(col + currentRow).formulas = [[`=${prevCol}${currentRow}*(1+(${growthRef || 'Assumptions!D' + this.getOpExItemAssumptionRow(index)})/100)`]];
+            } else {
+              // For non-linear growth, use the base value reference
+              const baseValueRef = this.cellTracker.getReference(`${item.name}_OpEx_Value`, 'ProfitLoss');
+              sheet.getRange(col + currentRow).formulas = [[`=-ABS(${baseValueRef || 'Assumptions!C' + this.getOpExItemAssumptionRow(index)})`]];
+            }
+          }
+          
+          sheet.getRange(col + currentRow).numberFormat = [["(#,##0)"]];
+          sheet.getRange(col + currentRow).format.horizontalAlignment = "Right";
+          sheet.getRange(col + currentRow).format.font.name = "Times New Roman";
+          sheet.getRange(col + currentRow).format.font.size = 12;
+          sheet.getRange(col + currentRow).format.font.color = "red";
         }
         
-        sheet.getRange(col + currentRow).numberFormat = [["#,##0"]];
-        sheet.getRange(col + currentRow).format.horizontalAlignment = "Right";
-        sheet.getRange(col + currentRow).format.font.name = "Times New Roman";
-        sheet.getRange(col + currentRow).format.font.size = 12;
-      }
-      
-      currentRow++;
-    });
+        currentRow++;
+      });
+    }
     
     // Total Operating Expenses
     sheet.getRange("A" + currentRow).values = [["Total Operating Expenses"]];
@@ -1414,131 +1530,110 @@ class MAModelingAddin {
     sheet.getRange("A" + currentRow).format.font.size = 12;
     sheet.getRange("A" + currentRow).format.fill.color = "#E8F4F8";
     
+    // Track total operating expenses row
+    const totalOpExRow = currentRow;
+    this.cellTracker.trackAssumptionCell('TotalOpEx', `B${currentRow}`, 'ProfitLoss');
+    
     for (let period = 1; period <= totalPeriods; period++) {
       const col = String.fromCharCode(65 + period);
-      const startRow = currentRow - data.costItems.opex.length;
+      const startRow = opExStartRow;
       const endRow = currentRow - 1;
       sheet.getRange(col + currentRow).formulas = [[`=SUM(${col}${startRow}:${col}${endRow})`]];
-      sheet.getRange(col + currentRow).numberFormat = [["#,##0"]];
-      sheet.getRange(col + currentRow).format.horizontalAlignment = "Right";
-      sheet.getRange(col + currentRow).format.font.bold = true;
-      sheet.getRange(col + currentRow).format.font.name = "Times New Roman";
-      sheet.getRange(col + currentRow).format.font.size = 12;
-      sheet.getRange(col + currentRow).format.fill.color = "#E8F4F8";
-    }
-    
-    const totalOpExRow = currentRow;
-    currentRow += 2; // Add spacing
-    
-    // Gross Operating Income
-    sheet.getRange("A" + currentRow).values = [["Gross Operating Income"]];
-    sheet.getRange("A" + currentRow).format.font.bold = true;
-    sheet.getRange("A" + currentRow).format.font.name = "Times New Roman";
-    sheet.getRange("A" + currentRow).format.font.size = 12;
-    sheet.getRange("A" + currentRow).format.fill.color = "#D4F4DD";
-    
-    const totalRevenueRow = 5 + data.revenueItems.length + 1; // Adjust based on actual position
-    
-    for (let period = 1; period <= totalPeriods; period++) {
-      const col = String.fromCharCode(65 + period);
-      sheet.getRange(col + currentRow).formulas = [[`=${col}${totalRevenueRow}-${col}${totalOpExRow}`]];
-      sheet.getRange(col + currentRow).numberFormat = [["#,##0"]];
-      sheet.getRange(col + currentRow).format.horizontalAlignment = "Right";
-      sheet.getRange(col + currentRow).format.font.bold = true;
-      sheet.getRange(col + currentRow).format.font.name = "Times New Roman";
-      sheet.getRange(col + currentRow).format.font.size = 12;
-      sheet.getRange(col + currentRow).format.fill.color = "#D4F4DD";
-    }
-    
-    currentRow += 2; // Add spacing
-    
-    // Management Fees
-    sheet.getRange("A" + currentRow).values = [["Management Fees"]];
-    sheet.getRange("A" + currentRow).format.font.name = "Times New Roman";
-    sheet.getRange("A" + currentRow).format.font.size = 12;
-    
-    for (let period = 1; period <= totalPeriods; period++) {
-      const col = String.fromCharCode(65 + period);
-      // Use management fee from assumptions (as percentage of revenue)
-      sheet.getRange(col + currentRow).formulas = [[`=${col}${totalRevenueRow}*Assumptions.B${this.getAssumptionsRowReference('Management Fee', 'assumptions')}`]];
       sheet.getRange(col + currentRow).numberFormat = [["(#,##0)"]];
       sheet.getRange(col + currentRow).format.horizontalAlignment = "Right";
-      sheet.getRange(col + currentRow).format.font.name = "Times New Roman";
-      sheet.getRange(col + currentRow).format.font.size = 12;
-    }
-    
-    const mgmtFeesRow = currentRow;
-    currentRow++;
-    
-    // Profit after mgmt. fees
-    sheet.getRange("A" + currentRow).values = [["Profit after mgmt. fees"]];
-    sheet.getRange("A" + currentRow).format.font.bold = true;
-    sheet.getRange("A" + currentRow).format.font.name = "Times New Roman";
-    sheet.getRange("A" + currentRow).format.font.size = 12;
-    sheet.getRange("A" + currentRow).format.fill.color = "#E8F4F8";
-    
-    const grossOpIncomeRow = mgmtFeesRow - 2;
-    
-    for (let period = 1; period <= totalPeriods; period++) {
-      const col = String.fromCharCode(65 + period);
-      sheet.getRange(col + currentRow).formulas = [[`=${col}${grossOpIncomeRow}+${col}${mgmtFeesRow}`]];
-      sheet.getRange(col + currentRow).numberFormat = [["#,##0"]];
-      sheet.getRange(col + currentRow).format.horizontalAlignment = "Right";
       sheet.getRange(col + currentRow).format.font.bold = true;
       sheet.getRange(col + currentRow).format.font.name = "Times New Roman";
       sheet.getRange(col + currentRow).format.font.size = 12;
       sheet.getRange(col + currentRow).format.fill.color = "#E8F4F8";
+      sheet.getRange(col + currentRow).format.font.color = "red";
     }
     
     currentRow += 2; // Add spacing
-    
-    // Add capital expenses and other fixed expenses
-    sheet.getRange("A" + currentRow).values = [["Other"]];
-    sheet.getRange("A" + currentRow).format.font.name = "Times New Roman";
-    sheet.getRange("A" + currentRow).format.font.size = 12;
-    currentRow++;
-    
-    sheet.getRange("A" + currentRow).values = [["Maintenance"]];
-    sheet.getRange("A" + currentRow).format.font.name = "Times New Roman";
-    sheet.getRange("A" + currentRow).format.font.size = 12;
-    currentRow++;
-    
-    sheet.getRange("A" + currentRow).values = [["Total fixed expenses"]];
-    sheet.getRange("A" + currentRow).format.font.bold = true;
-    sheet.getRange("A" + currentRow).format.font.name = "Times New Roman";
-    sheet.getRange("A" + currentRow).format.font.size = 12;
-    
-    for (let period = 1; period <= totalPeriods; period++) {
-      const col = String.fromCharCode(65 + period);
-      sheet.getRange(col + currentRow).formulas = [[`=Assumptions.B${this.getAssumptionsRowReference('Total Fixed Costs', 'assumptions')}`]];
-      sheet.getRange(col + currentRow).numberFormat = [["#,##0"]];
-      sheet.getRange(col + currentRow).format.horizontalAlignment = "Right";
-      sheet.getRange(col + currentRow).format.font.bold = true;
-      sheet.getRange(col + currentRow).format.font.name = "Times New Roman";
-      sheet.getRange(col + currentRow).format.font.size = 12;
-    }
-    
-    const totalFixedExpensesRow = currentRow;
-    currentRow += 2;
     
     // EBITDA
     sheet.getRange("A" + currentRow).values = [["EBITDA"]];
     sheet.getRange("A" + currentRow).format.font.bold = true;
     sheet.getRange("A" + currentRow).format.font.name = "Times New Roman";
     sheet.getRange("A" + currentRow).format.font.size = 12;
-    sheet.getRange("A" + currentRow).format.fill.color = "#D4F4DD";
+    sheet.getRange("A" + currentRow).format.fill.color = "#5FB7B8";
+    sheet.getRange("A" + currentRow).format.font.color = "white";
     
-    const profitAfterMgmtRow = mgmtFeesRow + 1;
+    // Track EBITDA row for FCF linking
+    this.plEBITDARow = currentRow;
+    this.cellTracker.trackAssumptionCell('EBITDA', `B${currentRow}`, 'ProfitLoss');
     
     for (let period = 1; period <= totalPeriods; period++) {
       const col = String.fromCharCode(65 + period);
-      sheet.getRange(col + currentRow).formulas = [[`=${col}${profitAfterMgmtRow}-${col}${totalFixedExpensesRow}`]];
-      sheet.getRange(col + currentRow).numberFormat = [["#,##0"]];
+      sheet.getRange(col + currentRow).formulas = [[`=${col}${totalRevenueRow}+${col}${totalOpExRow}`]];
+      sheet.getRange(col + currentRow).numberFormat = [["#,##0;(#,##0)"]];
       sheet.getRange(col + currentRow).format.horizontalAlignment = "Right";
       sheet.getRange(col + currentRow).format.font.bold = true;
       sheet.getRange(col + currentRow).format.font.name = "Times New Roman";
       sheet.getRange(col + currentRow).format.font.size = 12;
-      sheet.getRange(col + currentRow).format.fill.color = "#D4F4DD";
+      sheet.getRange(col + currentRow).format.fill.color = "#5FB7B8";
+      sheet.getRange(col + currentRow).format.font.color = "white";
+    }
+    
+    currentRow += 2; // Add spacing
+    
+    // Capital Expenses Section (if any)
+    if (data.costItems && data.costItems.capex && data.costItems.capex.length > 0) {
+      sheet.getRange("A" + currentRow).values = [["Capital Expenses"]];
+      sheet.getRange("A" + currentRow).format.font.bold = true;
+      sheet.getRange("A" + currentRow).format.font.name = "Times New Roman";
+      sheet.getRange("A" + currentRow).format.font.size = 12;
+      sheet.getRange("A" + currentRow).format.font.color = "white";
+      sheet.getRange(`A${currentRow}:${String.fromCharCode(65 + totalPeriods)}${currentRow}`).format.fill.color = "#5FB7B8";
+      
+      const capExStartRow = currentRow + 1;
+      currentRow++;
+      
+      // Add capital expenses
+      data.costItems.capex.forEach((item, index) => {
+        sheet.getRange("A" + currentRow).values = [[item.name]];
+        sheet.getRange("A" + currentRow).format.font.name = "Times New Roman";
+        sheet.getRange("A" + currentRow).format.font.size = 12;
+        
+        // Track this capital expense in our cell tracker
+        this.cellTracker.trackAssumptionCell(`${item.name}_CapEx_Value`, `Assumptions!C${this.getCapExItemAssumptionRow(index)}`, 'ProfitLoss');
+        
+        // Create formulas for each period
+        for (let period = 1; period <= totalPeriods; period++) {
+          const col = String.fromCharCode(65 + period);
+          const baseValueRef = this.cellTracker.getReference(`${item.name}_CapEx_Value`, 'ProfitLoss');
+          sheet.getRange(col + currentRow).formulas = [[`=-ABS(${baseValueRef || 'Assumptions!C' + this.getCapExItemAssumptionRow(index)})`]];
+          sheet.getRange(col + currentRow).numberFormat = [["(#,##0)"]];
+          sheet.getRange(col + currentRow).format.horizontalAlignment = "Right";
+          sheet.getRange(col + currentRow).format.font.name = "Times New Roman";
+          sheet.getRange(col + currentRow).format.font.size = 12;
+          sheet.getRange(col + currentRow).format.font.color = "red";
+        }
+        
+        currentRow++;
+      });
+      
+      // Total Capital Expenses
+      sheet.getRange("A" + currentRow).values = [["Total Capital Expenses"]];
+      sheet.getRange("A" + currentRow).format.font.bold = true;
+      sheet.getRange("A" + currentRow).format.font.name = "Times New Roman";
+      sheet.getRange("A" + currentRow).format.font.size = 12;
+      sheet.getRange("A" + currentRow).format.fill.color = "#E8F4F8";
+      
+      for (let period = 1; period <= totalPeriods; period++) {
+        const col = String.fromCharCode(65 + period);
+        const startRow = capExStartRow;
+        const endRow = currentRow - 1;
+        sheet.getRange(col + currentRow).formulas = [[`=SUM(${col}${startRow}:${col}${endRow})`]];
+        sheet.getRange(col + currentRow).numberFormat = [["(#,##0)"]];
+        sheet.getRange(col + currentRow).format.horizontalAlignment = "Right";
+        sheet.getRange(col + currentRow).format.font.bold = true;
+        sheet.getRange(col + currentRow).format.font.name = "Times New Roman";
+        sheet.getRange(col + currentRow).format.font.size = 12;
+        sheet.getRange(col + currentRow).format.fill.color = "#E8F4F8";
+        sheet.getRange(col + currentRow).format.font.color = "red";
+      }
+      
+      currentRow += 2;
     }
     
     // Format column widths
@@ -1558,30 +1653,323 @@ class MAModelingAddin {
     dataRange.format.borders.getItem('InsideVertical').style = 'Thin';
   }
 
-  // Helper function to get row references from Assumptions sheet
+  // Helper functions to get assumption row references
+  getRevenueItemAssumptionRow(itemIndex) {
+    // Revenue items start at row 30 in Assumptions sheet
+    return 30 + itemIndex;
+  }
+
+  getOpExItemAssumptionRow(itemIndex) {
+    // Operating expenses start at row 40 in Assumptions sheet
+    return 40 + itemIndex;
+  }
+
+  getCapExItemAssumptionRow(itemIndex) {
+    // Capital expenses start at row 50 in Assumptions sheet
+    return 50 + itemIndex;
+  }
+
+  // Helper function to get row references from Assumptions sheet (legacy support)
   getAssumptionsRowReference(itemName, type) {
     // This is a simplified approach - in practice, you'd want to track actual row positions
     // Based on the typical structure of the assumptions sheet
     const baseRows = {
-      revenue: 28, // Starting row for revenue items
-      opex: 32,    // Starting row for operating expenses  
-      capex: 38,   // Starting row for capital expenses
-      assumptions: 7 // Starting row for general assumptions
+      revenue: 30, // Starting row for revenue items
+      opex: 40,    // Starting row for operating expenses  
+      capex: 50,   // Starting row for capital expenses
+      assumptions: 10 // Starting row for general assumptions
     };
     
     return baseRows[type] || 20; // Default fallback
   }
 
-  // Helper function to get growth rate references
+  // Helper function to get growth rate references (legacy support)
   getAssumptionsGrowthReference(itemName, type) {
     // Return the row number for growth rates
     const growthRows = {
-      revenue: 29, // Revenue growth row
-      opex: 36,    // OpEx inflation row
-      capex: 43    // CapEx inflation row
+      revenue: 31, // Revenue growth row
+      opex: 41,    // OpEx inflation row
+      capex: 51    // CapEx inflation row
     };
     
     return growthRows[type] || 21; // Default fallback
+  }
+
+  // Format date header for different period types
+  formatDateHeader(date) {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return `${date.getDate()}-${months[date.getMonth()]}-${date.getFullYear().toString().substr(-2)}`;
+  }
+  
+  // Create Cashflows Layout
+  async createCashflowsLayout(context, sheet, modelData) {
+    console.log('Creating Cashflows layout with data:', modelData);
+    
+    // Clear any existing content
+    sheet.getUsedRange()?.clear();
+    
+    // Get total periods from model data
+    const startDate = new Date(modelData.projectStartDate);
+    const endDate = new Date(modelData.projectEndDate);
+    const totalPeriods = this.calculatePeriods(startDate, endDate, modelData.modelPeriods);
+    
+    console.log(`Total periods calculated: ${totalPeriods}`);
+    
+    // Title
+    sheet.getRange("A1").values = [["Cashflows"]];
+    sheet.getRange("A1").format.font.bold = true;
+    sheet.getRange("A1").format.font.size = 14;
+    sheet.getRange("A1").format.font.name = "Times New Roman";
+    
+    let currentRow = 3;
+    
+    // Period headers
+    const headerRange = sheet.getRangeByIndexes(currentRow - 1, 1, 1, totalPeriods);
+    const periods = [];
+    for (let i = 1; i <= totalPeriods; i++) {
+      const periodDate = new Date(startDate);
+      if (modelData.modelPeriods === 'monthly') {
+        periodDate.setMonth(periodDate.getMonth() + i - 1);
+      } else if (modelData.modelPeriods === 'quarterly') {
+        periodDate.setMonth(periodDate.getMonth() + (i - 1) * 3);
+      } else {
+        periodDate.setFullYear(periodDate.getFullYear() + i - 1);
+      }
+      periods.push(this.formatDateHeader(periodDate));
+    }
+    headerRange.values = [periods];
+    headerRange.format.font.bold = true;
+    headerRange.format.horizontalAlignment = "Center";
+    headerRange.format.font.name = "Times New Roman";
+    
+    // Period numbers
+    sheet.getRange("A" + currentRow).values = [["Period"]];
+    sheet.getRange("A" + currentRow).format.font.name = "Times New Roman";
+    
+    for (let period = 1; period <= totalPeriods; period++) {
+      const col = String.fromCharCode(65 + period);
+      sheet.getRange(col + currentRow).values = [[period]];
+      sheet.getRange(col + currentRow).format.horizontalAlignment = "Center";
+      sheet.getRange(col + currentRow).format.font.name = "Times New Roman";
+    }
+    currentRow++;
+    
+    // Purchase price
+    sheet.getRange("A" + currentRow).values = [["Purchase price"]];
+    sheet.getRange("A" + currentRow).format.font.name = "Times New Roman";
+    sheet.getRange("B" + currentRow).values = [[modelData.dealValue ? -modelData.dealValue : 0]];
+    sheet.getRange("B" + currentRow).numberFormat = [["(#,##0)"]];
+    sheet.getRange("B" + currentRow).format.font.color = "red";
+    this.cellTracker.trackAssumptionCell('PurchasePrice', `B${currentRow}`, 'Cashflows');
+    currentRow++;
+    
+    // Transaction costs
+    sheet.getRange("A" + currentRow).values = [["Transaction costs"]];
+    sheet.getRange("A" + currentRow).format.font.name = "Times New Roman";
+    const transactionCost = modelData.dealValue * (modelData.transactionFee / 100);
+    sheet.getRange("B" + currentRow).values = [[-transactionCost]];
+    sheet.getRange("B" + currentRow).numberFormat = [["(#,##0)"]];
+    sheet.getRange("B" + currentRow).format.font.color = "red";
+    currentRow++;
+    
+    // EBITDA row
+    sheet.getRange("A" + currentRow).values = [["EBITDA"]];
+    sheet.getRange("A" + currentRow).format.font.name = "Times New Roman";
+    
+    // Link EBITDA from P&L
+    for (let period = 1; period <= totalPeriods; period++) {
+      const col = String.fromCharCode(65 + period);
+      // We'll need to track the EBITDA row from P&L
+      sheet.getRange(col + currentRow).formulas = [[`=ProfitLoss!${col}${this.plEBITDARow || 30}`]];
+      sheet.getRange(col + currentRow).numberFormat = [["#,##0"]];
+    }
+    currentRow++;
+    
+    // Sale Price (at exit)
+    sheet.getRange("A" + currentRow).values = [["Sale Price"]];
+    sheet.getRange("A" + currentRow).format.font.name = "Times New Roman";
+    
+    // Calculate exit value using terminal cap rate
+    const lastPeriodCol = String.fromCharCode(65 + totalPeriods);
+    const exitFormula = `=${lastPeriodCol}${currentRow - 1}/${this.cellTracker.getReference('terminalCapRate', 'Cashflows') || 'Assumptions!B20'}*100`;
+    sheet.getRange(lastPeriodCol + currentRow).formulas = [[exitFormula]];
+    sheet.getRange(lastPeriodCol + currentRow).numberFormat = [["#,##0"]];
+    currentRow++;
+    
+    // Disposal Costs
+    sheet.getRange("A" + currentRow).values = [["Disposal Costs"]];
+    sheet.getRange("A" + currentRow).format.font.name = "Times New Roman";
+    const disposalFormula = `=-${lastPeriodCol}${currentRow - 1}*${this.cellTracker.getReference('disposalCost', 'Cashflows') || 'Assumptions!B19'}/100`;
+    sheet.getRange(lastPeriodCol + currentRow).formulas = [[disposalFormula]];
+    sheet.getRange(lastPeriodCol + currentRow).numberFormat = [["(#,##0)"]];
+    sheet.getRange(lastPeriodCol + currentRow).format.font.color = "red";
+    currentRow += 2;
+    
+    // Unlevered Cashflows header
+    sheet.getRange("A" + currentRow).values = [["Unlevered Cashflows"]];
+    sheet.getRange("A" + currentRow).format.font.bold = true;
+    sheet.getRange("A" + currentRow).format.fill.color = "#5FB7B8";
+    sheet.getRange("A" + currentRow).format.font.color = "white";
+    sheet.getRange("A" + currentRow).format.font.name = "Times New Roman";
+    
+    const unleveredHeaderRange = sheet.getRangeByIndexes(currentRow - 1, 1, 1, totalPeriods);
+    unleveredHeaderRange.format.fill.color = "#5FB7B8";
+    currentRow++;
+    
+    // Unlevered cashflow calculations
+    const unleveredRow = currentRow;
+    for (let period = 1; period <= totalPeriods; period++) {
+      const col = String.fromCharCode(65 + period);
+      // Sum all cashflows for this period
+      const startRow = 4; // Starting from Purchase price row
+      const endRow = currentRow - 3; // Up to disposal costs
+      sheet.getRange(col + currentRow).formulas = [[`=SUM(${col}${startRow}:${col}${endRow})`]];
+      sheet.getRange(col + currentRow).numberFormat = [["#,##0;(#,##0)"]];
+    }
+    currentRow += 2;
+    
+    // Debt section
+    if (modelData.hasDebt || modelData.acquisitionLTV > 0) {
+      // Debt header
+      sheet.getRange("A" + currentRow).values = [["Debt"]];
+      sheet.getRange("A" + currentRow).format.font.bold = true;
+      sheet.getRange("A" + currentRow).format.fill.color = "#5FB7B8";
+      sheet.getRange("A" + currentRow).format.font.color = "white";
+      sheet.getRange("A" + currentRow).format.font.name = "Times New Roman";
+      
+      const debtHeaderRange = sheet.getRangeByIndexes(currentRow - 1, 1, 1, totalPeriods);
+      debtHeaderRange.format.fill.color = "#5FB7B8";
+      currentRow++;
+      
+      // Debt drawn
+      sheet.getRange("A" + currentRow).values = [["Debt drawn"]];
+      sheet.getRange("A" + currentRow).format.font.name = "Times New Roman";
+      const debtAmount = modelData.dealValue * (modelData.acquisitionLTV / 100);
+      sheet.getRange("B" + currentRow).values = [[debtAmount]];
+      sheet.getRange("B" + currentRow).numberFormat = [["#,##0"]];
+      currentRow++;
+      
+      // Debt upfront costs
+      sheet.getRange("A" + currentRow).values = [["Debt upfront costs"]];
+      sheet.getRange("A" + currentRow).format.font.name = "Times New Roman";
+      const debtCosts = debtAmount * 0.01; // 1% issuance fee
+      sheet.getRange("B" + currentRow).values = [[-debtCosts]];
+      sheet.getRange("B" + currentRow).numberFormat = [["(#,##0)"]];
+      sheet.getRange("B" + currentRow).format.font.color = "red";
+      currentRow++;
+      
+      // Interest Expense
+      sheet.getRange("A" + currentRow).values = [["Interest Expense"]];
+      sheet.getRange("A" + currentRow).format.font.name = "Times New Roman";
+      
+      // Monthly interest payments
+      const monthlyInterest = debtAmount * 0.055 / 12; // 5.5% annual rate
+      for (let period = 2; period <= totalPeriods; period++) {
+        const col = String.fromCharCode(65 + period);
+        sheet.getRange(col + currentRow).values = [[-monthlyInterest]];
+        sheet.getRange(col + currentRow).numberFormat = [["(#,##0)"]];
+        sheet.getRange(col + currentRow).format.font.color = "red";
+      }
+      currentRow++;
+      
+      // Debt repaid
+      sheet.getRange("A" + currentRow).values = [["Debt repaid (interest-only-loan)"]];
+      sheet.getRange("A" + currentRow).format.font.name = "Times New Roman";
+      sheet.getRange(lastPeriodCol + currentRow).values = [[-debtAmount]];
+      sheet.getRange(lastPeriodCol + currentRow).numberFormat = [["(#,##0)"]];
+      sheet.getRange(lastPeriodCol + currentRow).format.font.color = "red";
+      currentRow++;
+      
+      // Levered Cashflows
+      currentRow++;
+      sheet.getRange("A" + currentRow).values = [["Levered Cashflows"]];
+      sheet.getRange("A" + currentRow).format.font.bold = true;
+      sheet.getRange("A" + currentRow).format.fill.color = "#5FB7B8";
+      sheet.getRange("A" + currentRow).format.font.color = "white";
+      sheet.getRange("A" + currentRow).format.font.name = "Times New Roman";
+      
+      const leveredHeaderRange = sheet.getRangeByIndexes(currentRow - 1, 1, 1, totalPeriods);
+      leveredHeaderRange.format.fill.color = "#5FB7B8";
+      currentRow++;
+      
+      // Calculate levered cashflows
+      for (let period = 1; period <= totalPeriods; period++) {
+        const col = String.fromCharCode(65 + period);
+        sheet.getRange(col + currentRow).formulas = [[`=${col}${unleveredRow}+SUM(${col}${currentRow-5}:${col}${currentRow-2})`]];
+        sheet.getRange(col + currentRow).numberFormat = [["#,##0;(#,##0)"]];
+      }
+      currentRow += 2;
+      
+      // Equity section
+      sheet.getRange("A" + currentRow).values = [["Equity contributed"]];
+      sheet.getRange("A" + currentRow).format.font.name = "Times New Roman";
+      const equityAmount = modelData.dealValue - debtAmount;
+      sheet.getRange("B" + currentRow).values = [[equityAmount]];
+      sheet.getRange("B" + currentRow).numberFormat = [["#,##0"]];
+      currentRow++;
+      
+      sheet.getRange("A" + currentRow).values = [["Equity distributions"]];
+      sheet.getRange("A" + currentRow).format.font.name = "Times New Roman";
+      // Copy levered cashflows
+      for (let period = 1; period <= totalPeriods; period++) {
+        const col = String.fromCharCode(65 + period);
+        sheet.getRange(col + currentRow).formulas = [[`=${col}${currentRow - 3}`]];
+        sheet.getRange(col + currentRow).numberFormat = [["#,##0;(#,##0)"]];
+      }
+      currentRow += 2;
+      
+      // IRR Calculations
+      sheet.getRange("A" + currentRow).values = [["Unlevered IRR"]];
+      sheet.getRange("A" + currentRow).format.font.bold = true;
+      sheet.getRange("A" + currentRow).format.font.name = "Times New Roman";
+      sheet.getRange("B" + currentRow).formulas = [[`=IRR(B${unleveredRow}:${lastPeriodCol}${unleveredRow})`]];
+      sheet.getRange("B" + currentRow).numberFormat = [["0.0%"]];
+      currentRow++;
+      
+      sheet.getRange("A" + currentRow).values = [["Levered IRR"]];
+      sheet.getRange("A" + currentRow).format.font.bold = true;
+      sheet.getRange("A" + currentRow).format.font.name = "Times New Roman";
+      sheet.getRange("B" + currentRow).formulas = [[`=IRR(B${currentRow - 4}:${lastPeriodCol}${currentRow - 4})`]];
+      sheet.getRange("B" + currentRow).numberFormat = [["0.0%"]];
+      currentRow++;
+      
+      sheet.getRange("A" + currentRow).values = [["MOIC"]];
+      sheet.getRange("A" + currentRow).format.font.bold = true;
+      sheet.getRange("A" + currentRow).format.font.name = "Times New Roman";
+      const moicFormula = `=SUM(C${currentRow - 6}:${lastPeriodCol}${currentRow - 6})/B${currentRow - 6}`;
+      sheet.getRange("B" + currentRow).formulas = [[moicFormula]];
+      sheet.getRange("B" + currentRow).numberFormat = [["0.0x"]];
+    }
+    
+    // Format column widths
+    sheet.getRange("A:A").format.columnWidth = 200;
+    for (let period = 1; period <= totalPeriods; period++) {
+      const col = String.fromCharCode(65 + period);
+      sheet.getRange(`${col}:${col}`).format.columnWidth = 100;
+    }
+    
+    // Add borders to all data
+    const dataRange = sheet.getRange(`A1:${String.fromCharCode(65 + totalPeriods)}${currentRow}`);
+    dataRange.format.borders.getItem('EdgeTop').style = 'Thin';
+    dataRange.format.borders.getItem('EdgeBottom').style = 'Thin';
+    dataRange.format.borders.getItem('EdgeLeft').style = 'Thin';
+    dataRange.format.borders.getItem('EdgeRight').style = 'Thin';
+    dataRange.format.borders.getItem('InsideHorizontal').style = 'Thin';
+    dataRange.format.borders.getItem('InsideVertical').style = 'Thin';
+  }
+  
+  // Calculate periods between dates
+  calculatePeriods(startDate, endDate, periodType) {
+    const monthsDiff = (endDate.getFullYear() - startDate.getFullYear()) * 12 + 
+                      (endDate.getMonth() - startDate.getMonth()) + 1;
+    
+    if (periodType === 'monthly') {
+      return monthsDiff;
+    } else if (periodType === 'quarterly') {
+      return Math.ceil(monthsDiff / 3);
+    } else {
+      return Math.ceil(monthsDiff / 12);
+    }
   }
 
   async validateModel() {
