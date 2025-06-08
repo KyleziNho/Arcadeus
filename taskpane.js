@@ -1351,7 +1351,9 @@ class MAModelingAddin {
     sheet.getRange("A1").format.font.name = "Times New Roman";
     sheet.getRange("A1").format.font.size = 16;
     sheet.getRange("A1").format.horizontalAlignment = "Center";
-    sheet.getRangeByIndexes(0, 0, 1, totalPeriods + 1).merge();
+    // Merge title cells using a simpler approach
+    const titleRange = sheet.getRange(`A1:${String.fromCharCode(65 + totalPeriods)}1`);
+    titleRange.merge();
     
     let currentRow = 3;
     
@@ -1744,10 +1746,9 @@ class MAModelingAddin {
     
     let currentRow = 3;
     
-    // Period headers
-    const headerRange = sheet.getRangeByIndexes(currentRow - 1, 1, 1, totalPeriods);
-    const periods = [];
+    // Period headers using simpler approach
     for (let i = 1; i <= totalPeriods; i++) {
+      const col = String.fromCharCode(65 + i); // B, C, D, etc.
       const periodDate = new Date(startDate);
       if (modelData.modelPeriods === 'monthly') {
         periodDate.setMonth(periodDate.getMonth() + i - 1);
@@ -1756,12 +1757,12 @@ class MAModelingAddin {
       } else {
         periodDate.setFullYear(periodDate.getFullYear() + i - 1);
       }
-      periods.push(this.formatDateHeader(periodDate));
+      const dateStr = this.formatDateHeader(periodDate);
+      sheet.getRange(col + (currentRow - 1)).values = [[dateStr]];
+      sheet.getRange(col + (currentRow - 1)).format.font.bold = true;
+      sheet.getRange(col + (currentRow - 1)).format.horizontalAlignment = "Center";
+      sheet.getRange(col + (currentRow - 1)).format.font.name = "Times New Roman";
     }
-    headerRange.values = [periods];
-    headerRange.format.font.bold = true;
-    headerRange.format.horizontalAlignment = "Center";
-    headerRange.format.font.name = "Times New Roman";
     
     // Period numbers
     sheet.getRange("A" + currentRow).values = [["Period"]];
@@ -1833,7 +1834,8 @@ class MAModelingAddin {
     sheet.getRange("A" + currentRow).format.font.color = "white";
     sheet.getRange("A" + currentRow).format.font.name = "Times New Roman";
     
-    const unleveredHeaderRange = sheet.getRangeByIndexes(currentRow - 1, 1, 1, totalPeriods);
+    // Fill unlevered header background
+    const unleveredHeaderRange = sheet.getRange(`B${currentRow - 1}:${String.fromCharCode(65 + totalPeriods)}${currentRow - 1}`);
     unleveredHeaderRange.format.fill.color = "#5FB7B8";
     currentRow++;
     
@@ -1858,7 +1860,8 @@ class MAModelingAddin {
       sheet.getRange("A" + currentRow).format.font.color = "white";
       sheet.getRange("A" + currentRow).format.font.name = "Times New Roman";
       
-      const debtHeaderRange = sheet.getRangeByIndexes(currentRow - 1, 1, 1, totalPeriods);
+      // Fill debt header background  
+      const debtHeaderRange = sheet.getRange(`B${currentRow - 1}:${String.fromCharCode(65 + totalPeriods)}${currentRow - 1}`);
       debtHeaderRange.format.fill.color = "#5FB7B8";
       currentRow++;
       
@@ -1909,7 +1912,8 @@ class MAModelingAddin {
       sheet.getRange("A" + currentRow).format.font.color = "white";
       sheet.getRange("A" + currentRow).format.font.name = "Times New Roman";
       
-      const leveredHeaderRange = sheet.getRangeByIndexes(currentRow - 1, 1, 1, totalPeriods);
+      // Fill levered header background
+      const leveredHeaderRange = sheet.getRange(`B${currentRow - 1}:${String.fromCharCode(65 + totalPeriods)}${currentRow - 1}`);
       leveredHeaderRange.format.fill.color = "#5FB7B8";
       currentRow++;
       
