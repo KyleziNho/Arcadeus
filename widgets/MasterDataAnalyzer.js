@@ -1,7 +1,7 @@
 class MasterDataAnalyzer {
   constructor() {
     this.isInitialized = false;
-    this.standardizedData = null;
+    this._data = null;
   }
 
   initialize() {
@@ -16,27 +16,23 @@ class MasterDataAnalyzer {
     
     try {
       // Call GPT-4 to create comprehensive standardized analysis
-      const standardizedData = await this.callMasterAnalysisAI(fileContents);
+      let result = await this.callMasterAnalysisAI(fileContents);
       
-      if (!standardizedData) {
+      if (!result) {
         console.log('🔍 AI analysis failed, using fallback parsing...');
-        const fallbackData = this.createFallbackStandardizedData(fileContents);
-        this.standardizedData = fallbackData;
-        return fallbackData;
+        result = this.createFallbackStandardizedData(fileContents);
       }
       
-      // Store the standardized data for other extractors to use
-      if (standardizedData) {
-        this.standardizedData = standardizedData;
-      }
+      // Store the result
+      this._data = result;
       
-      console.log('🔍 Master analysis completed:', standardizedData);
-      return this.standardizedData;
+      console.log('🔍 Master analysis completed:', result);
+      return result;
       
     } catch (error) {
       console.error('Error in master analysis:', error);
       const fallbackData = this.createFallbackStandardizedData(fileContents);
-      this.standardizedData = fallbackData;
+      this._data = fallbackData;
       return fallbackData;
     }
   }
@@ -71,16 +67,23 @@ class MasterDataAnalyzer {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json'
         },
         body: JSON.stringify(requestBody)
       });
       
       console.log('🤖 API response status:', response.status);
+      console.log('🤖 API response headers:', response.headers);
       
       if (!response.ok) {
-        const errorText = await response.text();
+        let errorText;
+        try {
+          errorText = await response.text();
+        } catch (e) {
+          errorText = 'Could not read error response';
+        }
         console.error('🤖 API error response:', errorText);
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
       }
       
       const data = await response.json();
@@ -220,19 +223,29 @@ RETURN ONLY THE JSON STRUCTURE - NO OTHER TEXT.`;
   // Create fallback standardized data when AI fails
   createFallbackStandardizedData(fileContents) {
     console.log('🔍 Creating fallback standardized data...');
+    console.log('🔍 File contents length:', fileContents ? fileContents.length : 0);
     
     // Basic parsing of file contents to extract what we can
-    const allText = fileContents.map(f => f.content).join(' ').toLowerCase();
+    let allText = '';
+    let companyName = 'Target Company';
+    let dealValue = 50000000;
+    let currency = 'USD';
     
-    // Try to extract basic information
-    const companyName = this.extractCompanyName(fileContents);
-    const dealValue = this.extractDealValue(allText);
-    const currency = this.extractCurrency(allText);
+    try {
+      if (fileContents && fileContents.length > 0) {
+        allText = fileContents.map(f => f.content || '').join(' ').toLowerCase();
+        companyName = this.extractCompanyName(fileContents);
+        dealValue = this.extractDealValue(allText);
+        currency = this.extractCurrency(allText);
+      }
+    } catch (extractError) {
+      console.warn('🔍 Error in basic extraction:', extractError);
+    }
     
-    return {
+    const fallbackData = {
       companyOverview: {
-        companyName: companyName,
-        industry: "Technology", // Default assumption
+        companyName: companyName || 'Target Company',
+        industry: "Technology",
         businessDescription: "Business details to be confirmed",
         keyBusinessMetrics: "Revenue and growth metrics to be analyzed"
       },
@@ -307,86 +320,110 @@ RETURN ONLY THE JSON STRUCTURE - NO OTHER TEXT.`;
         dataSourceQuality: "low"
       }
     };
+    
+    console.log('🔍 Fallback data created:', fallbackData);
+    return fallbackData;
   }
 
   // Helper methods for fallback parsing
   extractCompanyName(fileContents) {
-    for (const file of fileContents) {
-      const filename = file.name.replace(/\.(csv|pdf|png|jpg|jpeg)$/i, '');
-      if (filename.length > 3 && !filename.toLowerCase().includes('data') && !filename.toLowerCase().includes('test')) {
-        return filename.replace(/[-_]/g, ' ');
+    try {
+      if (!fileContents || fileContents.length === 0) return 'Target Company';
+      
+      for (const file of fileContents) {
+        if (!file || !file.name) continue;
+        const filename = file.name.replace(/\.(csv|pdf|png|jpg|jpeg)$/i, '');
+        if (filename.length > 3 && !filename.toLowerCase().includes('data') && !filename.toLowerCase().includes('test')) {
+          return filename.replace(/[-_]/g, ' ');
+        }
       }
+    } catch (error) {
+      console.warn('Error extracting company name:', error);
     }
     return 'Target Company';
   }
 
   extractDealValue(text) {
-    const valuePatterns = [
-      /deal value[^0-9]*([0-9,]+(?:\.[0-9]+)?)\s*(?:million|billion|m|b)?/gi,
-      /\$\s*([0-9,]+(?:\.[0-9]+)?)\s*(?:million|billion|m|b)?/gi
-    ];
-    
-    for (const pattern of valuePatterns) {
-      const match = text.match(pattern);
-      if (match) {
-        let value = parseFloat(match[1].replace(/,/g, ''));
-        if (text.includes('billion') || text.includes(' b')) {
-          value *= 1000000000;
-        } else if (text.includes('million') || text.includes(' m')) {
-          value *= 1000000;
+    try {
+      if (!text || typeof text !== 'string') return 50000000;
+      
+      const valuePatterns = [
+        /deal value[^0-9]*([0-9,]+(?:\.[0-9]+)?)\s*(?:million|billion|m|b)?/gi,
+        /\$\s*([0-9,]+(?:\.[0-9]+)?)\s*(?:million|billion|m|b)?/gi
+      ];
+      
+      for (const pattern of valuePatterns) {
+        const match = text.match(pattern);
+        if (match && match[1]) {
+          let value = parseFloat(match[1].replace(/,/g, ''));
+          if (!isNaN(value)) {
+            if (text.includes('billion') || text.includes(' b')) {
+              value *= 1000000000;
+            } else if (text.includes('million') || text.includes(' m')) {
+              value *= 1000000;
+            }
+            if (value >= 1000000) return value;
+          }
         }
-        if (value >= 1000000) return value;
       }
+    } catch (error) {
+      console.warn('Error extracting deal value:', error);
     }
     return 50000000; // Default $50M
   }
 
   extractCurrency(text) {
-    if (text.includes('€') || text.includes('eur')) return 'EUR';
-    if (text.includes('£') || text.includes('gbp')) return 'GBP';
-    if (text.includes('¥') || text.includes('jpy')) return 'JPY';
+    try {
+      if (!text || typeof text !== 'string') return 'USD';
+      const lowerText = text.toLowerCase();
+      if (lowerText.includes('€') || lowerText.includes('eur')) return 'EUR';
+      if (lowerText.includes('£') || lowerText.includes('gbp')) return 'GBP';
+      if (lowerText.includes('¥') || lowerText.includes('jpy')) return 'JPY';
+    } catch (error) {
+      console.warn('Error extracting currency:', error);
+    }
     return 'USD';
   }
 
   // Get the standardized data for other extractors to use
   getStandardizedData() {
-    return this.standardizedData;
+    return this._data;
   }
 
   // Check if standardized data is available
   hasStandardizedData() {
-    return this.standardizedData !== null;
+    return this._data !== null;
   }
 
   // Clear standardized data (for new file uploads)
   clearStandardizedData() {
-    this.standardizedData = null;
+    this._data = null;
   }
 
   // Get specific section of standardized data
   getSection(sectionName) {
-    if (!this.standardizedData) return null;
-    return this.standardizedData[sectionName] || null;
+    if (!this._data) return null;
+    return this._data[sectionName] || null;
   }
 
   // Get data quality information
   getDataQuality() {
-    if (!this.standardizedData || !this.standardizedData.dataQuality) {
+    if (!this._data || !this._data.dataQuality) {
       return {
         overallConfidence: 0.3,
         dataSourceQuality: 'low'
       };
     }
-    return this.standardizedData.dataQuality;
+    return this._data.dataQuality;
   }
 
   // Create summary for user feedback
   getAnalysisSummary() {
-    if (!this.standardizedData) return null;
+    if (!this._data) return null;
     
     const quality = this.getDataQuality();
-    const company = this.standardizedData.companyOverview || {};
-    const transaction = this.standardizedData.transactionDetails || {};
+    const company = this._data.companyOverview || {};
+    const transaction = this._data.transactionDetails || {};
     
     return {
       title: 'Master Analysis Complete',
