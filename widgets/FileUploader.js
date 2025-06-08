@@ -357,17 +357,23 @@ class FileUploader {
       let standardizedData = null;
       if (window.masterDataAnalyzer) {
         console.log('🤖 Stage 1: Running master AI analysis...');
+        console.log('🤖 MasterDataAnalyzer found:', !!window.masterDataAnalyzer);
         this.showUploadMessage('Stage 1: AI analyzing documents and creating standardized data...', 'info');
         
-        standardizedData = await window.masterDataAnalyzer.analyzeAndStandardizeData(fileContents);
-        
-        if (standardizedData) {
-          console.log('🤖 Master analysis completed successfully');
-          const summary = window.masterDataAnalyzer.getAnalysisSummary();
-          this.showUploadMessage(`Master analysis complete for ${summary.summary.company} (${summary.summary.confidence} confidence)`, 'success');
-        } else {
-          console.log('🤖 Master analysis failed, using fallbacks');
-          this.showUploadMessage('Master analysis failed, using basic extraction...', 'error');
+        try {
+          standardizedData = await window.masterDataAnalyzer.analyzeAndStandardizeData(fileContents);
+          console.log('🤖 Master analysis result:', standardizedData);
+          
+          if (standardizedData) {
+            console.log('🤖 Master analysis completed successfully');
+            this.showUploadMessage('Master analysis completed successfully!', 'success');
+          } else {
+            console.log('🤖 Master analysis returned null');
+            this.showUploadMessage('Master analysis failed, using fallbacks...', 'error');
+          }
+        } catch (masterError) {
+          console.error('🤖 Master analysis error:', masterError);
+          this.showUploadMessage('Master analysis error: ' + masterError.message, 'error');
         }
       } else {
         console.log('🤖 MasterDataAnalyzer not available');
@@ -381,23 +387,41 @@ class FileUploader {
       // Extract high-level parameters using standardized data
       if (window.highLevelParametersExtractor) {
         console.log('🤖 Extracting high-level parameters from standardized data...');
-        const hlParameters = await window.highLevelParametersExtractor.extractParameters(standardizedData);
-        
-        if (hlParameters) {
-          console.log('🤖 Applying high-level parameters...');
-          await window.highLevelParametersExtractor.applyParameters(hlParameters);
+        try {
+          const hlParameters = await window.highLevelParametersExtractor.extractParameters(standardizedData);
+          
+          if (hlParameters) {
+            console.log('🤖 Applying high-level parameters...');
+            await window.highLevelParametersExtractor.applyParameters(hlParameters);
+            console.log('🤖 High-level parameters applied successfully');
+          } else {
+            console.log('🤖 No high-level parameters extracted');
+          }
+        } catch (hlError) {
+          console.error('🤖 High-level parameters error:', hlError);
         }
+      } else {
+        console.log('🤖 HighLevelParametersExtractor not available');
       }
       
       // Extract deal assumptions using standardized data
       if (window.dealAssumptionsExtractor) {
         console.log('🤖 Extracting deal assumptions from standardized data...');
-        const dealAssumptions = await window.dealAssumptionsExtractor.extractDealAssumptions(standardizedData);
-        
-        if (dealAssumptions) {
-          console.log('🤖 Applying deal assumptions...');
-          await window.dealAssumptionsExtractor.applyDealAssumptions(dealAssumptions);
+        try {
+          const dealAssumptions = await window.dealAssumptionsExtractor.extractDealAssumptions(standardizedData);
+          
+          if (dealAssumptions) {
+            console.log('🤖 Applying deal assumptions...');
+            await window.dealAssumptionsExtractor.applyDealAssumptions(dealAssumptions);
+            console.log('🤖 Deal assumptions applied successfully');
+          } else {
+            console.log('🤖 No deal assumptions extracted');
+          }
+        } catch (dealError) {
+          console.error('🤖 Deal assumptions error:', dealError);
         }
+      } else {
+        console.log('🤖 DealAssumptionsExtractor not available');
       }
       
       // Success message

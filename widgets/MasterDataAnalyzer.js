@@ -20,18 +20,24 @@ class MasterDataAnalyzer {
       
       if (!standardizedData) {
         console.log('🔍 AI analysis failed, using fallback parsing...');
-        standardizedData = this.createFallbackStandardizedData(fileContents);
+        const fallbackData = this.createFallbackStandardizedData(fileContents);
+        this.standardizedData = fallbackData;
+        return fallbackData;
       }
       
       // Store the standardized data for other extractors to use
-      this.standardizedData = standardizedData;
+      if (standardizedData) {
+        this.standardizedData = standardizedData;
+      }
       
       console.log('🔍 Master analysis completed:', standardizedData);
-      return standardizedData;
+      return this.standardizedData;
       
     } catch (error) {
       console.error('Error in master analysis:', error);
-      return this.createFallbackStandardizedData(fileContents);
+      const fallbackData = this.createFallbackStandardizedData(fileContents);
+      this.standardizedData = fallbackData;
+      return fallbackData;
     }
   }
 
@@ -39,6 +45,7 @@ class MasterDataAnalyzer {
   async callMasterAnalysisAI(fileContents) {
     try {
       console.log('🤖 Calling GPT-4 for master M&A analysis...');
+      console.log('🤖 File contents to analyze:', fileContents.length, 'files');
       
       // Check if we're running locally or on Netlify
       const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
@@ -49,34 +56,49 @@ class MasterDataAnalyzer {
         `=== FILE: ${file.name} ===\n${file.content}\n`
       ).join('\n');
       
+      console.log('🤖 Sending request to:', apiUrl);
+      
+      const requestBody = {
+        message: 'Analyze these M&A documents and create standardized data table.',
+        fileContents: fileContents.map(f => `File: ${f.name}\n${f.content}`),
+        autoFillMode: true,
+        batchType: 'master_analysis'
+      };
+      
+      console.log('🤖 Request body prepared, calling API...');
+      
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          message: this.createMasterAnalysisPrompt(formattedContents),
-          autoFillMode: true,
-          batchType: 'master_analysis'
-        })
+        body: JSON.stringify(requestBody)
       });
       
+      console.log('🤖 API response status:', response.status);
+      
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error('🤖 API error response:', errorText);
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       
       const data = await response.json();
+      console.log('🤖 API response data:', data);
       
       if (data.error) {
+        console.error('🤖 API returned error:', data.error);
         throw new Error(data.error);
       }
       
       // Parse the standardized data from AI response
       if (data.extractedData && data.extractedData.standardizedData) {
+        console.log('🤖 Successfully extracted standardized data');
         return data.extractedData.standardizedData;
+      } else {
+        console.log('🤖 No standardized data in response, using fallback');
+        return null;
       }
-      
-      return null;
       
     } catch (error) {
       console.error('Master analysis AI call failed:', error);
