@@ -15,23 +15,8 @@ class SimpleAutofill {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          message: `Extract financial data from this file and return as JSON:
-
-File: ${fileName}
-Content: ${fileContent}
-
-Extract these exact fields and return ONLY valid JSON:
-{
-  "currency": "currency found or null",
-  "dealName": "company name or null", 
-  "dealValue": number_or_null,
-  "transactionFee": percentage_number_or_null,
-  "dealLTV": percentage_number_or_null,
-  "equityContribution": number_or_null,
-  "debtFinancing": number_or_null,
-  "projectStartDate": "YYYY-MM-DD or null",
-  "projectEndDate": "YYYY-MM-DD or null"
-}`,
+          message: "Extract financial data from uploaded file",
+          fileContents: [`File: ${fileName}\nContent: ${fileContent}`],
           autoFillMode: true,
           batchType: 'basic'
         })
