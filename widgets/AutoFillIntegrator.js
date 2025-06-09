@@ -287,81 +287,85 @@ class AutoFillIntegrator {
     const extractionResults = {};
     const allExtractedData = {};
     
-    // Extract from each section concurrently for better performance
-    const extractionPromises = [];
+    // Extract from each section SEQUENTIALLY to avoid API overload
+    console.log('📊 Starting sequential extraction to avoid API overload...');
     
     if (this.highLevelExtractor) {
       console.log('🎯 Starting high-level parameters extraction...');
-      extractionPromises.push(
-        this.highLevelExtractor.extract(filesWithContent)
-          .then(data => {
-            console.log('🎯 High-level parameters extraction completed:', data);
-            extractionResults.highLevelParameters = data;
-            Object.assign(allExtractedData, data);
-            this.showProgress('High-level parameters extracted');
-          })
-      );
+      try {
+        const data = await this.highLevelExtractor.extract(filesWithContent);
+        console.log('🎯 High-level parameters extraction completed:', data);
+        extractionResults.highLevelParameters = data;
+        Object.assign(allExtractedData, data);
+        this.showProgress('High-level parameters extracted');
+      } catch (error) {
+        console.error('❌ High-level parameters extraction failed:', error);
+      }
     } else {
       console.warn('🎯 High-level parameters extractor not available');
     }
     
     if (this.dealAssumptionsExtractor) {
-      extractionPromises.push(
-        this.dealAssumptionsExtractor.extract(filesWithContent)
-          .then(data => {
-            extractionResults.dealAssumptions = data;
-            Object.assign(allExtractedData, data);
-            this.showProgress('Deal assumptions extracted');
-          })
-      );
+      console.log('💼 Starting deal assumptions extraction...');
+      try {
+        const data = await this.dealAssumptionsExtractor.extract(filesWithContent);
+        extractionResults.dealAssumptions = data;
+        Object.assign(allExtractedData, data);
+        this.showProgress('Deal assumptions extracted');
+      } catch (error) {
+        console.error('❌ Deal assumptions extraction failed:', error);
+      }
     }
     
     if (this.revenueItemsExtractor) {
-      extractionPromises.push(
-        this.revenueItemsExtractor.extract(filesWithContent)
-          .then(data => {
-            extractionResults.revenueItems = data;
-            Object.assign(allExtractedData, data);
-            this.showProgress('Revenue items extracted');
-          })
-      );
+      console.log('💰 Starting revenue items extraction...');
+      try {
+        const data = await this.revenueItemsExtractor.extract(filesWithContent);
+        extractionResults.revenueItems = data;
+        Object.assign(allExtractedData, data);
+        this.showProgress('Revenue items extracted');
+      } catch (error) {
+        console.error('❌ Revenue items extraction failed:', error);
+      }
     }
     
     if (this.costItemsExtractor) {
-      extractionPromises.push(
-        this.costItemsExtractor.extract(filesWithContent)
-          .then(data => {
-            extractionResults.costItems = data;
-            Object.assign(allExtractedData, data);
-            this.showProgress('Cost items extracted');
-          })
-      );
+      console.log('💸 Starting cost items extraction...');
+      try {
+        const data = await this.costItemsExtractor.extract(filesWithContent);
+        extractionResults.costItems = data;
+        Object.assign(allExtractedData, data);
+        this.showProgress('Cost items extracted');
+      } catch (error) {
+        console.error('❌ Cost items extraction failed:', error);
+      }
     }
     
     if (this.debtModelExtractor) {
-      extractionPromises.push(
-        this.debtModelExtractor.extract(filesWithContent)
-          .then(data => {
-            extractionResults.debtModel = data;
-            Object.assign(allExtractedData, data);
-            this.showProgress('Debt model extracted');
-          })
-      );
+      console.log('🏦 Starting debt model extraction...');
+      try {
+        const data = await this.debtModelExtractor.extract(filesWithContent);
+        extractionResults.debtModel = data;
+        Object.assign(allExtractedData, data);
+        this.showProgress('Debt model extracted');
+      } catch (error) {
+        console.error('❌ Debt model extraction failed:', error);
+      }
     }
     
     if (this.exitAssumptionsExtractor) {
-      extractionPromises.push(
-        this.exitAssumptionsExtractor.extract(filesWithContent)
-          .then(data => {
-            extractionResults.exitAssumptions = data;
-            Object.assign(allExtractedData, data);
-            this.showProgress('Exit assumptions extracted');
-          })
-      );
+      console.log('🚪 Starting exit assumptions extraction...');
+      try {
+        const data = await this.exitAssumptionsExtractor.extract(filesWithContent);
+        extractionResults.exitAssumptions = data;
+        Object.assign(allExtractedData, data);
+        this.showProgress('Exit assumptions extracted');
+      } catch (error) {
+        console.error('❌ Exit assumptions extraction failed:', error);
+      }
     }
     
-    // Wait for all extractions to complete
-    await Promise.all(extractionPromises);
+    // All extractions now complete (sequential)
     
     const duration = Date.now() - startTime;
     console.log(`✅ All extractions completed in ${duration}ms`);

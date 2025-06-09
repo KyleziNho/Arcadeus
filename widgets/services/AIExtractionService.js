@@ -135,17 +135,12 @@ class AIExtractionService {
    */
   async callAIWithRetry(fileContents, strategy, retryCount = 0) {
     try {
+      // Use the same format that worked in our test
       const requestBody = {
-        message: 'Extract financial data from these documents',
-        fileContents: fileContents.map(f => `
-          File: ${f.metadata.filename}
-          Type: ${f.metadata.type}
-          Content: ${f.content}
-        `),
-        systemPrompt: strategy.systemPrompt,
-        temperature: strategy.temperature,
-        maxTokens: strategy.maxTokens,
-        autoFillMode: true
+        message: "Extract financial data from uploaded file",
+        fileContents: fileContents.map(f => `File: ${f.metadata.filename}\nContent: ${f.content}`),
+        autoFillMode: true,
+        batchType: 'basic'  // Use the working format from test
       };
 
       console.log('🤖 Sending request to AI API...');
