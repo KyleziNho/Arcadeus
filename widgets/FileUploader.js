@@ -127,12 +127,9 @@ class FileUploader {
       });
     }
 
-    // Auto Fill button handler
+    // Auto Fill button handler - disabled (handled by AutoFillIntegrator)
     if (autoFillBtn) {
-      autoFillBtn.addEventListener('click', () => {
-        console.log('🔥 AUTO FILL BUTTON CLICKED!');
-        this.processAutoFill();
-      });
+      console.log('ℹ️ AutoFill button found - will be handled by AutoFillIntegrator');
       autoFillBtn.disabled = true;
     }
 
@@ -181,10 +178,15 @@ class FileUploader {
       console.log('Files uploaded successfully');
       this.showUploadMessage(`Successfully uploaded ${validFiles.length} file(s). Ready for auto-fill!`, 'success');
       
-      // Enable auto-fill button
+      // Enable auto-fill button and notify AutoFillIntegrator
       const autoFillBtn = document.getElementById('autoFillBtn');
       if (autoFillBtn) {
         autoFillBtn.disabled = false;
+      }
+      
+      // Notify AutoFillIntegrator of file changes
+      if (window.autoFillIntegrator && window.autoFillIntegrator.onFilesChanged) {
+        window.autoFillIntegrator.onFilesChanged(this.mainUploadedFiles);
       }
     } else {
       console.log('No valid files to upload');
@@ -253,6 +255,11 @@ class FileUploader {
       if (autoFillBtn) {
         autoFillBtn.disabled = true;
       }
+    }
+    
+    // Notify AutoFillIntegrator of file changes
+    if (window.autoFillIntegrator && window.autoFillIntegrator.onFilesChanged) {
+      window.autoFillIntegrator.onFilesChanged(this.mainUploadedFiles);
     }
 
     this.showUploadMessage('File removed successfully.', 'info');

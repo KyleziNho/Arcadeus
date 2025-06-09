@@ -17,10 +17,33 @@
     <script src="widgets/ChatHandler.js"></script>
     <script src="widgets/DataManager.js"></script>
     <script src="widgets/UIController.js"></script>
-    <!-- AI Extraction Widgets -->
+    
+    <!-- Legacy AI Extraction -->
     <script src="widgets/MasterDataAnalyzer.js"></script>
     <script src="widgets/HighLevelParametersExtractor.js"></script>
     <script src="widgets/DealAssumptionsExtractor.js"></script>
+    
+    <!-- New AI Extraction System - Core Services -->
+    <script src="widgets/services/AIExtractionService.js"></script>
+    <script src="widgets/core/FileDropZone.js"></script>
+    <script src="widgets/core/DataStandardizer.js"></script>
+    <script src="widgets/core/FieldMappingEngine.js"></script>
+    <script src="widgets/core/ExtractionHistory.js"></script>
+    
+    <!-- New AI Extraction System - Extraction Widgets -->
+    <script src="widgets/extractors/HighLevelParametersExtractor.js"></script>
+    <script src="widgets/extractors/DealAssumptionsExtractor.js"></script>
+    <script src="widgets/extractors/RevenueItemsExtractor.js"></script>
+    <script src="widgets/extractors/CostItemsExtractor.js"></script>
+    <script src="widgets/extractors/DebtModelExtractor.js"></script>
+    <script src="widgets/extractors/ExitAssumptionsExtractor.js"></script>
+    
+    <!-- New AI Extraction System - UI Components -->
+    <script src="widgets/ui/ExtractionConfidenceIndicator.js"></script>
+    <script src="widgets/ui/ExtractionReviewModal.js"></script>
+    
+    <!-- New AI Extraction System - Integration -->
+    <script src="widgets/AutoFillIntegrator.js"></script>
     <!-- Main Application Script -->
     <script defer="defer" src="taskpane.js"></script>
 </head>

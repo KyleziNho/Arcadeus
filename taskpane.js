@@ -16,6 +16,9 @@ class MAModelingAddin {
     this.masterDataAnalyzer = null;
     this.highLevelParametersExtractor = null;
     this.dealAssumptionsExtractor = null;
+    
+    // New AI Extraction System
+    this.autoFillIntegrator = null;
 
     console.log('MAModelingAddin constructor called');
     
@@ -141,6 +144,14 @@ class MAModelingAddin {
       this.dealAssumptionsExtractor.initialize();
       window.dealAssumptionsExtractor = this.dealAssumptionsExtractor;
       console.log('✅ DealAssumptionsExtractor initialized');
+    }
+    
+    // Initialize New AI Extraction System
+    if (typeof AutoFillIntegrator !== 'undefined') {
+      this.autoFillIntegrator = new AutoFillIntegrator();
+      this.autoFillIntegrator.initialize();
+      window.autoFillIntegrator = this.autoFillIntegrator;
+      console.log('✅ AutoFillIntegrator initialized');
     }
     
     // Auto-load saved data
