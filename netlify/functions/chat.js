@@ -40,7 +40,8 @@ exports.handler = async (event, context) => {
       throw new Error('Invalid JSON in request body');
     }
 
-    const { message, excelContext, fileContents, autoFillMode, batchType, systemPrompt, temperature, maxTokens } = requestData;
+    const { message, excelContext, fileContents, autoFillMode, batchType } = requestData;
+    let { systemPrompt, temperature, maxTokens } = requestData;
     
     // Log the request structure for debugging
     console.log('📋 Request structure:', {
@@ -298,8 +299,8 @@ Document Content: ${documentContext}`;
           
         } else {
           // Fallback to original large prompt (legacy support)
-          maxTokens = 4000;
-          systemPrompt = `You are an expert financial analyst AI specialized in extracting data from M&A/PE documents and financial reports.
+          finalMaxTokens = 4000;
+          finalSystemPrompt = `You are an expert financial analyst AI specialized in extracting data from M&A/PE documents and financial reports.
 
 CRITICAL INSTRUCTIONS:
 1. Analyze ALL content from uploaded files
@@ -365,7 +366,7 @@ ${documentContext}`;
         }
       } else {
         // Regular chat mode
-        systemPrompt = `You are an AI assistant for Excel M&A modeling. Help with Excel commands and data analysis.`;
+        finalSystemPrompt = `You are an AI assistant for Excel M&A modeling. Help with Excel commands and data analysis.`;
       }
 
       try {
@@ -378,12 +379,12 @@ ${documentContext}`;
           body: JSON.stringify({
             model: 'gpt-4-turbo-preview',
             messages: [
-              { role: 'system', content: systemPrompt },
+              { role: 'system', content: finalSystemPrompt },
               { role: 'user', content: message }
             ],
             response_format: { type: "json_object" },
-            temperature: autoFillMode ? 0.3 : 0.7,
-            max_tokens: maxTokens
+            temperature: finalTemperature,
+            max_tokens: finalMaxTokens
           })
         });
 

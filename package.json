@@ -1,0 +1,16 @@
+{
+  "name": "excel-addin-hosting",
+  "version": "1.0.0",
+  "description": "M&A Excel Add-in with AI-powered autofill",
+  "main": "index.html",
+  "dependencies": {
+    "node-fetch": "^2.6.12"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": ["excel", "addin", "ma", "ai", "autofill"],
+  "author": "",
+  "license": "ISC"
+}
