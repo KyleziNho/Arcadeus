@@ -8,20 +8,64 @@ class SimpleAIReader {
     console.log('🔍 Starting document read test...');
     
     try {
-      // Step 1: Find uploaded files
+      // Step 1: Find uploaded files - DEBUG ALL POSSIBLE LOCATIONS
       console.log('📁 Step 1: Looking for uploaded files...');
       
+      // Debug all possible file storage locations
+      console.log('🔍 Debugging file storage locations:');
+      console.log('window.fileUploader exists:', !!window.fileUploader);
+      console.log('window.fileUploader?.uploadedFiles:', window.fileUploader?.uploadedFiles);
+      console.log('window.formHandler exists:', !!window.formHandler);
+      console.log('window.formHandler?.fileUploader:', window.formHandler?.fileUploader);
+      console.log('window.formHandler?.fileUploader?.uploadedFiles:', window.formHandler?.fileUploader?.uploadedFiles);
+      
+      // Check main file input directly
+      const mainFileInput = document.getElementById('mainFileInput');
+      console.log('mainFileInput exists:', !!mainFileInput);
+      console.log('mainFileInput.files:', mainFileInput?.files);
+      console.log('mainFileInput.files.length:', mainFileInput?.files?.length);
+      
+      // Check any other file inputs
+      const allFileInputs = document.querySelectorAll('input[type="file"]');
+      console.log('All file inputs found:', allFileInputs.length);
+      allFileInputs.forEach((input, i) => {
+        console.log(`File input ${i}:`, {
+          id: input.id,
+          files: input.files?.length || 0,
+          hasFiles: !!input.files?.length
+        });
+      });
+      
+      // Try to find files in any location
       let files = [];
-      if (window.fileUploader && window.fileUploader.uploadedFiles) {
+      let fileSource = 'none';
+      
+      if (window.fileUploader && window.fileUploader.uploadedFiles && window.fileUploader.uploadedFiles.length > 0) {
         files = window.fileUploader.uploadedFiles;
-        console.log('✅ Found files in fileUploader:', files.length);
+        fileSource = 'window.fileUploader.uploadedFiles';
+      } else if (window.formHandler?.fileUploader?.uploadedFiles?.length > 0) {
+        files = window.formHandler.fileUploader.uploadedFiles;
+        fileSource = 'window.formHandler.fileUploader.uploadedFiles';
+      } else if (mainFileInput?.files?.length > 0) {
+        files = Array.from(mainFileInput.files);
+        fileSource = 'mainFileInput.files';
       } else {
-        console.log('❌ No fileUploader found');
-        return;
+        // Check all file inputs
+        for (const input of allFileInputs) {
+          if (input.files && input.files.length > 0) {
+            files = Array.from(input.files);
+            fileSource = `file input #${input.id || 'unnamed'}`;
+            break;
+          }
+        }
       }
-
+      
+      console.log('📁 Files found:', files.length);
+      console.log('📁 File source:', fileSource);
+      
       if (files.length === 0) {
-        console.log('❌ No files uploaded');
+        console.log('❌ No files found in any location');
+        console.log('💡 Please upload a file and try again');
         return;
       }
 
