@@ -40,7 +40,10 @@ class SimpleAIReader {
       let files = [];
       let fileSource = 'none';
       
-      if (window.fileUploader && window.fileUploader.uploadedFiles && window.fileUploader.uploadedFiles.length > 0) {
+      if (window.fileUploader && window.fileUploader.mainUploadedFiles && window.fileUploader.mainUploadedFiles.length > 0) {
+        files = window.fileUploader.mainUploadedFiles;
+        fileSource = 'window.fileUploader.mainUploadedFiles';
+      } else if (window.fileUploader && window.fileUploader.uploadedFiles && window.fileUploader.uploadedFiles.length > 0) {
         files = window.fileUploader.uploadedFiles;
         fileSource = 'window.fileUploader.uploadedFiles';
       } else if (window.formHandler?.fileUploader?.uploadedFiles?.length > 0) {
