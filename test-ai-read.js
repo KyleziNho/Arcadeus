@@ -63,9 +63,44 @@ class SimpleAIReader {
       console.log('📁 Files found:', files.length);
       console.log('📁 File source:', fileSource);
       
+      // Check the uploaded files display area
+      const uploadedFilesDisplay = document.getElementById('uploadedFilesDisplay');
+      console.log('uploadedFilesDisplay exists:', !!uploadedFilesDisplay);
+      console.log('uploadedFilesDisplay style.display:', uploadedFilesDisplay?.style.display);
+      
+      if (uploadedFilesDisplay) {
+        const fileElements = uploadedFilesDisplay.querySelectorAll('.uploaded-file, .file-item, [data-file]');
+        console.log('File elements in display:', fileElements.length);
+        fileElements.forEach((el, i) => {
+          console.log(`File element ${i}:`, {
+            className: el.className,
+            textContent: el.textContent?.trim().substring(0, 100),
+            dataset: el.dataset
+          });
+        });
+      }
+      
+      // Check if FileUploader has methods to get files
+      console.log('FileUploader methods:', Object.getOwnPropertyNames(window.fileUploader || {}));
+      
+      // Try to get files from FileUploader directly
+      if (window.fileUploader) {
+        console.log('FileUploader.uploadedFiles:', window.fileUploader.uploadedFiles);
+        console.log('FileUploader properties:', Object.keys(window.fileUploader));
+        
+        // Check if there are any other properties that might contain files
+        for (const prop in window.fileUploader) {
+          const value = window.fileUploader[prop];
+          if (Array.isArray(value) && value.length > 0) {
+            console.log(`FileUploader.${prop}:`, value);
+          }
+        }
+      }
+      
       if (files.length === 0) {
         console.log('❌ No files found in any location');
-        console.log('💡 Please upload a file and try again');
+        console.log('💡 The file appears to be uploaded (visible in UI) but not accessible in code');
+        console.log('💡 This suggests the file processing is incomplete or stored differently');
         return;
       }
 
