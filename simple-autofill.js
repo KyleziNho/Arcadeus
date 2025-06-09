@@ -66,7 +66,7 @@ Extract these exact fields and return ONLY valid JSON:
       
     } catch (error) {
       console.error('❌ Autofill failed:', error);
-      alert(`Autofill failed: ${error.message}`);
+      this.showNotification(`Autofill failed: ${error.message}`, 'error');
     }
   }
 
@@ -90,7 +90,7 @@ Extract these exact fields and return ONLY valid JSON:
     if (data.equityContribution) this.setField('equity-contribution', data.equityContribution);
     if (data.debtFinancing) this.setField('debt-financing', data.debtFinancing);
     
-    alert('✅ Autofill completed! Check the form fields.');
+    this.showNotification('✅ Autofill completed! Check the form fields.', 'success');
   }
 
   setField(fieldId, value) {
@@ -105,6 +105,38 @@ Extract these exact fields and return ONLY valid JSON:
     } else {
       console.warn(`⚠️ Field not found or value is null: ${fieldId} = ${value}`);
     }
+  }
+
+  // Show notification without using alert (Excel add-in compatible)
+  showNotification(message, type = 'info') {
+    console.log(`📢 ${type.toUpperCase()}: ${message}`);
+    
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 15px 20px;
+      border-radius: 6px;
+      color: white;
+      font-size: 14px;
+      font-weight: 500;
+      z-index: 10000;
+      max-width: 400px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      background: ${type === 'success' ? '#4CAF50' : type === 'error' ? '#f44336' : '#2196F3'};
+    `;
+    notification.textContent = message;
+    
+    document.body.appendChild(notification);
+    
+    // Remove after 5 seconds
+    setTimeout(() => {
+      if (notification.parentNode) {
+        notification.parentNode.removeChild(notification);
+      }
+    }, 5000);
   }
 }
 
@@ -144,7 +176,7 @@ function addSimpleAutofillButton() {
       // Get uploaded files
       const fileInput = document.querySelector('input[type="file"]');
       if (!fileInput || !fileInput.files.length) {
-        alert('Please upload a file first');
+        window.simpleAutofill.showNotification('Please upload a file first', 'error');
         return;
       }
       
@@ -156,7 +188,7 @@ function addSimpleAutofillButton() {
         const text = await file.text();
         await window.simpleAutofill.autofillFromFile(text, file.name);
       } catch (error) {
-        alert(`Error: ${error.message}`);
+        window.simpleAutofill.showNotification(`Error: ${error.message}`, 'error');
       } finally {
         button.innerHTML = '🤖 Simple AI Autofill';
         button.disabled = false;
