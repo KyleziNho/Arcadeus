@@ -38,7 +38,7 @@ class AIExtractionService {
       const extractionStrategy = this.getExtractionStrategy(extractionType);
       
       // Call AI with retry logic
-      const response = await this.callAIWithRetry(fileContents, extractionStrategy);
+      const response = await this.callAIWithRetry(fileContents, extractionStrategy, extractionType);
       
       // Process and validate response
       const extractedData = this.processAIResponse(response, extractionType);
@@ -133,15 +133,23 @@ class AIExtractionService {
   /**
    * Call AI API with retry logic
    */
-  async callAIWithRetry(fileContents, strategy, retryCount = 0) {
+  async callAIWithRetry(fileContents, strategy, extractionType, retryCount = 0) {
     try {
-      // Use the same format that worked in our test
+      // Use specific batchType based on extraction type
+      let batchType = 'basic';
+      if (extractionType === 'revenue') batchType = 'revenue';
+      else if (extractionType === 'costs') batchType = 'cost';
+      else if (extractionType === 'exitAssumptions') batchType = 'exit';
+      else if (extractionType === 'comprehensive') batchType = 'master_analysis';
+      
       const requestBody = {
         message: "Extract financial data from uploaded file",
         fileContents: fileContents.map(f => `File: ${f.metadata.filename}\nContent: ${f.content}`),
         autoFillMode: true,
-        batchType: 'basic'  // Use the working format from test
+        batchType: batchType
       };
+      
+      console.log(`🤖 Using batchType: ${batchType} for ${extractionType} extraction`);
 
       console.log('🤖 Sending request to AI API...');
       
@@ -172,7 +180,7 @@ class AIExtractionService {
       if (retryCount < this.maxRetries) {
         console.log(`🤖 Retrying in ${this.retryDelay}ms...`);
         await this.sleep(this.retryDelay * (retryCount + 1));
-        return this.callAIWithRetry(fileContents, strategy, retryCount + 1);
+        return this.callAIWithRetry(fileContents, strategy, extractionType, retryCount + 1);
       }
       
       throw error;
