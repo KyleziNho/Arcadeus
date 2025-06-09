@@ -93,38 +93,86 @@ class AutoFillIntegrator {
       mappingEngine: this.fieldMappingEngine
     };
     
-    // Initialize each extraction widget
-    if (window.HighLevelParametersExtractor) {
-      this.highLevelExtractor = new window.HighLevelParametersExtractor();
-      this.highLevelExtractor.initialize(services);
+    console.log('🧩 Services available:', {
+      extractionService: !!this.aiExtractionService,
+      standardizer: !!this.dataStandardizer,
+      mappingEngine: !!this.fieldMappingEngine
+    });
+    
+    // Initialize each extraction widget with error handling
+    try {
+      if (window.HighLevelParametersExtractor) {
+        this.highLevelExtractor = new window.HighLevelParametersExtractor();
+        this.highLevelExtractor.initialize(services);
+        console.log('✅ HighLevelParametersExtractor ready, extract method:', typeof this.highLevelExtractor.extract);
+      } else {
+        console.warn('❌ HighLevelParametersExtractor not found on window');
+      }
+    } catch (error) {
+      console.error('❌ Error initializing HighLevelParametersExtractor:', error);
     }
     
-    if (window.DealAssumptionsExtractor) {
-      this.dealAssumptionsExtractor = new window.DealAssumptionsExtractor();
-      this.dealAssumptionsExtractor.initialize(services);
+    try {
+      if (window.DealAssumptionsExtractor) {
+        this.dealAssumptionsExtractor = new window.DealAssumptionsExtractor();
+        this.dealAssumptionsExtractor.initialize(services);
+        console.log('✅ DealAssumptionsExtractor ready, extract method:', typeof this.dealAssumptionsExtractor.extract);
+      } else {
+        console.warn('❌ DealAssumptionsExtractor not found on window');
+      }
+    } catch (error) {
+      console.error('❌ Error initializing DealAssumptionsExtractor:', error);
     }
     
-    if (window.RevenueItemsExtractor) {
-      this.revenueItemsExtractor = new window.RevenueItemsExtractor();
-      this.revenueItemsExtractor.initialize(services);
+    try {
+      if (window.RevenueItemsExtractor) {
+        this.revenueItemsExtractor = new window.RevenueItemsExtractor();
+        this.revenueItemsExtractor.initialize(services);
+        console.log('✅ RevenueItemsExtractor ready, extract method:', typeof this.revenueItemsExtractor.extract);
+      } else {
+        console.warn('❌ RevenueItemsExtractor not found on window');
+      }
+    } catch (error) {
+      console.error('❌ Error initializing RevenueItemsExtractor:', error);
     }
     
-    if (window.CostItemsExtractor) {
-      this.costItemsExtractor = new window.CostItemsExtractor();
-      this.costItemsExtractor.initialize(services);
+    try {
+      if (window.CostItemsExtractor) {
+        this.costItemsExtractor = new window.CostItemsExtractor();
+        this.costItemsExtractor.initialize(services);
+        console.log('✅ CostItemsExtractor ready, extract method:', typeof this.costItemsExtractor.extract);
+      } else {
+        console.warn('❌ CostItemsExtractor not found on window');
+      }
+    } catch (error) {
+      console.error('❌ Error initializing CostItemsExtractor:', error);
     }
     
-    if (window.DebtModelExtractor) {
-      this.debtModelExtractor = new window.DebtModelExtractor();
-      this.debtModelExtractor.initialize(services);
+    try {
+      if (window.DebtModelExtractor) {
+        this.debtModelExtractor = new window.DebtModelExtractor();
+        this.debtModelExtractor.initialize(services);
+        console.log('✅ DebtModelExtractor ready, extract method:', typeof this.debtModelExtractor.extract);
+      } else {
+        console.warn('❌ DebtModelExtractor not found on window');
+      }
+    } catch (error) {
+      console.error('❌ Error initializing DebtModelExtractor:', error);
     }
     
-    if (window.ExitAssumptionsExtractor) {
-      this.exitAssumptionsExtractor = new window.ExitAssumptionsExtractor();
-      this.exitAssumptionsExtractor.initialize(services);
+    try {
+      if (window.ExitAssumptionsExtractor) {
+        this.exitAssumptionsExtractor = new window.ExitAssumptionsExtractor();
+        this.exitAssumptionsExtractor.initialize(services);
+        console.log('✅ ExitAssumptionsExtractor ready, extract method:', typeof this.exitAssumptionsExtractor.extract);
+      } else {
+        console.warn('❌ ExitAssumptionsExtractor not found on window');
+      }
+    } catch (error) {
+      console.error('❌ Error initializing ExitAssumptionsExtractor:', error);
     }
     
-    console.log('✅ All extraction widgets initialized');
+    console.log('✅ All extraction widgets initialization completed');
   }
 
   async initializeUIComponents() {
@@ -235,14 +283,22 @@ class AutoFillIntegrator {
     const extractionPromises = [];
     
     if (this.highLevelExtractor) {
+      console.log('🎯 Starting high-level parameters extraction...');
       extractionPromises.push(
         this.highLevelExtractor.extract(filesWithContent)
           .then(data => {
+            console.log('🎯 High-level parameters extraction completed:', data);
             extractionResults.highLevelParameters = data;
             Object.assign(allExtractedData, data);
             this.showProgress('High-level parameters extracted');
           })
+          .catch(error => {
+            console.error('🎯 High-level parameters extraction failed:', error);
+            this.showProgress('High-level parameters extraction failed');
+          })
       );
+    } else {
+      console.warn('🎯 High-level parameters extractor not available');
     }
     
     if (this.dealAssumptionsExtractor) {

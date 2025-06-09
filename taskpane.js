@@ -124,7 +124,7 @@ class MAModelingAddin {
       console.log('✅ UIController initialized');
     }
     
-    // Initialize AI Extraction widgets
+    // Initialize AI Extraction widgets (legacy support)
     if (typeof MasterDataAnalyzer !== 'undefined') {
       this.masterDataAnalyzer = new MasterDataAnalyzer();
       this.masterDataAnalyzer.initialize();
@@ -132,26 +132,17 @@ class MAModelingAddin {
       console.log('✅ MasterDataAnalyzer initialized');
     }
     
-    if (typeof HighLevelParametersExtractor !== 'undefined') {
-      this.highLevelParametersExtractor = new HighLevelParametersExtractor();
-      this.highLevelParametersExtractor.initialize();
-      window.highLevelParametersExtractor = this.highLevelParametersExtractor;
-      console.log('✅ HighLevelParametersExtractor initialized');
-    }
-    
-    if (typeof DealAssumptionsExtractor !== 'undefined') {
-      this.dealAssumptionsExtractor = new DealAssumptionsExtractor();
-      this.dealAssumptionsExtractor.initialize();
-      window.dealAssumptionsExtractor = this.dealAssumptionsExtractor;
-      console.log('✅ DealAssumptionsExtractor initialized');
-    }
-    
     // Initialize New AI Extraction System
     if (typeof AutoFillIntegrator !== 'undefined') {
       this.autoFillIntegrator = new AutoFillIntegrator();
-      this.autoFillIntegrator.initialize();
+      // Initialize async
+      this.autoFillIntegrator.initialize().then(() => {
+        console.log('✅ AutoFillIntegrator async initialization completed');
+      }).catch(error => {
+        console.error('❌ AutoFillIntegrator initialization failed:', error);
+      });
       window.autoFillIntegrator = this.autoFillIntegrator;
-      console.log('✅ AutoFillIntegrator initialized');
+      console.log('✅ AutoFillIntegrator initialization started');
     }
     
     // Auto-load saved data

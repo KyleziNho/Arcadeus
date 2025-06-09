@@ -195,25 +195,25 @@ Return ONLY this structure with actual values found or null:
     const patterns = [
       // Direct disposal cost mentions
       {
-        regex: /disposal\\s+costs?\\s*:?\\s*([0-9.]+)\\s*%/gi,
+        regex: /disposal\s+costs?\s*:?\s*([0-9.]+)\s*%/gi,
         weight: 1.0
       },
       
       // Exit costs
       {
-        regex: /exit\\s+costs?\\s*:?\\s*([0-9.]+)\\s*%/gi,
+        regex: /exit\s+costs?\s*:?\s*([0-9.]+)\s*%/gi,
         weight: 0.9
       },
       
       // Transaction costs on exit
       {
-        regex: /transaction\\s+costs?\\s+on\\s+exit\\s*:?\\s*([0-9.]+)\\s*%/gi,
+        regex: /transaction\s+costs?\s+on\s+exit\s*:?\s*([0-9.]+)\s*%/gi,
         weight: 0.9
       },
       
       // Selling costs
       {
-        regex: /selling\\s+costs?\\s*:?\\s*([0-9.]+)\\s*%/gi,
+        regex: /selling\s+costs?\s*:?\s*([0-9.]+)\s*%/gi,
         weight: 0.8
       }
     ];
@@ -248,25 +248,25 @@ Return ONLY this structure with actual values found or null:
     const patterns = [
       // Direct terminal cap rate
       {
-        regex: /terminal\\s+(?:cap\\s+rate|capitali[sz]ation\\s+rate)\\s*:?\\s*([0-9.]+)\\s*%/gi,
+        regex: /terminal\s+(?:cap\s+rate|capitali[sz]ation\s+rate)\s*:?\s*([0-9.]+)\s*%/gi,
         weight: 1.0
       },
       
       // Exit cap rate
       {
-        regex: /exit\\s+cap\\s+rate\\s*:?\\s*([0-9.]+)\\s*%/gi,
+        regex: /exit\s+cap\s+rate\s*:?\s*([0-9.]+)\s*%/gi,
         weight: 0.9
       },
       
       // Cap rate on exit
       {
-        regex: /cap\\s+rate\\s+on\\s+exit\\s*:?\\s*([0-9.]+)\\s*%/gi,
+        regex: /cap\s+rate\s+on\s+exit\s*:?\s*([0-9.]+)\s*%/gi,
         weight: 0.9
       },
       
       // Terminal yield
       {
-        regex: /terminal\\s+yield\\s*:?\\s*([0-9.]+)\\s*%/gi,
+        regex: /terminal\s+yield\s*:?\s*([0-9.]+)\s*%/gi,
         weight: 0.8
       }
     ];
@@ -306,28 +306,28 @@ Return ONLY this structure with actual values found or null:
     const multiplePatterns = [
       // EV/EBITDA
       {
-        regex: /(?:exit\\s+)?(?:EV\\/EBITDA|enterprise\\s+value\\s+to\\s+EBITDA)\\s*:?\\s*([0-9.]+)x?/gi,
+        regex: /(?:exit\s+)?(?:EV\/EBITDA|enterprise\s+value\s+to\s+EBITDA)\s*:?\s*([0-9.]+)x?/gi,
         type: 'EV/EBITDA',
         weight: 1.0
       },
       
       // P/E ratio
       {
-        regex: /(?:exit\\s+)?(?:P\\/E|price\\s+to\\s+earnings)\\s*:?\\s*([0-9.]+)x?/gi,
+        regex: /(?:exit\s+)?(?:P\/E|price\s+to\s+earnings)\s*:?\s*([0-9.]+)x?/gi,
         type: 'P/E',
         weight: 0.9
       },
       
       // EV/Revenue
       {
-        regex: /(?:exit\\s+)?(?:EV\\/Revenue|enterprise\\s+value\\s+to\\s+revenue)\\s*:?\\s*([0-9.]+)x?/gi,
+        regex: /(?:exit\s+)?(?:EV\/Revenue|enterprise\s+value\s+to\s+revenue)\s*:?\s*([0-9.]+)x?/gi,
         type: 'EV/Revenue',
         weight: 0.9
       },
       
       // Generic exit multiple
       {
-        regex: /exit\\s+multiple\\s*:?\\s*([0-9.]+)x?/gi,
+        regex: /exit\s+multiple\s*:?\s*([0-9.]+)x?/gi,
         type: 'other',
         weight: 0.7
       }
@@ -378,25 +378,25 @@ Return ONLY this structure with actual values found or null:
     const patterns = [
       // Direct IRR target
       {
-        regex: /target\\s+IRR\\s*:?\\s*([0-9.]+)\\s*%/gi,
+        regex: /target\s+IRR\s*:?\s*([0-9.]+)\s*%/gi,
         weight: 1.0
       },
       
       // Expected IRR
       {
-        regex: /expected\\s+IRR\\s*:?\\s*([0-9.]+)\\s*%/gi,
+        regex: /expected\s+IRR\s*:?\s*([0-9.]+)\s*%/gi,
         weight: 0.9
       },
       
       // IRR assumption
       {
-        regex: /IRR\\s+assumption\\s*:?\\s*([0-9.]+)\\s*%/gi,
+        regex: /IRR\s+assumption\s*:?\s*([0-9.]+)\s*%/gi,
         weight: 0.9
       },
       
       // Return target
       {
-        regex: /return\\s+target\\s*:?\\s*([0-9.]+)\\s*%\\s*IRR/gi,
+        regex: /return\s+target\s*:?\s*([0-9.]+)\s*%\s*IRR/gi,
         weight: 0.8
       }
     ];
@@ -430,13 +430,13 @@ Return ONLY this structure with actual values found or null:
   extractExitDate(text) {
     const patterns = [
       // Expected exit date
-      /expected\\s+exit\\s+(?:date)?\\s*:?\\s*(\\d{4}-\\d{2}-\\d{2}|\\d{1,2}\\/\\d{1,2}\\/\\d{4}|(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\\w*\\s+\\d{4})/gi,
+      /expected\s+exit\s+(?:date)?\s*:?\s*(\d{4}-\d{2}-\d{2}|\d{1,2}\/\d{1,2}\/\d{4}|(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\w*\s+\d{4})/gi,
       
       // Exit in [year]
-      /exit\\s+in\\s+(\\d{4})/gi,
+      /exit\s+in\s+(\d{4})/gi,
       
       // Sale date
-      /(?:anticipated\\s+)?sale\\s+date\\s*:?\\s*(\\d{4}-\\d{2}-\\d{2}|\\d{1,2}\\/\\d{1,2}\\/\\d{4}|(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\\w*\\s+\\d{4})/gi
+      /(?:anticipated\s+)?sale\s+date\s*:?\s*(\d{4}-\d{2}-\d{2}|\d{1,2}\/\d{1,2}\/\d{4}|(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\w*\s+\d{4})/gi
     ];
     
     for (const pattern of patterns) {
