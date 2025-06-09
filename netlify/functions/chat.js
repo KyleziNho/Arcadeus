@@ -1,3 +1,6 @@
+// Import fetch for Node.js environment
+const fetch = require('node-fetch');
+
 exports.handler = async (event, context) => {
   // Handle CORS preflight requests
   if (event.httpMethod === 'OPTIONS') {
@@ -37,7 +40,21 @@ exports.handler = async (event, context) => {
       throw new Error('Invalid JSON in request body');
     }
 
-    const { message, excelContext, fileContents, autoFillMode, batchType } = requestData;
+    const { message, excelContext, fileContents, autoFillMode, batchType, systemPrompt, temperature, maxTokens } = requestData;
+    
+    // Log the request structure for debugging
+    console.log('📋 Request structure:', {
+      hasMessage: !!message,
+      messageType: typeof message,
+      hasFileContents: !!fileContents,
+      fileContentsType: typeof fileContents,
+      fileContentsLength: Array.isArray(fileContents) ? fileContents.length : 'not array',
+      autoFillMode: autoFillMode,
+      batchType: batchType,
+      hasSystemPrompt: !!systemPrompt,
+      hasTemperature: !!temperature,
+      hasMaxTokens: !!maxTokens
+    });
     
     if (!message || typeof message !== 'string') {
       throw new Error('Message is required and must be a string');
@@ -65,16 +82,22 @@ exports.handler = async (event, context) => {
     if (hasOpenAIKey) {
       console.log(`Using OpenAI API for processing - Batch Type: ${batchType || 'standard'}`);
       
-      let systemPrompt;
-      let maxTokens = 1500;
+      let finalSystemPrompt;
+      let finalMaxTokens = 1500;
+      let finalTemperature = autoFillMode ? 0.3 : 0.7;
       
       if (autoFillMode) {
         console.log('Auto-fill mode activated with batch processing');
         
-        // Adjust token limits and system prompts based on batch type
-        if (batchType === 'basic') {
-          maxTokens = 1500; // Smaller for basic info
-          systemPrompt = `You are an expert financial analyst AI. Extract ONLY high-level parameters and deal assumptions from the provided documents.
+        // Use custom parameters if provided by AIExtractionService, otherwise use batch-based logic
+        if (systemPrompt && temperature !== undefined && maxTokens) {
+          console.log('Using custom parameters from AIExtractionService');
+          finalSystemPrompt = systemPrompt;
+          finalMaxTokens = maxTokens;
+          finalTemperature = temperature;
+        } else if (batchType === 'basic') {
+          finalMaxTokens = 1500; // Smaller for basic info
+          finalSystemPrompt = `You are an expert financial analyst AI. Extract ONLY high-level parameters and deal assumptions from the provided documents.
 
 CRITICAL INSTRUCTIONS:
 1. Analyze the actual document content provided below
@@ -105,8 +128,8 @@ ANALYZE THESE DOCUMENTS:
 ${documentContext}`;
           
         } else if (batchType === 'revenue') {
-          maxTokens = 2000; // Medium for revenue items
-          systemPrompt = `You are an expert financial analyst AI. Extract revenue items and growth rates from the provided documents.
+          finalMaxTokens = 2000; // Medium for revenue items
+          finalSystemPrompt = `You are an expert financial analyst AI. Extract revenue items and growth rates from the provided documents.
 
 CRITICAL INSTRUCTIONS:
 1. Analyze the actual document content provided below
@@ -138,8 +161,8 @@ ANALYZE THESE DOCUMENTS:
 ${documentContext}`;
           
         } else if (batchType === 'cost') {
-          maxTokens = 2000; // Medium for cost items
-          systemPrompt = `You are an expert financial analyst AI. Extract cost items and inflation rates from the provided documents.
+          finalMaxTokens = 2000; // Medium for cost items
+          finalSystemPrompt = `You are an expert financial analyst AI. Extract cost items and inflation rates from the provided documents.
 
 CRITICAL INSTRUCTIONS:
 1. Analyze the actual document content provided below
@@ -171,8 +194,8 @@ ANALYZE THESE DOCUMENTS:
 ${documentContext}`;
           
         } else if (batchType === 'exit') {
-          maxTokens = 800; // Smaller for exit assumptions
-          systemPrompt = `You are an expert financial analyst AI. Extract disposal cost and terminal cap rate from the provided documents.
+          finalMaxTokens = 800; // Smaller for exit assumptions
+          finalSystemPrompt = `You are an expert financial analyst AI. Extract disposal cost and terminal cap rate from the provided documents.
 
 CRITICAL INSTRUCTIONS:
 1. Analyze the actual document content provided below
@@ -199,8 +222,8 @@ ANALYZE THESE DOCUMENTS:
 ${documentContext}`;
           
         } else if (batchType === 'master_analysis') {
-          maxTokens = 4000; // Large for comprehensive analysis
-          systemPrompt = `You are an expert M&A analyst. Create a comprehensive, standardized data table from the provided documents for financial modeling.
+          finalMaxTokens = 4000; // Large for comprehensive analysis
+          finalSystemPrompt = `You are an expert M&A analyst. Create a comprehensive, standardized data table from the provided documents for financial modeling.
 
 ACT AS: Senior M&A analyst reviewing deal documents
 TASK: Extract and organize ALL financial information systematically
