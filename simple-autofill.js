@@ -173,10 +173,24 @@ function addSimpleAutofillButton() {
     button.onmouseout = () => button.style.backgroundColor = '#4CAF50';
     
     button.onclick = async () => {
-      // Get uploaded files
-      const fileInput = document.querySelector('input[type="file"]');
-      if (!fileInput || !fileInput.files.length) {
-        window.simpleAutofill.showNotification('Please upload a file first', 'error');
+      // Get uploaded files from the FileUploader system
+      let files = [];
+      
+      // Try multiple ways to find uploaded files
+      if (window.fileUploader && window.fileUploader.uploadedFiles) {
+        files = window.fileUploader.uploadedFiles;
+      } else if (window.formHandler && window.formHandler.fileUploader && window.formHandler.fileUploader.uploadedFiles) {
+        files = window.formHandler.fileUploader.uploadedFiles;
+      } else {
+        // Fallback: check the main file input directly
+        const fileInput = document.getElementById('mainFileInput');
+        if (fileInput && fileInput.files && fileInput.files.length > 0) {
+          files = Array.from(fileInput.files);
+        }
+      }
+      
+      if (!files || files.length === 0) {
+        window.simpleAutofill.showNotification('Please upload a file first using the upload area above', 'error');
         return;
       }
       
@@ -184,10 +198,22 @@ function addSimpleAutofillButton() {
       button.disabled = true;
       
       try {
-        const file = fileInput.files[0];
-        const text = await file.text();
-        await window.simpleAutofill.autofillFromFile(text, file.name);
+        const file = files[0];
+        let fileContent;
+        
+        // Check if file already has content processed
+        if (file.content) {
+          fileContent = file.content;
+        } else if (file instanceof File) {
+          fileContent = await file.text();
+        } else {
+          throw new Error('Unable to read file content');
+        }
+        
+        console.log('🚀 Processing file:', file.name || 'unknown');
+        await window.simpleAutofill.autofillFromFile(fileContent, file.name || 'uploaded-file');
       } catch (error) {
+        console.error('Autofill error:', error);
         window.simpleAutofill.showNotification(`Error: ${error.message}`, 'error');
       } finally {
         button.innerHTML = '🤖 Simple AI Autofill';
