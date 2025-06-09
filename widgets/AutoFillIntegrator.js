@@ -251,23 +251,38 @@ class AutoFillIntegrator {
       // Step 3: Apply extracted data directly (skip modal for now)
       console.log('📊 Step 3: Auto-applying extracted data...');
       
+      // Log all extracted data to see what AI returned
+      console.log('🔍 EXTRACTED DATA CHECK - What AI returned:');
+      console.log('📊 High Level Parameters:', JSON.stringify(extractionResults.highLevelParameters, null, 2));
+      console.log('💰 Deal Assumptions:', JSON.stringify(extractionResults.dealAssumptions, null, 2));
+      console.log('📈 Revenue Items:', JSON.stringify(extractionResults.revenueItems, null, 2));
+      console.log('💸 Cost Items:', JSON.stringify(extractionResults.costItems, null, 2));
+      console.log('🏦 Debt Model:', JSON.stringify(extractionResults.debtModel, null, 2));
+      console.log('🚪 Exit Assumptions:', JSON.stringify(extractionResults.exitAssumptions, null, 2));
+      
       // Apply all extracted data to form
       if (extractionResults.highLevelParameters) {
+        console.log('✏️ Applying high level parameters...');
         await this.applyExtractedData('highLevelParameters', extractionResults.highLevelParameters);
       }
       if (extractionResults.dealAssumptions) {
+        console.log('✏️ Applying deal assumptions...');
         await this.applyExtractedData('dealAssumptions', extractionResults.dealAssumptions);
       }
       if (extractionResults.revenueItems) {
+        console.log('✏️ Applying revenue items...');
         await this.applyExtractedData('revenueItems', extractionResults.revenueItems);
       }
       if (extractionResults.costItems) {
+        console.log('✏️ Applying cost items...');
         await this.applyExtractedData('costItems', extractionResults.costItems);
       }
       if (extractionResults.debtModel) {
+        console.log('✏️ Applying debt model...');
         await this.applyExtractedData('debtModel', extractionResults.debtModel);
       }
       if (extractionResults.exitAssumptions) {
+        console.log('✏️ Applying exit assumptions...');
         await this.applyExtractedData('exitAssumptions', extractionResults.exitAssumptions);
       }
       

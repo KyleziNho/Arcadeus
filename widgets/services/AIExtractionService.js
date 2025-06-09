@@ -184,6 +184,7 @@ class AIExtractionService {
    */
   processAIResponse(response, extractionType) {
     console.log('🤖 Processing AI response...');
+    console.log('🤖 RAW API RESPONSE:', JSON.stringify(response, null, 2));
     
     try {
       // Handle different response formats
@@ -191,11 +192,14 @@ class AIExtractionService {
       
       if (response.extractedData) {
         extractedData = response.extractedData;
+        console.log('🤖 USING response.extractedData:', JSON.stringify(extractedData, null, 2));
       } else if (response.data) {
         extractedData = response.data;
+        console.log('🤖 USING response.data:', JSON.stringify(extractedData, null, 2));
       } else if (typeof response === 'string') {
         // Try to parse JSON from string response
         extractedData = JSON.parse(response);
+        console.log('🤖 PARSED from string:', JSON.stringify(extractedData, null, 2));
       } else {
         extractedData = response;
       }
