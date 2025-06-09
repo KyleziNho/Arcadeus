@@ -431,12 +431,16 @@ ${documentContext}`;
     }
     
     // Fallback logic when no API key or API call fails
-    console.error('CRITICAL: Falling back to non-AI response - AI extraction will fail!');
-    console.error('Reason: No API key or API call failed');
+    console.error('CRITICAL: AI extraction cannot proceed!');
+    console.error('Reason: No OpenAI API key configured or API call failed');
     console.error('Has API key:', hasOpenAIKey);
     console.error('Auto-fill mode:', autoFillMode);
     
     if (autoFillMode) {
+      const errorMessage = !hasOpenAIKey ? 
+        'OpenAI API key not configured. Please set OPENAI_API_KEY environment variable in Netlify.' :
+        'OpenAI API call failed. Please check service status.';
+        
       return {
         statusCode: 500,
         headers: {
@@ -445,8 +449,8 @@ ${documentContext}`;
           'Access-Control-Allow-Methods': 'POST, OPTIONS'
         },
         body: JSON.stringify({
-          error: "AI extraction failed - API key missing or invalid",
-          response: "AI extraction is not available. Please check API configuration.",
+          error: errorMessage,
+          response: "AI extraction service is unavailable.",
           commands: []
         })
       };

@@ -53,7 +53,13 @@ class AIExtractionService {
       
     } catch (error) {
       console.error('🤖 AI Extraction failed:', error);
-      throw new Error(`Extraction failed: ${error.message}`);
+      
+      // Check if it's an API configuration issue
+      if (error.message.includes('500') || error.message.includes('API error')) {
+        throw new Error('AI service is currently unavailable. Please check API configuration or try again later.');
+      } else {
+        throw new Error(`AI extraction failed: ${error.message}`);
+      }
     }
   }
 

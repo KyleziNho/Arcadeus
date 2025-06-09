@@ -254,7 +254,15 @@ class AutoFillIntegrator {
       
     } catch (error) {
       console.error('❌ Extraction failed:', error);
-      this.showError('AI extraction failed. Please check the console for details and try again.');
+      
+      // Check if it's an API service issue
+      if (error.message.includes('AI service is currently unavailable') || 
+          error.message.includes('500') || 
+          error.message.includes('API error')) {
+        this.showError('🚨 AI service is currently down. The extraction system requires AI to function. Please contact support or try again later.');
+      } else {
+        this.showError(`AI extraction failed: ${error.message}. Please try again or contact support.`);
+      }
     } finally {
       this.isProcessing = false;
       this.showLoadingState(false);
@@ -291,10 +299,6 @@ class AutoFillIntegrator {
             extractionResults.highLevelParameters = data;
             Object.assign(allExtractedData, data);
             this.showProgress('High-level parameters extracted');
-          })
-          .catch(error => {
-            console.error('🎯 High-level parameters extraction failed:', error);
-            this.showProgress('High-level parameters extraction failed');
           })
       );
     } else {
@@ -474,46 +478,67 @@ class AutoFillIntegrator {
   }
 
   async applyRevenueItems(data) {
-    if (!data.revenueItems?.value || !Array.isArray(data.revenueItems.value)) return;
+    if (!data.revenueItems?.value || !Array.isArray(data.revenueItems.value)) {
+      console.log('💰 No revenue items to apply');
+      return;
+    }
     
     console.log('💰 Applying revenue items:', data.revenueItems.value);
     
-    // Clear existing revenue items
-    const container = document.getElementById('revenueItemsContainer');
-    if (container) {
-      container.innerHTML = '';
-    }
-    
-    // Add each revenue item
-    for (let i = 0; i < data.revenueItems.value.length; i++) {
-      const item = data.revenueItems.value[i];
+    try {
+      // Clear existing revenue items
+      const container = document.getElementById('revenueItemsContainer');
+      if (container) {
+        container.innerHTML = '';
+      } else {
+        console.warn('💰 Revenue items container not found');
+        return;
+      }
       
-      // Add new revenue item
-      if (window.formHandler) {
-        window.formHandler.addRevenueItem();
+      // Check if formHandler is available
+      if (!window.formHandler || typeof window.formHandler.addRevenueItem !== 'function') {
+        console.warn('💰 FormHandler not available, cannot add revenue items');
+        return;
+      }
+      
+      // Add each revenue item
+      for (let i = 0; i < data.revenueItems.value.length; i++) {
+        const item = data.revenueItems.value[i];
         
-        // Wait for DOM update
-        await this.sleep(100);
-        
-        // Set values
-        const itemIndex = i + 1;
-        this.setFieldValue(`revenueName_${itemIndex}`, item.name);
-        this.setFieldValue(`revenueValue_${itemIndex}`, item.value);
-        
-        if (item.growthType) {
-          this.setFieldValue(`growthType_${itemIndex}`, item.growthType);
+        try {
+          // Add new revenue item
+          window.formHandler.addRevenueItem();
           
-          // Set growth rate based on type
-          if (item.growthType === 'linear' && item.growthRate) {
-            this.setFieldValue(`linearGrowth_${itemIndex}`, item.growthRate);
-          } else if (item.growthType === 'annual' && item.growthRate) {
-            this.setFieldValue(`annualGrowth_${itemIndex}`, item.growthRate);
+          // Wait for DOM update
+          await this.sleep(100);
+          
+          // Set values
+          const itemIndex = i + 1;
+          this.setFieldValue(`revenueName_${itemIndex}`, item.name);
+          this.setFieldValue(`revenueValue_${itemIndex}`, item.value);
+          
+          if (item.growthType) {
+            this.setFieldValue(`growthType_${itemIndex}`, item.growthType);
+            
+            // Set growth rate based on type
+            if (item.growthType === 'linear' && item.growthRate) {
+              this.setFieldValue(`linearGrowth_${itemIndex}`, item.growthRate);
+            } else if (item.growthType === 'annual' && item.growthRate) {
+              this.setFieldValue(`annualGrowth_${itemIndex}`, item.growthRate);
+            }
           }
+          
+          console.log(`💰 Applied revenue item ${i + 1}: ${item.name}`);
+        } catch (itemError) {
+          console.error(`💰 Error applying revenue item ${i + 1}:`, itemError);
         }
       }
+      
+      this.showProgress(`Applied ${data.revenueItems.value.length} revenue items`);
+    } catch (error) {
+      console.error('💰 Error applying revenue items:', error);
+      this.showProgress('Revenue items application failed');
     }
-    
-    this.showProgress(`Applied ${data.revenueItems.value.length} revenue items`);
   }
 
   async applyCostItems(data) {
@@ -821,6 +846,7 @@ class AutoFillIntegrator {
       }
     }
   }
+
 }
 
 // Export for use in main application
