@@ -2,8 +2,14 @@
 const fetch = require('node-fetch');
 
 exports.handler = async (event, context) => {
+  console.log('🔥 FUNCTION CALLED! Method:', event.httpMethod);
+  console.log('🔥 Event body:', event.body);
+  console.log('🔥 Environment check - API Key exists:', !!process.env.OPENAI_API_KEY);
+  console.log('🔥 Environment check - API Key length:', process.env.OPENAI_API_KEY ? process.env.OPENAI_API_KEY.length : 0);
+  
   // Handle CORS preflight requests
   if (event.httpMethod === 'OPTIONS') {
+    console.log('🔥 Handling OPTIONS request');
     return {
       statusCode: 200,
       headers: {
@@ -16,6 +22,7 @@ exports.handler = async (event, context) => {
   }
 
   if (event.httpMethod !== 'POST') {
+    console.log('🔥 Method not allowed:', event.httpMethod);
     return {
       statusCode: 405,
       headers: {
@@ -28,6 +35,7 @@ exports.handler = async (event, context) => {
   }
 
   try {
+    console.log('🔥 Starting main function logic...');
     // Validate request body
     if (!event.body) {
       throw new Error('Request body is required');
@@ -494,7 +502,11 @@ ${documentContext}`;
     };
 
   } catch (error) {
-    console.error('Function error:', error);
+    console.error('🔥 CRITICAL ERROR in function:', error);
+    console.error('🔥 Error message:', error.message);
+    console.error('🔥 Error stack:', error.stack);
+    console.error('🔥 Error type:', typeof error);
+    console.error('🔥 Full error object:', JSON.stringify(error, null, 2));
     
     return {
       statusCode: 500,
@@ -505,7 +517,12 @@ ${documentContext}`;
       },
       body: JSON.stringify({ 
         response: `I encountered an error: ${error.message}. Please try again.`,
-        error: true
+        error: true,
+        debug: {
+          message: error.message,
+          stack: error.stack,
+          timestamp: new Date().toISOString()
+        }
       })
     };
   }
