@@ -381,12 +381,14 @@ class ExtractionConfidenceIndicator {
     
     // Also remove any indicators in the same container
     const container = fieldElement.parentElement;
-    const indicators = container.querySelectorAll('.confidence-indicator');
-    indicators.forEach(indicator => {
-      if (indicator.parentElement === container) {
-        indicator.remove();
-      }
-    });
+    if (container) {
+      const indicators = container.querySelectorAll('.confidence-indicator');
+      indicators.forEach(indicator => {
+        if (indicator.parentElement === container) {
+          indicator.remove();
+        }
+      });
+    }
   }
 
   /**

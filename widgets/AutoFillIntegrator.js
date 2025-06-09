@@ -248,9 +248,30 @@ class AutoFillIntegrator {
       console.log('📊 Step 2: Extracting data from all sections...');
       const extractionResults = await this.extractAllData(filesWithContent);
       
-      // Step 3: Show review modal
-      console.log('📊 Step 3: Showing review modal...');
-      await this.showReviewModal(extractionResults);
+      // Step 3: Apply extracted data directly (skip modal for now)
+      console.log('📊 Step 3: Auto-applying extracted data...');
+      
+      // Apply all extracted data to form
+      if (extractionResults.highLevelParameters) {
+        await this.applyExtractedData('highLevelParameters', extractionResults.highLevelParameters);
+      }
+      if (extractionResults.dealAssumptions) {
+        await this.applyExtractedData('dealAssumptions', extractionResults.dealAssumptions);
+      }
+      if (extractionResults.revenueItems) {
+        await this.applyExtractedData('revenueItems', extractionResults.revenueItems);
+      }
+      if (extractionResults.costItems) {
+        await this.applyExtractedData('costItems', extractionResults.costItems);
+      }
+      if (extractionResults.debtModel) {
+        await this.applyExtractedData('debtModel', extractionResults.debtModel);
+      }
+      if (extractionResults.exitAssumptions) {
+        await this.applyExtractedData('exitAssumptions', extractionResults.exitAssumptions);
+      }
+      
+      this.showSuccess('✅ AI autofill completed! All sections have been filled with extracted data.');
       
     } catch (error) {
       console.error('❌ Extraction failed:', error);
