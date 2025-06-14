@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Autofill Flow</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
+        .debug-section { background: white; padding: 20px; margin: 10px 0; border-radius: 8px; border: 1px solid #ddd; }
+        .success { color: green; }
+        .error { color: red; }
+        .info { color: blue; }
+        pre { background: #f8f8f8; padding: 10px; border-radius: 4px; overflow-x: auto; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        #fileInput { margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Debug Autofill Flow</h1>
+    
+    <div class="debug-section">
+        <h3>Step 1: Test API Connection</h3>
+        <button onclick="testAPIConnection()">Test Netlify Function</button>
+        <div id="apiResult"></div>
+    </div>
+
+    <div class="debug-section">
+        <h3>Step 2: Upload File and Test Extraction</h3>
+        <input type="file" id="fileInput" accept=".pdf,.csv,.txt,.png,.jpg" />
+        <button onclick="testFileExtraction()">Test File + AI Extraction</button>
+        <div id="extractionResult"></div>
+    </div>
+
+    <div class="debug-section">
+        <h3>Step 3: Test AutoFill Components</h3>
+        <button onclick="testComponents()">Check AutoFill Components</button>
+        <div id="componentResult"></div>
+    </div>
+
+    <div class="debug-section">
+        <h3>Step 4: Simulate Full AutoFill</h3>
+        <button onclick="simulateAutoFill()">Simulate Full Process</button>
+        <div id="simulationResult"></div>
+    </div>
+
+    <script>
+        function log(message, type = 'info', elementId) {
+            const element = document.getElementById(elementId);
+            const className = type === 'error' ? 'error' : type === 'success' ? 'success' : 'info';
+            element.innerHTML += `<div class="${className}">${message}</div>`;
+            console.log(message);
+        }
+
+        async function testAPIConnection() {
+            const resultDiv = document.getElementById('apiResult');
+            resultDiv.innerHTML = '';
+            
+            log('🔍 Testing API connection...', 'info', 'apiResult');
+            
+            try {
+                const response = await fetch('/.netlify/functions/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message: "Test connection",
+                        autoFillMode: false
+                    })
+                });
+
+                log(`API Status: ${response.status}`, response.ok ? 'success' : 'error', 'apiResult');
+                
+                const data = await response.json();
+                log('API Response:', 'info', 'apiResult');
+                log(`<pre>${JSON.stringify(data, null, 2)}</pre>`, 'info', 'apiResult');
+                
+            } catch (error) {
+                log(`❌ API Error: ${error.message}`, 'error', 'apiResult');
+            }
+        }
+
+        async function testFileExtraction() {
+            const resultDiv = document.getElementById('extractionResult');
+            resultDiv.innerHTML = '';
+            
+            const fileInput = document.getElementById('fileInput');
+            if (!fileInput.files.length) {
+                log('❌ Please select a file first', 'error', 'extractionResult');
+                return;
+            }
+
+            const file = fileInput.files[0];
+            log(`📄 Testing extraction with file: ${file.name}`, 'info', 'extractionResult');
+            
+            try {
+                // Read file content
+                const content = await readFileContent(file);
+                log(`✅ File read successfully (${content.length} chars)`, 'success', 'extractionResult');
+                
+                // Test extraction API call
+                const response = await fetch('/.netlify/functions/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message: "Extract all financial data from this document",
+                        fileContents: [`File: ${file.name}\nContent: ${content}`],
+                        autoFillMode: true,
+                        batchType: 'master_analysis'
+                    })
+                });
+
+                log(`AI API Status: ${response.status}`, response.ok ? 'success' : 'error', 'extractionResult');
+                
+                const extractionData = await response.json();
+                log('AI Extraction Response:', 'info', 'extractionResult');
+                log(`<pre>${JSON.stringify(extractionData, null, 2)}</pre>`, 'info', 'extractionResult');
+                
+            } catch (error) {
+                log(`❌ Extraction Error: ${error.message}`, 'error', 'extractionResult');
+            }
+        }
+
+        function readFileContent(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = e => resolve(e.target.result);
+                reader.onerror = reject;
+                reader.readAsText(file);
+            });
+        }
+
+        function testComponents() {
+            const resultDiv = document.getElementById('componentResult');
+            resultDiv.innerHTML = '';
+            
+            log('🔧 Checking AutoFill Components...', 'info', 'componentResult');
+            
+            // Check if we're in the main taskpane
+            if (window.location.pathname.includes('debug-autofill.html')) {
+                log('⚠️ This is debug page - components not loaded here', 'error', 'componentResult');
+                log('💡 Open this in the main taskpane to test components', 'info', 'componentResult');
+                return;
+            }
+            
+            // Check main components
+            const checks = [
+                { name: 'AutoFillIntegrator', obj: window.AutoFillIntegrator },
+                { name: 'AIExtractionService', obj: window.AIExtractionService },
+                { name: 'FieldMappingEngine', obj: window.FieldMappingEngine },
+                { name: 'FileUploader', obj: window.fileUploader },
+                { name: 'FormHandler', obj: window.formHandler }
+            ];
+
+            checks.forEach(check => {
+                const status = check.obj ? '✅' : '❌';
+                const type = check.obj ? 'success' : 'error';
+                log(`${status} ${check.name}: ${check.obj ? 'Available' : 'Missing'}`, type, 'componentResult');
+            });
+        }
+
+        async function simulateAutoFill() {
+            const resultDiv = document.getElementById('simulationResult');
+            resultDiv.innerHTML = '';
+            
+            log('🤖 Simulating AutoFill Process...', 'info', 'simulationResult');
+            
+            const fileInput = document.getElementById('fileInput');
+            if (!fileInput.files.length) {
+                log('❌ Please select a file first', 'error', 'simulationResult');
+                return;
+            }
+
+            const file = fileInput.files[0];
+            
+            try {
+                // Step 1: Read file
+                log('📖 Step 1: Reading file...', 'info', 'simulationResult');
+                const content = await readFileContent(file);
+                log(`✅ File read: ${content.substring(0, 100)}...`, 'success', 'simulationResult');
+                
+                // Step 2: Test each batch type
+                const batchTypes = ['basic', 'revenue', 'cost', 'exit'];
+                
+                for (const batchType of batchTypes) {
+                    log(`🎯 Testing ${batchType} extraction...`, 'info', 'simulationResult');
+                    
+                    const response = await fetch('/.netlify/functions/chat', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            message: `Extract ${batchType} data from this document`,
+                            fileContents: [`File: ${file.name}\nContent: ${content}`],
+                            autoFillMode: true,
+                            batchType: batchType
+                        })
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        log(`✅ ${batchType} extraction successful`, 'success', 'simulationResult');
+                        
+                        if (data.extractedData) {
+                            const keys = Object.keys(data.extractedData);
+                            log(`📊 Extracted: ${keys.join(', ')}`, 'info', 'simulationResult');
+                        }
+                    } else {
+                        log(`❌ ${batchType} extraction failed: ${response.status}`, 'error', 'simulationResult');
+                    }
+                    
+                    // Small delay between requests
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
+                
+                log('🎉 Simulation complete! Check console for detailed logs.', 'success', 'simulationResult');
+                
+            } catch (error) {
+                log(`❌ Simulation Error: ${error.message}`, 'error', 'simulationResult');
+            }
+        }
+    </script>
+</body>
+</html>

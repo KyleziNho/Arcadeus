@@ -204,6 +204,13 @@ class AutoFillIntegrator {
       console.log('✅ AutoFill button handler attached');
     }
     
+    // Hook into the test autofill button
+    const testAutoFillBtn = document.getElementById('testAutoFillBtn');
+    if (testAutoFillBtn) {
+      testAutoFillBtn.addEventListener('click', () => this.handleTestAutoFill());
+      console.log('✅ Test AutoFill button handler attached');
+    }
+    
     // Hook into file upload handlers
     if (window.fileUploader) {
       // Get current uploaded files
@@ -223,17 +230,39 @@ class AutoFillIntegrator {
   }
 
   async handleAutoFill() {
+    console.log('🚀 AutoFill button clicked!');
+    console.log('🔍 Current state check:');
+    console.log('  - isProcessing:', this.isProcessing);
+    console.log('  - uploadedFiles:', this.uploadedFiles);
+    console.log('  - uploadedFiles length:', this.uploadedFiles ? this.uploadedFiles.length : 'null');
+    
     if (this.isProcessing) {
       this.showError('Extraction already in progress. Please wait...');
       return;
     }
     
     if (!this.uploadedFiles || this.uploadedFiles.length === 0) {
-      this.showError('Please upload files first before using AI autofill.');
-      return;
+      console.error('❌ No files uploaded! Checking file uploader...');
+      
+      // Try to get files from file uploader directly
+      if (window.fileUploader) {
+        const files = window.fileUploader.getUploadedFiles();
+        console.log('📁 Files from fileUploader.getUploadedFiles():', files);
+        if (files && files.length > 0) {
+          this.uploadedFiles = files;
+          console.log('✅ Found files in fileUploader, continuing...');
+        } else {
+          this.showError('Please upload files first before using AI autofill.');
+          return;
+        }
+      } else {
+        this.showError('File uploader not available. Please refresh the page.');
+        return;
+      }
     }
     
     console.log('🤖 Starting comprehensive AI extraction...');
+    console.log('📄 Files to process:', this.uploadedFiles.map(f => f.name || 'unnamed'));
     this.isProcessing = true;
     
     try {
@@ -243,10 +272,20 @@ class AutoFillIntegrator {
       // Step 1: Read file contents
       console.log('📖 Step 1: Reading file contents...');
       const filesWithContent = await this.readFileContents();
+      console.log('📖 Files with content:', filesWithContent.map(f => ({
+        name: f.name,
+        contentLength: f.content ? f.content.length : 0,
+        hasContent: !!f.content
+      })));
+      
+      if (!filesWithContent || filesWithContent.length === 0) {
+        throw new Error('No file contents could be read');
+      }
       
       // Step 2: Extract data from all widgets
       console.log('📊 Step 2: Extracting data from all sections...');
       const extractionResults = await this.extractAllData(filesWithContent);
+      console.log('📊 Extraction results summary:', Object.keys(extractionResults));
       
       // Step 3: Apply extracted data directly (skip modal for now)
       console.log('📊 Step 3: Auto-applying extracted data...');
@@ -290,15 +329,166 @@ class AutoFillIntegrator {
       
     } catch (error) {
       console.error('❌ Extraction failed:', error);
+      console.error('❌ Full error details:', {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+      });
       
       // Check if it's an API service issue
       if (error.message.includes('AI service is currently unavailable') || 
           error.message.includes('500') || 
           error.message.includes('API error')) {
         this.showError('🚨 AI service is currently down. The extraction system requires AI to function. Please contact support or try again later.');
+      } else if (error.message.includes('No file contents could be read')) {
+        this.showError('🚨 Could not read file contents. Please check your file format and try again.');
+      } else if (error.message.includes('FileUploader not available')) {
+        this.showError('🚨 File upload system not ready. Please refresh the page and try again.');
       } else {
-        this.showError(`AI extraction failed: ${error.message}. Please try again or contact support.`);
+        this.showError(`🚨 Extraction failed: ${error.message}. Check console for details.`);
       }
+    } finally {
+      this.isProcessing = false;
+      this.showLoadingState(false);
+    }
+  }
+
+  async handleTestAutoFill() {
+    console.log('🧪 Test AutoFill button clicked!');
+    
+    if (this.isProcessing) {
+      this.showError('Extraction already in progress. Please wait...');
+      return;
+    }
+    
+    console.log('🎯 Creating sample data for testing...');
+    this.isProcessing = true;
+    
+    try {
+      this.showLoadingState(true);
+      
+      // Create comprehensive sample data
+      const sampleData = {
+        extractedData: {
+          // High Level Parameters
+          currency: { value: "USD", confidence: 0.9, source: "test_data" },
+          projectStartDate: { value: "2025-01-01", confidence: 0.9, source: "test_data" },
+          projectEndDate: { value: "2027-12-31", confidence: 0.9, source: "test_data" },
+          modelPeriods: { value: "monthly", confidence: 0.9, source: "test_data" },
+          
+          // Deal Assumptions
+          dealName: { value: "TechCorp Acquisition", confidence: 0.9, source: "test_data" },
+          dealValue: { value: 50000000, confidence: 0.9, source: "test_data" },
+          transactionFee: { value: 2.5, confidence: 0.8, source: "test_data" },
+          dealLTV: { value: 75, confidence: 0.8, source: "test_data" },
+          
+          // Revenue Items
+          revenueItems: {
+            value: [
+              {
+                name: "Software Licensing",
+                value: 15000000,
+                initialValue: 15000000,
+                growthType: "linear",
+                growthRate: 3
+              },
+              {
+                name: "Support Services", 
+                value: 8000000,
+                initialValue: 8000000,
+                growthType: "linear",
+                growthRate: 2
+              },
+              {
+                name: "Professional Services",
+                value: 5000000,
+                initialValue: 5000000,
+                growthType: "linear",
+                growthRate: 5
+              }
+            ],
+            confidence: 0.8,
+            source: "test_data"
+          },
+          
+          // Operating Expenses
+          operatingExpenses: {
+            value: [
+              {
+                name: "Staff Costs",
+                value: 12000000,
+                initialValue: 12000000,
+                growthType: "linear",
+                growthRate: 4
+              },
+              {
+                name: "Marketing",
+                value: 3000000,
+                initialValue: 3000000,
+                growthType: "linear",
+                growthRate: 2
+              },
+              {
+                name: "Office Rent",
+                value: 1200000,
+                initialValue: 1200000,
+                growthType: "linear",
+                growthRate: 1
+              }
+            ],
+            confidence: 0.8,
+            source: "test_data"
+          },
+          
+          // Capital Expenses
+          capitalExpenses: {
+            value: [
+              {
+                name: "IT Equipment",
+                value: 2000000,
+                initialValue: 2000000,
+                growthType: "linear",
+                growthRate: 0
+              },
+              {
+                name: "Office Furniture",
+                value: 500000,
+                initialValue: 500000,
+                growthType: "linear",
+                growthRate: 0
+              }
+            ],
+            confidence: 0.7,
+            source: "test_data"
+          },
+          
+          // Exit Assumptions
+          disposalCost: { value: 2.0, confidence: 0.8, source: "test_data" },
+          terminalCapRate: { value: 8.5, confidence: 0.8, source: "test_data" },
+          
+          // Debt Model
+          loanIssuanceFees: { value: 1.5, confidence: 0.7, source: "test_data" },
+          interestRateType: { value: "fixed", confidence: 0.8, source: "test_data" },
+          interestRate: { value: 5.5, confidence: 0.8, source: "test_data" }
+        }
+      };
+      
+      console.log('📊 Sample data created:', sampleData);
+      
+      // Apply the sample data using FieldMappingEngine
+      if (this.fieldMappingEngine) {
+        console.log('🗺️ Applying sample data via FieldMappingEngine...');
+        const result = await this.fieldMappingEngine.applyDataToForm(sampleData.extractedData);
+        console.log('✅ Sample data applied successfully:', result);
+        this.showSuccess('✅ Test autofill completed! Sample data has been applied to all sections.');
+      } else {
+        console.error('❌ FieldMappingEngine not available');
+        this.showError('🚨 FieldMappingEngine not available. Please refresh and try again.');
+      }
+      
+    } catch (error) {
+      console.error('❌ Test AutoFill failed:', error);
+      this.showError(`🚨 Test failed: ${error.message}`);
     } finally {
       this.isProcessing = false;
       this.showLoadingState(false);
