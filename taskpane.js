@@ -60,6 +60,9 @@ class MAModelingAddin {
     // Set up main event listeners
     this.setupMainEventListeners();
     
+    // Restore collapsed states
+    this.restoreCollapsedStates();
+    
     this.isInitialized = true;
     console.log('MAModelingAddin initialized successfully');
     
@@ -167,6 +170,68 @@ class MAModelingAddin {
       validateModelBtn.addEventListener('click', () => this.validateModel());
       console.log('Validate model button listener added');
     }
+    
+    // Setup collapsible sections
+    this.setupCollapsibleSections();
+  }
+
+  setupCollapsibleSections() {
+    console.log('Setting up collapsible sections...');
+    
+    // Find all collapsible sections
+    const collapsibleSections = document.querySelectorAll('.collapsible-section');
+    
+    collapsibleSections.forEach(section => {
+      const header = section.querySelector('h3');
+      if (header) {
+        header.addEventListener('click', () => {
+          this.toggleSection(section);
+        });
+        
+        // Add hover effect
+        header.style.cursor = 'pointer';
+        console.log(`Collapsible header added for: ${section.id}`);
+      }
+    });
+    
+    console.log(`✅ ${collapsibleSections.length} collapsible sections configured`);
+  }
+
+  toggleSection(section) {
+    const isCollapsed = section.classList.contains('collapsed');
+    
+    if (isCollapsed) {
+      // Expand
+      section.classList.remove('collapsed');
+      console.log(`Expanded section: ${section.id}`);
+    } else {
+      // Collapse
+      section.classList.add('collapsed');
+      console.log(`Collapsed section: ${section.id}`);
+    }
+    
+    // Store the state in localStorage for persistence
+    const sectionId = section.id;
+    if (sectionId) {
+      localStorage.setItem(`section-${sectionId}-collapsed`, !isCollapsed);
+    }
+  }
+
+  // Restore collapsed states from localStorage
+  restoreCollapsedStates() {
+    const collapsibleSections = document.querySelectorAll('.collapsible-section');
+    
+    collapsibleSections.forEach(section => {
+      const sectionId = section.id;
+      if (sectionId) {
+        const isCollapsed = localStorage.getItem(`section-${sectionId}-collapsed`) === 'true';
+        if (isCollapsed) {
+          section.classList.add('collapsed');
+        }
+      }
+    });
+    
+    console.log('✅ Restored section collapsed states from localStorage');
   }
 
   async generateModel() {
