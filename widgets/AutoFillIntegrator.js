@@ -681,6 +681,83 @@ class AutoFillIntegrator {
     }
   }
 
+  /**
+   * Apply extracted data using the FieldMappingEngine
+   * This is the new method that should be used instead of individual apply methods
+   */
+  async applyExtractedData(sectionType, extractedData) {
+    if (!this.fieldMappingEngine || !extractedData) {
+      console.warn(`🗺️ Cannot apply ${sectionType}: FieldMappingEngine or data missing`);
+      return;
+    }
+
+    try {
+      // For array-based sections (revenue, costs), we need to transform the data structure
+      if (sectionType === 'revenueItems' && extractedData.revenueItems?.value) {
+        console.log('🗺️ Applying revenue items via FieldMappingEngine...');
+        const standardizedData = {
+          revenueItems: extractedData.revenueItems
+        };
+        await this.fieldMappingEngine.applyDataToForm(standardizedData);
+        
+      } else if (sectionType === 'costItems') {
+        console.log('🗺️ Applying cost items via FieldMappingEngine...');
+        const standardizedData = {};
+        
+        // Add operating expenses if they exist
+        if (extractedData.operatingExpenses?.value) {
+          standardizedData.operatingExpenses = extractedData.operatingExpenses;
+        }
+        
+        // Add capital expenses if they exist  
+        if (extractedData.capitalExpenses?.value) {
+          standardizedData.capitalExpenses = extractedData.capitalExpenses;
+        }
+        
+        await this.fieldMappingEngine.applyDataToForm(standardizedData);
+        
+      } else {
+        // For simple field-based sections, use the FieldMappingEngine directly
+        console.log(`🗺️ Applying ${sectionType} via FieldMappingEngine...`);
+        await this.fieldMappingEngine.applyDataToForm(extractedData);
+      }
+      
+    } catch (error) {
+      console.error(`🗺️ Error applying ${sectionType} with FieldMappingEngine:`, error);
+      // Fallback to legacy methods
+      console.log(`🗺️ Falling back to legacy apply method for ${sectionType}`);
+      await this.applyExtractedDataLegacy(sectionType, extractedData);
+    }
+  }
+
+  /**
+   * Legacy apply method - kept for fallback
+   */
+  async applyExtractedDataLegacy(sectionType, extractedData) {
+    switch (sectionType) {
+      case 'highLevelParameters':
+        await this.applyHighLevelParameters(extractedData);
+        break;
+      case 'dealAssumptions':
+        await this.applyDealAssumptions(extractedData);
+        break;
+      case 'revenueItems':
+        await this.applyRevenueItems(extractedData);
+        break;
+      case 'costItems':
+        await this.applyCostItems(extractedData);
+        break;
+      case 'debtModel':
+        await this.applyDebtModel(extractedData);
+        break;
+      case 'exitAssumptions':
+        await this.applyExitAssumptions(extractedData);
+        break;
+      default:
+        console.warn(`Unknown section type: ${sectionType}`);
+    }
+  }
+
   setFieldValue(fieldId, value, confidenceData = null) {
     const element = document.getElementById(fieldId);
     if (!element) {

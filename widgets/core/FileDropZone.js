@@ -25,7 +25,7 @@ class FileDropZone {
   initialize() {
     this.setupDOM();
     this.attachEventListeners();
-    console.log('✅ FileDropZone initialized with enhanced multi-format support');
+    console.log('✅ FileDropZone initialised with enhanced multi-format support');
   }
 
   setupDOM() {

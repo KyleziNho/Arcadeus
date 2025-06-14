@@ -421,8 +421,14 @@ class FieldMappingEngine {
     console.log(`🗺️ Applying ${items.length} ${prefix} items...`);
     
     // Clear existing items first
-    const container = document.getElementById(`${prefix}ItemsContainer`) || 
-                     document.getElementById(`${prefix === 'opEx' ? 'operatingExpenses' : prefix}Container`);
+    let container;
+    if (prefix === 'revenue') {
+      container = document.getElementById('revenueItemsContainer');
+    } else if (prefix === 'opEx') {
+      container = document.getElementById('operatingExpensesContainer');
+    } else if (prefix === 'capEx') {
+      container = document.getElementById('capitalExpensesContainer');
+    }
     
     if (container) {
       container.innerHTML = '';
@@ -439,14 +445,47 @@ class FieldMappingEngine {
         // Wait for DOM update
         await new Promise(resolve => setTimeout(resolve, 100));
         
-        // Apply values
-        const fields = {
-          [`${prefix}Name_${i + 1}`]: item.name,
-          [`${prefix}Value_${i + 1}`]: item.value,
-          [`${prefix === 'revenue' ? 'growthType' : prefix + 'GrowthType'}_${i + 1}`]: item.growthType || 'linear',
-          [`${prefix === 'revenue' ? 'linearGrowth' : 'linearGrowth_' + prefix}_${i + 1}`]: item.growthType === 'linear' ? item.growthRate : null,
-          [`${prefix === 'revenue' ? 'annualGrowth' : 'annualGrowth_' + prefix}_${i + 1}`]: item.growthType === 'compound' ? item.growthRate : null
-        };
+        // Apply values with correct field ID patterns
+        const fields = {};
+        
+        // Name and Value fields
+        if (prefix === 'revenue') {
+          fields[`revenueName_${i + 1}`] = item.name;
+          fields[`revenueValue_${i + 1}`] = item.value || item.initialValue || item.currentValue;
+          fields[`growthType_${i + 1}`] = item.growthType || 'linear';
+          
+          // Growth rate fields
+          if (item.growthType === 'linear' && item.growthRate !== null && item.growthRate !== undefined) {
+            fields[`linearGrowth_${i + 1}`] = item.growthRate;
+          }
+          if (item.growthType === 'annual' && item.growthRate !== null && item.growthRate !== undefined) {
+            fields[`annualGrowth_${i + 1}`] = item.growthRate;
+          }
+        } else if (prefix === 'opEx') {
+          fields[`opExName_${i + 1}`] = item.name;
+          fields[`opExValue_${i + 1}`] = item.value || item.initialValue || item.currentValue;
+          fields[`opExGrowthType_${i + 1}`] = item.growthType || 'linear';
+          
+          // Growth rate fields
+          if (item.growthType === 'linear' && item.growthRate !== null && item.growthRate !== undefined) {
+            fields[`linearGrowth_opEx_${i + 1}`] = item.growthRate;
+          }
+          if (item.growthType === 'annual' && item.growthRate !== null && item.growthRate !== undefined) {
+            fields[`annualGrowth_opEx_${i + 1}`] = item.growthRate;
+          }
+        } else if (prefix === 'capEx') {
+          fields[`capExName_${i + 1}`] = item.name;
+          fields[`capExValue_${i + 1}`] = item.value || item.initialValue || item.currentValue;
+          fields[`capExGrowthType_${i + 1}`] = item.growthType || 'linear';
+          
+          // Growth rate fields
+          if (item.growthType === 'linear' && item.growthRate !== null && item.growthRate !== undefined) {
+            fields[`linearGrowth_capEx_${i + 1}`] = item.growthRate;
+          }
+          if (item.growthType === 'annual' && item.growthRate !== null && item.growthRate !== undefined) {
+            fields[`annualGrowth_capEx_${i + 1}`] = item.growthRate;
+          }
+        }
         
         for (const [fieldId, value] of Object.entries(fields)) {
           if (value !== null && value !== undefined) {
@@ -454,6 +493,9 @@ class FieldMappingEngine {
             if (element) {
               element.value = value;
               element.dispatchEvent(new Event('change', { bubbles: true }));
+              console.log(`🗺️ Applied field ${fieldId} = ${value}`);
+            } else {
+              console.warn(`🗺️ Element not found: ${fieldId}`);
             }
           }
         }
