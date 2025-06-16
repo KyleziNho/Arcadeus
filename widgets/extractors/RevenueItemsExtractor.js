@@ -452,7 +452,13 @@ Return ONLY this structure with actual values found or null:
   validateRevenueItems(data) {
     const validated = { ...data };
     
-    if (validated.revenueItems) {
+    // Ensure revenueItems is always an array
+    if (!validated.revenueItems || !Array.isArray(validated.revenueItems)) {
+      console.warn('💰 Invalid revenueItems format, using empty array');
+      validated.revenueItems = [];
+    }
+    
+    if (validated.revenueItems.length > 0) {
       validated.revenueItems = validated.revenueItems.filter(item => {
         // Basic validation
         if (!item.name || !item.value || item.value <= 0) {
@@ -494,7 +500,12 @@ Return ONLY this structure with actual values found or null:
   enrichWithMetrics(data) {
     const enriched = { ...data };
     
-    if (enriched.revenueItems?.length > 0) {
+    // Ensure revenueItems is always an array
+    if (!enriched.revenueItems || !Array.isArray(enriched.revenueItems)) {
+      enriched.revenueItems = [];
+    }
+    
+    if (enriched.revenueItems.length > 0) {
       // Calculate total from items if not provided
       if (!enriched.totalRevenue) {
         const total = enriched.revenueItems.reduce((sum, item) => sum + item.value, 0);

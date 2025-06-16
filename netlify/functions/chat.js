@@ -392,22 +392,27 @@ ${documentContext}`;
           systemPromptLength: finalSystemPrompt.length
         });
         
+        const requestBody = {
+          model: 'gpt-4-turbo-preview',
+          messages: [
+            { role: 'system', content: finalSystemPrompt },
+            { role: 'user', content: message }
+          ],
+          response_format: { type: "json_object" },
+          temperature: finalTemperature,
+          max_tokens: finalMaxTokens
+        };
+        
+        console.log('🤖 OpenAI request body size:', JSON.stringify(requestBody).length);
+        
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${OPENAI_API_KEY}`,
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({
-            model: 'gpt-4-turbo-preview',
-            messages: [
-              { role: 'system', content: finalSystemPrompt },
-              { role: 'user', content: message }
-            ],
-            response_format: { type: "json_object" },
-            temperature: finalTemperature,
-            max_tokens: finalMaxTokens
-          })
+          body: JSON.stringify(requestBody),
+          timeout: 25000 // Add 25 second timeout
         });
         
         console.log('🤖 OpenAI API response status:', response.status);

@@ -282,10 +282,18 @@ class AutoFillIntegrator {
         throw new Error('No file contents could be read');
       }
       
-      // Step 2: Extract data from all widgets
+      // Step 2: Extract data from all widgets with fallback
       console.log('📊 Step 2: Extracting data from all sections...');
-      const extractionResults = await this.extractAllData(filesWithContent);
-      console.log('📊 Extraction results summary:', Object.keys(extractionResults));
+      let extractionResults;
+      try {
+        extractionResults = await this.extractAllData(filesWithContent);
+        console.log('📊 AI Extraction results summary:', Object.keys(extractionResults));
+      } catch (aiError) {
+        console.error('🤖 AI extraction failed, using fallback system:', aiError);
+        this.showMessage('AI extraction failed, using sample data for demonstration', 'warning');
+        extractionResults = this.getFallbackData();
+      }
+      console.log('📊 Final extraction results summary:', Object.keys(extractionResults));
       
       // Step 3: Apply extracted data directly (skip modal for now)
       console.log('📊 Step 3: Auto-applying extracted data...');
@@ -1152,6 +1160,149 @@ class AutoFillIntegrator {
         this.showInfo('No previous extraction to undo');
       }
     }
+  }
+
+  /**
+   * Get fallback data when AI extraction fails
+   */
+  getFallbackData() {
+    console.log('🔄 Using fallback data system');
+    
+    return {
+      highLevelParameters: {
+        currency: {
+          value: 'USD',
+          confidence: 0.5,
+          source: 'fallback'
+        },
+        projectStartDate: {
+          value: new Date().toISOString().split('T')[0],
+          confidence: 0.5,
+          source: 'fallback'
+        },
+        projectEndDate: {
+          value: new Date(Date.now() + 3 * 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          confidence: 0.5,
+          source: 'fallback'
+        },
+        modelPeriods: {
+          value: 'monthly',
+          confidence: 0.5,
+          source: 'fallback'
+        }
+      },
+      dealAssumptions: {
+        dealName: {
+          value: 'Sample M&A Deal',
+          confidence: 0.3,
+          source: 'fallback'
+        },
+        dealValue: {
+          value: 50000000,
+          confidence: 0.3,
+          source: 'fallback'
+        },
+        transactionFee: {
+          value: 2.5,
+          confidence: 0.3,
+          source: 'fallback'
+        },
+        dealLTV: {
+          value: 70,
+          confidence: 0.3,
+          source: 'fallback'
+        }
+      },
+      revenueItems: {
+        value: [
+          {
+            name: 'Product Sales',
+            value: 2000000,
+            growthType: 'linear',
+            growthRate: 5,
+            confidence: 0.3,
+            source: 'fallback'
+          },
+          {
+            name: 'Service Revenue',
+            value: 800000,
+            growthType: 'linear',
+            growthRate: 3,
+            confidence: 0.3,
+            source: 'fallback'
+          }
+        ],
+        confidence: 0.3,
+        source: 'fallback'
+      },
+      costItems: {
+        operatingExpenses: {
+          value: [
+            {
+              name: 'Staff Costs',
+              value: 1200000,
+              growthType: 'linear',
+              growthRate: 2,
+              confidence: 0.3,
+              source: 'fallback'
+            },
+            {
+              name: 'Marketing Expenses',
+              value: 300000,
+              growthType: 'linear',
+              growthRate: 1.5,
+              confidence: 0.3,
+              source: 'fallback'
+            }
+          ],
+          confidence: 0.3,
+          source: 'fallback'
+        },
+        capitalExpenses: {
+          value: [
+            {
+              name: 'IT Infrastructure',
+              value: 500000,
+              growthType: 'linear',
+              growthRate: 1,
+              confidence: 0.3,
+              source: 'fallback'
+            }
+          ],
+          confidence: 0.3,
+          source: 'fallback'
+        }
+      },
+      debtModel: {
+        loanIssuanceFees: {
+          value: 1.5,
+          confidence: 0.3,
+          source: 'fallback'
+        },
+        interestRateType: {
+          value: 'fixed',
+          confidence: 0.3,
+          source: 'fallback'
+        },
+        interestRate: {
+          value: 5.5,
+          confidence: 0.3,
+          source: 'fallback'
+        }
+      },
+      exitAssumptions: {
+        disposalCost: {
+          value: 2.5,
+          confidence: 0.3,
+          source: 'fallback'
+        },
+        terminalCapRate: {
+          value: 8.5,
+          confidence: 0.3,
+          source: 'fallback'
+        }
+      }
+    };
   }
 
 }
