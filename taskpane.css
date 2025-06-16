@@ -87,10 +87,6 @@ body {
   border-bottom: 1px solid var(--border-primary);
   padding: var(--space-8) var(--space-6);
   margin-bottom: var(--space-6);
-  backdrop-filter: blur(10px);
-  position: sticky;
-  top: 0;
-  z-index: 100;
 }
 
 .brand-section {
@@ -271,6 +267,81 @@ body {
   margin-top: var(--space-2);
 }
 
+/* File Cards */
+.files-grid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.file-card {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  transition: all var(--transition-fast);
+}
+
+.file-card:hover {
+  background: var(--bg-quaternary);
+  border-color: var(--border-secondary);
+}
+
+.file-card-icon {
+  width: 16px;
+  height: 16px;
+  stroke: var(--accent-primary);
+  stroke-width: 2;
+  flex-shrink: 0;
+}
+
+.file-card-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.file-card-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.file-card-size {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  margin-top: 1px;
+}
+
+.file-card-remove {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: var(--space-1);
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+  color: var(--text-tertiary);
+}
+
+.file-card-remove:hover {
+  background: var(--accent-error);
+  color: white;
+}
+
+.file-card-remove svg {
+  width: 12px;
+  height: 12px;
+  stroke-width: 2;
+}
+
 /* Sections */
 .section {
   background: var(--bg-secondary);
@@ -321,26 +392,49 @@ body {
   font-size: 18px;
   font-weight: 300;
   color: var(--text-secondary);
-  transition: transform var(--transition-fast);
+  transition: all var(--transition-fast);
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+}
+
+.collapsible-section h3:hover::after {
+  background: var(--bg-quaternary);
+  color: var(--text-primary);
 }
 
 .collapsible-section.collapsed h3::after {
-  transform: rotate(90deg);
+  content: '+';
+  transform: none;
 }
 
 .section-content {
   padding: var(--space-6);
   background: var(--bg-secondary);
-  transition: all var(--transition-normal);
-  max-height: 1000px;
   overflow: hidden;
 }
 
 .collapsible-section.collapsed .section-content {
-  max-height: 0;
-  padding-top: 0;
-  padding-bottom: 0;
-  opacity: 0;
+  display: none;
+}
+
+/* Smooth show/hide animation */
+.section-content {
+  animation: slideIn var(--transition-normal) ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Remove old minimize buttons */

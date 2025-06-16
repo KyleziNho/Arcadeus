@@ -105,36 +105,41 @@ exports.handler = async (event, context) => {
           finalMaxTokens = maxTokens;
           finalTemperature = temperature;
         } else if (batchType === 'basic') {
-          finalMaxTokens = 1500; // Smaller for basic info
-          finalSystemPrompt = `You are an expert financial analyst AI. Extract ONLY high-level parameters and deal assumptions from the provided documents.
+          finalMaxTokens = 2000; // Increased for comprehensive extraction
+          finalSystemPrompt = `You are an expert financial analyst. Extract ALL financial data from the provided CSV/document.
 
-CRITICAL INSTRUCTIONS:
-1. Analyze the actual document content provided below
-2. Extract ONLY real data found in the documents
-3. Do NOT use placeholder or example values
-4. If a value cannot be found, use null
-5. Return ONLY the JSON structure below with the ACTUAL extracted data
-
-REQUIRED JSON STRUCTURE:
+EXTRACT AND RETURN:
 {
   "extractedData": {
     "highLevelParameters": {
-      "currency": "extracted_currency_or_null",
-      "projectStartDate": "YYYY-MM-DD_or_null",
-      "projectEndDate": "YYYY-MM-DD_or_null", 
-      "modelPeriods": "daily|monthly|quarterly|yearly_or_null"
+      "currency": "USD_from_Currency_field",
+      "projectStartDate": "YYYY-MM-DD_from_Acquisition_date", 
+      "projectEndDate": "calculate_from_start+holding_period",
+      "modelPeriods": "monthly"
     },
     "dealAssumptions": {
-      "dealName": "actual_company_name_or_null",
-      "dealValue": actual_number_or_null,
-      "transactionFee": actual_percentage_or_null,
-      "dealLTV": actual_percentage_or_null
+      "dealName": "company_name_from_document",
+      "dealValue": number_from_Equity+Debt_or_similar,
+      "transactionFee": percentage_from_Transaction_Fees,
+      "dealLTV": percentage_from_Acquisition_LTV
+    },
+    "revenueItems": [
+      {"name": "Revenue Item 1", "initialValue": 500000, "growthType": "linear", "growthRate": 2}
+    ],
+    "operatingExpenses": [
+      {"name": "Staff expenses", "initialValue": 60000, "growthType": "linear", "growthRate": 0.5}
+    ],
+    "capitalExpenses": [
+      {"name": "Cost Item 3", "initialValue": 20000, "growthType": "linear", "growthRate": 1.5}
+    ],
+    "exitAssumptions": {
+      "disposalCost": percentage_from_Disposal_Costs,
+      "terminalCapRate": percentage_from_Terminal_Cap_Rate
     }
   }
 }
 
-ANALYZE THESE DOCUMENTS:
-${documentContext}`;
+ANALYZE: ${documentContext}`;
           
         } else if (batchType === 'revenue') {
           finalMaxTokens = 2000; // Medium for revenue items
@@ -378,6 +383,15 @@ ${documentContext}`;
       }
 
       try {
+        console.log('🤖 About to call OpenAI API...');
+        console.log('🤖 Request parameters:', {
+          model: 'gpt-4-turbo-preview',
+          temperature: finalTemperature,
+          max_tokens: finalMaxTokens,
+          messageLength: message.length,
+          systemPromptLength: finalSystemPrompt.length
+        });
+        
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
           headers: {
@@ -395,15 +409,52 @@ ${documentContext}`;
             max_tokens: finalMaxTokens
           })
         });
+        
+        console.log('🤖 OpenAI API response status:', response.status);
 
         if (!response.ok) {
           const errorText = await response.text();
-          console.error('OpenAI API error:', response.status, errorText);
-          throw new Error(`OpenAI API error: ${response.status}`);
+          console.error('🤖 OpenAI API error:', response.status, errorText);
+          
+          // Return structured error response instead of throwing
+          return {
+            statusCode: 500,
+            headers: {
+              'Access-Control-Allow-Origin': '*',
+              'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+              'Access-Control-Allow-Methods': 'POST, OPTIONS'
+            },
+            body: JSON.stringify({
+              error: `OpenAI API error: ${response.status}`,
+              response: "OpenAI service temporarily unavailable",
+              details: errorText
+            })
+          };
         }
 
+        console.log('🤖 Parsing OpenAI response...');
         const data = await response.json();
+        console.log('🤖 OpenAI response received, choices length:', data.choices?.length);
+        
+        if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+          console.error('🤖 Invalid OpenAI response structure:', data);
+          return {
+            statusCode: 500,
+            headers: {
+              'Access-Control-Allow-Origin': '*',
+              'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+              'Access-Control-Allow-Methods': 'POST, OPTIONS'
+            },
+            body: JSON.stringify({
+              error: "Invalid response from OpenAI",
+              response: "AI service returned invalid response",
+              details: JSON.stringify(data)
+            })
+          };
+        }
+        
         const aiResponse = data.choices[0].message.content;
+        console.log('🤖 AI response content length:', aiResponse?.length);
         
         let parsedResponse;
         try {
@@ -457,8 +508,23 @@ ${documentContext}`;
         };
         
       } catch (apiError) {
-        console.error('OpenAI API call failed:', apiError);
-        // Fall through to fallback logic below
+        console.error('🤖 OpenAI API call failed with error:', apiError.message);
+        console.error('🤖 Full error details:', apiError);
+        
+        // Return structured error response instead of falling through
+        return {
+          statusCode: 500,
+          headers: {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+            'Access-Control-Allow-Methods': 'POST, OPTIONS'
+          },
+          body: JSON.stringify({
+            error: `API call failed: ${apiError.message}`,
+            response: "AI service connection failed",
+            type: "network_error"
+          })
+        };
       }
     }
     

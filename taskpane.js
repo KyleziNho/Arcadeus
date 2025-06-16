@@ -199,15 +199,22 @@ class MAModelingAddin {
 
   toggleSection(section) {
     const isCollapsed = section.classList.contains('collapsed');
+    const sectionContent = section.querySelector('.section-content');
     
     if (isCollapsed) {
-      // Expand
+      // Show section
       section.classList.remove('collapsed');
-      console.log(`Expanded section: ${section.id}`);
+      if (sectionContent) {
+        sectionContent.style.display = 'block';
+      }
+      console.log(`Showed section: ${section.id}`);
     } else {
-      // Collapse
+      // Hide section
       section.classList.add('collapsed');
-      console.log(`Collapsed section: ${section.id}`);
+      if (sectionContent) {
+        sectionContent.style.display = 'none';
+      }
+      console.log(`Hidden section: ${section.id}`);
     }
     
     // Store the state in localStorage for persistence
@@ -227,6 +234,10 @@ class MAModelingAddin {
         const isCollapsed = localStorage.getItem(`section-${sectionId}-collapsed`) === 'true';
         if (isCollapsed) {
           section.classList.add('collapsed');
+          const sectionContent = section.querySelector('.section-content');
+          if (sectionContent) {
+            sectionContent.style.display = 'none';
+          }
         }
       }
     });
