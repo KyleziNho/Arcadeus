@@ -16,6 +16,7 @@
   
   --accent-primary: #3B82F6;
   --accent-primary-hover: #2563EB;
+  --blue-primary: #3B82F6;
   --accent-secondary: #10B981;
   --accent-warning: #F59E0B;
   --accent-error: #EF4444;
@@ -26,6 +27,9 @@
   
   /* Typography */
   --font-system: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-titles: 'Times New Roman', Times, serif;
+  --font-size-base: 14px;
+  --font-size-small: 12px;
   
   /* Spacing */
   --space-1: 4px;
@@ -94,19 +98,21 @@ body {
 }
 
 .brand-name {
-  font-size: 28px;
+  font-family: var(--font-titles);
+  font-size: 20px;
   font-weight: 700;
   color: var(--text-primary);
   letter-spacing: -0.02em;
   margin: 0 0 var(--space-2) 0;
-  background: linear-gradient(135deg, var(--text-primary) 0%, var(--accent-primary) 100%);
+  background: linear-gradient(135deg, var(--text-primary) 0%, var(--blue-primary) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
 .tagline {
-  font-size: 12px;
+  font-family: var(--font-titles);
+  font-size: var(--font-size-small);
   font-weight: 500;
   color: var(--text-tertiary);
   text-transform: uppercase;
@@ -148,25 +154,26 @@ body {
 }
 
 .upload-zone:hover {
-  border-color: var(--accent-primary);
+  border-color: var(--blue-primary);
   transform: translateY(-2px);
   box-shadow: var(--shadow-lg);
 }
 
 .upload-zone.dragover {
-  border-color: var(--accent-primary);
+  border-color: var(--blue-primary);
   background: var(--bg-tertiary);
 }
 
 .upload-content h2 {
-  font-size: 18px;
+  font-family: var(--font-titles);
+  font-size: var(--font-size-base);
   font-weight: 600;
   color: var(--text-primary);
   margin-bottom: var(--space-2);
 }
 
 .upload-content p {
-  font-size: 14px;
+  font-size: var(--font-size-base);
   color: var(--text-secondary);
   margin-bottom: var(--space-4);
 }
@@ -175,7 +182,7 @@ body {
   width: 48px;
   height: 48px;
   margin: 0 auto var(--space-4);
-  stroke: var(--accent-primary);
+  stroke: var(--blue-primary);
   stroke-width: 1.5;
 }
 
@@ -188,7 +195,7 @@ body {
 }
 
 .upload-specs span {
-  font-size: 11px;
+  font-size: var(--font-size-small);
   color: var(--text-tertiary);
   background: var(--bg-tertiary);
   padding: var(--space-1) var(--space-2);
@@ -200,13 +207,13 @@ body {
 }
 
 .browse-files-btn {
-  background: var(--accent-primary);
+  background: var(--blue-primary);
   color: white;
   border: none;
   border-radius: var(--radius-md);
   padding: var(--space-3) var(--space-6);
   font-family: var(--font-system);
-  font-size: 14px;
+  font-size: var(--font-size-base);
   font-weight: 500;
   cursor: pointer;
   transition: all var(--transition-fast);
@@ -232,20 +239,21 @@ body {
 }
 
 .uploaded-files-display h3 {
+  font-family: var(--font-titles);
   color: var(--text-primary);
-  font-size: 16px;
+  font-size: var(--font-size-base);
   font-weight: 600;
   margin-bottom: var(--space-4);
 }
 
 .autofill-btn {
-  background: linear-gradient(135deg, var(--accent-secondary) 0%, var(--accent-primary) 100%);
+  background: var(--blue-primary);
   color: white;
   border: none;
   border-radius: var(--radius-md);
   padding: var(--space-4) var(--space-6);
   font-family: var(--font-system);
-  font-size: 14px;
+  font-size: var(--font-size-base);
   font-weight: 600;
   cursor: pointer;
   transition: all var(--transition-fast);
@@ -269,7 +277,7 @@ body {
 
 .autofill-help {
   color: var(--text-tertiary);
-  font-size: 12px;
+  font-size: var(--font-size-small);
   text-align: center;
   margin-top: var(--space-2);
 }
@@ -300,7 +308,7 @@ body {
 .file-card-icon {
   width: 16px;
   height: 16px;
-  stroke: var(--accent-primary);
+  stroke: var(--blue-primary);
   stroke-width: 2;
   flex-shrink: 0;
 }
@@ -311,7 +319,7 @@ body {
 }
 
 .file-card-name {
-  font-size: 13px;
+  font-size: var(--font-size-base);
   font-weight: 500;
   color: var(--text-primary);
   white-space: nowrap;
@@ -320,7 +328,7 @@ body {
 }
 
 .file-card-size {
-  font-size: 11px;
+  font-size: var(--font-size-small);
   color: var(--text-tertiary);
   margin-top: 1px;
 }
@@ -365,10 +373,11 @@ body {
 }
 
 .section h3 {
+  font-family: var(--font-titles);
   background: var(--bg-tertiary);
   padding: var(--space-5) var(--space-6);
   margin: 0;
-  font-size: 16px;
+  font-size: var(--font-size-base);
   font-weight: 600;
   color: var(--text-primary);
   border-bottom: 1px solid var(--border-primary);
@@ -387,7 +396,7 @@ body {
 .section-icon {
   width: 20px;
   height: 20px;
-  stroke: var(--accent-primary);
+  stroke: var(--blue-primary);
   stroke-width: 2;
   flex-shrink: 0;
 }
@@ -455,7 +464,7 @@ body {
 }
 
 label {
-  font-size: 13px;
+  font-size: var(--font-size-base);
   font-weight: 500;
   color: var(--text-secondary);
   display: block;
@@ -469,7 +478,7 @@ input, select, textarea {
   border: 1px solid var(--border-primary);
   border-radius: var(--radius-md);
   font-family: var(--font-system);
-  font-size: 14px;
+  font-size: var(--font-size-base);
   color: var(--text-primary);
   background: var(--bg-tertiary);
   transition: all var(--transition-fast);
@@ -478,7 +487,7 @@ input, select, textarea {
 
 input:focus, select:focus, textarea:focus {
   outline: none;
-  border-color: var(--accent-primary);
+  border-color: var(--blue-primary);
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
   background: var(--bg-quaternary);
 }
@@ -494,7 +503,7 @@ input[readonly] {
 }
 
 .help-text {
-  font-size: 12px;
+  font-size: var(--font-size-small);
   color: var(--text-tertiary);
   margin-top: var(--space-2);
   line-height: 1.4;
@@ -521,7 +530,7 @@ select {
   align-items: center;
   gap: var(--space-2);
   cursor: pointer;
-  font-size: 14px;
+  font-size: var(--font-size-base);
   color: var(--text-secondary);
 }
 
@@ -535,7 +544,7 @@ select {
   padding: var(--space-4) var(--space-6);
   border-radius: var(--radius-md);
   font-family: var(--font-system);
-  font-size: 14px;
+  font-size: var(--font-size-base);
   font-weight: 500;
   cursor: pointer;
   transition: all var(--transition-fast);
@@ -547,7 +556,7 @@ select {
 }
 
 .button-primary {
-  background: var(--accent-primary);
+  background: var(--blue-primary);
   color: white;
 }
 
@@ -586,7 +595,8 @@ select {
 }
 
 .revenue-item-title, .cost-item-title {
-  font-size: 14px;
+  font-family: var(--font-titles);
+  font-size: var(--font-size-base);
   font-weight: 600;
   color: var(--text-primary);
 }
@@ -597,7 +607,7 @@ select {
   border: none;
   border-radius: var(--radius-sm);
   padding: var(--space-2) var(--space-3);
-  font-size: 12px;
+  font-size: var(--font-size-small);
   cursor: pointer;
   transition: all var(--transition-fast);
 }
@@ -629,7 +639,7 @@ select {
   width: 100%;
   justify-content: center;
   padding: var(--space-5) var(--space-6);
-  font-size: 16px;
+  font-size: var(--font-size-base);
   font-weight: 600;
 }
 
@@ -643,7 +653,7 @@ select {
 
 .status-message {
   color: var(--text-secondary);
-  font-size: 14px;
+  font-size: var(--font-size-base);
 }
 
 /* Animations */
