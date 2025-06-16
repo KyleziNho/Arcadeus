@@ -117,15 +117,16 @@ body {
 }
 
 .brand-name {
+  font-family: 'Times New Roman', serif;
   font-size: var(--font-size-3xl);
-  font-weight: 800;
-  color: var(--text-primary);
+  font-weight: bold;
+  color: #000000;
   letter-spacing: -0.025em;
   margin: 0 0 var(--space-2) 0;
-  background: linear-gradient(135deg, var(--text-primary) 0%, var(--accent-primary) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  background: none;
+  -webkit-background-clip: unset;
+  -webkit-text-fill-color: unset;
+  background-clip: unset;
 }
 
 .tagline {
@@ -164,6 +165,7 @@ body {
   background: linear-gradient(45deg, transparent 30%, var(--accent-primary-light) 50%, transparent 70%);
   opacity: 0;
   transition: opacity var(--transition-normal);
+  z-index: 0;
 }
 
 .upload-zone:hover {
@@ -181,6 +183,11 @@ body {
   border-color: var(--accent-primary);
   background: var(--accent-primary-light);
   transform: scale(1.02);
+}
+
+.upload-content {
+  position: relative;
+  z-index: 1;
 }
 
 .upload-content h2 {
@@ -449,16 +456,23 @@ body {
   content: '−';
   position: absolute;
   right: var(--space-8);
+  top: 50%;
+  transform: translateY(-50%);
   font-size: var(--font-size-lg);
   font-weight: 300;
   color: var(--accent-primary);
   z-index: 1;
   transition: all var(--transition-normal);
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .collapsible-section.collapsed h3::before {
   content: '+';
-  transform: rotate(90deg);
+  transform: translateY(-50%) rotate(90deg);
 }
 
 .collapsible-section.collapsed h3::after {
@@ -482,6 +496,7 @@ body {
   max-height: 0;
   padding: 0 var(--space-8);
   overflow: hidden;
+  pointer-events: none;
 }
 
 /* Modern Form Elements */

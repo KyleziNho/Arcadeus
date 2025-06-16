@@ -199,14 +199,10 @@ class MAModelingAddin {
 
   toggleSection(section) {
     const isCollapsed = section.classList.contains('collapsed');
-    const sectionContent = section.querySelector('.section-content');
     
     if (isCollapsed) {
       // Show section
       section.classList.remove('collapsed');
-      if (sectionContent) {
-        sectionContent.style.display = '';  // Use empty string to restore default
-      }
       console.log(`Showed section: ${section.id}`);
     } else {
       // Hide section
