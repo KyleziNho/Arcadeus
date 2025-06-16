@@ -439,45 +439,34 @@ body {
   transform: scale(1.1);
 }
 
-/* Modern Collapsible Animation */
+/* Modern Collapsible Animation with Chevron */
 .collapsible-section h3::after {
   content: '';
   width: 24px;
   height: 24px;
   margin-left: auto;
-  background: var(--bg-secondary);
-  border: 2px solid var(--accent-primary);
-  border-radius: 50%;
   position: relative;
   transition: all var(--transition-normal);
-}
-
-.collapsible-section h3::before {
-  content: '−';
-  position: absolute;
-  right: var(--space-8);
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: var(--font-size-lg);
-  font-weight: 300;
-  color: var(--accent-primary);
-  z-index: 1;
-  transition: all var(--transition-normal);
-  width: 24px;
-  height: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.collapsible-section.collapsed h3::before {
-  content: '+';
-  transform: translateY(-50%) rotate(90deg);
+.collapsible-section h3::before {
+  content: '';
+  position: absolute;
+  right: var(--space-8);
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  border-right: 2px solid var(--accent-primary);
+  border-bottom: 2px solid var(--accent-primary);
+  transform: translateY(-50%) rotate(45deg);
+  transition: all var(--transition-normal);
 }
 
-.collapsible-section.collapsed h3::after {
-  transform: rotate(180deg);
-  background: var(--accent-primary-light);
+.collapsible-section.collapsed h3::before {
+  transform: translateY(-50%) rotate(-45deg);
 }
 
 .section-content {
@@ -486,17 +475,23 @@ body {
   transition: all var(--transition-normal);
   opacity: 1;
   transform: translateY(0);
-  max-height: none;
+  max-height: 1000px;
   overflow: visible;
 }
 
 .collapsible-section.collapsed .section-content {
-  opacity: 0;
-  transform: translateY(-20px);
-  max-height: 0;
-  padding: 0 var(--space-8);
-  overflow: hidden;
-  pointer-events: none;
+  opacity: 0 !important;
+  transform: translateY(-20px) !important;
+  max-height: 0 !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  overflow: hidden !important;
+  pointer-events: none !important;
+}
+
+/* Debug border for collapsed sections */
+.collapsible-section.collapsed {
+  border-color: var(--accent-error) !important;
 }
 
 /* Modern Form Elements */

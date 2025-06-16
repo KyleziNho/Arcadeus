@@ -180,40 +180,76 @@ class MAModelingAddin {
     
     // Find all collapsible sections
     const collapsibleSections = document.querySelectorAll('.collapsible-section');
+    console.log(`Found ${collapsibleSections.length} collapsible sections`);
     
-    collapsibleSections.forEach(section => {
+    collapsibleSections.forEach((section, index) => {
       const header = section.querySelector('h3');
+      console.log(`Section ${index + 1}: ID=${section.id}, Header found=${!!header}`);
+      
       if (header) {
-        header.addEventListener('click', () => {
+        // Remove any existing event listeners by cloning the element
+        const newHeader = header.cloneNode(true);
+        header.parentNode.replaceChild(newHeader, header);
+        
+        // Add our event listener
+        newHeader.addEventListener('click', (e) => {
+          console.log(`🎯 Header clicked for section: ${section.id}`);
+          e.preventDefault();
+          e.stopPropagation();
           this.toggleSection(section);
         });
         
         // Add hover effect
-        header.style.cursor = 'pointer';
-        console.log(`Collapsible header added for: ${section.id}`);
+        newHeader.style.cursor = 'pointer';
+        newHeader.style.userSelect = 'none';
+        console.log(`✅ Collapsible header configured for: ${section.id}`);
+      } else {
+        console.warn(`❌ No header found for section: ${section.id}`);
       }
     });
     
     console.log(`✅ ${collapsibleSections.length} collapsible sections configured`);
+    
+    // Test function to manually toggle first section
+    window.testToggle = () => {
+      const firstSection = document.querySelector('.collapsible-section');
+      if (firstSection) {
+        console.log('🧪 Manual test toggle triggered');
+        this.toggleSection(firstSection);
+      }
+    };
+    
+    console.log('🧪 Test function available: window.testToggle()');
   }
 
   toggleSection(section) {
+    console.log(`🔄 Toggling section: ${section.id}`);
+    
     const isCollapsed = section.classList.contains('collapsed');
+    console.log(`📋 Current state - isCollapsed: ${isCollapsed}`);
+    console.log(`📋 Current classes: ${section.className}`);
     
     if (isCollapsed) {
       // Show section
       section.classList.remove('collapsed');
-      console.log(`Showed section: ${section.id}`);
+      console.log(`✅ Showed section: ${section.id}`);
+      console.log(`📋 New classes after show: ${section.className}`);
     } else {
       // Hide section
       section.classList.add('collapsed');
-      console.log(`Hidden section: ${section.id}`);
+      console.log(`❌ Hidden section: ${section.id}`);
+      console.log(`📋 New classes after hide: ${section.className}`);
     }
+    
+    // Force a reflow to ensure CSS changes take effect
+    section.offsetHeight;
     
     // Store the state in localStorage for persistence
     const sectionId = section.id;
     if (sectionId) {
-      localStorage.setItem(`section-${sectionId}-collapsed`, !isCollapsed);
+      const newState = !isCollapsed;
+      localStorage.setItem(`section-${sectionId}-collapsed`, newState);
+      console.log(`💾 Stored state for ${sectionId}: collapsed=${newState}`);
     }
   }
 
