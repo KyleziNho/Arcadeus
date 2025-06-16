@@ -181,15 +181,22 @@ body {
 
 .upload-specs {
   margin-top: var(--space-4);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  justify-content: center;
 }
 
 .upload-specs span {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--text-tertiary);
   background: var(--bg-tertiary);
-  padding: var(--space-2) var(--space-3);
+  padding: var(--space-1) var(--space-2);
   border-radius: var(--radius-sm);
   border: 1px solid var(--border-primary);
+  display: inline-block;
+  white-space: nowrap;
+  line-height: 1.4;
 }
 
 .browse-files-btn {
@@ -399,6 +406,7 @@ body {
   align-items: center;
   justify-content: center;
   border-radius: var(--radius-sm);
+  transform: rotate(0deg);
 }
 
 .collapsible-section h3:hover::after {
@@ -407,8 +415,7 @@ body {
 }
 
 .collapsible-section.collapsed h3::after {
-  content: '+';
-  transform: none;
+  transform: rotate(90deg);
 }
 
 .section-content {
@@ -702,6 +709,52 @@ select {
   .radio-group {
     flex-direction: column;
     gap: var(--space-3);
+  }
+}
+
+/* Narrow screen fixes */
+@media (max-width: 480px) {
+  .upload-zone {
+    padding: var(--space-6);
+  }
+  
+  .upload-content h2 {
+    font-size: 16px;
+  }
+  
+  .upload-content p {
+    font-size: 13px;
+  }
+  
+  .upload-specs {
+    gap: var(--space-1);
+    max-width: 100%;
+  }
+  
+  .upload-specs span {
+    font-size: 10px;
+    flex: 0 0 auto;
+    margin-bottom: var(--space-1);
+  }
+  
+  .brand-name {
+    font-size: 24px;
+  }
+  
+  .app-header {
+    padding: var(--space-6) var(--space-4);
+  }
+}
+
+/* Extra narrow screen adjustments */
+@media (max-width: 320px) {
+  .upload-specs {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .upload-specs span {
+    margin-bottom: var(--space-2);
   }
 }
 

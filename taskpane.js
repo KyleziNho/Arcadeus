@@ -205,15 +205,12 @@ class MAModelingAddin {
       // Show section
       section.classList.remove('collapsed');
       if (sectionContent) {
-        sectionContent.style.display = 'block';
+        sectionContent.style.display = '';  // Use empty string to restore default
       }
       console.log(`Showed section: ${section.id}`);
     } else {
       // Hide section
       section.classList.add('collapsed');
-      if (sectionContent) {
-        sectionContent.style.display = 'none';
-      }
       console.log(`Hidden section: ${section.id}`);
     }
     
@@ -234,10 +231,6 @@ class MAModelingAddin {
         const isCollapsed = localStorage.getItem(`section-${sectionId}-collapsed`) === 'true';
         if (isCollapsed) {
           section.classList.add('collapsed');
-          const sectionContent = section.querySelector('.section-content');
-          if (sectionContent) {
-            sectionContent.style.display = 'none';
-          }
         }
       }
     });
