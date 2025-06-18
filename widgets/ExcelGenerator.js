@@ -53,6 +53,24 @@ class ExcelGenerator {
       await Excel.run(async (context) => {
         const sheets = context.workbook.worksheets;
         
+        // Delete existing sheets if they exist
+        const sheetNames = ['Assumptions', 'P&L Statement', 'Free Cash Flow'];
+        for (const sheetName of sheetNames) {
+          try {
+            const existingSheet = sheets.getItemOrNullObject(sheetName);
+            existingSheet.load('name');
+            await context.sync();
+            
+            if (!existingSheet.isNullObject) {
+              console.log(`Deleting existing sheet: ${sheetName}`);
+              existingSheet.delete();
+              await context.sync();
+            }
+          } catch (e) {
+            // Sheet doesn't exist, continue
+          }
+        }
+        
         // Create Assumptions sheet first
         console.log('Creating Assumptions sheet...');
         const assumptionsSheet = sheets.add('Assumptions');
@@ -90,6 +108,21 @@ class ExcelGenerator {
       await Excel.run(async (context) => {
         const sheets = context.workbook.worksheets;
         
+        // Check if P&L sheet already exists from a failed attempt
+        try {
+          const existingSheet = sheets.getItemOrNullObject('P&L Statement');
+          existingSheet.load('name');
+          await context.sync();
+          
+          if (!existingSheet.isNullObject) {
+            console.log('Deleting existing P&L sheet');
+            existingSheet.delete();
+            await context.sync();
+          }
+        } catch (e) {
+          // Sheet doesn't exist, continue
+        }
+        
         console.log('Creating P&L sheet...');
         const plSheet = sheets.add('P&L Statement');
         await this.createProfitLossLayout(context, plSheet, modelData);
@@ -107,6 +140,21 @@ class ExcelGenerator {
     try {
       await Excel.run(async (context) => {
         const sheets = context.workbook.worksheets;
+        
+        // Check if FCF sheet already exists from a failed attempt
+        try {
+          const existingSheet = sheets.getItemOrNullObject('Free Cash Flow');
+          existingSheet.load('name');
+          await context.sync();
+          
+          if (!existingSheet.isNullObject) {
+            console.log('Deleting existing FCF sheet');
+            existingSheet.delete();
+            await context.sync();
+          }
+        } catch (e) {
+          // Sheet doesn't exist, continue
+        }
         
         console.log('Creating FCF sheet...');
         const fcfSheet = sheets.add('Free Cash Flow');
@@ -209,7 +257,7 @@ class ExcelGenerator {
         revHeaders.push(this.formatDateHeader(new Date(data.projectStartDate), i, data.modelPeriods));
       }
       
-      const revHeaderRange = sheet.getRange(`A${currentRow}:${String.fromCharCode(65 + revHeaders.length - 1)}${currentRow}`);
+      const revHeaderRange = sheet.getRange(`A${currentRow}:${this.getColumnLetter(revHeaders.length - 1)}${currentRow}`);
       revHeaderRange.values = [revHeaders];
       revHeaderRange.format.font.bold = true;
       revHeaderRange.format.fill.color = '#87CEEB';
@@ -227,7 +275,7 @@ class ExcelGenerator {
           let col = 2; // Start from column C (index 2)
           item.periods.forEach(period => {
             if (col < revHeaders.length) {
-              sheet.getRange(`${String.fromCharCode(65 + col)}${currentRow}`).values = [[period.value || 0]];
+              sheet.getRange(`${this.getColumnLetter(col)}${currentRow}`).values = [[period.value || 0]];
               col++;
             }
           });
@@ -238,7 +286,7 @@ class ExcelGenerator {
           for (let i = 0; i < Math.min(periods, 10); i++) {
             const growthFactor = Math.pow(1 + (item.annualGrowthRate / 100), Math.floor(i / 12));
             const value = baseValue * growthFactor;
-            sheet.getRange(`${String.fromCharCode(65 + col)}${currentRow}`).values = [[value]];
+            sheet.getRange(`${this.getColumnLetter(col)}${currentRow}`).values = [[value]];
             col++;
           }
         }
@@ -339,15 +387,16 @@ class ExcelGenerator {
       headers.push(this.formatDateHeader(new Date(data.projectStartDate), i, data.modelPeriods));
     }
     
-    const headerRow = sheet.getRange(`A${currentRow}:${String.fromCharCode(65 + headers.length - 1)}${currentRow}`);
+    const headerRow = sheet.getRange(`A${currentRow}:${this.getColumnLetter(headers.length - 1)}${currentRow}`);
     headerRow.values = [headers];
     headerRow.format.font.bold = true;
     headerRow.format.fill.color = '#87CEEB';
     currentRow += 2;
 
     // Revenue Section
-    const revenueHeader = sheet.getRange(`A${currentRow}:${String.fromCharCode(65 + headers.length - 1)}${currentRow}`);
-    revenueHeader.values = [['REVENUE']];
+    const revenueHeader = sheet.getRange(`A${currentRow}:${this.getColumnLetter(headers.length - 1)}${currentRow}`);
+    // First set the value in the first cell before merging
+    sheet.getRange(`A${currentRow}`).values = [['REVENUE']];
     revenueHeader.format.font.bold = true;
     revenueHeader.format.fill.color = '#4A90A4';
     revenueHeader.format.font.color = 'white';
@@ -363,9 +412,9 @@ class ExcelGenerator {
         for (let col = 1; col < headers.length; col++) {
           const assumptionRef = this.cellTracker.getReference(`revenue_item_${index}`, 'P&L Statement');
           if (assumptionRef) {
-            sheet.getRange(`${String.fromCharCode(65 + col)}${currentRow}`).formulas = [[assumptionRef]];
+            sheet.getRange(`${this.getColumnLetter(col)}${currentRow}`).formulas = [[assumptionRef]];
           } else {
-            sheet.getRange(`${String.fromCharCode(65 + col)}${currentRow}`).values = [[item.value || 0]];
+            sheet.getRange(`${this.getColumnLetter(col)}${currentRow}`).values = [[item.value || 0]];
           }
         }
         currentRow++;
@@ -379,14 +428,15 @@ class ExcelGenerator {
       const startRow = currentRow - (data.revenueItems?.length || 0);
       const endRow = currentRow - 1;
       if (startRow <= endRow) {
-        sheet.getRange(`${String.fromCharCode(65 + col)}${currentRow}`).formulas = [[`=SUM(${String.fromCharCode(65 + col)}${startRow}:${String.fromCharCode(65 + col)}${endRow})`]];
+        sheet.getRange(`${this.getColumnLetter(col)}${currentRow}`).formulas = [[`=SUM(${this.getColumnLetter(col)}${startRow}:${this.getColumnLetter(col)}${endRow})`]];
       }
     }
     currentRow += 2;
 
     // Operating Expenses Section
-    const opexHeader = sheet.getRange(`A${currentRow}:${String.fromCharCode(65 + headers.length - 1)}${currentRow}`);
-    opexHeader.values = [['OPERATING EXPENSES']];
+    const opexHeader = sheet.getRange(`A${currentRow}:${this.getColumnLetter(headers.length - 1)}${currentRow}`);
+    // First set the value in the first cell before merging
+    sheet.getRange(`A${currentRow}`).values = [['OPERATING EXPENSES']];
     opexHeader.format.font.bold = true;
     opexHeader.format.fill.color = '#4A90A4';
     opexHeader.format.font.color = 'white';
@@ -401,9 +451,9 @@ class ExcelGenerator {
         for (let col = 1; col < headers.length; col++) {
           const assumptionRef = this.cellTracker.getReference(`opex_item_${index}`, 'P&L Statement');
           if (assumptionRef) {
-            sheet.getRange(`${String.fromCharCode(65 + col)}${currentRow}`).formulas = [[assumptionRef]];
+            sheet.getRange(`${this.getColumnLetter(col)}${currentRow}`).formulas = [[assumptionRef]];
           } else {
-            sheet.getRange(`${String.fromCharCode(65 + col)}${currentRow}`).values = [[-(item.value || 0)]];
+            sheet.getRange(`${this.getColumnLetter(col)}${currentRow}`).values = [[-(item.value || 0)]];
           }
         }
         currentRow++;
@@ -417,7 +467,7 @@ class ExcelGenerator {
       const startRow = currentRow - (data.operatingExpenses?.length || 0);
       const endRow = currentRow - 1;
       if (startRow <= endRow) {
-        sheet.getRange(`${String.fromCharCode(65 + col)}${currentRow}`).formulas = [[`=SUM(${String.fromCharCode(65 + col)}${startRow}:${String.fromCharCode(65 + col)}${endRow})`]];
+        sheet.getRange(`${this.getColumnLetter(col)}${currentRow}`).formulas = [[`=SUM(${this.getColumnLetter(col)}${startRow}:${this.getColumnLetter(col)}${endRow})`]];
       }
     }
     currentRow += 2;
@@ -428,16 +478,16 @@ class ExcelGenerator {
     const totalRevenueRow = currentRow - (data.operatingExpenses?.length || 0) - 4;
     const totalOpexRow = currentRow - 1;
     for (let col = 1; col < headers.length; col++) {
-      sheet.getRange(`${String.fromCharCode(65 + col)}${currentRow}`).formulas = [[`=${String.fromCharCode(65 + col)}${totalRevenueRow}+${String.fromCharCode(65 + col)}${totalOpexRow}`]];
+      sheet.getRange(`${this.getColumnLetter(col)}${currentRow}`).formulas = [[`=${this.getColumnLetter(col)}${totalRevenueRow}+${this.getColumnLetter(col)}${totalOpexRow}`]];
     }
     currentRow += 2;
 
     // Apply formatting for negative numbers
-    const rangeToFormat = sheet.getRange(`B${3}:${String.fromCharCode(65 + headers.length - 1)}${currentRow}`);
+    const rangeToFormat = sheet.getRange(`B${3}:${this.getColumnLetter(headers.length - 1)}${currentRow}`);
     rangeToFormat.numberFormat = [['#,##0.00_);[Red](#,##0.00)']];
 
     // Auto-size columns
-    sheet.getRange(`A:${String.fromCharCode(65 + headers.length - 1)}`).format.autofitColumns();
+    sheet.getRange(`A:${this.getColumnLetter(headers.length - 1)}`).format.autofitColumns();
     
     console.log('P&L layout created successfully');
   }
@@ -465,7 +515,7 @@ class ExcelGenerator {
       headers.push(this.formatDateHeader(new Date(modelData.projectStartDate), i, modelData.modelPeriods));
     }
     
-    const headerRow = sheet.getRange(`A${currentRow}:${String.fromCharCode(65 + headers.length - 1)}${currentRow}`);
+    const headerRow = sheet.getRange(`A${currentRow}:${this.getColumnLetter(headers.length - 1)}${currentRow}`);
     headerRow.values = [headers];
     headerRow.format.font.bold = true;
     headerRow.format.fill.color = '#87CEEB';
@@ -474,14 +524,15 @@ class ExcelGenerator {
     // EBITDA (from P&L)
     sheet.getRange(`A${currentRow}`).values = [['EBITDA']];
     for (let col = 1; col < headers.length; col++) {
-      sheet.getRange(`${String.fromCharCode(65 + col)}${currentRow}`).formulas = [[`='P&L Statement'!${String.fromCharCode(65 + col)}${currentRow}`]];
+      sheet.getRange(`${this.getColumnLetter(col)}${currentRow}`).formulas = [[`='P&L Statement'!${this.getColumnLetter(col)}${currentRow}`]];
     }
     const ebitdaRow = currentRow;
     currentRow += 2;
 
     // Capital Expenditures Section
-    const capexHeader = sheet.getRange(`A${currentRow}:${String.fromCharCode(65 + headers.length - 1)}${currentRow}`);
-    capexHeader.values = [['CAPITAL EXPENDITURES']];
+    const capexHeader = sheet.getRange(`A${currentRow}:${this.getColumnLetter(headers.length - 1)}${currentRow}`);
+    // First set the value in the first cell before merging
+    sheet.getRange(`A${currentRow}`).values = [['CAPITAL EXPENDITURES']];
     capexHeader.format.font.bold = true;
     capexHeader.format.fill.color = '#4A90A4';
     capexHeader.format.font.color = 'white';
@@ -496,9 +547,9 @@ class ExcelGenerator {
         for (let col = 1; col < headers.length; col++) {
           const assumptionRef = this.cellTracker.getReference(`capex_item_${index}`, 'Free Cash Flow');
           if (assumptionRef) {
-            sheet.getRange(`${String.fromCharCode(65 + col)}${currentRow}`).formulas = [[`-${assumptionRef}`]];
+            sheet.getRange(`${this.getColumnLetter(col)}${currentRow}`).formulas = [[`-${assumptionRef}`]];
           } else {
-            sheet.getRange(`${String.fromCharCode(65 + col)}${currentRow}`).values = [[-(item.value || 0)]];
+            sheet.getRange(`${this.getColumnLetter(col)}${currentRow}`).values = [[-(item.value || 0)]];
           }
         }
         currentRow++;
@@ -512,7 +563,7 @@ class ExcelGenerator {
       const startRow = currentRow - (modelData.capitalExpenses?.length || 0);
       const endRow = currentRow - 1;
       if (startRow <= endRow) {
-        sheet.getRange(`${String.fromCharCode(65 + col)}${currentRow}`).formulas = [[`=SUM(${String.fromCharCode(65 + col)}${startRow}:${String.fromCharCode(65 + col)}${endRow})`]];
+        sheet.getRange(`${this.getColumnLetter(col)}${currentRow}`).formulas = [[`=SUM(${this.getColumnLetter(col)}${startRow}:${this.getColumnLetter(col)}${endRow})`]];
       }
     }
     const totalCapexRow = currentRow;
@@ -522,7 +573,7 @@ class ExcelGenerator {
     sheet.getRange(`A${currentRow}`).values = [['Free Cash Flow']];
     sheet.getRange(`A${currentRow}`).format.font.bold = true;
     for (let col = 1; col < headers.length; col++) {
-      sheet.getRange(`${String.fromCharCode(65 + col)}${currentRow}`).formulas = [[`=${String.fromCharCode(65 + col)}${ebitdaRow}+${String.fromCharCode(65 + col)}${totalCapexRow}`]];
+      sheet.getRange(`${this.getColumnLetter(col)}${currentRow}`).formulas = [[`=${this.getColumnLetter(col)}${ebitdaRow}+${this.getColumnLetter(col)}${totalCapexRow}`]];
     }
     const fcfRow = currentRow;
     currentRow += 2;
@@ -536,22 +587,35 @@ class ExcelGenerator {
     
     // Subsequent periods add previous cumulative + current FCF
     for (let col = 2; col < headers.length; col++) {
-      const prevCol = String.fromCharCode(65 + col - 1);
-      const currentCol = String.fromCharCode(65 + col);
+      const prevCol = this.getColumnLetter(col - 1);
+      const currentCol = this.getColumnLetter(col);
       sheet.getRange(`${currentCol}${currentRow}`).formulas = [[`=${prevCol}${currentRow}+${currentCol}${fcfRow}`]];
     }
     currentRow += 2;
 
     // Apply formatting for negative numbers
-    const rangeToFormat = sheet.getRange(`B${3}:${String.fromCharCode(65 + headers.length - 1)}${currentRow}`);
+    const rangeToFormat = sheet.getRange(`B${3}:${this.getColumnLetter(headers.length - 1)}${currentRow}`);
     rangeToFormat.numberFormat = [['#,##0.00_);[Red](#,##0.00)']];
 
     // Auto-size columns
-    sheet.getRange(`A:${String.fromCharCode(65 + headers.length - 1)}`).format.autofitColumns();
+    sheet.getRange(`A:${this.getColumnLetter(headers.length - 1)}`).format.autofitColumns();
     
     console.log('Cashflows layout created successfully');
   }
 
+  // Helper function to get column letter for any column index (handles beyond Z)
+  getColumnLetter(columnIndex) {
+    let letter = '';
+    let temp = columnIndex;
+    
+    while (temp >= 0) {
+      letter = String.fromCharCode((temp % 26) + 65) + letter;
+      temp = Math.floor(temp / 26) - 1;
+    }
+    
+    return letter;
+  }
+  
   formatDateForExcel(dateString) {
     if (!dateString) return '';
     const date = new Date(dateString);
