@@ -187,21 +187,25 @@ class MAModelingAddin {
       console.log(`Section ${index + 1}: ID=${section.id}, Header found=${!!header}`);
       
       if (header) {
-        // Remove any existing event listeners by cloning the element
-        const newHeader = header.cloneNode(true);
-        header.parentNode.replaceChild(newHeader, header);
+        // Remove any existing event listeners
+        const existingOnClick = header.onclick;
+        header.onclick = null;
         
-        // Add our event listener
-        newHeader.addEventListener('click', (e) => {
+        // Add our event listener directly
+        header.addEventListener('click', (e) => {
           console.log(`🎯 Header clicked for section: ${section.id}`);
           e.preventDefault();
           e.stopPropagation();
           this.toggleSection(section);
         });
         
-        // Add hover effect
-        newHeader.style.cursor = 'pointer';
-        newHeader.style.userSelect = 'none';
+        // Make sure cursor is pointer
+        header.style.cursor = 'pointer';
+        header.style.userSelect = 'none';
+        
+        // Add title attribute for user feedback
+        header.setAttribute('title', 'Click to expand/collapse');
+        
         console.log(`✅ Collapsible header configured for: ${section.id}`);
       } else {
         console.warn(`❌ No header found for section: ${section.id}`);
@@ -219,7 +223,14 @@ class MAModelingAddin {
       }
     };
     
-    console.log('🧪 Test function available: window.testToggle()');
+    // Add global toggle all function
+    window.toggleAll = () => {
+      const sections = document.querySelectorAll('.collapsible-section');
+      sections.forEach(section => this.toggleSection(section));
+      console.log('🧪 Toggled all sections');
+    };
+    
+    console.log('🧪 Test functions available: window.testToggle(), window.toggleAll()');
   }
 
   toggleSection(section) {
@@ -478,6 +489,24 @@ if (!window.maModelingAddin) {
     window.maModelingAddin = new MAModelingAddin();
   }
 }
+
+// Fallback collapsible initialization for immediate functionality
+document.addEventListener('DOMContentLoaded', () => {
+  console.log('DOM loaded - setting up immediate collapsible functionality');
+  
+  // Simple click handler for all collapsible sections
+  document.querySelectorAll('.collapsible-section h3').forEach(header => {
+    header.style.cursor = 'pointer';
+    header.addEventListener('click', function(e) {
+      e.preventDefault();
+      const section = this.closest('.collapsible-section');
+      if (section) {
+        section.classList.toggle('collapsed');
+        console.log(`Toggled section: ${section.id}, collapsed: ${section.classList.contains('collapsed')}`);
+      }
+    });
+  });
+});
 
 // Export for debugging
 window.MAModelingAddin = MAModelingAddin;

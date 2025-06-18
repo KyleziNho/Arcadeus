@@ -421,6 +421,11 @@ body {
   user-select: none;
 }
 
+/* Add pointer cursor specifically for collapsible sections */
+.collapsible-section h3 {
+  cursor: pointer;
+}
+
 .section h3:hover {
   background: linear-gradient(135deg, var(--bg-quaternary) 0%, var(--bg-accent) 100%);
   color: var(--accent-primary);
@@ -461,12 +466,12 @@ body {
   height: 12px;
   border-right: 2px solid var(--accent-primary);
   border-bottom: 2px solid var(--accent-primary);
-  transform: translateY(-50%) rotate(45deg);
+  transform: translateY(-70%) rotate(45deg);
   transition: all var(--transition-normal);
 }
 
 .collapsible-section.collapsed h3::before {
-  transform: translateY(-50%) rotate(-45deg);
+  transform: translateY(-30%) rotate(-45deg);
 }
 
 .section-content {
@@ -475,23 +480,16 @@ body {
   transition: all var(--transition-normal);
   opacity: 1;
   transform: translateY(0);
-  max-height: 1000px;
   overflow: visible;
 }
 
 .collapsible-section.collapsed .section-content {
-  opacity: 0 !important;
-  transform: translateY(-20px) !important;
-  max-height: 0 !important;
-  padding-top: 0 !important;
-  padding-bottom: 0 !important;
-  overflow: hidden !important;
-  pointer-events: none !important;
+  display: none !important;
 }
 
-/* Debug border for collapsed sections */
+/* Visual feedback for collapsed sections */
 .collapsible-section.collapsed {
-  border-color: var(--accent-error) !important;
+  border-color: var(--border-secondary);
 }
 
 /* Modern Form Elements */
