@@ -1,672 +1,420 @@
 /* global Office, Excel */
 
-// Cell Reference Tracker for dynamic formula generation
-class CellReferenceTracker {
+// Simple Cell Reference Tracker - keeps track of where data is stored
+class CellTracker {
   constructor() {
-    this.references = {
-      assumptions: {},
-      pnl: {},
-      fcf: {}
-    };
+    this.cellMap = new Map(); // Map of data keys to cell references
+    this.sheetData = new Map(); // Map of sheet names to their data locations
   }
 
-  // Track where each assumption is placed
-  trackAssumptionCell(itemName, cellAddress, worksheet = 'Assumptions') {
-    if (!this.references[worksheet.toLowerCase()]) {
-      this.references[worksheet.toLowerCase()] = {};
+  // Record where a piece of data is stored
+  recordCell(dataKey, sheetName, cellAddress) {
+    const reference = `${sheetName}!${cellAddress}`;
+    this.cellMap.set(dataKey, reference);
+    
+    // Also store by sheet for easy lookup
+    if (!this.sheetData.has(sheetName)) {
+      this.sheetData.set(sheetName, new Map());
     }
-    this.references[worksheet.toLowerCase()][itemName] = {
-      cell: cellAddress,
-      worksheet: worksheet
-    };
+    this.sheetData.get(sheetName).set(dataKey, cellAddress);
+    
+    console.log(`📍 Recorded: ${dataKey} = ${reference}`);
   }
 
-  // Get reference for formulas
-  getReference(itemName, currentWorksheet = null) {
-    // Check all worksheets for the reference
-    for (const [ws, items] of Object.entries(this.references)) {
-      if (items[itemName]) {
-        const ref = items[itemName];
-        // If we're on a different worksheet, include the worksheet name
-        if (currentWorksheet && currentWorksheet.toLowerCase() !== ws) {
-          return `${ref.worksheet}!${ref.cell}`;
-        }
-        return ref.cell;
-      }
+  // Get the cell reference for a piece of data
+  getCellReference(dataKey) {
+    return this.cellMap.get(dataKey) || null;
+  }
+
+  // Get all data for a specific sheet
+  getSheetData(sheetName) {
+    return this.sheetData.get(sheetName) || new Map();
+  }
+
+  // Print all tracked cells (for debugging)
+  printAllCells() {
+    console.log('📋 All tracked cells:');
+    for (const [key, reference] of this.cellMap.entries()) {
+      console.log(`  ${key}: ${reference}`);
     }
-    return null;
   }
 }
 
 class ExcelGenerator {
   constructor() {
-    this.cellTracker = null;
+    this.cellTracker = new CellTracker();
+    this.currentWorkbook = null;
   }
 
   async generateModel(modelData) {
     try {
-      console.log('Starting model generation...');
+      console.log('🚀 Starting fresh model generation...');
+      console.log('📊 Model data:', modelData);
       
-      // Initialize cell tracker
-      this.cellTracker = new CellReferenceTracker();
-
-      await Excel.run(async (context) => {
-        const sheets = context.workbook.worksheets;
-        
-        // Delete existing sheets if they exist
-        const sheetNames = ['Assumptions', 'P&L Statement', 'Free Cash Flow'];
-        for (const sheetName of sheetNames) {
-          try {
-            const existingSheet = sheets.getItemOrNullObject(sheetName);
-            existingSheet.load('name');
-            await context.sync();
-            
-            if (!existingSheet.isNullObject) {
-              console.log(`Deleting existing sheet: ${sheetName}`);
-              existingSheet.delete();
-              await context.sync();
-            }
-          } catch (e) {
-            // Sheet doesn't exist, continue
-          }
-        }
-        
-        // Create Assumptions sheet first
-        console.log('Creating Assumptions sheet...');
-        const assumptionsSheet = sheets.add('Assumptions');
-        await this.createAssumptionsLayout(context, assumptionsSheet, modelData);
-        
-        await context.sync();
-        console.log('Assumptions sheet created successfully');
-      });
-
-      // Wait 1 second before creating P&L sheet
-      console.log('Waiting before creating P&L sheet...');
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Reset cell tracker
+      this.cellTracker = new CellTracker();
       
-      // Generate P&L sheet
-      await this.generatePLSheet(modelData);
+      // Step 1: Create Assumptions sheet
+      await this.createAssumptionsSheet(modelData);
       
-      // Wait 1 second before creating FCF sheet  
-      console.log('Waiting before creating FCF sheet...');
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Step 2: Create P&L sheet (optional - uncomment when ready)
+      // await this.createPLSheet(modelData);
       
-      // Generate FCF sheet
-      await this.generateFCFSheet(modelData);
-
-      console.log('Model generation completed successfully!');
-      return { success: true, message: 'Model generated successfully!' };
+      console.log('✅ Model generation completed successfully!');
+      this.cellTracker.printAllCells();
+      
+      return { success: true, message: 'Model created successfully!' };
       
     } catch (error) {
-      console.error('Error generating model:', error);
+      console.error('❌ Error generating model:', error);
       return { success: false, error: error.message };
     }
   }
 
-  async generatePLSheet(modelData) {
-    try {
-      await Excel.run(async (context) => {
-        const sheets = context.workbook.worksheets;
-        
-        // Check if P&L sheet already exists from a failed attempt
-        try {
-          const existingSheet = sheets.getItemOrNullObject('P&L Statement');
-          existingSheet.load('name');
-          await context.sync();
-          
-          if (!existingSheet.isNullObject) {
-            console.log('Deleting existing P&L sheet');
-            existingSheet.delete();
-            await context.sync();
-          }
-        } catch (e) {
-          // Sheet doesn't exist, continue
-        }
-        
-        console.log('Creating P&L sheet...');
-        const plSheet = sheets.add('P&L Statement');
-        await this.createProfitLossLayout(context, plSheet, modelData);
-        
-        await context.sync();
-        console.log('P&L sheet created successfully');
-      });
-    } catch (error) {
-      console.error('Error generating P&L sheet:', error);
-      throw error;
-    }
-  }
-
-  async generateFCFSheet(modelData) {
-    try {
-      await Excel.run(async (context) => {
-        const sheets = context.workbook.worksheets;
-        
-        // Check if FCF sheet already exists from a failed attempt
-        try {
-          const existingSheet = sheets.getItemOrNullObject('Free Cash Flow');
-          existingSheet.load('name');
-          await context.sync();
-          
-          if (!existingSheet.isNullObject) {
-            console.log('Deleting existing FCF sheet');
-            existingSheet.delete();
-            await context.sync();
-          }
-        } catch (e) {
-          // Sheet doesn't exist, continue
-        }
-        
-        console.log('Creating FCF sheet...');
-        const fcfSheet = sheets.add('Free Cash Flow');
-        await this.createCashflowsLayout(context, fcfSheet, modelData);
-        
-        await context.sync();
-        console.log('FCF sheet created successfully');
-      });
-    } catch (error) {
-      console.error('Error generating FCF sheet:', error);
-      throw error;
-    }
-  }
-
-  async createAssumptionsLayout(context, sheet, data) {
-    console.log('Creating assumptions layout...');
-    
-    // Set up headers
-    const headerRange = sheet.getRange('A1:M1');
-    headerRange.values = [['M&A Financial Model - Assumptions']];
-    headerRange.format.font.bold = true;
-    headerRange.format.font.size = 16;
-    headerRange.format.fill.color = '#2D5A5A';
-    headerRange.format.font.color = 'white';
-    headerRange.merge();
-
-    let currentRow = 3;
-
-    // High-Level Parameters Section
-    const hlParamHeader = sheet.getRange(`A${currentRow}:M${currentRow}`);
-    hlParamHeader.values = [['High-Level Parameters']];
-    hlParamHeader.format.font.bold = true;
-    hlParamHeader.format.fill.color = '#4A90A4';
-    hlParamHeader.format.font.color = 'white';
-    hlParamHeader.merge();
-    currentRow += 2;
-
-    // Add high-level parameters
-    const hlParams = [
-      ['Currency', data.currency || 'USD'],
-      ['Project Start Date', this.formatDateForExcel(data.projectStartDate)],
-      ['Model Periods', data.modelPeriods || 'Monthly'],
-      ['Project End Date', this.formatDateForExcel(data.projectEndDate)],
-      ['Holding Periods', data.holdingPeriodsCalculated || '']
-    ];
-
-    for (const [label, value] of hlParams) {
-      sheet.getRange(`A${currentRow}`).values = [[label]];
-      sheet.getRange(`B${currentRow}`).values = [[value]];
-      this.cellTracker.trackAssumptionCell(label.toLowerCase().replace(/\s+/g, '_'), `B${currentRow}`);
-      currentRow++;
-    }
-
-    currentRow += 2;
-
-    // Deal Assumptions Section
-    const dealHeader = sheet.getRange(`A${currentRow}:M${currentRow}`);
-    dealHeader.values = [['Deal Assumptions']];
-    dealHeader.format.font.bold = true;
-    dealHeader.format.fill.color = '#4A90A4';
-    dealHeader.format.font.color = 'white';
-    dealHeader.merge();
-    currentRow += 2;
-
-    // Add deal assumptions
-    const dealParams = [
-      ['Deal Name', data.dealName || ''],
-      ['Deal Value', data.dealValue || 0],
-      ['Transaction Fee (%)', data.transactionFee || 2.5],
-      ['Deal LTV (%)', data.dealLTV || 70],
-      ['Equity Contribution', data.equityContribution || ''],
-      ['Debt Financing', data.debtFinancing || '']
-    ];
-
-    for (const [label, value] of dealParams) {
-      sheet.getRange(`A${currentRow}`).values = [[label]];
-      sheet.getRange(`B${currentRow}`).values = [[value]];
-      this.cellTracker.trackAssumptionCell(label.toLowerCase().replace(/\s+/g, '_').replace(/[()%]/g, ''), `B${currentRow}`);
-      currentRow++;
-    }
-
-    currentRow += 2;
-
-    // Revenue Items Section
-    if (data.revenueItems && data.revenueItems.length > 0) {
-      const revenueHeader = sheet.getRange(`A${currentRow}:M${currentRow}`);
-      revenueHeader.values = [['Revenue Items']];
-      revenueHeader.format.font.bold = true;
-      revenueHeader.format.fill.color = '#4A90A4';
-      revenueHeader.format.font.color = 'white';
-      revenueHeader.merge();
-      currentRow += 2;
-
-      // Create period headers for revenue
-      const periods = this.calculatePeriods(data.projectStartDate, data.projectEndDate, data.modelPeriods);
+  async createAssumptionsSheet(modelData) {
+    return Excel.run(async (context) => {
+      console.log('📄 Creating Assumptions sheet...');
       
-      // Headers row for revenue items
-      const revHeaders = ['Item', 'Base Value'];
-      for (let i = 0; i < Math.min(periods, 10); i++) {
-        revHeaders.push(this.formatDateHeader(new Date(data.projectStartDate), i, data.modelPeriods));
+      const sheets = context.workbook.worksheets;
+      
+      // Delete existing Assumptions sheet if it exists
+      try {
+        const existingSheet = sheets.getItemOrNullObject('Assumptions');
+        existingSheet.load('name');
+        await context.sync();
+        
+        if (!existingSheet.isNullObject) {
+          console.log('🗑️ Deleting existing Assumptions sheet');
+          existingSheet.delete();
+          await context.sync();
+        }
+      } catch (e) {
+        // Sheet doesn't exist, continue
       }
       
-      const revHeaderRange = sheet.getRange(`A${currentRow}:${this.getColumnLetter(revHeaders.length - 1)}${currentRow}`);
-      revHeaderRange.values = [revHeaders];
-      revHeaderRange.format.font.bold = true;
-      revHeaderRange.format.fill.color = '#87CEEB';
-      currentRow++;
+      // Create new Assumptions sheet
+      const sheet = sheets.add('Assumptions');
+      sheet.activate();
+      
+      // Make sheet the active one
+      await context.sync();
+      
+      // Now populate the sheet with data
+      await this.populateAssumptionsSheet(context, sheet, modelData);
+      
+      console.log('✅ Assumptions sheet created successfully');
+    });
+  }
 
-      // Add revenue items
+  async populateAssumptionsSheet(context, sheet, data) {
+    console.log('📝 Populating Assumptions sheet with data...');
+    
+    let currentRow = 1;
+    
+    // HEADER
+    sheet.getRange('A1').values = [['M&A Financial Model - Assumptions']];
+    sheet.getRange('A1').format.font.bold = true;
+    sheet.getRange('A1').format.font.size = 16;
+    currentRow = 3;
+    
+    // Track section start rows for reference
+    const sectionRows = {};
+    
+    // HIGH-LEVEL PARAMETERS SECTION
+    sectionRows['highLevelParams'] = currentRow;
+    sheet.getRange(`A${currentRow}`).values = [['HIGH-LEVEL PARAMETERS']];
+    sheet.getRange(`A${currentRow}`).format.font.bold = true;
+    currentRow += 2;
+    
+    // Currency
+    sheet.getRange(`A${currentRow}`).values = [['Currency']];
+    sheet.getRange(`B${currentRow}`).values = [[data.currency || 'USD']];
+    this.cellTracker.recordCell('currency', 'Assumptions', `B${currentRow}`);
+    currentRow++;
+    
+    // Project Start Date
+    sheet.getRange(`A${currentRow}`).values = [['Project Start Date']];
+    sheet.getRange(`B${currentRow}`).values = [[data.projectStartDate || '']];
+    this.cellTracker.recordCell('projectStartDate', 'Assumptions', `B${currentRow}`);
+    currentRow++;
+    
+    // Model Periods
+    sheet.getRange(`A${currentRow}`).values = [['Model Periods']];
+    sheet.getRange(`B${currentRow}`).values = [[data.modelPeriods || 'Monthly']];
+    this.cellTracker.recordCell('modelPeriods', 'Assumptions', `B${currentRow}`);
+    currentRow++;
+    
+    // Project End Date
+    sheet.getRange(`A${currentRow}`).values = [['Project End Date']];
+    sheet.getRange(`B${currentRow}`).values = [[data.projectEndDate || '']];
+    this.cellTracker.recordCell('projectEndDate', 'Assumptions', `B${currentRow}`);
+    currentRow++;
+    
+    currentRow += 2; // Add space
+    
+    // DEAL ASSUMPTIONS SECTION
+    sectionRows['dealAssumptions'] = currentRow;
+    sheet.getRange(`A${currentRow}`).values = [['DEAL ASSUMPTIONS']];
+    sheet.getRange(`A${currentRow}`).format.font.bold = true;
+    currentRow += 2;
+    
+    // Deal Name
+    sheet.getRange(`A${currentRow}`).values = [['Deal Name']];
+    sheet.getRange(`B${currentRow}`).values = [[data.dealName || '']];
+    this.cellTracker.recordCell('dealName', 'Assumptions', `B${currentRow}`);
+    currentRow++;
+    
+    // Deal Value
+    sheet.getRange(`A${currentRow}`).values = [['Deal Value']];
+    sheet.getRange(`B${currentRow}`).values = [[data.dealValue || 0]];
+    this.cellTracker.recordCell('dealValue', 'Assumptions', `B${currentRow}`);
+    currentRow++;
+    
+    // Transaction Fee
+    sheet.getRange(`A${currentRow}`).values = [['Transaction Fee (%)']];
+    sheet.getRange(`B${currentRow}`).values = [[data.transactionFee || 2.5]];
+    this.cellTracker.recordCell('transactionFee', 'Assumptions', `B${currentRow}`);
+    currentRow++;
+    
+    // Deal LTV
+    sheet.getRange(`A${currentRow}`).values = [['Deal LTV (%)']];
+    sheet.getRange(`B${currentRow}`).values = [[data.dealLTV || 70]];
+    this.cellTracker.recordCell('dealLTV', 'Assumptions', `B${currentRow}`);
+    currentRow++;
+    
+    currentRow += 2; // Add space
+    
+    // REVENUE ITEMS SECTION
+    if (data.revenueItems && data.revenueItems.length > 0) {
+      sectionRows['revenueItems'] = currentRow;
+      sheet.getRange(`A${currentRow}`).values = [['REVENUE ITEMS']];
+      sheet.getRange(`A${currentRow}`).format.font.bold = true;
+      currentRow += 2;
+      
+      const revenueStartRow = currentRow;
       data.revenueItems.forEach((item, index) => {
-        sheet.getRange(`A${currentRow}`).values = [[item.name || `Revenue Item ${index + 1}`]];
+        const itemName = item.name || `Revenue Item ${index + 1}`;
+        sheet.getRange(`A${currentRow}`).values = [[itemName]];
         sheet.getRange(`B${currentRow}`).values = [[item.value || 0]];
-        
-        this.cellTracker.trackAssumptionCell(`revenue_item_${index}`, `B${currentRow}`);
-        
-        // Add growth rates if available
-        if (item.growthType === 'periodic' && item.periods) {
-          let col = 2; // Start from column C (index 2)
-          item.periods.forEach(period => {
-            if (col < revHeaders.length) {
-              sheet.getRange(`${this.getColumnLetter(col)}${currentRow}`).values = [[period.value || 0]];
-              col++;
-            }
-          });
-        } else if (item.growthType === 'annual' && item.annualGrowthRate) {
-          // Calculate values with annual growth
-          let baseValue = item.value || 0;
-          let col = 2;
-          for (let i = 0; i < Math.min(periods, 10); i++) {
-            const growthFactor = Math.pow(1 + (item.annualGrowthRate / 100), Math.floor(i / 12));
-            const value = baseValue * growthFactor;
-            sheet.getRange(`${this.getColumnLetter(col)}${currentRow}`).values = [[value]];
-            col++;
-          }
-        }
-        
+        this.cellTracker.recordCell(`revenue_${index}`, 'Assumptions', `B${currentRow}`);
+        this.cellTracker.recordCell(`revenue_${index}_name`, 'Assumptions', `A${currentRow}`);
         currentRow++;
       });
       
-      currentRow += 2;
+      // Record the range of revenue items for future reference
+      this.cellTracker.recordCell('revenue_range', 'Assumptions', `B${revenueStartRow}:B${currentRow - 1}`);
+      this.cellTracker.recordCell('revenue_count', 'Assumptions', data.revenueItems.length.toString());
+      
+      currentRow += 2; // Add space
     }
-
-    // Operating Expenses Section
+    
+    // OPERATING EXPENSES SECTION
     if (data.operatingExpenses && data.operatingExpenses.length > 0) {
-      const opexHeader = sheet.getRange(`A${currentRow}:M${currentRow}`);
-      opexHeader.values = [['Operating Expenses']];
-      opexHeader.format.font.bold = true;
-      opexHeader.format.fill.color = '#4A90A4';
-      opexHeader.format.font.color = 'white';
-      opexHeader.merge();
+      sectionRows['operatingExpenses'] = currentRow;
+      sheet.getRange(`A${currentRow}`).values = [['OPERATING EXPENSES']];
+      sheet.getRange(`A${currentRow}`).format.font.bold = true;
       currentRow += 2;
-
+      
+      const opexStartRow = currentRow;
       data.operatingExpenses.forEach((item, index) => {
-        sheet.getRange(`A${currentRow}`).values = [[item.name || `OpEx Item ${index + 1}`]];
+        const itemName = item.name || `OpEx Item ${index + 1}`;
+        sheet.getRange(`A${currentRow}`).values = [[itemName]];
         sheet.getRange(`B${currentRow}`).values = [[item.value || 0]];
-        this.cellTracker.trackAssumptionCell(`opex_item_${index}`, `B${currentRow}`);
+        this.cellTracker.recordCell(`opex_${index}`, 'Assumptions', `B${currentRow}`);
+        this.cellTracker.recordCell(`opex_${index}_name`, 'Assumptions', `A${currentRow}`);
         currentRow++;
       });
       
-      currentRow += 2;
+      // Record the range of operating expenses for future reference
+      this.cellTracker.recordCell('opex_range', 'Assumptions', `B${opexStartRow}:B${currentRow - 1}`);
+      this.cellTracker.recordCell('opex_count', 'Assumptions', data.operatingExpenses.length.toString());
+      
+      currentRow += 2; // Add space
     }
-
-    // Capital Expenses Section
+    
+    // CAPITAL EXPENSES SECTION
     if (data.capitalExpenses && data.capitalExpenses.length > 0) {
-      const capexHeader = sheet.getRange(`A${currentRow}:M${currentRow}`);
-      capexHeader.values = [['Capital Expenses']];
-      capexHeader.format.font.bold = true;
-      capexHeader.format.fill.color = '#4A90A4';
-      capexHeader.format.font.color = 'white';
-      capexHeader.merge();
+      sectionRows['capitalExpenses'] = currentRow;
+      sheet.getRange(`A${currentRow}`).values = [['CAPITAL EXPENSES']];
+      sheet.getRange(`A${currentRow}`).format.font.bold = true;
       currentRow += 2;
-
+      
+      const capexStartRow = currentRow;
       data.capitalExpenses.forEach((item, index) => {
-        sheet.getRange(`A${currentRow}`).values = [[item.name || `CapEx Item ${index + 1}`]];
+        const itemName = item.name || `CapEx Item ${index + 1}`;
+        sheet.getRange(`A${currentRow}`).values = [[itemName]];
         sheet.getRange(`B${currentRow}`).values = [[item.value || 0]];
-        this.cellTracker.trackAssumptionCell(`capex_item_${index}`, `B${currentRow}`);
+        this.cellTracker.recordCell(`capex_${index}`, 'Assumptions', `B${currentRow}`);
+        this.cellTracker.recordCell(`capex_${index}_name`, 'Assumptions', `A${currentRow}`);
         currentRow++;
       });
       
+      // Record the range of capital expenses for future reference
+      this.cellTracker.recordCell('capex_range', 'Assumptions', `B${capexStartRow}:B${currentRow - 1}`);
+      this.cellTracker.recordCell('capex_count', 'Assumptions', data.capitalExpenses.length.toString());
+      
+      currentRow += 2; // Add space
+    }
+    
+    // EXIT ASSUMPTIONS SECTION
+    sectionRows['exitAssumptions'] = currentRow;
+    sheet.getRange(`A${currentRow}`).values = [['EXIT ASSUMPTIONS']];
+    sheet.getRange(`A${currentRow}`).format.font.bold = true;
+    currentRow += 2;
+    
+    // Disposal Cost
+    sheet.getRange(`A${currentRow}`).values = [['Disposal Cost (%)']];
+    sheet.getRange(`B${currentRow}`).values = [[data.disposalCost || 2.5]];
+    this.cellTracker.recordCell('disposalCost', 'Assumptions', `B${currentRow}`);
+    currentRow++;
+    
+    // Terminal Cap Rate
+    sheet.getRange(`A${currentRow}`).values = [['Terminal Cap Rate (%)']];
+    sheet.getRange(`B${currentRow}`).values = [[data.terminalCapRate || 8.5]];
+    this.cellTracker.recordCell('terminalCapRate', 'Assumptions', `B${currentRow}`);
+    currentRow++;
+    
+    // Auto-resize columns
+    sheet.getRange('A:B').format.autofitColumns();
+    
+    // Store section row information for reference
+    this.cellTracker.recordCell('section_rows', 'Assumptions', JSON.stringify(sectionRows));
+    
+    await context.sync();
+    console.log('✅ Assumptions sheet populated successfully');
+    console.log('📍 Section positions:', sectionRows);
+  }
+
+  // P&L Sheet generation using dynamic cell references
+  async createPLSheet(modelData) {
+    return Excel.run(async (context) => {
+      console.log('📈 Creating P&L sheet...');
+      
+      const sheets = context.workbook.worksheets;
+      
+      // Delete existing P&L sheet if it exists
+      try {
+        const existingSheet = sheets.getItemOrNullObject('P&L Statement');
+        existingSheet.load('name');
+        await context.sync();
+        
+        if (!existingSheet.isNullObject) {
+          console.log('🗑️ Deleting existing P&L sheet');
+          existingSheet.delete();
+          await context.sync();
+        }
+      } catch (e) {
+        // Sheet doesn't exist, continue
+      }
+      
+      // Create new P&L sheet
+      const plSheet = sheets.add('P&L Statement');
+      await context.sync();
+      
+      // Build P&L with formulas referencing Assumptions
+      let currentRow = 1;
+      
+      // HEADER
+      plSheet.getRange('A1').values = [['P&L Statement']];
+      plSheet.getRange('A1').format.font.bold = true;
+      plSheet.getRange('A1').format.font.size = 16;
+      currentRow = 3;
+      
+      // REVENUE SECTION
+      plSheet.getRange(`A${currentRow}`).values = [['REVENUE']];
+      plSheet.getRange(`A${currentRow}`).format.font.bold = true;
       currentRow += 2;
-    }
-
-    // Exit Assumptions Section
-    const exitHeader = sheet.getRange(`A${currentRow}:M${currentRow}`);
-    exitHeader.values = [['Exit Assumptions']];
-    exitHeader.format.font.bold = true;
-    exitHeader.format.fill.color = '#4A90A4';
-    exitHeader.format.font.color = 'white';
-    exitHeader.merge();
-    currentRow += 2;
-
-    const exitParams = [
-      ['Disposal Cost (%)', data.disposalCost || 2.5],
-      ['Terminal Cap Rate (%)', data.terminalCapRate || 8.5]
-    ];
-
-    for (const [label, value] of exitParams) {
-      sheet.getRange(`A${currentRow}`).values = [[label]];
-      sheet.getRange(`B${currentRow}`).values = [[value]];
-      this.cellTracker.trackAssumptionCell(label.toLowerCase().replace(/\s+/g, '_').replace(/[()%]/g, ''), `B${currentRow}`);
-      currentRow++;
-    }
-
-    // Auto-size columns
-    sheet.getRange('A:M').format.autofitColumns();
-    
-    console.log('Assumptions layout created successfully');
-  }
-
-  async createProfitLossLayout(context, sheet, data) {
-    console.log('Creating P&L layout...');
-    
-    // Set up headers
-    const headerRange = sheet.getRange('A1:M1');
-    headerRange.values = [['Profit & Loss Statement']];
-    headerRange.format.font.bold = true;
-    headerRange.format.font.size = 16;
-    headerRange.format.fill.color = '#2D5A5A';
-    headerRange.format.font.color = 'white';
-    headerRange.merge();
-
-    let currentRow = 3;
-
-    // Calculate periods for headers
-    const periods = this.calculatePeriods(data.projectStartDate, data.projectEndDate, data.modelPeriods);
-    
-    // Date headers
-    const headers = ['Item'];
-    for (let i = 0; i < Math.min(periods, 12); i++) {
-      headers.push(this.formatDateHeader(new Date(data.projectStartDate), i, data.modelPeriods));
-    }
-    
-    const headerRow = sheet.getRange(`A${currentRow}:${this.getColumnLetter(headers.length - 1)}${currentRow}`);
-    headerRow.values = [headers];
-    headerRow.format.font.bold = true;
-    headerRow.format.fill.color = '#87CEEB';
-    currentRow += 2;
-
-    // Revenue Section
-    const revenueHeader = sheet.getRange(`A${currentRow}:${this.getColumnLetter(headers.length - 1)}${currentRow}`);
-    // First set the value in the first cell before merging
-    sheet.getRange(`A${currentRow}`).values = [['REVENUE']];
-    revenueHeader.format.font.bold = true;
-    revenueHeader.format.fill.color = '#4A90A4';
-    revenueHeader.format.font.color = 'white';
-    revenueHeader.merge();
-    currentRow++;
-
-    // Add revenue items
-    if (data.revenueItems && data.revenueItems.length > 0) {
-      data.revenueItems.forEach((item, index) => {
-        sheet.getRange(`A${currentRow}`).values = [[item.name || `Revenue Item ${index + 1}`]];
-        
-        // Add formulas referencing assumptions sheet
-        for (let col = 1; col < headers.length; col++) {
-          const assumptionRef = this.cellTracker.getReference(`revenue_item_${index}`, 'P&L Statement');
-          if (assumptionRef) {
-            sheet.getRange(`${this.getColumnLetter(col)}${currentRow}`).formulas = [[assumptionRef]];
-          } else {
-            sheet.getRange(`${this.getColumnLetter(col)}${currentRow}`).values = [[item.value || 0]];
+      
+      // Get revenue range from tracker
+      const revenueRange = this.cellTracker.getCellReference('revenue_range');
+      const revenueCount = parseInt(this.cellTracker.getCellReference('revenue_count') || '0');
+      
+      if (revenueCount > 0) {
+        // Add each revenue item with formula
+        for (let i = 0; i < revenueCount; i++) {
+          const nameRef = this.cellTracker.getCellReference(`revenue_${i}_name`);
+          const valueRef = this.cellTracker.getCellReference(`revenue_${i}`);
+          
+          if (nameRef && valueRef) {
+            // Use formula to reference the name
+            plSheet.getRange(`A${currentRow}`).formulas = [[`=${nameRef}`]];
+            // Use formula to reference the value
+            plSheet.getRange(`B${currentRow}`).formulas = [[`=${valueRef}`]];
+            currentRow++;
           }
         }
-        currentRow++;
-      });
-    }
-
-    // Total Revenue row
-    sheet.getRange(`A${currentRow}`).values = [['Total Revenue']];
-    sheet.getRange(`A${currentRow}`).format.font.bold = true;
-    for (let col = 1; col < headers.length; col++) {
-      const startRow = currentRow - (data.revenueItems?.length || 0);
-      const endRow = currentRow - 1;
-      if (startRow <= endRow) {
-        sheet.getRange(`${this.getColumnLetter(col)}${currentRow}`).formulas = [[`=SUM(${this.getColumnLetter(col)}${startRow}:${this.getColumnLetter(col)}${endRow})`]];
-      }
-    }
-    currentRow += 2;
-
-    // Operating Expenses Section
-    const opexHeader = sheet.getRange(`A${currentRow}:${this.getColumnLetter(headers.length - 1)}${currentRow}`);
-    // First set the value in the first cell before merging
-    sheet.getRange(`A${currentRow}`).values = [['OPERATING EXPENSES']];
-    opexHeader.format.font.bold = true;
-    opexHeader.format.fill.color = '#4A90A4';
-    opexHeader.format.font.color = 'white';
-    opexHeader.merge();
-    currentRow++;
-
-    // Add operating expenses
-    if (data.operatingExpenses && data.operatingExpenses.length > 0) {
-      data.operatingExpenses.forEach((item, index) => {
-        sheet.getRange(`A${currentRow}`).values = [[item.name || `OpEx Item ${index + 1}`]];
         
-        for (let col = 1; col < headers.length; col++) {
-          const assumptionRef = this.cellTracker.getReference(`opex_item_${index}`, 'P&L Statement');
-          if (assumptionRef) {
-            sheet.getRange(`${this.getColumnLetter(col)}${currentRow}`).formulas = [[assumptionRef]];
-          } else {
-            sheet.getRange(`${this.getColumnLetter(col)}${currentRow}`).values = [[-(item.value || 0)]];
+        // Total Revenue - sum all revenue items
+        currentRow++;
+        plSheet.getRange(`A${currentRow}`).values = [['Total Revenue']];
+        plSheet.getRange(`A${currentRow}`).format.font.bold = true;
+        if (revenueRange) {
+          plSheet.getRange(`B${currentRow}`).formulas = [[`=SUM(${revenueRange})`]];
+        }
+        currentRow += 2;
+      }
+      
+      // OPERATING EXPENSES SECTION
+      plSheet.getRange(`A${currentRow}`).values = [['OPERATING EXPENSES']];
+      plSheet.getRange(`A${currentRow}`).format.font.bold = true;
+      currentRow += 2;
+      
+      const opexCount = parseInt(this.cellTracker.getCellReference('opex_count') || '0');
+      
+      if (opexCount > 0) {
+        // Add each operating expense with formula
+        for (let i = 0; i < opexCount; i++) {
+          const nameRef = this.cellTracker.getCellReference(`opex_${i}_name`);
+          const valueRef = this.cellTracker.getCellReference(`opex_${i}`);
+          
+          if (nameRef && valueRef) {
+            plSheet.getRange(`A${currentRow}`).formulas = [[`=${nameRef}`]];
+            plSheet.getRange(`B${currentRow}`).formulas = [[`=${valueRef}`]];
+            currentRow++;
           }
         }
-        currentRow++;
-      });
-    }
-
-    // Total Operating Expenses row
-    sheet.getRange(`A${currentRow}`).values = [['Total Operating Expenses']];
-    sheet.getRange(`A${currentRow}`).format.font.bold = true;
-    for (let col = 1; col < headers.length; col++) {
-      const startRow = currentRow - (data.operatingExpenses?.length || 0);
-      const endRow = currentRow - 1;
-      if (startRow <= endRow) {
-        sheet.getRange(`${this.getColumnLetter(col)}${currentRow}`).formulas = [[`=SUM(${this.getColumnLetter(col)}${startRow}:${this.getColumnLetter(col)}${endRow})`]];
-      }
-    }
-    currentRow += 2;
-
-    // EBITDA row
-    sheet.getRange(`A${currentRow}`).values = [['EBITDA']];
-    sheet.getRange(`A${currentRow}`).format.font.bold = true;
-    const totalRevenueRow = currentRow - (data.operatingExpenses?.length || 0) - 4;
-    const totalOpexRow = currentRow - 1;
-    for (let col = 1; col < headers.length; col++) {
-      sheet.getRange(`${this.getColumnLetter(col)}${currentRow}`).formulas = [[`=${this.getColumnLetter(col)}${totalRevenueRow}+${this.getColumnLetter(col)}${totalOpexRow}`]];
-    }
-    currentRow += 2;
-
-    // Apply formatting for negative numbers
-    const rangeToFormat = sheet.getRange(`B${3}:${this.getColumnLetter(headers.length - 1)}${currentRow}`);
-    rangeToFormat.numberFormat = [['#,##0.00_);[Red](#,##0.00)']];
-
-    // Auto-size columns
-    sheet.getRange(`A:${this.getColumnLetter(headers.length - 1)}`).format.autofitColumns();
-    
-    console.log('P&L layout created successfully');
-  }
-
-  async createCashflowsLayout(context, sheet, modelData) {
-    console.log('Creating cashflows layout...');
-    
-    // Set up headers
-    const headerRange = sheet.getRange('A1:M1');
-    headerRange.values = [['Free Cash Flow Statement']];
-    headerRange.format.font.bold = true;
-    headerRange.format.font.size = 16;
-    headerRange.format.fill.color = '#2D5A5A';
-    headerRange.format.font.color = 'white';
-    headerRange.merge();
-
-    let currentRow = 3;
-
-    // Calculate periods for headers
-    const periods = this.calculatePeriods(modelData.projectStartDate, modelData.projectEndDate, modelData.modelPeriods);
-    
-    // Date headers
-    const headers = ['Item'];
-    for (let i = 0; i < Math.min(periods, 12); i++) {
-      headers.push(this.formatDateHeader(new Date(modelData.projectStartDate), i, modelData.modelPeriods));
-    }
-    
-    const headerRow = sheet.getRange(`A${currentRow}:${this.getColumnLetter(headers.length - 1)}${currentRow}`);
-    headerRow.values = [headers];
-    headerRow.format.font.bold = true;
-    headerRow.format.fill.color = '#87CEEB';
-    currentRow += 2;
-
-    // EBITDA (from P&L)
-    sheet.getRange(`A${currentRow}`).values = [['EBITDA']];
-    for (let col = 1; col < headers.length; col++) {
-      sheet.getRange(`${this.getColumnLetter(col)}${currentRow}`).formulas = [[`='P&L Statement'!${this.getColumnLetter(col)}${currentRow}`]];
-    }
-    const ebitdaRow = currentRow;
-    currentRow += 2;
-
-    // Capital Expenditures Section
-    const capexHeader = sheet.getRange(`A${currentRow}:${this.getColumnLetter(headers.length - 1)}${currentRow}`);
-    // First set the value in the first cell before merging
-    sheet.getRange(`A${currentRow}`).values = [['CAPITAL EXPENDITURES']];
-    capexHeader.format.font.bold = true;
-    capexHeader.format.fill.color = '#4A90A4';
-    capexHeader.format.font.color = 'white';
-    capexHeader.merge();
-    currentRow++;
-
-    // Add capital expenses
-    if (modelData.capitalExpenses && modelData.capitalExpenses.length > 0) {
-      modelData.capitalExpenses.forEach((item, index) => {
-        sheet.getRange(`A${currentRow}`).values = [[item.name || `CapEx Item ${index + 1}`]];
         
-        for (let col = 1; col < headers.length; col++) {
-          const assumptionRef = this.cellTracker.getReference(`capex_item_${index}`, 'Free Cash Flow');
-          if (assumptionRef) {
-            sheet.getRange(`${this.getColumnLetter(col)}${currentRow}`).formulas = [[`-${assumptionRef}`]];
-          } else {
-            sheet.getRange(`${this.getColumnLetter(col)}${currentRow}`).values = [[-(item.value || 0)]];
-          }
-        }
+        // Total Operating Expenses
         currentRow++;
-      });
-    }
-
-    // Total CapEx row
-    sheet.getRange(`A${currentRow}`).values = [['Total Capital Expenditures']];
-    sheet.getRange(`A${currentRow}`).format.font.bold = true;
-    for (let col = 1; col < headers.length; col++) {
-      const startRow = currentRow - (modelData.capitalExpenses?.length || 0);
-      const endRow = currentRow - 1;
-      if (startRow <= endRow) {
-        sheet.getRange(`${this.getColumnLetter(col)}${currentRow}`).formulas = [[`=SUM(${this.getColumnLetter(col)}${startRow}:${this.getColumnLetter(col)}${endRow})`]];
+        plSheet.getRange(`A${currentRow}`).values = [['Total Operating Expenses']];
+        plSheet.getRange(`A${currentRow}`).format.font.bold = true;
+        const opexRange = this.cellTracker.getCellReference('opex_range');
+        if (opexRange) {
+          plSheet.getRange(`B${currentRow}`).formulas = [[`=SUM(${opexRange})`]];
+        }
+        currentRow += 2;
       }
-    }
-    const totalCapexRow = currentRow;
-    currentRow += 2;
-
-    // Free Cash Flow row
-    sheet.getRange(`A${currentRow}`).values = [['Free Cash Flow']];
-    sheet.getRange(`A${currentRow}`).format.font.bold = true;
-    for (let col = 1; col < headers.length; col++) {
-      sheet.getRange(`${this.getColumnLetter(col)}${currentRow}`).formulas = [[`=${this.getColumnLetter(col)}${ebitdaRow}+${this.getColumnLetter(col)}${totalCapexRow}`]];
-    }
-    const fcfRow = currentRow;
-    currentRow += 2;
-
-    // Cumulative FCF row
-    sheet.getRange(`A${currentRow}`).values = [['Cumulative Free Cash Flow']];
-    sheet.getRange(`A${currentRow}`).format.font.bold = true;
-    
-    // First period is just the FCF
-    sheet.getRange(`B${currentRow}`).formulas = [[`=B${fcfRow}`]];
-    
-    // Subsequent periods add previous cumulative + current FCF
-    for (let col = 2; col < headers.length; col++) {
-      const prevCol = this.getColumnLetter(col - 1);
-      const currentCol = this.getColumnLetter(col);
-      sheet.getRange(`${currentCol}${currentRow}`).formulas = [[`=${prevCol}${currentRow}+${currentCol}${fcfRow}`]];
-    }
-    currentRow += 2;
-
-    // Apply formatting for negative numbers
-    const rangeToFormat = sheet.getRange(`B${3}:${this.getColumnLetter(headers.length - 1)}${currentRow}`);
-    rangeToFormat.numberFormat = [['#,##0.00_);[Red](#,##0.00)']];
-
-    // Auto-size columns
-    sheet.getRange(`A:${this.getColumnLetter(headers.length - 1)}`).format.autofitColumns();
-    
-    console.log('Cashflows layout created successfully');
+      
+      // EBITDA CALCULATION
+      plSheet.getRange(`A${currentRow}`).values = [['EBITDA']];
+      plSheet.getRange(`A${currentRow}`).format.font.bold = true;
+      plSheet.getRange(`A${currentRow}`).format.fill.color = '#87CEEB';
+      
+      // EBITDA = Total Revenue - Total Operating Expenses
+      const totalRevenueRow = currentRow - 2 - opexCount - 2;
+      const totalOpexRow = currentRow - 2;
+      plSheet.getRange(`B${currentRow}`).formulas = [[`=B${totalRevenueRow}-B${totalOpexRow}`]];
+      
+      // Format numbers
+      plSheet.getRange('B:B').numberFormat = [['#,##0.00']];
+      
+      // Auto-resize columns
+      plSheet.getRange('A:B').format.autofitColumns();
+      
+      await context.sync();
+      console.log('✅ P&L sheet created with dynamic references');
+    });
   }
 
-  // Helper function to get column letter for any column index (handles beyond Z)
-  getColumnLetter(columnIndex) {
-    let letter = '';
-    let temp = columnIndex;
-    
-    while (temp >= 0) {
-      letter = String.fromCharCode((temp % 26) + 65) + letter;
-      temp = Math.floor(temp / 26) - 1;
-    }
-    
-    return letter;
-  }
-  
-  formatDateForExcel(dateString) {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    return date.toLocaleDateString();
-  }
-
-  calculatePeriods(startDate, endDate, periodType) {
-    if (!startDate || !endDate) return 12; // Default to 12 periods
-    
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    const diffTime = Math.abs(end - start);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
-    switch (periodType) {
-      case 'daily':
-        return Math.min(diffDays, 365); // Cap at 1 year for display
-      case 'monthly':
-        return Math.min(Math.ceil(diffDays / 30), 60); // Cap at 5 years
-      case 'quarterly':
-        return Math.min(Math.ceil(diffDays / 90), 20); // Cap at 5 years
-      case 'yearly':
-        return Math.min(Math.ceil(diffDays / 365), 10); // Cap at 10 years
-      default:
-        return 12;
-    }
-  }
-
-  formatDateHeader(startDate, periodIndex, periodType) {
-    const date = new Date(startDate);
-    
-    switch (periodType) {
-      case 'daily':
-        date.setDate(date.getDate() + periodIndex);
-        return date.toLocaleDateString();
-      case 'monthly':
-        date.setMonth(date.getMonth() + periodIndex);
-        return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
-      case 'quarterly':
-        date.setMonth(date.getMonth() + (periodIndex * 3));
-        return `Q${Math.floor(periodIndex % 4) + 1} ${date.getFullYear()}`;
-      case 'yearly':
-        date.setFullYear(date.getFullYear() + periodIndex);
-        return date.getFullYear().toString();
-      default:
-        date.setMonth(date.getMonth() + periodIndex);
-        return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
-    }
+  // Utility method to get all tracked data
+  getTrackedData() {
+    return {
+      cellMap: Object.fromEntries(this.cellTracker.cellMap),
+      sheetData: Object.fromEntries(this.cellTracker.sheetData)
+    };
   }
 }
 
 // Export for use in main application
 window.ExcelGenerator = ExcelGenerator;
-window.CellReferenceTracker = CellReferenceTracker;
+window.CellTracker = CellTracker;
