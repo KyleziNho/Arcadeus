@@ -648,7 +648,7 @@ Please provide the P&L structure with exact Excel formulas for each line item.`;
               
               if (col === 1) {
                 // First period - base value
-                plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=Assumptions.${valueRef.split('!')[1]}`]];
+                plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=Assumptions!${valueRef.split('!')[1]}`]];
               } else {
                 // Subsequent periods - apply growth
                 const prevCol = this.getColumnLetter(col - 1);
@@ -674,14 +674,18 @@ Please provide the P&L structure with exact Excel formulas for each line item.`;
         plSheet.getRange(`A${currentRow}`).values = [['Total Revenue']];
         plSheet.getRange(`A${currentRow}`).format.font.bold = true;
         
-        // Sum formulas for each period
+        // Sum formulas for each period - only sum actual revenue rows
         for (let col = 1; col <= periodColumns; col++) {
           const colLetter = this.getColumnLetter(col);
+          const revenueEndRow = revenueStartRow + revenueCount - 1;
           plSheet.getRange(`${colLetter}${currentRow}`).formulas = 
-            [[`=SUM(${colLetter}${revenueStartRow}:${colLetter}${currentRow - 1})`]];
+            [[`=SUM(${colLetter}${revenueStartRow}:${colLetter}${revenueEndRow})`]];
         }
         currentRow += 2;
       }
+      
+      // Store total revenue row for EBITDA calculation
+      const totalRevenueRow = revenueCount > 0 ? currentRow - 2 : 0;
       
       // OPERATING EXPENSES SECTION
       plSheet.getRange(`A${currentRow}`).values = [['OPERATING EXPENSES']];
@@ -710,7 +714,7 @@ Please provide the P&L structure with exact Excel formulas for each line item.`;
               
               if (col === 1) {
                 // First period - base value (negative for expenses)
-                plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=-Assumptions.${valueRef.split('!')[1]}`]];
+                plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=-Assumptions!${valueRef.split('!')[1]}`]];
               } else {
                 // Subsequent periods - apply growth
                 const prevCol = this.getColumnLetter(col - 1);
@@ -736,29 +740,38 @@ Please provide the P&L structure with exact Excel formulas for each line item.`;
         plSheet.getRange(`A${currentRow}`).values = [['Total Operating Expenses']];
         plSheet.getRange(`A${currentRow}`).format.font.bold = true;
         
-        // Sum formulas for each period
+        // Sum formulas for each period - only sum actual opex rows
         for (let col = 1; col <= periodColumns; col++) {
           const colLetter = this.getColumnLetter(col);
+          const opexEndRow = opexStartRow + opexCount - 1;
           plSheet.getRange(`${colLetter}${currentRow}`).formulas = 
-            [[`=SUM(${colLetter}${opexStartRow}:${colLetter}${currentRow - 1})`]];
+            [[`=SUM(${colLetter}${opexStartRow}:${colLetter}${opexEndRow})`]];
         }
         currentRow += 2;
       }
+      
+      // Store total opex row for EBITDA calculation
+      const totalOpexRow = opexCount > 0 ? currentRow - 2 : 0;
       
       // EBITDA CALCULATION
       plSheet.getRange(`A${currentRow}`).values = [['EBITDA']];
       plSheet.getRange(`A${currentRow}`).format.font.bold = true;
       plSheet.getRange(`A${currentRow}`).format.fill.color = '#98FB98';
       
-      // Find the total revenue and total opex rows
-      const totalRevenueRow = revenueStartRow + revenueCount + 1;
-      const totalOpexRow = opexStartRow + opexCount + 1;
-      
       // EBITDA formulas for each period
       for (let col = 1; col <= periodColumns; col++) {
         const colLetter = this.getColumnLetter(col);
-        plSheet.getRange(`${colLetter}${currentRow}`).formulas = 
-          [[`=${colLetter}${totalRevenueRow}+${colLetter}${totalOpexRow}`]];
+        let ebitdaFormula = '0';
+        
+        if (totalRevenueRow > 0 && totalOpexRow > 0) {
+          ebitdaFormula = `=${colLetter}${totalRevenueRow}+${colLetter}${totalOpexRow}`;
+        } else if (totalRevenueRow > 0) {
+          ebitdaFormula = `=${colLetter}${totalRevenueRow}`;
+        } else if (totalOpexRow > 0) {
+          ebitdaFormula = `=${colLetter}${totalOpexRow}`;
+        }
+        
+        plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[ebitdaFormula]];
       }
       currentRow += 2;
       
@@ -785,8 +798,8 @@ Please provide the P&L structure with exact Excel formulas for each line item.`;
           
           // Adjust interest rate based on period type
           // Fix debt and interest rate references
-          const debtCellRef = debtRef ? `Assumptions.${debtRef.split('!')[1]}` : 'Assumptions.B8';
-          const rateCellRef = interestRateRef ? `Assumptions.${interestRateRef.split('!')[1]}` : 'Assumptions.B15';
+          const debtCellRef = debtRef ? `Assumptions!${debtRef.split('!')[1]}` : 'Assumptions!B8';
+          const rateCellRef = interestRateRef ? `Assumptions!${interestRateRef.split('!')[1]}` : 'Assumptions!B15';
           
           switch (modelData.modelPeriods) {
             case 'daily':
@@ -808,23 +821,26 @@ Please provide the P&L structure with exact Excel formulas for each line item.`;
         currentRow += 2;
       }
       
+      // Store interest expense row for Net Income calculation
+      const interestExpenseRow = hasDebt ? currentRow - 2 : 0;
+      
       // NET INCOME
       plSheet.getRange(`A${currentRow}`).values = [['Net Income']];
       plSheet.getRange(`A${currentRow}`).format.font.bold = true;
       plSheet.getRange(`A${currentRow}`).format.fill.color = '#FFD700';
       
-      const ebitdaRow = hasDebt ? currentRow - 4 : currentRow - 2;
-      const interestRow = hasDebt ? currentRow - 2 : 0;
+      // Find EBITDA row (it's 2 rows up from current, or 4 if we have debt)
+      const ebitdaRowForNetIncome = hasDebt ? currentRow - 4 : currentRow - 2;
       
       // Net Income formulas for each period
       for (let col = 1; col <= periodColumns; col++) {
         const colLetter = this.getColumnLetter(col);
-        if (hasDebt) {
+        if (hasDebt && interestExpenseRow > 0) {
           plSheet.getRange(`${colLetter}${currentRow}`).formulas = 
-            [[`=${colLetter}${ebitdaRow}+${colLetter}${interestRow}`]];
+            [[`=${colLetter}${ebitdaRowForNetIncome}+${colLetter}${interestExpenseRow}`]];
         } else {
           plSheet.getRange(`${colLetter}${currentRow}`).formulas = 
-            [[`=${colLetter}${ebitdaRow}`]];
+            [[`=${colLetter}${ebitdaRowForNetIncome}`]];
         }
       }
       
