@@ -157,11 +157,18 @@ class MAModelingAddin {
   setupMainEventListeners() {
     console.log('Setting up main event listeners...');
     
-    // Generate Model button
-    const generateModelBtn = document.getElementById('generateModelBtn');
-    if (generateModelBtn) {
-      generateModelBtn.addEventListener('click', () => this.generateModel());
-      console.log('Generate model button listener added');
+    // Generate Assumptions button
+    const generateAssumptionsBtn = document.getElementById('generateAssumptionsBtn');
+    if (generateAssumptionsBtn) {
+      generateAssumptionsBtn.addEventListener('click', () => this.generateAssumptions());
+      console.log('Generate assumptions button listener added');
+    }
+    
+    // Generate P&L button
+    const generatePLBtn = document.getElementById('generatePLBtn');
+    if (generatePLBtn) {
+      generatePLBtn.addEventListener('click', () => this.generatePLWithAI());
+      console.log('Generate P&L button listener added');
     }
     
     // Validate Model button (if exists)
@@ -281,8 +288,118 @@ class MAModelingAddin {
     console.log('✅ Restored section collapsed states from localStorage');
   }
 
+  async generateAssumptions() {
+    console.log('Starting assumptions generation...');
+    
+    try {
+      // Validate form data
+      if (this.formHandler) {
+        const validation = this.formHandler.validateAllFields();
+        if (!validation.isValid) {
+          const errorMessage = 'Please complete the following required fields:\n' + validation.errors.join('\n');
+          alert(errorMessage);
+          console.log('Validation failed:', validation.errors);
+          return;
+        }
+      }
+      
+      // Collect model data
+      let modelData = {};
+      if (this.formHandler) {
+        modelData = this.formHandler.collectAllModelData();
+        console.log('Model data collected:', modelData);
+      }
+      
+      // Generate Excel assumptions sheet
+      if (this.excelGenerator) {
+        const result = await this.excelGenerator.generateModel(modelData);
+        
+        if (result.success) {
+          console.log('Assumptions generated successfully');
+          
+          // Show the P&L generation button
+          const generatePLBtn = document.getElementById('generatePLBtn');
+          if (generatePLBtn) {
+            generatePLBtn.style.display = 'inline-flex';
+          }
+          
+          if (this.uiController) {
+            this.uiController.showMessage('Assumptions sheet created! You can now generate the P&L.', 'success');
+          } else {
+            alert('Assumptions sheet created successfully! You can now generate the P&L using AI.');
+          }
+        } else {
+          console.error('Assumptions generation failed:', result.error);
+          if (this.uiController) {
+            this.uiController.showMessage('Error generating assumptions: ' + result.error, 'error');
+          } else {
+            alert('Error generating assumptions: ' + result.error);
+          }
+        }
+      } else {
+        console.error('ExcelGenerator not available');
+        alert('Excel generator not available. Please refresh the page.');
+      }
+      
+    } catch (error) {
+      console.error('Error in generateAssumptions:', error);
+      if (this.uiController) {
+        this.uiController.showMessage('Unexpected error: ' + error.message, 'error');
+      } else {
+        alert('Unexpected error: ' + error.message);
+      }
+    }
+  }
+  
+  async generatePLWithAI() {
+    console.log('Starting AI P&L generation...');
+    
+    try {
+      // Collect model data
+      let modelData = {};
+      if (this.formHandler) {
+        modelData = this.formHandler.collectAllModelData();
+        console.log('Model data for AI P&L:', modelData);
+      }
+      
+      // Generate P&L using AI
+      if (this.excelGenerator) {
+        const result = await this.excelGenerator.generatePLWithAI(modelData);
+        
+        if (result.success) {
+          console.log('AI P&L prompt generated successfully');
+          if (this.uiController) {
+            this.uiController.showMessage('AI P&L generation ready! Check the P&L sheet for details.', 'success');
+          } else {
+            alert('AI P&L generation ready! Check the P&L sheet for the detailed prompt.');
+          }
+        } else {
+          console.error('AI P&L generation failed:', result.error);
+          if (this.uiController) {
+            this.uiController.showMessage('Error generating AI P&L: ' + result.error, 'error');
+          } else {
+            alert('Error generating AI P&L: ' + result.error);
+          }
+        }
+      } else {
+        console.error('ExcelGenerator not available');
+        alert('Excel generator not available. Please refresh the page.');
+      }
+      
+    } catch (error) {
+      console.error('Error in generatePLWithAI:', error);
+      if (this.uiController) {
+        this.uiController.showMessage('Unexpected error: ' + error.message, 'error');
+      } else {
+        alert('Unexpected error: ' + error.message);
+      }
+    }
+  }
+  
+  // Legacy function for backward compatibility
   async generateModel() {
-    console.log('Starting model generation...');
+    console.log('Legacy generateModel called - redirecting to generateAssumptions...');
+    return this.generateAssumptions();
     
     try {
       // Validate form data

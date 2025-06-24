@@ -54,20 +54,13 @@ class ExcelGenerator {
       // Reset cell tracker
       this.cellTracker = new CellTracker();
       
-      // Step 1: Create Assumptions sheet
+      // Step 1: Create Assumptions sheet only
       await this.createAssumptionsSheet(modelData);
       
-      // Step 2: Create P&L sheet with dynamic formulas
-      await this.createPLSheet(modelData);
-      
-      console.log('✅ Model generation completed successfully!');
+      console.log('✅ Assumptions sheet generation completed successfully!');
       this.cellTracker.printAllCells();
       
-      // Log the AI prompt for debugging
-      console.log('📋 AI Prompt that would be used:');
-      console.log(this.generateAIPrompt(modelData));
-      
-      return { success: true, message: 'Model with P&L created successfully!' };
+      return { success: true, message: 'Assumptions sheet created successfully! You can now generate the P&L using AI.' };
       
     } catch (error) {
       console.error('❌ Error generating model:', error);
@@ -427,8 +420,8 @@ class ExcelGenerator {
     console.log('📍 Section positions:', sectionRows);
   }
 
-  // Generate OpenAI prompt with all assumptions and cell references
-  generateAIPrompt(modelData) {
+  // Generate detailed OpenAI prompt for P&L creation
+  generateDetailedAIPrompt(modelData) {
     console.log('🤖 Generating AI prompt for P&L creation...');
     
     const assumptions = [];
@@ -443,56 +436,276 @@ class ExcelGenerator {
       });
     }
     
-    const prompt = `You are an analyst at a top investment bank. You have been given the following M&A model assumptions with their Excel cell references:
+    // Calculate the number of periods
+    const periods = this.calculatePeriods(modelData.projectStartDate, modelData.projectEndDate, modelData.modelPeriods);
+    const maxPeriods = Math.min(periods, 60); // Cap at 60 periods for performance
+    
+    // Generate period headers
+    const periodHeaders = [];
+    const startDate = new Date(modelData.projectStartDate);
+    for (let i = 0; i < maxPeriods; i++) {
+      periodHeaders.push(this.formatPeriodHeader(startDate, i, modelData.modelPeriods));
+    }
+    
+    const prompt = `You are a senior financial analyst at a top-tier investment bank specializing in M&A financial modeling. You have been provided with a complete set of assumptions stored in an Excel 'Assumptions' sheet with specific cell references.
 
-**HIGH-LEVEL PARAMETERS:**
-- Currency: ${modelData.currency} (Cell: ${this.cellTracker.getCellReference('currency')})
-- Project Start Date: ${modelData.projectStartDate} (Cell: ${this.cellTracker.getCellReference('projectStartDate')})
-- Project End Date: ${modelData.projectEndDate} (Cell: ${this.cellTracker.getCellReference('projectEndDate')})
-- Model Periods: ${modelData.modelPeriods} (Cell: ${this.cellTracker.getCellReference('modelPeriods')})
+**PROJECT OVERVIEW:**
+- Deal Name: ${modelData.dealName}
+- Currency: ${modelData.currency}
+- Model Period Type: ${modelData.modelPeriods}
+- Project Duration: ${modelData.projectStartDate} to ${modelData.projectEndDate}
+- Total Periods Required: ${maxPeriods}
 
-**DEAL ASSUMPTIONS:**
-- Deal Name: ${modelData.dealName} (Cell: ${this.cellTracker.getCellReference('dealName')})
-- Deal Value: ${modelData.dealValue} (Cell: ${this.cellTracker.getCellReference('dealValue')})
-- Transaction Fee %: ${modelData.transactionFee} (Cell: ${this.cellTracker.getCellReference('transactionFee')})
-- Deal LTV %: ${modelData.dealLTV} (Cell: ${this.cellTracker.getCellReference('dealLTV')})
-- Equity Contribution: (Cell: ${this.cellTracker.getCellReference('equityContribution')})
-- Debt Financing: (Cell: ${this.cellTracker.getCellReference('debtFinancing')})
+**EXACT CELL REFERENCES IN ASSUMPTIONS SHEET:**
 
-**REVENUE ITEMS:**
-${this.formatRevenueItems(modelData)}
+**High-Level Parameters:**
+- Currency: ${this.cellTracker.getCellReference('currency')}
+- Project Start Date: ${this.cellTracker.getCellReference('projectStartDate')}
+- Project End Date: ${this.cellTracker.getCellReference('projectEndDate')}
+- Model Periods: ${this.cellTracker.getCellReference('modelPeriods')}
 
-**OPERATING EXPENSES:**
-${this.formatOpexItems(modelData)}
+**Deal Structure:**
+- Deal Name: ${this.cellTracker.getCellReference('dealName')}
+- Deal Value: ${this.cellTracker.getCellReference('dealValue')}
+- Transaction Fee %: ${this.cellTracker.getCellReference('transactionFee')}
+- Deal LTV %: ${this.cellTracker.getCellReference('dealLTV')}
+- Equity Contribution (Calculated): ${this.cellTracker.getCellReference('equityContribution')}
+- Debt Financing (Calculated): ${this.cellTracker.getCellReference('debtFinancing')}
 
-**CAPITAL EXPENSES:**
-${this.formatCapexItems(modelData)}
+**Revenue Items with Growth Rates:**
+${this.formatDetailedRevenueItems(modelData)}
 
-**EXIT ASSUMPTIONS:**
-- Disposal Cost %: ${modelData.disposalCost} (Cell: ${this.cellTracker.getCellReference('disposalCost')})
-- Terminal Cap Rate %: ${modelData.terminalCapRate} (Cell: ${this.cellTracker.getCellReference('terminalCapRate')})
+**Operating Expense Items with Growth Rates:**
+${this.formatDetailedOpexItems(modelData)}
 
-**DEBT MODEL:**
-${this.formatDebtModel(modelData)}
+**Capital Expense Items with Growth Rates:**
+${this.formatDetailedCapexItems(modelData)}
 
-**INSTRUCTIONS:**
-Please generate a detailed P&L Statement structure with the following requirements:
-1. Time periods should be ${modelData.modelPeriods} from ${modelData.projectStartDate} to ${modelData.projectEndDate}
-2. All values should be Excel formulas referencing the assumption cells above
-3. Growth rates are annual, so adjust them for the period:
-   - Daily: divide annual rate by 365
-   - Monthly: divide annual rate by 12
-   - Quarterly: divide annual rate by 4
-4. Include proper debt service calculations based on the debt model
-5. Show Revenue, OpEx, EBITDA, Interest Expense, and Net Income
-6. All formulas should reference the specific cells provided above
+**Exit Assumptions:**
+- Disposal Cost %: ${this.cellTracker.getCellReference('disposalCost')}
+- Terminal Cap Rate %: ${this.cellTracker.getCellReference('terminalCapRate')}
 
-Please provide the P&L structure with exact Excel formulas for each line item.`;
+**Debt Model (if LTV > 0):**
+${this.formatDetailedDebtModel(modelData)}
 
-    console.log('📝 Generated prompt:', prompt);
+**PERIOD HEADERS REQUIRED:**
+${periodHeaders.join(', ')}
+
+**DETAILED INSTRUCTIONS:**
+
+1. **Create a comprehensive P&L Statement** with the following structure:
+   - Column A: Line item names
+   - Columns B through ${this.getColumnLetter(maxPeriods)}: Period data (${maxPeriods} periods total)
+
+2. **Revenue Section:**
+   - List each revenue item from the cell references above
+   - For period 1: Use the base value from the assumption cell
+   - For subsequent periods: Apply growth formulas adjusted for period type:
+     * If growth type is 'annual' and model periods are:
+       - Daily: Previous period * (1 + annual_rate/365/100)
+       - Monthly: Previous period * (1 + annual_rate/12/100)
+       - Quarterly: Previous period * (1 + annual_rate/4/100)
+       - Yearly: Previous period * (1 + annual_rate/100)
+     * If growth type is 'none': Use same value as previous period
+   - Include a 'Total Revenue' row that sums all revenue items
+
+3. **Operating Expenses Section:**
+   - List each operating expense item (as negative values)
+   - Apply the same growth logic as revenue
+   - Include a 'Total Operating Expenses' row
+
+4. **EBITDA Calculation:**
+   - EBITDA = Total Revenue + Total Operating Expenses (expenses are negative)
+
+5. **Capital Expenses (if any):**
+   - List each capital expense item (as negative values)
+   - Apply growth formulas
+   - Include 'Total CapEx' row
+
+6. **Interest Expense (if debt exists):**
+   - Calculate based on debt financing amount and interest rate
+   - Adjust for period type:
+     * Daily: Debt * Interest_Rate / 365 / 100
+     * Monthly: Debt * Interest_Rate / 12 / 100
+     * Quarterly: Debt * Interest_Rate / 4 / 100
+     * Yearly: Debt * Interest_Rate / 100
+
+7. **Net Income:**
+   - Net Income = EBITDA - CapEx - Interest Expense
+
+8. **FORMAT REQUIREMENTS:**
+   - Use exact Excel formula syntax
+   - Reference cells using 'Assumptions!CellAddress' format
+   - Provide the complete Excel range setup
+   - Include proper headers and formatting instructions
+   - Make sure all ${maxPeriods} periods are covered
+
+**CRITICAL:** You must provide exact Excel formulas for every cell, referencing the specific assumption cells listed above. Do not use placeholder values - use actual Excel formulas that will calculate correctly.
+
+Please provide the complete P&L structure with exact cell addresses and formulas for all ${maxPeriods} periods.`;
+
+    console.log('📝 Generated detailed AI prompt with', maxPeriods, 'periods');
     return prompt;
   }
 
+  // Format detailed revenue items with exact cell references
+  formatDetailedRevenueItems(modelData) {
+    if (!modelData.revenueItems || modelData.revenueItems.length === 0) {
+      return 'No revenue items specified.';
+    }
+    
+    let output = '';
+    modelData.revenueItems.forEach((item, index) => {
+      const nameRef = this.cellTracker.getCellReference(`revenue_${index}_name`);
+      const valueRef = this.cellTracker.getCellReference(`revenue_${index}`);
+      const growthTypeRef = this.cellTracker.getCellReference(`revenue_${index}_growth_type`);
+      const growthRateRef = this.cellTracker.getCellReference(`revenue_${index}_growth_rate`);
+      
+      output += `\n- ${item.name || `Revenue Item ${index + 1}`}:\n`;
+      output += `  * Base Value: ${valueRef}\n`;
+      output += `  * Growth Type: ${item.growthType || 'none'}\n`;
+      if (item.growthType === 'annual' && item.annualGrowthRate) {
+        output += `  * Annual Growth Rate: ${item.annualGrowthRate}%\n`;
+      }
+    });
+    return output;
+  }
+  
+  // Format detailed operating expense items
+  formatDetailedOpexItems(modelData) {
+    if (!modelData.operatingExpenses || modelData.operatingExpenses.length === 0) {
+      return 'No operating expense items specified.';
+    }
+    
+    let output = '';
+    modelData.operatingExpenses.forEach((item, index) => {
+      const nameRef = this.cellTracker.getCellReference(`opex_${index}_name`);
+      const valueRef = this.cellTracker.getCellReference(`opex_${index}`);
+      
+      output += `\n- ${item.name || `OpEx Item ${index + 1}`}:\n`;
+      output += `  * Base Value: ${valueRef}\n`;
+      output += `  * Growth Type: ${item.growthType || 'none'}\n`;
+      if (item.growthType === 'annual' && item.annualGrowthRate) {
+        output += `  * Annual Growth Rate: ${item.annualGrowthRate}%\n`;
+      }
+    });
+    return output;
+  }
+  
+  // Format detailed capital expense items
+  formatDetailedCapexItems(modelData) {
+    if (!modelData.capitalExpenses || modelData.capitalExpenses.length === 0) {
+      return 'No capital expense items specified.';
+    }
+    
+    let output = '';
+    modelData.capitalExpenses.forEach((item, index) => {
+      const nameRef = this.cellTracker.getCellReference(`capex_${index}_name`);
+      const valueRef = this.cellTracker.getCellReference(`capex_${index}`);
+      
+      output += `\n- ${item.name || `CapEx Item ${index + 1}`}:\n`;
+      output += `  * Base Value: ${valueRef}\n`;
+      output += `  * Growth Type: ${item.growthType || 'none'}\n`;
+      if (item.growthType === 'annual' && item.annualGrowthRate) {
+        output += `  * Annual Growth Rate: ${item.annualGrowthRate}%\n`;
+      }
+    });
+    return output;
+  }
+  
+  // Format detailed debt model information
+  formatDetailedDebtModel(modelData) {
+    const hasDebt = modelData.dealLTV && parseFloat(modelData.dealLTV) > 0;
+    
+    if (!hasDebt) {
+      return 'No debt financing (LTV = 0%)';
+    }
+    
+    let output = `\n- Loan Issuance Fees: ${this.cellTracker.getCellReference('loanIssuanceFees')}\n`;
+    output += `- Interest Rate Type: ${modelData.interestRateType || 'fixed'}\n`;
+    
+    if (modelData.interestRateType === 'floating') {
+      output += `- Base Rate: ${this.cellTracker.getCellReference('baseRate')}\n`;
+      output += `- Credit Margin: ${this.cellTracker.getCellReference('creditMargin')}\n`;
+      output += `- Total Interest Rate: ${this.cellTracker.getCellReference('totalInterestRate')}\n`;
+    } else {
+      output += `- Fixed Interest Rate: ${this.cellTracker.getCellReference('fixedRate')}\n`;
+    }
+    
+    return output;
+  }
+  
+  // New function to generate P&L using AI
+  async generatePLWithAI(modelData) {
+    try {
+      console.log('🤖 Generating P&L using AI...');
+      
+      // Generate the detailed prompt
+      const aiPrompt = this.generateDetailedAIPrompt(modelData);
+      
+      // For now, we'll log the prompt and create a placeholder P&L
+      // In a real implementation, you would send this to OpenAI API
+      console.log('📋 AI Prompt for P&L Generation:');
+      console.log(aiPrompt);
+      
+      // Create a placeholder P&L sheet that shows the AI would handle this
+      await this.createAIPlaceholderPL(modelData, aiPrompt);
+      
+      return { success: true, message: 'AI P&L generation prompt ready! (In production, this would call OpenAI API)' };
+      
+    } catch (error) {
+      console.error('❌ Error generating AI P&L:', error);
+      return { success: false, error: error.message };
+    }
+  }
+  
+  // Create a placeholder P&L that shows what AI would generate
+  async createAIPlaceholderPL(modelData, aiPrompt) {
+    return Excel.run(async (context) => {
+      const sheets = context.workbook.worksheets;
+      
+      // Delete existing P&L sheet if it exists
+      try {
+        const existingSheet = sheets.getItemOrNullObject('P&L Statement');
+        existingSheet.load('name');
+        await context.sync();
+        
+        if (!existingSheet.isNullObject) {
+          console.log('🗑️ Deleting existing P&L sheet');
+          existingSheet.delete();
+          await context.sync();
+        }
+      } catch (e) {
+        // Sheet doesn't exist, continue
+      }
+      
+      // Create new P&L sheet
+      const plSheet = sheets.add('P&L Statement');
+      await context.sync();
+      
+      // Add header explaining this is AI-generated
+      plSheet.getRange('A1').values = [['P&L Statement - Generated by AI']];
+      plSheet.getRange('A1').format.font.bold = true;
+      plSheet.getRange('A1').format.font.size = 16;
+      
+      plSheet.getRange('A3').values = [['This P&L would be generated by OpenAI using the detailed prompt below:']];
+      plSheet.getRange('A3').format.font.italic = true;
+      
+      // Add a sample of the AI prompt (truncated for display)
+      const promptSample = aiPrompt.substring(0, 500) + '...';
+      plSheet.getRange('A5').values = [[promptSample]];
+      plSheet.getRange('A5').format.wrapText = true;
+      
+      // Add note about implementation
+      plSheet.getRange('A15').values = [['To implement: Send the full prompt to OpenAI API and parse the response to create the actual P&L with formulas.']];
+      plSheet.getRange('A15').format.font.bold = true;
+      plSheet.getRange('A15').format.fill.color = '#FFFF00';
+      
+      await context.sync();
+      console.log('✅ AI placeholder P&L created');
+    });
+  }
+  
   // Helper to get value for a key from modelData
   getValueForKey(key, modelData) {
     if (key.startsWith('revenue_')) {

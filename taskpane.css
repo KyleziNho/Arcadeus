@@ -705,6 +705,12 @@ select {
   box-shadow: var(--shadow-xl);
 }
 
+.generate-button-container .button-secondary {
+  background: linear-gradient(135deg, var(--accent-secondary) 0%, var(--accent-primary) 100%);
+  color: white;
+  border: none;
+}
+
 /* Debt Model Specific */
 .debt-status {
   background: var(--bg-tertiary);
