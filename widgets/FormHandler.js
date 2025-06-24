@@ -649,6 +649,146 @@ class FormHandler {
       dealLTV.dispatchEvent(new Event('input', { bubbles: true }));
     }
   }
+
+  collectAllModelData() {
+    console.log('📊 Collecting all model data...');
+    
+    const data = {};
+    
+    // High-Level Parameters
+    data.currency = document.getElementById('currency')?.value;
+    data.projectStartDate = document.getElementById('projectStartDate')?.value;
+    data.projectEndDate = document.getElementById('projectEndDate')?.value;
+    data.modelPeriods = document.getElementById('modelPeriods')?.value;
+    
+    // Deal Assumptions
+    data.dealName = document.getElementById('dealName')?.value;
+    data.dealValue = parseFloat(document.getElementById('dealValue')?.value) || 0;
+    data.transactionFee = parseFloat(document.getElementById('transactionFee')?.value) || 0;
+    data.dealLTV = parseFloat(document.getElementById('dealLTV')?.value) || 0;
+    
+    // Exit Assumptions
+    data.disposalCost = parseFloat(document.getElementById('disposalCost')?.value) || 0;
+    data.terminalCapRate = parseFloat(document.getElementById('terminalCapRate')?.value) || 0;
+    
+    // Debt Model
+    data.interestRateType = document.querySelector('input[name="rateType"]:checked')?.value || 'fixed';
+    data.loanIssuanceFees = parseFloat(document.getElementById('loanIssuanceFees')?.value) || 0;
+    data.fixedRate = parseFloat(document.getElementById('fixedRate')?.value) || 0;
+    data.baseRate = parseFloat(document.getElementById('baseRate')?.value) || 0;
+    data.creditMargin = parseFloat(document.getElementById('creditMargin')?.value) || 0;
+    
+    // Revenue Items with Growth Rates
+    data.revenueItems = this.collectRevenueItems();
+    
+    // Operating Expenses with Growth Rates
+    data.operatingExpenses = this.collectOperatingExpenses();
+    
+    // Capital Expenses with Growth Rates
+    data.capitalExpenses = this.collectCapitalExpenses();
+    
+    console.log('📋 Collected model data:', data);
+    return data;
+  }
+  
+  collectRevenueItems() {
+    const items = [];
+    const revenueItems = document.querySelectorAll('.revenue-item');
+    
+    revenueItems.forEach((item, index) => {
+      const itemNum = index + 1;
+      const nameEl = document.getElementById(`revenueName_${itemNum}`);
+      const valueEl = document.getElementById(`revenueValue_${itemNum}`);
+      const growthTypeEl = document.getElementById(`growthType_${itemNum}`);
+      
+      if (nameEl && valueEl) {
+        const itemData = {
+          name: nameEl.value,
+          value: parseFloat(valueEl.value) || 0,
+          growthType: growthTypeEl?.value || 'none'
+        };
+        
+        // Collect growth rate based on type
+        if (itemData.growthType === 'linear') {
+          const linearRateEl = document.getElementById(`linearGrowth_${itemNum}`);
+          itemData.linearGrowthRate = parseFloat(linearRateEl?.value) || 0;
+        } else if (itemData.growthType === 'annual') {
+          const annualRateEl = document.getElementById(`annualGrowth_${itemNum}`);
+          itemData.annualGrowthRate = parseFloat(annualRateEl?.value) || 0;
+        }
+        
+        items.push(itemData);
+      }
+    });
+    
+    return items;
+  }
+  
+  collectOperatingExpenses() {
+    const items = [];
+    const opexItems = document.querySelectorAll('#operatingExpensesContainer .cost-item');
+    
+    opexItems.forEach((item, index) => {
+      const itemNum = index + 1;
+      const nameEl = document.getElementById(`opExName_${itemNum}`);
+      const valueEl = document.getElementById(`opExValue_${itemNum}`);
+      const growthTypeEl = document.getElementById(`opExGrowthType_${itemNum}`);
+      
+      if (nameEl && valueEl) {
+        const itemData = {
+          name: nameEl.value,
+          value: parseFloat(valueEl.value) || 0,
+          growthType: growthTypeEl?.value || 'none'
+        };
+        
+        // Collect growth rate based on type
+        if (itemData.growthType === 'linear') {
+          const linearRateEl = document.getElementById(`linearGrowth_opEx_${itemNum}`);
+          itemData.linearGrowthRate = parseFloat(linearRateEl?.value) || 0;
+        } else if (itemData.growthType === 'annual') {
+          const annualRateEl = document.getElementById(`annualGrowth_opEx_${itemNum}`);
+          itemData.annualGrowthRate = parseFloat(annualRateEl?.value) || 0;
+        }
+        
+        items.push(itemData);
+      }
+    });
+    
+    return items;
+  }
+  
+  collectCapitalExpenses() {
+    const items = [];
+    const capexItems = document.querySelectorAll('#capitalExpensesContainer .cost-item');
+    
+    capexItems.forEach((item, index) => {
+      const itemNum = index + 1;
+      const nameEl = document.getElementById(`capExName_${itemNum}`);
+      const valueEl = document.getElementById(`capExValue_${itemNum}`);
+      const growthTypeEl = document.getElementById(`capExGrowthType_${itemNum}`);
+      
+      if (nameEl && valueEl) {
+        const itemData = {
+          name: nameEl.value,
+          value: parseFloat(valueEl.value) || 0,
+          growthType: growthTypeEl?.value || 'none'
+        };
+        
+        // Collect growth rate based on type
+        if (itemData.growthType === 'linear') {
+          const linearRateEl = document.getElementById(`linearGrowth_capEx_${itemNum}`);
+          itemData.linearGrowthRate = parseFloat(linearRateEl?.value) || 0;
+        } else if (itemData.growthType === 'annual') {
+          const annualRateEl = document.getElementById(`annualGrowth_capEx_${itemNum}`);
+          itemData.annualGrowthRate = parseFloat(annualRateEl?.value) || 0;
+        }
+        
+        items.push(itemData);
+      }
+    });
+    
+    return items;
+  }
 }
 
 // Export for use in main application
