@@ -569,10 +569,10 @@ Please provide the P&L structure with exact Excel formulas for each line item.`;
     return debtInfo;
   }
 
-  // P&L Sheet generation using AI-guided structure
+  // P&L Sheet generation using proper structure
   async createPLSheet(modelData) {
     return Excel.run(async (context) => {
-      console.log('📈 Creating P&L sheet with AI guidance...');
+      console.log('📈 Creating P&L sheet...');
       
       const sheets = context.workbook.worksheets;
       
@@ -595,15 +595,12 @@ Please provide the P&L structure with exact Excel formulas for each line item.`;
       const plSheet = sheets.add('P&L Statement');
       await context.sync();
       
-      // Generate AI prompt (for logging/debugging)
-      const aiPrompt = this.generateAIPrompt(modelData);
-      
       // Build P&L with formulas referencing Assumptions
       let currentRow = 1;
       
       // Calculate number of periods
       const periods = this.calculatePeriods(modelData.projectStartDate, modelData.projectEndDate, modelData.modelPeriods);
-      const periodColumns = Math.min(periods, 12); // Limit to 12 columns for display
+      const periodColumns = Math.min(periods, 36); // Show more periods
       
       // HEADER
       plSheet.getRange('A1').values = [['P&L Statement']];
@@ -630,8 +627,8 @@ Please provide the P&L structure with exact Excel formulas for each line item.`;
       plSheet.getRange(`A${currentRow}`).format.fill.color = '#87CEEB';
       currentRow += 1;
       
-      // Get revenue count from tracker
-      const revenueCount = parseInt(this.cellTracker.getCellReference('revenue_count') || '0');
+      // Get revenue count from model data
+      const revenueCount = modelData.revenueItems ? modelData.revenueItems.length : 0;
       const revenueStartRow = currentRow;
       
       if (revenueCount > 0) {
@@ -639,12 +636,11 @@ Please provide the P&L structure with exact Excel formulas for each line item.`;
         for (let i = 0; i < revenueCount; i++) {
           const nameRef = this.cellTracker.getCellReference(`revenue_${i}_name`);
           const valueRef = this.cellTracker.getCellReference(`revenue_${i}`);
-          const growthTypeRef = this.cellTracker.getCellReference(`revenue_${i}_growth_type`);
-          const growthRateRef = this.cellTracker.getCellReference(`revenue_${i}_growth_rate`);
           
           if (nameRef && valueRef) {
-            // Item name
-            plSheet.getRange(`A${currentRow}`).formulas = [[`=${nameRef}`]];
+            // Item name - use the actual name from modelData
+            const itemName = modelData.revenueItems[i]?.name || `Revenue Item ${i + 1}`;
+            plSheet.getRange(`A${currentRow}`).values = [[itemName]];
             
             // Values for each period with growth
             for (let col = 1; col <= periodColumns; col++) {
@@ -652,16 +648,20 @@ Please provide the P&L structure with exact Excel formulas for each line item.`;
               
               if (col === 1) {
                 // First period - base value
-                plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${valueRef}`]];
+                plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=Assumptions.${valueRef.split('!')[1]}`]];
               } else {
                 // Subsequent periods - apply growth
                 const prevCol = this.getColumnLetter(col - 1);
-                const growthFormula = this.getGrowthFormula(
-                  `${prevCol}${currentRow}`,
-                  growthRateRef,
-                  modelData.modelPeriods,
-                  modelData.revenueItems?.[i]?.growthType
-                );
+                let growthFormula;
+                const growthType = modelData.revenueItems?.[i]?.growthType;
+                const growthRate = modelData.revenueItems?.[i]?.annualGrowthRate;
+                
+                if (growthType === 'annual' && growthRate) {
+                  const periodRate = this.adjustGrowthRateForPeriod(growthRate, modelData.modelPeriods);
+                  growthFormula = `=${prevCol}${currentRow}*(1+${periodRate}/100)`;
+                } else {
+                  growthFormula = `=${prevCol}${currentRow}`;
+                }
                 plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[growthFormula]];
               }
             }
@@ -689,7 +689,8 @@ Please provide the P&L structure with exact Excel formulas for each line item.`;
       plSheet.getRange(`A${currentRow}`).format.fill.color = '#FFB6C1';
       currentRow += 1;
       
-      const opexCount = parseInt(this.cellTracker.getCellReference('opex_count') || '0');
+      // Get opex count from model data
+      const opexCount = modelData.operatingExpenses ? modelData.operatingExpenses.length : 0;
       const opexStartRow = currentRow;
       
       if (opexCount > 0) {
@@ -697,12 +698,11 @@ Please provide the P&L structure with exact Excel formulas for each line item.`;
         for (let i = 0; i < opexCount; i++) {
           const nameRef = this.cellTracker.getCellReference(`opex_${i}_name`);
           const valueRef = this.cellTracker.getCellReference(`opex_${i}`);
-          const growthTypeRef = this.cellTracker.getCellReference(`opex_${i}_growth_type`);
-          const growthRateRef = this.cellTracker.getCellReference(`opex_${i}_growth_rate`);
           
           if (nameRef && valueRef) {
-            // Item name
-            plSheet.getRange(`A${currentRow}`).formulas = [[`=${nameRef}`]];
+            // Item name - use the actual name from modelData  
+            const itemName = modelData.operatingExpenses[i]?.name || `OpEx Item ${i + 1}`;
+            plSheet.getRange(`A${currentRow}`).values = [[itemName]];
             
             // Values for each period with growth
             for (let col = 1; col <= periodColumns; col++) {
@@ -710,16 +710,20 @@ Please provide the P&L structure with exact Excel formulas for each line item.`;
               
               if (col === 1) {
                 // First period - base value (negative for expenses)
-                plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=-${valueRef}`]];
+                plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=-Assumptions.${valueRef.split('!')[1]}`]];
               } else {
                 // Subsequent periods - apply growth
                 const prevCol = this.getColumnLetter(col - 1);
-                const growthFormula = this.getGrowthFormula(
-                  `${prevCol}${currentRow}`,
-                  growthRateRef,
-                  modelData.modelPeriods,
-                  modelData.operatingExpenses?.[i]?.growthType
-                );
+                let growthFormula;
+                const growthType = modelData.operatingExpenses?.[i]?.growthType;
+                const growthRate = modelData.operatingExpenses?.[i]?.annualGrowthRate;
+                
+                if (growthType === 'annual' && growthRate) {
+                  const periodRate = this.adjustGrowthRateForPeriod(growthRate, modelData.modelPeriods);
+                  growthFormula = `=${prevCol}${currentRow}*(1+${periodRate}/100)`;
+                } else {
+                  growthFormula = `=${prevCol}${currentRow}`;
+                }
                 plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[growthFormula]];
               }
             }
@@ -780,19 +784,23 @@ Please provide the P&L structure with exact Excel formulas for each line item.`;
           let interestFormula = '';
           
           // Adjust interest rate based on period type
+          // Fix debt and interest rate references
+          const debtCellRef = debtRef ? `Assumptions.${debtRef.split('!')[1]}` : 'Assumptions.B8';
+          const rateCellRef = interestRateRef ? `Assumptions.${interestRateRef.split('!')[1]}` : 'Assumptions.B15';
+          
           switch (modelData.modelPeriods) {
             case 'daily':
-              interestFormula = `=-${debtRef}*${interestRateRef}/100/365`;
+              interestFormula = `=-${debtCellRef}*${rateCellRef}/100/365`;
               break;
             case 'monthly':
-              interestFormula = `=-${debtRef}*${interestRateRef}/100/12`;
+              interestFormula = `=-${debtCellRef}*${rateCellRef}/100/12`;
               break;
             case 'quarterly':
-              interestFormula = `=-${debtRef}*${interestRateRef}/100/4`;
+              interestFormula = `=-${debtCellRef}*${rateCellRef}/100/4`;
               break;
             case 'yearly':
             default:
-              interestFormula = `=-${debtRef}*${interestRateRef}/100`;
+              interestFormula = `=-${debtCellRef}*${rateCellRef}/100`;
           }
           
           plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[interestFormula]];
@@ -901,6 +909,21 @@ Please provide the P&L structure with exact Excel formulas for each line item.`;
       default:
         date.setMonth(date.getMonth() + periodIndex);
         return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
+    }
+  }
+  
+  // Adjust growth rate for period type  
+  adjustGrowthRateForPeriod(annualRate, periodType) {
+    switch (periodType) {
+      case 'daily':
+        return annualRate / 365;
+      case 'monthly':
+        return annualRate / 12;
+      case 'quarterly':
+        return annualRate / 4;
+      case 'yearly':
+      default:
+        return annualRate;
     }
   }
   
