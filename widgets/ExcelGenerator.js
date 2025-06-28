@@ -656,19 +656,21 @@ Please provide the complete P&L structure with exact cell addresses and formulas
   // Generate Free Cash Flow with AI
   async generateFCFWithAI(modelData) {
     try {
-      console.log('💰 Generating Free Cash Flow Statement...');
+      console.log('💰 Generating Free Cash Flow Statement with AI...');
       
-      // Generate the detailed FCF AI prompt
-      const fcfPrompt = this.generateFCFAIPrompt(modelData);
+      // Generate the comprehensive FCF AI prompt with all cell references
+      const fcfPrompt = this.generateComprehensiveFCFPrompt(modelData);
       
-      // For now, create the FCF with standard formulas
-      // In production, this would use the AI prompt to generate custom FCF
-      await this.createFCFSheet(modelData);
+      // Create FCF sheet that shows the AI prompt (for now)
+      // In production, this would send to OpenAI and parse the response
+      await this.createAIFCFSheet(modelData, fcfPrompt);
       
-      console.log('📋 FCF AI Prompt generated:');
+      console.log('📋 FCF AI Prompt for OpenAI:');
+      console.log('='.repeat(80));
       console.log(fcfPrompt);
+      console.log('='.repeat(80));
       
-      return { success: true, message: 'Free Cash Flow Statement generated successfully!' };
+      return { success: true, message: 'FCF AI prompt generated! This should be sent to OpenAI to create the actual FCF.' };
       
     } catch (error) {
       console.error('❌ Error generating FCF:', error);
@@ -925,136 +927,212 @@ Please provide the complete P&L structure with exact cell addresses and formulas
     });
   }
   
-  // Generate comprehensive FCF AI prompt
-  generateFCFAIPrompt(modelData) {
+  // Generate comprehensive FCF AI prompt with all cell references
+  generateComprehensiveFCFPrompt(modelData) {
     console.log('🤖 Generating FCF AI prompt...');
     
     // Calculate periods
     const periods = this.calculatePeriods(modelData.projectStartDate, modelData.projectEndDate, modelData.modelPeriods);
     const maxPeriods = Math.min(periods, 60);
     
-    const prompt = `You are a senior financial analyst at a top-tier investment bank specializing in Free Cash Flow modeling for M&A transactions. You have been provided with a complete Assumptions sheet and a generated P&L Statement with specific cell references.
+    const prompt = `You are a world-class M&A financial modeling expert. You have been provided with a complete Assumptions sheet and a fully generated P&L Statement. Your task is to create a comprehensive Free Cash Flow Statement that references these existing sheets.
 
-**PROJECT OVERVIEW:**
-- Deal Name: ${modelData.dealName}
-- Currency: ${modelData.currency}
-- Model Period Type: ${modelData.modelPeriods}
-- Project Duration: ${modelData.projectStartDate} to ${modelData.projectEndDate}
-- Total Periods Required: ${maxPeriods}
+**DEAL OVERVIEW:**
+- Deal: ${modelData.dealName}
+- Currency: ${modelData.currency} 
+- Period Type: ${modelData.modelPeriods}
+- Duration: ${modelData.projectStartDate} to ${modelData.projectEndDate}
+- Periods Needed: ${maxPeriods}
 
-**ASSUMPTIONS SHEET REFERENCES:**
-${this.formatAllAssumptionReferences(modelData)}
+**AVAILABLE ASSUMPTIONS SHEET DATA:**
+${this.formatDetailedAssumptions(modelData)}
 
-**P&L STATEMENT REFERENCES:**
-${this.formatAllPLReferences()}
+**AVAILABLE P&L STATEMENT DATA:**
+${this.formatDetailedPLReferences()}
 
-**CAPITAL EXPENDITURE REFERENCES:**
-${this.formatCapexReferences(modelData)}
+**YOUR TASK:**
+Create a complete Free Cash Flow Statement that uses ONLY Excel formulas referencing the above cell locations. Build a comprehensive FCF model with the following sections:
 
-**FREE CASH FLOW REQUIREMENTS:**
+**1. OPERATING CASH FLOW:**
+- Start with Net Income from P&L: ${this.plCellTracker.getCellReference('net_income')}
+- Add back: Depreciation & Amortization (create reasonable assumption)
+- Less: Working Capital Changes (typical 2-5% of revenue change)
+- Less: Tax adjustments if needed
 
-Create a comprehensive Free Cash Flow Statement with the following structure and requirements:
+**2. INVESTING CASH FLOW:**
+- Capital Expenditures: Use CapEx from assumptions
+- Asset sales/disposals (if applicable)
 
-1. **OPERATING CASH FLOW SECTION:**
-   - Start with EBITDA: Reference from P&L Statement (${this.plCellTracker.getCellReference('ebitda')})
-   - Tax Calculation: EBITDA * Tax Rate (assume 25% tax rate or create assumption)
-   - Net Operating Profit After Tax (NOPAT): EBITDA - Tax
-   - Add: Depreciation & Amortization (create assumption or use CapEx/useful life)
-   - Less: Changes in Working Capital (assume 2% of revenue change)
+**3. FINANCING CASH FLOW:**
+- Interest payments: Already in P&L at ${this.plCellTracker.getCellReference('interest_expense')}
+- Principal payments: Calculate debt amortization schedule
+- Dividend payments (if any)
 
-2. **INVESTING CASH FLOW SECTION:**
-   - Capital Expenditures: Reference from assumptions (${this.formatCapexReferences(modelData)})
-   - Asset Disposals: If any
-   - Net Investing Cash Flow
+**4. FREE CASH FLOW METRICS:**
+- Unlevered FCF (before financing)
+- Levered FCF (after debt service)
+- Cumulative FCF
+- IRR calculation using XIRR
+- Terminal Value using cap rate: ${this.cellTracker.getCellReference('terminalCapRate')}
 
-3. **FINANCING CASH FLOW SECTION:**
-   - Interest Payments: Reference from P&L (${this.plCellTracker.getCellReference('interest_expense')})
-   - Principal Payments: Calculate debt amortization
-   - Dividend Payments: If applicable
-   - Net Financing Cash Flow
+**CRITICAL REQUIREMENTS:**
 
-4. **FREE CASH FLOW CALCULATIONS:**
-   - Unlevered FCF: Operating Cash Flow - CapEx
-   - Levered FCF: Unlevered FCF - Interest - Principal Payments
-   - Cumulative FCF: Running total of Levered FCF
+1. **FORMULAS ONLY**: Every single cell must contain an Excel formula, never hardcoded values
+2. **EXACT REFERENCES**: Use the exact cell references provided above
+3. **FORMAT**: 'P&L Statement'!B15 or 'Assumptions'!C10
+4. **WORKING CAPITAL**: =((Current_Revenue*WC_%) - (Previous_Revenue*WC_%)) as negative cash flow
+5. **DEPRECIATION**: =Total_CapEx/Useful_Life or reasonable percentage
+6. **DEBT SERVICE**: =Principal_Payment + Interest_Payment
+7. **PERIOD ADJUSTMENT**: Adjust annual rates for ${modelData.modelPeriods} periods
 
-5. **VALUATION METRICS:**
-   - Terminal Value: Use terminal cap rate from assumptions (${this.cellTracker.getCellReference('terminalCapRate')})
-   - Present Value calculations
-   - IRR calculation using XIRR function
+**EXPECTED OUTPUT FORMAT:**
+Provide the complete Excel structure:
+- Row-by-row layout with exact cell addresses
+- Exact formulas for each cell
+- All ${maxPeriods} period columns
+- Proper section headers and formatting
+- Terminal value and valuation in final periods
 
-**CRITICAL FORMULA REQUIREMENTS:**
+**EXAMPLE FORMULA STYLE:**
+Row 15: EBITDA from P&L
+- B15: ='P&L Statement'!B12
+- C15: ='P&L Statement'!C12
+- D15: ='P&L Statement'!D12
 
-1. **All calculations must use Excel formulas**, not hardcoded values
-2. **Reference existing cells**: Use 'P&L Statement!B15' and 'Assumptions!C10' format
-3. **Working Capital Formula**: 
-   - Change in WC = (Current Revenue * 2%) - (Previous Revenue * 2%)
-   - Use: =(B6*2%)-(A6*2%) where B6 and A6 are revenue cells
-4. **Tax Formula**: =EBITDA_Cell * 0.25
-5. **Depreciation**: =Total_CapEx / Useful_Life (assume 10 years)
-6. **Period Adjustments**: All rates should be adjusted for ${modelData.modelPeriods} periods
-7. **Debt Amortization**: =Total_Debt / Loan_Term (assume 5 years)
+Row 16: Working Capital Change
+- B16: =-('P&L Statement'!B6*0.03)
+- C16: =-(('P&L Statement'!C6*0.03)-('P&L Statement'!B6*0.03))
+- D16: =-(('P&L Statement'!D6*0.03)-('P&L Statement'!C6*0.03))
 
-**EXACT CELL REFERENCE FORMAT:**
-- P&L References: 'P&L Statement!B15'
-- Assumption References: 'Assumptions!C10'
-- FCF Self-References: 'B25' (same sheet)
-
-**OUTPUT REQUIREMENTS:**
-- Provide exact Excel formulas for every calculation
-- Cover all ${maxPeriods} periods
-- Include proper headers with period labels
-- Use negative values for cash outflows
-- Include cumulative FCF tracking
-- Add terminal value in final period
-
-Please generate the complete Free Cash Flow structure with exact cell addresses and formulas for all ${maxPeriods} periods, ensuring all formulas properly reference the P&L and Assumptions sheets.`;
+Provide the COMPLETE Free Cash Flow model with exact Excel formulas for every cell across all periods.`;
 
     console.log('📝 Generated FCF AI prompt with', maxPeriods, 'periods');
     return prompt;
   }
   
-  // Format all assumption references for AI prompt
-  formatAllAssumptionReferences(modelData) {
-    let output = 'Key Assumption Cell References:\n';
+  // Format detailed assumptions for AI prompt
+  formatDetailedAssumptions(modelData) {
+    let output = 'EXACT ASSUMPTIONS SHEET CELL REFERENCES (use these exact references):\n\n';
     
-    // High-level parameters
+    output += `**DEAL STRUCTURE:**\n`;
+    output += `- Deal Value: ${this.cellTracker.getCellReference('dealValue')}\n`;
+    output += `- Deal LTV (%): ${this.cellTracker.getCellReference('dealLTV')}\n`;
+    output += `- Transaction Fee (%): ${this.cellTracker.getCellReference('transactionFee')}\n`;
+    output += `- Equity Contribution: ${this.cellTracker.getCellReference('equityContribution')}\n`;
+    output += `- Debt Financing: ${this.cellTracker.getCellReference('debtFinancing')}\n\n`;
+    
+    output += `**PROJECT PARAMETERS:**\n`;
     output += `- Currency: ${this.cellTracker.getCellReference('currency')}\n`;
     output += `- Project Start: ${this.cellTracker.getCellReference('projectStartDate')}\n`;
     output += `- Project End: ${this.cellTracker.getCellReference('projectEndDate')}\n`;
-    output += `- Deal Value: ${this.cellTracker.getCellReference('dealValue')}\n`;
-    output += `- Deal LTV: ${this.cellTracker.getCellReference('dealLTV')}\n`;
-    output += `- Debt Financing: ${this.cellTracker.getCellReference('debtFinancing')}\n`;
-    output += `- Terminal Cap Rate: ${this.cellTracker.getCellReference('terminalCapRate')}\n`;
+    output += `- Model Periods: ${this.cellTracker.getCellReference('modelPeriods')}\n\n`;
     
-    // Revenue items
-    if (modelData.revenueItems) {
-      output += '\nRevenue Items:\n';
+    output += `**DEBT MODEL:**\n`;
+    const hasDebt = modelData.dealLTV && parseFloat(modelData.dealLTV) > 0;
+    if (hasDebt) {
+      output += `- Interest Rate Type: ${this.cellTracker.getCellReference('interestRateType')}\n`;
+      if (modelData.interestRateType === 'floating') {
+        output += `- Base Rate (%): ${this.cellTracker.getCellReference('baseRate')}\n`;
+        output += `- Credit Margin (%): ${this.cellTracker.getCellReference('creditMargin')}\n`;
+        output += `- Total Interest Rate (%): ${this.cellTracker.getCellReference('totalInterestRate')}\n`;
+      } else {
+        output += `- Fixed Interest Rate (%): ${this.cellTracker.getCellReference('fixedRate')}\n`;
+      }
+      output += `- Loan Issuance Fees (%): ${this.cellTracker.getCellReference('loanIssuanceFees')}\n`;
+    } else {
+      output += `- No debt financing (LTV = 0%)\n`;
+    }
+    output += '\n';
+    
+    output += `**REVENUE ASSUMPTIONS:**\n`;
+    if (modelData.revenueItems && modelData.revenueItems.length > 0) {
       modelData.revenueItems.forEach((item, index) => {
         output += `- ${item.name}: ${this.cellTracker.getCellReference(`revenue_${index}`)}\n`;
+        output += `  * Growth Type: ${item.growthType || 'none'}\n`;
+        if (item.growthType === 'annual' && item.annualGrowthRate) {
+          output += `  * Annual Growth Rate: ${item.annualGrowthRate}%\n`;
+        }
       });
+    } else {
+      output += `- No revenue items specified\n`;
     }
+    output += '\n';
     
-    // Operating expenses
-    if (modelData.operatingExpenses) {
-      output += '\nOperating Expenses:\n';
+    output += `**OPERATING EXPENSE ASSUMPTIONS:**\n`;
+    if (modelData.operatingExpenses && modelData.operatingExpenses.length > 0) {
       modelData.operatingExpenses.forEach((item, index) => {
         output += `- ${item.name}: ${this.cellTracker.getCellReference(`opex_${index}`)}\n`;
+        output += `  * Growth Type: ${item.growthType || 'none'}\n`;
+        if (item.growthType === 'annual' && item.annualGrowthRate) {
+          output += `  * Annual Growth Rate: ${item.annualGrowthRate}%\n`;
+        }
       });
+    } else {
+      output += `- No operating expense items specified\n`;
     }
+    output += '\n';
+    
+    output += `**CAPITAL EXPENDITURE ASSUMPTIONS:**\n`;
+    if (modelData.capitalExpenses && modelData.capitalExpenses.length > 0) {
+      modelData.capitalExpenses.forEach((item, index) => {
+        output += `- ${item.name}: ${this.cellTracker.getCellReference(`capex_${index}`)}\n`;
+        output += `  * Growth Type: ${item.growthType || 'none'}\n`;
+        if (item.growthType === 'annual' && item.annualGrowthRate) {
+          output += `  * Annual Growth Rate: ${item.annualGrowthRate}%\n`;
+        }
+      });
+    } else {
+      output += `- No capital expenditure items specified\n`;
+    }
+    output += '\n';
+    
+    output += `**EXIT ASSUMPTIONS:**\n`;
+    output += `- Disposal Cost (%): ${this.cellTracker.getCellReference('disposalCost')}\n`;
+    output += `- Terminal Cap Rate (%): ${this.cellTracker.getCellReference('terminalCapRate')}\n\n`;
+    
+    output += `**USAGE INSTRUCTIONS:**\n`;
+    output += `- Reference format: ='Assumptions'!B15 (where B15 is the specific cell)\n`;
+    output += `- Always use single quotes around sheet names\n`;
+    output += `- These are the ONLY assumption values available - do not create new ones\n`;
     
     return output;
   }
   
-  // Format all P&L references for AI prompt
-  formatAllPLReferences() {
-    let output = 'P&L Statement Cell References:\n';
+  // Format detailed P&L references for AI prompt
+  formatDetailedPLReferences() {
+    let output = 'EXACT P&L STATEMENT CELL REFERENCES (use these exact references):\n\n';
     
-    output += `- Total Revenue: ${this.plCellTracker.getCellReference('total_revenue')}\n`;
-    output += `- Total Operating Expenses: ${this.plCellTracker.getCellReference('total_opex')}\n`;
+    output += `**REVENUE SECTION:**\n`;
+    if (modelData.revenueItems) {
+      modelData.revenueItems.forEach((item, index) => {
+        const ref = this.plCellTracker.getCellReference(`revenue_item_${index}`);
+        if (ref) {
+          output += `- ${item.name}: ${ref}\n`;
+        }
+      });
+    }
+    output += `- TOTAL REVENUE: ${this.plCellTracker.getCellReference('total_revenue')}\n\n`;
+    
+    output += `**EXPENSE SECTION:**\n`;
+    if (modelData.operatingExpenses) {
+      modelData.operatingExpenses.forEach((item, index) => {
+        const ref = this.plCellTracker.getCellReference(`opex_item_${index}`);
+        if (ref) {
+          output += `- ${item.name}: ${ref}\n`;
+        }
+      });
+    }
+    output += `- TOTAL OPERATING EXPENSES: ${this.plCellTracker.getCellReference('total_opex')}\n\n`;
+    
+    output += `**KEY METRICS:**\n`;
     output += `- EBITDA: ${this.plCellTracker.getCellReference('ebitda')}\n`;
-    output += `- Interest Expense: ${this.plCellTracker.getCellReference('interest_expense')}\n`;
-    output += `- Net Income: ${this.plCellTracker.getCellReference('net_income')}\n`;
+    output += `- INTEREST EXPENSE: ${this.plCellTracker.getCellReference('interest_expense')}\n`;
+    output += `- NET INCOME: ${this.plCellTracker.getCellReference('net_income')}\n\n`;
+    
+    output += `**USAGE INSTRUCTIONS:**\n`;
+    output += `- Reference format: ='P&L Statement'!B15 (where B15 is the specific cell)\n`;
+    output += `- For ranges: Use the entire range like B6:AK6 for all periods of a line item\n`;
+    output += `- Always use single quotes around sheet names with spaces\n`;
     
     return output;
   }
@@ -1072,8 +1150,8 @@ Please generate the complete Free Cash Flow structure with exact cell addresses 
     return output;
   }
   
-  // Create the FCF sheet
-  async createFCFSheet(modelData) {
+  // Create AI-generated FCF sheet (placeholder for now)
+  async createAIFCFSheet(modelData, aiPrompt) {
     return Excel.run(async (context) => {
       console.log('💰 Creating Free Cash Flow sheet...');
       
@@ -1257,7 +1335,37 @@ Please generate the complete Free Cash Flow structure with exact cell addresses 
       fcfSheet.getRange(`A:${this.getColumnLetter(periodColumns)}`).format.autofitColumns();
       
       await context.sync();
-      console.log('✅ Free Cash Flow Statement created successfully');
+      // Add AI prompt information
+      fcfSheet.getRange('A1').values = [['Free Cash Flow - AI Generated']];
+      fcfSheet.getRange('A1').format.font.bold = true;
+      fcfSheet.getRange('A1').format.font.size = 16;
+      fcfSheet.getRange('A1').format.fill.color = '#FFD700';
+      
+      fcfSheet.getRange('A3').values = [['This FCF should be generated by sending the prompt below to OpenAI:']];
+      fcfSheet.getRange('A3').format.font.bold = true;
+      fcfSheet.getRange('A3').format.fill.color = '#FFFF00';
+      
+      // Add truncated prompt for display
+      const promptPreview = aiPrompt.substring(0, 1000) + '...';
+      fcfSheet.getRange('A5').values = [[promptPreview]];
+      fcfSheet.getRange('A5:A20').merge();
+      fcfSheet.getRange('A5').format.wrapText = true;
+      
+      fcfSheet.getRange('A22').values = [['Key P&L References Available:']];
+      fcfSheet.getRange('A22').format.font.bold = true;
+      
+      let refRow = 23;
+      fcfSheet.getRange(`A${refRow}`).values = [[`EBITDA: ${this.plCellTracker.getCellReference('ebitda')}`]];
+      refRow++;
+      fcfSheet.getRange(`A${refRow}`).values = [[`Net Income: ${this.plCellTracker.getCellReference('net_income')}`]];
+      refRow++;
+      fcfSheet.getRange(`A${refRow}`).values = [[`Interest Expense: ${this.plCellTracker.getCellReference('interest_expense')}`]];
+      refRow++;
+      fcfSheet.getRange(`A${refRow}`).values = [[`Total Revenue: ${this.plCellTracker.getCellReference('total_revenue')}`]];
+      
+      fcfSheet.getRange('A:A').format.autofitColumns();
+      
+      console.log('✅ FCF AI prompt sheet created successfully');
     });
   }
   
