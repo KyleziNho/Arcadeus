@@ -500,40 +500,18 @@ ${periodHeaders.join(', ')}
 2. **Revenue Section:**
    - List each revenue item from the cell references above
    - For period 1: Use the base value from the assumption cell
-   - For subsequent periods: Apply growth formulas based on growth type:
-   
-   **LINEAR GROWTH FORMULAS (PRIORITY - START WITH THESE):**
-   * If growth type is 'linear':
-     - Period 1: =Assumptions!BaseValueCell
-     - Period 2: =PreviousPeriodCell + (Assumptions!BaseValueCell * LinearRate/100)
-     - Period 3: =PreviousPeriodCell + (Assumptions!BaseValueCell * LinearRate/100)
-     - Example: If base=1000, linear rate=5%: P1=1000, P2=1050, P3=1100, P4=1150
-   
-   **ANNUAL GROWTH FORMULAS:**
-   * If growth type is 'annual' and model periods are:
-     - Daily: =PreviousPeriodCell * (1 + annual_rate/365/100)
-     - Monthly: =PreviousPeriodCell * (1 + annual_rate/12/100)
-     - Quarterly: =PreviousPeriodCell * (1 + annual_rate/4/100)
-     - Yearly: =PreviousPeriodCell * (1 + annual_rate/100)
-   
-   **NO GROWTH:**
-   * If growth type is 'none': =PreviousPeriodCell (same value)
-   
+   - For subsequent periods: Apply growth formulas adjusted for period type:
+     * If growth type is 'annual' and model periods are:
+       - Daily: Previous period * (1 + annual_rate/365/100)
+       - Monthly: Previous period * (1 + annual_rate/12/100)
+       - Quarterly: Previous period * (1 + annual_rate/4/100)
+       - Yearly: Previous period * (1 + annual_rate/100)
+     * If growth type is 'none': Use same value as previous period
    - Include a 'Total Revenue' row that sums all revenue items
 
 3. **Operating Expenses Section:**
    - List each operating expense item (as negative values)
-   - Apply the same growth logic as revenue:
-   
-   **LINEAR GROWTH FOR EXPENSES:**
-   * If growth type is 'linear':
-     - Period 1: =-Assumptions!BaseValueCell (negative)
-     - Period 2: =PreviousPeriodCell - (Assumptions!BaseValueCell * LinearRate/100)
-     - Note: Expenses grow by becoming MORE negative
-   
-   **ANNUAL GROWTH FOR EXPENSES:**
-   * Apply same period adjustments as revenue but keep values negative
-   
+   - Apply the same growth logic as revenue
    - Include a 'Total Operating Expenses' row
 
 4. **EBITDA Calculation:**
@@ -541,11 +519,7 @@ ${periodHeaders.join(', ')}
 
 5. **Capital Expenses (if any):**
    - List each capital expense item (as negative values)
-   - Apply the same growth formulas as operating expenses:
-   
-   **LINEAR GROWTH FOR CAPEX:**
-   * Same logic as operating expenses - linear growth makes expenses more negative
-   
+   - Apply growth formulas
    - Include 'Total CapEx' row
 
 6. **Interest Expense (if debt exists):**
@@ -566,29 +540,9 @@ ${periodHeaders.join(', ')}
    - Include proper headers and formatting instructions
    - Make sure all ${maxPeriods} periods are covered
 
-**CRITICAL REQUIREMENTS:**
+**CRITICAL:** You must provide exact Excel formulas for every cell, referencing the specific assumption cells listed above. Do not use placeholder values - use actual Excel formulas that will calculate correctly.
 
-1. **Start with Linear Growth**: Focus on linear growth formulas first as they are the priority
-2. **Exact Excel Formulas**: Provide actual Excel formulas, not placeholders
-3. **Cell References**: Use 'Assumptions!CellAddress' format for all references
-4. **Growth Rate Logic**: 
-   - Linear: Base amount grows by fixed percentage each period
-   - Annual: Compound growth adjusted for period type
-5. **Expense Handling**: All expenses should be negative and grow by becoming more negative
-6. **Complete Coverage**: Provide formulas for all ${maxPeriods} periods
-
-**FORMULA EXAMPLES:**
-Revenue with 5% linear growth:
-- B6 (Period 1): =Assumptions!B15
-- C6 (Period 2): =B6+(Assumptions!B15*5/100)
-- D6 (Period 3): =C6+(Assumptions!B15*5/100)
-
-Expense with 3% linear growth:
-- B10 (Period 1): =-Assumptions!B20
-- C10 (Period 2): =B10-(Assumptions!B20*3/100)
-- D10 (Period 3): =C10-(Assumptions!B20*3/100)
-
-Please provide the complete P&L structure with exact cell addresses and formulas for all ${maxPeriods} periods, prioritizing linear growth formulas.`;
+Please provide the complete P&L structure with exact cell addresses and formulas for all ${maxPeriods} periods.`;
 
     console.log('📝 Generated detailed AI prompt with', maxPeriods, 'periods');
     return prompt;
@@ -608,17 +562,10 @@ Please provide the complete P&L structure with exact cell addresses and formulas
       const growthRateRef = this.cellTracker.getCellReference(`revenue_${index}_growth_rate`);
       
       output += `\n- ${item.name || `Revenue Item ${index + 1}`}:\n`;
-      output += `  * Base Value Cell: ${valueRef}\n`;
+      output += `  * Base Value: ${valueRef}\n`;
       output += `  * Growth Type: ${item.growthType || 'none'}\n`;
-      
-      if (item.growthType === 'linear' && item.linearGrowthRate) {
-        output += `  * Linear Growth Rate: ${item.linearGrowthRate}% per period\n`;
-        output += `  * Formula: Period 1 = ${valueRef}, Period 2 = Period 1 + (Period 1 * ${item.linearGrowthRate}/100), etc.\n`;
-      } else if (item.growthType === 'annual' && item.annualGrowthRate) {
+      if (item.growthType === 'annual' && item.annualGrowthRate) {
         output += `  * Annual Growth Rate: ${item.annualGrowthRate}%\n`;
-        output += `  * Must be adjusted for ${modelData.modelPeriods} periods\n`;
-      } else if (item.growthType === 'periodic') {
-        output += `  * Growth Type: Custom period-by-period values\n`;
       }
     });
     return output;
@@ -636,17 +583,10 @@ Please provide the complete P&L structure with exact cell addresses and formulas
       const valueRef = this.cellTracker.getCellReference(`opex_${index}`);
       
       output += `\n- ${item.name || `OpEx Item ${index + 1}`}:\n`;
-      output += `  * Base Value Cell: ${valueRef}\n`;
+      output += `  * Base Value: ${valueRef}\n`;
       output += `  * Growth Type: ${item.growthType || 'none'}\n`;
-      
-      if (item.growthType === 'linear' && item.linearGrowthRate) {
-        output += `  * Linear Growth Rate: ${item.linearGrowthRate}% per period\n`;
-        output += `  * Formula: Period 1 = ${valueRef}, Period 2 = Period 1 + (Period 1 * ${item.linearGrowthRate}/100), etc.\n`;
-      } else if (item.growthType === 'annual' && item.annualGrowthRate) {
+      if (item.growthType === 'annual' && item.annualGrowthRate) {
         output += `  * Annual Growth Rate: ${item.annualGrowthRate}%\n`;
-        output += `  * Must be adjusted for ${modelData.modelPeriods} periods\n`;
-      } else if (item.growthType === 'periodic') {
-        output += `  * Growth Type: Custom period-by-period values\n`;
       }
     });
     return output;
@@ -664,17 +604,10 @@ Please provide the complete P&L structure with exact cell addresses and formulas
       const valueRef = this.cellTracker.getCellReference(`capex_${index}`);
       
       output += `\n- ${item.name || `CapEx Item ${index + 1}`}:\n`;
-      output += `  * Base Value Cell: ${valueRef}\n`;
+      output += `  * Base Value: ${valueRef}\n`;
       output += `  * Growth Type: ${item.growthType || 'none'}\n`;
-      
-      if (item.growthType === 'linear' && item.linearGrowthRate) {
-        output += `  * Linear Growth Rate: ${item.linearGrowthRate}% per period\n`;
-        output += `  * Formula: Period 1 = ${valueRef}, Period 2 = Period 1 + (Period 1 * ${item.linearGrowthRate}/100), etc.\n`;
-      } else if (item.growthType === 'annual' && item.annualGrowthRate) {
+      if (item.growthType === 'annual' && item.annualGrowthRate) {
         output += `  * Annual Growth Rate: ${item.annualGrowthRate}%\n`;
-        output += `  * Must be adjusted for ${modelData.modelPeriods} periods\n`;
-      } else if (item.growthType === 'periodic') {
-        output += `  * Growth Type: Custom period-by-period values\n`;
       }
     });
     return output;
