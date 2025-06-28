@@ -43,6 +43,7 @@ class CellTracker {
 class ExcelGenerator {
   constructor() {
     this.cellTracker = new CellTracker();
+    this.plCellTracker = new CellTracker(); // Track P&L cell references
     this.currentWorkbook = null;
   }
 
@@ -51,8 +52,9 @@ class ExcelGenerator {
       console.log('🚀 Starting fresh model generation...');
       console.log('📊 Model data:', modelData);
       
-      // Reset cell tracker
+      // Reset cell trackers
       this.cellTracker = new CellTracker();
+      this.plCellTracker = new CellTracker();
       
       // Step 1: Create Assumptions sheet only
       await this.createAssumptionsSheet(modelData);
@@ -651,6 +653,29 @@ Please provide the complete P&L structure with exact cell addresses and formulas
     }
   }
   
+  // Generate Free Cash Flow with AI
+  async generateFCFWithAI(modelData) {
+    try {
+      console.log('💰 Generating Free Cash Flow Statement...');
+      
+      // Generate the detailed FCF AI prompt
+      const fcfPrompt = this.generateFCFAIPrompt(modelData);
+      
+      // For now, create the FCF with standard formulas
+      // In production, this would use the AI prompt to generate custom FCF
+      await this.createFCFSheet(modelData);
+      
+      console.log('📋 FCF AI Prompt generated:');
+      console.log(fcfPrompt);
+      
+      return { success: true, message: 'Free Cash Flow Statement generated successfully!' };
+      
+    } catch (error) {
+      console.error('❌ Error generating FCF:', error);
+      return { success: false, error: error.message };
+    }
+  }
+  
   // Create the actual P&L sheet with formulas
   async createPLSheet(modelData) {
     return Excel.run(async (context) => {
@@ -881,6 +906,9 @@ Please provide the complete P&L structure with exact cell addresses and formulas
         }
       }
       
+      // Track Net Income row
+      this.plCellTracker.recordCell('net_income', 'P&L Statement', `B${currentRow}:${this.getColumnLetter(periodColumns)}${currentRow}`);
+      
       // Format numbers
       const dataRange = plSheet.getRange(`B5:${this.getColumnLetter(periodColumns)}${currentRow}`);
       dataRange.numberFormat = [['#,##0;[Red](#,##0)']];
@@ -890,6 +918,346 @@ Please provide the complete P&L structure with exact cell addresses and formulas
       
       await context.sync();
       console.log('✅ P&L Statement created successfully');
+      
+      // Print tracked P&L cells for debugging
+      console.log('📊 P&L Cell References:');
+      this.plCellTracker.printAllCells();
+    });
+  }
+  
+  // Generate comprehensive FCF AI prompt
+  generateFCFAIPrompt(modelData) {
+    console.log('🤖 Generating FCF AI prompt...');
+    
+    // Calculate periods
+    const periods = this.calculatePeriods(modelData.projectStartDate, modelData.projectEndDate, modelData.modelPeriods);
+    const maxPeriods = Math.min(periods, 60);
+    
+    const prompt = `You are a senior financial analyst at a top-tier investment bank specializing in Free Cash Flow modeling for M&A transactions. You have been provided with a complete Assumptions sheet and a generated P&L Statement with specific cell references.
+
+**PROJECT OVERVIEW:**
+- Deal Name: ${modelData.dealName}
+- Currency: ${modelData.currency}
+- Model Period Type: ${modelData.modelPeriods}
+- Project Duration: ${modelData.projectStartDate} to ${modelData.projectEndDate}
+- Total Periods Required: ${maxPeriods}
+
+**ASSUMPTIONS SHEET REFERENCES:**
+${this.formatAllAssumptionReferences(modelData)}
+
+**P&L STATEMENT REFERENCES:**
+${this.formatAllPLReferences()}
+
+**CAPITAL EXPENDITURE REFERENCES:**
+${this.formatCapexReferences(modelData)}
+
+**FREE CASH FLOW REQUIREMENTS:**
+
+Create a comprehensive Free Cash Flow Statement with the following structure and requirements:
+
+1. **OPERATING CASH FLOW SECTION:**
+   - Start with EBITDA: Reference from P&L Statement (${this.plCellTracker.getCellReference('ebitda')})
+   - Tax Calculation: EBITDA * Tax Rate (assume 25% tax rate or create assumption)
+   - Net Operating Profit After Tax (NOPAT): EBITDA - Tax
+   - Add: Depreciation & Amortization (create assumption or use CapEx/useful life)
+   - Less: Changes in Working Capital (assume 2% of revenue change)
+
+2. **INVESTING CASH FLOW SECTION:**
+   - Capital Expenditures: Reference from assumptions (${this.formatCapexReferences(modelData)})
+   - Asset Disposals: If any
+   - Net Investing Cash Flow
+
+3. **FINANCING CASH FLOW SECTION:**
+   - Interest Payments: Reference from P&L (${this.plCellTracker.getCellReference('interest_expense')})
+   - Principal Payments: Calculate debt amortization
+   - Dividend Payments: If applicable
+   - Net Financing Cash Flow
+
+4. **FREE CASH FLOW CALCULATIONS:**
+   - Unlevered FCF: Operating Cash Flow - CapEx
+   - Levered FCF: Unlevered FCF - Interest - Principal Payments
+   - Cumulative FCF: Running total of Levered FCF
+
+5. **VALUATION METRICS:**
+   - Terminal Value: Use terminal cap rate from assumptions (${this.cellTracker.getCellReference('terminalCapRate')})
+   - Present Value calculations
+   - IRR calculation using XIRR function
+
+**CRITICAL FORMULA REQUIREMENTS:**
+
+1. **All calculations must use Excel formulas**, not hardcoded values
+2. **Reference existing cells**: Use 'P&L Statement!B15' and 'Assumptions!C10' format
+3. **Working Capital Formula**: 
+   - Change in WC = (Current Revenue * 2%) - (Previous Revenue * 2%)
+   - Use: =(B6*2%)-(A6*2%) where B6 and A6 are revenue cells
+4. **Tax Formula**: =EBITDA_Cell * 0.25
+5. **Depreciation**: =Total_CapEx / Useful_Life (assume 10 years)
+6. **Period Adjustments**: All rates should be adjusted for ${modelData.modelPeriods} periods
+7. **Debt Amortization**: =Total_Debt / Loan_Term (assume 5 years)
+
+**EXACT CELL REFERENCE FORMAT:**
+- P&L References: 'P&L Statement!B15'
+- Assumption References: 'Assumptions!C10'
+- FCF Self-References: 'B25' (same sheet)
+
+**OUTPUT REQUIREMENTS:**
+- Provide exact Excel formulas for every calculation
+- Cover all ${maxPeriods} periods
+- Include proper headers with period labels
+- Use negative values for cash outflows
+- Include cumulative FCF tracking
+- Add terminal value in final period
+
+Please generate the complete Free Cash Flow structure with exact cell addresses and formulas for all ${maxPeriods} periods, ensuring all formulas properly reference the P&L and Assumptions sheets.`;
+
+    console.log('📝 Generated FCF AI prompt with', maxPeriods, 'periods');
+    return prompt;
+  }
+  
+  // Format all assumption references for AI prompt
+  formatAllAssumptionReferences(modelData) {
+    let output = 'Key Assumption Cell References:\n';
+    
+    // High-level parameters
+    output += `- Currency: ${this.cellTracker.getCellReference('currency')}\n`;
+    output += `- Project Start: ${this.cellTracker.getCellReference('projectStartDate')}\n`;
+    output += `- Project End: ${this.cellTracker.getCellReference('projectEndDate')}\n`;
+    output += `- Deal Value: ${this.cellTracker.getCellReference('dealValue')}\n`;
+    output += `- Deal LTV: ${this.cellTracker.getCellReference('dealLTV')}\n`;
+    output += `- Debt Financing: ${this.cellTracker.getCellReference('debtFinancing')}\n`;
+    output += `- Terminal Cap Rate: ${this.cellTracker.getCellReference('terminalCapRate')}\n`;
+    
+    // Revenue items
+    if (modelData.revenueItems) {
+      output += '\nRevenue Items:\n';
+      modelData.revenueItems.forEach((item, index) => {
+        output += `- ${item.name}: ${this.cellTracker.getCellReference(`revenue_${index}`)}\n`;
+      });
+    }
+    
+    // Operating expenses
+    if (modelData.operatingExpenses) {
+      output += '\nOperating Expenses:\n';
+      modelData.operatingExpenses.forEach((item, index) => {
+        output += `- ${item.name}: ${this.cellTracker.getCellReference(`opex_${index}`)}\n`;
+      });
+    }
+    
+    return output;
+  }
+  
+  // Format all P&L references for AI prompt
+  formatAllPLReferences() {
+    let output = 'P&L Statement Cell References:\n';
+    
+    output += `- Total Revenue: ${this.plCellTracker.getCellReference('total_revenue')}\n`;
+    output += `- Total Operating Expenses: ${this.plCellTracker.getCellReference('total_opex')}\n`;
+    output += `- EBITDA: ${this.plCellTracker.getCellReference('ebitda')}\n`;
+    output += `- Interest Expense: ${this.plCellTracker.getCellReference('interest_expense')}\n`;
+    output += `- Net Income: ${this.plCellTracker.getCellReference('net_income')}\n`;
+    
+    return output;
+  }
+  
+  // Format CapEx references
+  formatCapexReferences(modelData) {
+    let output = '';
+    if (modelData.capitalExpenses && modelData.capitalExpenses.length > 0) {
+      modelData.capitalExpenses.forEach((item, index) => {
+        output += `${item.name}: ${this.cellTracker.getCellReference(`capex_${index}`)}\n`;
+      });
+    } else {
+      output = 'No capital expenditures specified.';
+    }
+    return output;
+  }
+  
+  // Create the FCF sheet
+  async createFCFSheet(modelData) {
+    return Excel.run(async (context) => {
+      console.log('💰 Creating Free Cash Flow sheet...');
+      
+      const sheets = context.workbook.worksheets;
+      
+      // Delete existing FCF sheet if it exists
+      try {
+        const existingSheet = sheets.getItemOrNullObject('Free Cash Flow');
+        existingSheet.load('name');
+        await context.sync();
+        
+        if (!existingSheet.isNullObject) {
+          console.log('🗑️ Deleting existing FCF sheet');
+          existingSheet.delete();
+          await context.sync();
+        }
+      } catch (e) {
+        // Sheet doesn't exist, continue
+      }
+      
+      // Create new FCF sheet
+      const fcfSheet = sheets.add('Free Cash Flow');
+      await context.sync();
+      
+      // Calculate periods
+      const periods = this.calculatePeriods(modelData.projectStartDate, modelData.projectEndDate, modelData.modelPeriods);
+      const periodColumns = Math.min(periods, 36);
+      
+      let currentRow = 1;
+      
+      // TITLE
+      fcfSheet.getRange('A1').values = [['Free Cash Flow Statement']];
+      fcfSheet.getRange('A1').format.font.bold = true;
+      fcfSheet.getRange('A1').format.font.size = 16;
+      currentRow = 3;
+      
+      // TIME PERIOD HEADERS
+      const headers = [''];
+      const startDate = new Date(modelData.projectStartDate);
+      for (let i = 0; i < periodColumns; i++) {
+        headers.push(this.formatPeriodHeader(startDate, i, modelData.modelPeriods));
+      }
+      
+      const headerRange = fcfSheet.getRange(`A${currentRow}:${this.getColumnLetter(periodColumns)}${currentRow}`);
+      headerRange.values = [headers];
+      headerRange.format.font.bold = true;
+      headerRange.format.fill.color = '#e0e0e0';
+      currentRow += 2;
+      
+      // OPERATING CASH FLOW SECTION
+      fcfSheet.getRange(`A${currentRow}`).values = [['OPERATING CASH FLOW']];
+      fcfSheet.getRange(`A${currentRow}`).format.font.bold = true;
+      fcfSheet.getRange(`A${currentRow}`).format.fill.color = '#87CEEB';
+      currentRow++;
+      
+      // EBITDA (from P&L)
+      fcfSheet.getRange(`A${currentRow}`).values = [['EBITDA']];
+      const ebitdaRef = this.plCellTracker.getCellReference('ebitda');
+      if (ebitdaRef) {
+        for (let col = 1; col <= periodColumns; col++) {
+          const colLetter = this.getColumnLetter(col);
+          const plCol = this.getColumnLetter(col + 1); // P&L starts from column B
+          fcfSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`='P&L Statement'!${plCol}${ebitdaRef.split('!')[1].match(/\\d+/)[0]}`]];
+        }
+      }
+      currentRow++;
+      
+      // Tax (25% of EBITDA)
+      fcfSheet.getRange(`A${currentRow}`).values = [['Less: Tax (25%)']];
+      for (let col = 1; col <= periodColumns; col++) {
+        const colLetter = this.getColumnLetter(col);
+        fcfSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=-${colLetter}${currentRow-1}*0.25`]];
+      }
+      currentRow++;
+      
+      // NOPAT
+      fcfSheet.getRange(`A${currentRow}`).values = [['NOPAT']];
+      fcfSheet.getRange(`A${currentRow}`).format.font.bold = true;
+      for (let col = 1; col <= periodColumns; col++) {
+        const colLetter = this.getColumnLetter(col);
+        fcfSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${colLetter}${currentRow-2}+${colLetter}${currentRow-1}`]];
+      }
+      currentRow += 2;
+      
+      // Working Capital Change
+      fcfSheet.getRange(`A${currentRow}`).values = [['Less: Change in Working Capital']];
+      const totalRevenueRef = this.plCellTracker.getCellReference('total_revenue');
+      if (totalRevenueRef) {
+        for (let col = 1; col <= periodColumns; col++) {
+          const colLetter = this.getColumnLetter(col);
+          const plCol = this.getColumnLetter(col + 1);
+          if (col === 1) {
+            // First period - just 2% of revenue
+            fcfSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=-'P&L Statement'!${plCol}${totalRevenueRef.split('!')[1].match(/\\d+/)[0]}*0.02`]];
+          } else {
+            // Change from previous period
+            const prevPlCol = this.getColumnLetter(col);
+            fcfSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=-('P&L Statement'!${plCol}${totalRevenueRef.split('!')[1].match(/\\d+/)[0]}*0.02-'P&L Statement'!${prevPlCol}${totalRevenueRef.split('!')[1].match(/\\d+/)[0]}*0.02)`]];
+          }
+        }
+      }
+      currentRow++;
+      
+      // Capital Expenditures
+      fcfSheet.getRange(`A${currentRow}`).values = [['Less: Capital Expenditures']];
+      if (modelData.capitalExpenses && modelData.capitalExpenses.length > 0) {
+        // Sum all CapEx items
+        for (let col = 1; col <= periodColumns; col++) {
+          const colLetter = this.getColumnLetter(col);
+          let capexFormula = '0';
+          modelData.capitalExpenses.forEach((item, index) => {
+            const capexRef = this.cellTracker.getCellReference(`capex_${index}`);
+            if (capexRef) {
+              if (capexFormula === '0') {
+                capexFormula = `-${capexRef}`;
+              } else {
+                capexFormula += `-${capexRef}`;
+              }
+            }
+          });
+          fcfSheet.getRange(`${colLetter}${currentRow}`).formulas = [[capexFormula]];
+        }
+      } else {
+        for (let col = 1; col <= periodColumns; col++) {
+          const colLetter = this.getColumnLetter(col);
+          fcfSheet.getRange(`${colLetter}${currentRow}`).values = [[0]];
+        }
+      }
+      currentRow += 2;
+      
+      // Unlevered Free Cash Flow
+      fcfSheet.getRange(`A${currentRow}`).values = [['Unlevered Free Cash Flow']];
+      fcfSheet.getRange(`A${currentRow}`).format.font.bold = true;
+      fcfSheet.getRange(`A${currentRow}`).format.fill.color = '#98FB98';
+      for (let col = 1; col <= periodColumns; col++) {
+        const colLetter = this.getColumnLetter(col);
+        fcfSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${colLetter}${currentRow-5}+${colLetter}${currentRow-3}+${colLetter}${currentRow-1}`]];
+      }
+      currentRow += 2;
+      
+      // Interest Payments
+      fcfSheet.getRange(`A${currentRow}`).values = [['Less: Interest Payments']];
+      const interestRef = this.plCellTracker.getCellReference('interest_expense');
+      if (interestRef) {
+        for (let col = 1; col <= periodColumns; col++) {
+          const colLetter = this.getColumnLetter(col);
+          const plCol = this.getColumnLetter(col + 1);
+          fcfSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`='P&L Statement'!${plCol}${interestRef.split('!')[1].match(/\\d+/)[0]}`]];
+        }
+      }
+      currentRow++;
+      
+      // Levered Free Cash Flow
+      fcfSheet.getRange(`A${currentRow}`).values = [['Levered Free Cash Flow']];
+      fcfSheet.getRange(`A${currentRow}`).format.font.bold = true;
+      fcfSheet.getRange(`A${currentRow}`).format.fill.color = '#FFD700';
+      for (let col = 1; col <= periodColumns; col++) {
+        const colLetter = this.getColumnLetter(col);
+        fcfSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${colLetter}${currentRow-3}+${colLetter}${currentRow-1}`]];
+      }
+      currentRow += 2;
+      
+      // Cumulative FCF
+      fcfSheet.getRange(`A${currentRow}`).values = [['Cumulative FCF']];
+      fcfSheet.getRange(`A${currentRow}`).format.font.bold = true;
+      for (let col = 1; col <= periodColumns; col++) {
+        const colLetter = this.getColumnLetter(col);
+        if (col === 1) {
+          fcfSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${colLetter}${currentRow-2}`]];
+        } else {
+          const prevCol = this.getColumnLetter(col - 1);
+          fcfSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${prevCol}${currentRow}+${colLetter}${currentRow-2}`]];
+        }
+      }
+      
+      // Format numbers
+      const dataRange = fcfSheet.getRange(`B5:${this.getColumnLetter(periodColumns)}${currentRow}`);
+      dataRange.numberFormat = [['#,##0;[Red](#,##0)']];
+      
+      // Auto-fit columns
+      fcfSheet.getRange(`A:${this.getColumnLetter(periodColumns)}`).format.autofitColumns();
+      
+      await context.sync();
+      console.log('✅ Free Cash Flow Statement created successfully');
     });
   }
   

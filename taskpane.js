@@ -171,6 +171,13 @@ class MAModelingAddin {
       console.log('Generate P&L button listener added');
     }
     
+    // Generate FCF button
+    const generateFCFBtn = document.getElementById('generateFCFBtn');
+    if (generateFCFBtn) {
+      generateFCFBtn.addEventListener('click', () => this.generateFCFWithAI());
+      console.log('Generate FCF button listener added');
+    }
+    
     // Validate Model button (if exists)
     const validateModelBtn = document.getElementById('validateModelBtn');
     if (validateModelBtn) {
@@ -368,10 +375,17 @@ class MAModelingAddin {
         
         if (result.success) {
           console.log('P&L generated successfully');
+          
+          // Show the FCF generation button
+          const generateFCFBtn = document.getElementById('generateFCFBtn');
+          if (generateFCFBtn) {
+            generateFCFBtn.style.display = 'inline-flex';
+          }
+          
           if (this.uiController) {
-            this.uiController.showMessage('P&L Statement created! Check the P&L Statement sheet.', 'success');
+            this.uiController.showMessage('P&L Statement created! You can now generate the Free Cash Flow.', 'success');
           } else {
-            alert('P&L Statement created successfully! Check the P&L Statement sheet in Excel.');
+            alert('P&L Statement created successfully! You can now generate the Free Cash Flow.');
           }
         } else {
           console.error('AI P&L generation failed:', result.error);
@@ -388,6 +402,51 @@ class MAModelingAddin {
       
     } catch (error) {
       console.error('Error in generatePLWithAI:', error);
+      if (this.uiController) {
+        this.uiController.showMessage('Unexpected error: ' + error.message, 'error');
+      } else {
+        alert('Unexpected error: ' + error.message);
+      }
+    }
+  }
+  
+  async generateFCFWithAI() {
+    console.log('Starting FCF generation...');
+    
+    try {
+      // Collect model data
+      let modelData = {};
+      if (this.formHandler) {
+        modelData = this.formHandler.collectAllModelData();
+        console.log('Model data for FCF:', modelData);
+      }
+      
+      // Generate FCF using AI
+      if (this.excelGenerator) {
+        const result = await this.excelGenerator.generateFCFWithAI(modelData);
+        
+        if (result.success) {
+          console.log('FCF generated successfully');
+          if (this.uiController) {
+            this.uiController.showMessage('Free Cash Flow Statement created! Check the Free Cash Flow sheet.', 'success');
+          } else {
+            alert('Free Cash Flow Statement created successfully! Check the Free Cash Flow sheet in Excel.');
+          }
+        } else {
+          console.error('FCF generation failed:', result.error);
+          if (this.uiController) {
+            this.uiController.showMessage('Error generating FCF: ' + result.error, 'error');
+          } else {
+            alert('Error generating FCF: ' + result.error);
+          }
+        }
+      } else {
+        console.error('ExcelGenerator not available');
+        alert('Excel generator not available. Please refresh the page.');
+      }
+      
+    } catch (error) {
+      console.error('Error in generateFCFWithAI:', error);
       if (this.uiController) {
         this.uiController.showMessage('Unexpected error: ' + error.message, 'error');
       } else {
