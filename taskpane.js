@@ -367,11 +367,11 @@ class MAModelingAddin {
         const result = await this.excelGenerator.generatePLWithAI(modelData);
         
         if (result.success) {
-          console.log('AI P&L prompt generated successfully');
+          console.log('P&L generated successfully');
           if (this.uiController) {
-            this.uiController.showMessage('AI P&L generation ready! Check the P&L sheet for details.', 'success');
+            this.uiController.showMessage('P&L Statement created! Check the P&L Statement sheet.', 'success');
           } else {
-            alert('AI P&L generation ready! Check the P&L sheet for the detailed prompt.');
+            alert('P&L Statement created successfully! Check the P&L Statement sheet in Excel.');
           }
         } else {
           console.error('AI P&L generation failed:', result.error);
