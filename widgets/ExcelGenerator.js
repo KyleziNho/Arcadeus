@@ -658,19 +658,27 @@ Please provide the complete P&L structure with exact cell addresses and formulas
     try {
       console.log('💰 Generating Free Cash Flow Statement with AI...');
       
-      // Generate the comprehensive FCF AI prompt with all cell references
-      const fcfPrompt = this.generateComprehensiveFCFPrompt(modelData);
+      // Step 1: Read the actual P&L sheet to get real cell structure
+      const plStructure = await this.readPLSheetStructure();
+      console.log('📊 P&L Structure discovered:', plStructure);
       
-      // Create FCF sheet that shows the AI prompt (for now)
+      // Step 2: Read assumption sheet structure
+      const assumptionStructure = await this.readAssumptionSheetStructure();
+      console.log('📊 Assumption Structure discovered:', assumptionStructure);
+      
+      // Step 3: Generate comprehensive FCF AI prompt with ACTUAL cell references
+      const fcfPrompt = this.generateRealFCFPrompt(modelData, plStructure, assumptionStructure);
+      
+      // Step 4: Create FCF sheet that shows the AI prompt (for now)
       // In production, this would send to OpenAI and parse the response
       await this.createAIFCFSheet(modelData, fcfPrompt);
       
-      console.log('📋 FCF AI Prompt for OpenAI:');
-      console.log('='.repeat(80));
+      console.log('📋 REAL FCF AI Prompt for OpenAI:');
+      console.log('='.repeat(100));
       console.log(fcfPrompt);
-      console.log('='.repeat(80));
+      console.log('='.repeat(100));
       
-      return { success: true, message: 'FCF AI prompt generated! This should be sent to OpenAI to create the actual FCF.' };
+      return { success: true, message: 'FCF AI prompt generated with REAL P&L cell references!' };
       
     } catch (error) {
       console.error('❌ Error generating FCF:', error);
@@ -927,8 +935,169 @@ Please provide the complete P&L structure with exact cell addresses and formulas
     });
   }
   
-  // Generate comprehensive FCF AI prompt with all cell references
-  generateComprehensiveFCFPrompt(modelData) {
+  // Read the actual P&L sheet to discover structure
+  async readPLSheetStructure() {
+    return Excel.run(async (context) => {
+      console.log('🔍 Reading P&L sheet structure...');
+      
+      try {
+        const plSheet = context.workbook.worksheets.getItem('P&L Statement');
+        
+        // Get the used range to understand the structure
+        const usedRange = plSheet.getUsedRange();
+        usedRange.load(['values', 'formulas', 'address']);
+        
+        await context.sync();
+        
+        const values = usedRange.values;
+        const formulas = usedRange.formulas;
+        const address = usedRange.address;
+        
+        console.log('📋 P&L Used Range:', address);
+        console.log('📋 P&L Values sample:', values.slice(0, 5));
+        
+        // Parse the structure to find key line items
+        const structure = {
+          totalColumns: values[0].length,
+          lineItems: {},
+          periodColumns: [],
+          address: address
+        };
+        
+        // Find period headers (typically row 3)
+        if (values.length > 2) {
+          structure.periodColumns = values[2].slice(1); // Skip first column (labels)
+        }
+        
+        // Scan for key line items
+        values.forEach((row, rowIndex) => {
+          const label = row[0];
+          if (typeof label === 'string') {
+            const labelLower = label.toLowerCase();
+            
+            // Map key items to their row positions
+            if (labelLower.includes('total revenue')) {
+              structure.lineItems.totalRevenue = {
+                row: rowIndex + 1, // Excel rows are 1-based
+                range: `B${rowIndex + 1}:${this.getColumnLetter(structure.totalColumns - 1)}${rowIndex + 1}`,
+                label: label
+              };
+            }
+            if (labelLower.includes('total operating expenses')) {
+              structure.lineItems.totalOpex = {
+                row: rowIndex + 1,
+                range: `B${rowIndex + 1}:${this.getColumnLetter(structure.totalColumns - 1)}${rowIndex + 1}`,
+                label: label
+              };
+            }
+            if (labelLower.includes('ebitda')) {
+              structure.lineItems.ebitda = {
+                row: rowIndex + 1,
+                range: `B${rowIndex + 1}:${this.getColumnLetter(structure.totalColumns - 1)}${rowIndex + 1}`,
+                label: label
+              };
+            }
+            if (labelLower.includes('interest expense')) {
+              structure.lineItems.interestExpense = {
+                row: rowIndex + 1,
+                range: `B${rowIndex + 1}:${this.getColumnLetter(structure.totalColumns - 1)}${rowIndex + 1}`,
+                label: label
+              };
+            }
+            if (labelLower.includes('net income')) {
+              structure.lineItems.netIncome = {
+                row: rowIndex + 1,
+                range: `B${rowIndex + 1}:${this.getColumnLetter(structure.totalColumns - 1)}${rowIndex + 1}`,
+                label: label
+              };
+            }
+            
+            // Also capture individual revenue and expense items
+            if (rowIndex > 4 && rowIndex < 50 && label && label.length > 0 && !label.includes('REVENUE') && !label.includes('EXPENSES') && !label.includes('Total')) {
+              // This might be an individual line item
+              if (!structure.lineItems.individualItems) {
+                structure.lineItems.individualItems = [];
+              }
+              structure.lineItems.individualItems.push({
+                row: rowIndex + 1,
+                range: `B${rowIndex + 1}:${this.getColumnLetter(structure.totalColumns - 1)}${rowIndex + 1}`,
+                label: label,
+                type: 'unknown'
+              });
+            }
+          }
+        });
+        
+        console.log('📋 P&L Structure parsed:', structure.lineItems);
+        return structure;
+        
+      } catch (error) {
+        console.error('❌ Error reading P&L sheet:', error);
+        return { error: 'Could not read P&L sheet' };
+      }
+    });
+  }
+  
+  // Read the actual Assumption sheet to discover structure
+  async readAssumptionSheetStructure() {
+    return Excel.run(async (context) => {
+      console.log('🔍 Reading Assumption sheet structure...');
+      
+      try {
+        const assumptionSheet = context.workbook.worksheets.getItem('Assumptions');
+        
+        // Get the used range
+        const usedRange = assumptionSheet.getUsedRange();
+        usedRange.load(['values', 'address']);
+        
+        await context.sync();
+        
+        const values = usedRange.values;
+        const address = usedRange.address;
+        
+        console.log('📋 Assumptions Used Range:', address);
+        
+        const structure = {
+          address: address,
+          keyItems: {}
+        };
+        
+        // Parse assumption values
+        values.forEach((row, rowIndex) => {
+          const label = row[0];
+          const value = row[1];
+          
+          if (typeof label === 'string' && label.length > 0) {
+            const labelLower = label.toLowerCase();
+            const cellRef = `B${rowIndex + 1}`;
+            
+            if (labelLower.includes('deal value')) {
+              structure.keyItems.dealValue = { cell: cellRef, value: value, label: label };
+            }
+            if (labelLower.includes('debt financing')) {
+              structure.keyItems.debtFinancing = { cell: cellRef, value: value, label: label };
+            }
+            if (labelLower.includes('terminal cap rate')) {
+              structure.keyItems.terminalCapRate = { cell: cellRef, value: value, label: label };
+            }
+            if (labelLower.includes('fixed interest rate') || labelLower.includes('total interest rate')) {
+              structure.keyItems.interestRate = { cell: cellRef, value: value, label: label };
+            }
+          }
+        });
+        
+        console.log('📋 Assumption Structure parsed:', structure.keyItems);
+        return structure;
+        
+      } catch (error) {
+        console.error('❌ Error reading Assumption sheet:', error);
+        return { error: 'Could not read Assumption sheet' };
+      }
+    });
+  }
+  
+  // Generate FCF prompt with REAL cell references from actual sheets
+  generateRealFCFPrompt(modelData, plStructure, assumptionStructure) {
     console.log('🤖 Generating FCF AI prompt...');
     
     // Calculate periods
@@ -1006,7 +1175,7 @@ Row 16: Working Capital Change
 
 Provide the COMPLETE Free Cash Flow model with exact Excel formulas for every cell across all periods.`;
 
-    console.log('📝 Generated FCF AI prompt with', maxPeriods, 'periods');
+    console.log('📝 Generated REAL FCF AI prompt with actual P&L cell references');
     return prompt;
   }
   
@@ -1878,6 +2047,371 @@ Provide the COMPLETE Free Cash Flow model with exact Excel formulas for every ce
     } else {
       return `=${prevCellRef}`;
     }
+  }
+
+  // Read actual P&L sheet structure to discover cell locations
+  async readPLSheetStructure() {
+    return Excel.run(async (context) => {
+      console.log('🔍 Reading P&L sheet structure...');
+      
+      try {
+        const plSheet = context.workbook.worksheets.getItem('P&L Statement');
+        const usedRange = plSheet.getUsedRange();
+        usedRange.load(['values', 'formulas', 'address']);
+        await context.sync();
+
+        const structure = {
+          sheetExists: true,
+          usedRange: usedRange.address,
+          lineItems: {},
+          periodColumns: 0
+        };
+
+        const values = usedRange.values;
+        const formulas = usedRange.formulas;
+        
+        // Parse the P&L structure to find key line items
+        for (let row = 0; row < values.length; row++) {
+          for (let col = 0; col < values[row].length; col++) {
+            const cellValue = values[row][col];
+            const cellRef = this.getColumnLetter(col) + (row + 1);
+            
+            // Look for key P&L line items
+            if (typeof cellValue === 'string') {
+              const lowerValue = cellValue.toLowerCase();
+              
+              // Map line items to their row positions
+              if (lowerValue.includes('revenue') && lowerValue.includes('total')) {
+                structure.lineItems.totalRevenue = { row: row + 1, startCol: 'B', cellRef: `B${row + 1}` };
+              }
+              if (lowerValue.includes('ebitda') || (lowerValue.includes('ebit') && lowerValue.includes('da'))) {
+                structure.lineItems.ebitda = { row: row + 1, startCol: 'B', cellRef: `B${row + 1}` };
+              }
+              if (lowerValue.includes('net income') || lowerValue.includes('net profit')) {
+                structure.lineItems.netIncome = { row: row + 1, startCol: 'B', cellRef: `B${row + 1}` };
+              }
+              if (lowerValue.includes('interest') && lowerValue.includes('expense')) {
+                structure.lineItems.interestExpense = { row: row + 1, startCol: 'B', cellRef: `B${row + 1}` };
+              }
+              if (lowerValue.includes('operating') && lowerValue.includes('expense') && lowerValue.includes('total')) {
+                structure.lineItems.totalOpEx = { row: row + 1, startCol: 'B', cellRef: `B${row + 1}` };
+              }
+              if (lowerValue.includes('capital') && (lowerValue.includes('expenditure') || lowerValue.includes('expense'))) {
+                structure.lineItems.totalCapEx = { row: row + 1, startCol: 'B', cellRef: `B${row + 1}` };
+              }
+            }
+          }
+        }
+
+        // Determine number of period columns (excluding column A for labels)
+        if (values.length > 0) {
+          structure.periodColumns = values[0].length - 1; // Subtract 1 for the label column
+        }
+
+        console.log('📊 P&L Structure discovered:', structure);
+        return structure;
+
+      } catch (error) {
+        console.log('❌ P&L sheet does not exist or cannot be read:', error.message);
+        return {
+          sheetExists: false,
+          error: error.message,
+          lineItems: {},
+          periodColumns: 0
+        };
+      }
+    });
+  }
+
+  // Read actual Assumptions sheet structure
+  async readAssumptionSheetStructure() {
+    return Excel.run(async (context) => {
+      console.log('🔍 Reading Assumptions sheet structure...');
+      
+      try {
+        const assumptionsSheet = context.workbook.worksheets.getItem('Assumptions');
+        const usedRange = assumptionsSheet.getUsedRange();
+        usedRange.load(['values', 'formulas', 'address']);
+        await context.sync();
+
+        const structure = {
+          sheetExists: true,
+          usedRange: usedRange.address,
+          assumptions: {},
+          sectionMap: {}
+        };
+
+        const values = usedRange.values;
+        
+        // Parse the Assumptions structure to find key data points
+        for (let row = 0; row < values.length; row++) {
+          const labelValue = values[row][0]; // Column A contains labels
+          const dataValue = values[row][1]; // Column B contains data
+          const cellRef = `B${row + 1}`;
+          
+          if (typeof labelValue === 'string') {
+            const lowerLabel = labelValue.toLowerCase();
+            
+            // Map key assumption values to their cell references
+            if (lowerLabel.includes('currency')) {
+              structure.assumptions.currency = { cellRef, value: dataValue };
+            }
+            if (lowerLabel.includes('deal value')) {
+              structure.assumptions.dealValue = { cellRef, value: dataValue };
+            }
+            if (lowerLabel.includes('deal ltv')) {
+              structure.assumptions.dealLTV = { cellRef, value: dataValue };
+            }
+            if (lowerLabel.includes('transaction fee')) {
+              structure.assumptions.transactionFee = { cellRef, value: dataValue };
+            }
+            if (lowerLabel.includes('disposal cost')) {
+              structure.assumptions.disposalCost = { cellRef, value: dataValue };
+            }
+            if (lowerLabel.includes('terminal cap rate')) {
+              structure.assumptions.terminalCapRate = { cellRef, value: dataValue };
+            }
+            if (lowerLabel.includes('interest rate') && !lowerLabel.includes('type')) {
+              structure.assumptions.interestRate = { cellRef, value: dataValue };
+            }
+            if (lowerLabel.includes('equity contribution')) {
+              structure.assumptions.equityContribution = { cellRef, value: dataValue };
+            }
+            if (lowerLabel.includes('debt financing')) {
+              structure.assumptions.debtFinancing = { cellRef, value: dataValue };
+            }
+            
+            // Track revenue items
+            if (labelValue.includes('Revenue Item') || labelValue.includes('Product Sales') || 
+                labelValue.includes('Service Revenue') || labelValue.includes('Sales')) {
+              if (!structure.assumptions.revenueItems) structure.assumptions.revenueItems = [];
+              structure.assumptions.revenueItems.push({ 
+                name: labelValue, 
+                cellRef, 
+                value: dataValue 
+              });
+            }
+            
+            // Track operating expenses
+            if ((lowerLabel.includes('expense') || lowerLabel.includes('cost')) && 
+                !lowerLabel.includes('capital') && !lowerLabel.includes('disposal')) {
+              if (!structure.assumptions.operatingExpenses) structure.assumptions.operatingExpenses = [];
+              structure.assumptions.operatingExpenses.push({ 
+                name: labelValue, 
+                cellRef, 
+                value: dataValue 
+              });
+            }
+            
+            // Track capital expenses
+            if (lowerLabel.includes('capital') && (lowerLabel.includes('expense') || lowerLabel.includes('expenditure'))) {
+              if (!structure.assumptions.capitalExpenses) structure.assumptions.capitalExpenses = [];
+              structure.assumptions.capitalExpenses.push({ 
+                name: labelValue, 
+                cellRef, 
+                value: dataValue 
+              });
+            }
+          }
+        }
+
+        console.log('📊 Assumptions Structure discovered:', structure);
+        return structure;
+
+      } catch (error) {
+        console.log('❌ Assumptions sheet does not exist or cannot be read:', error.message);
+        return {
+          sheetExists: false,
+          error: error.message,
+          assumptions: {},
+          sectionMap: {}
+        };
+      }
+    });
+  }
+
+  // Generate comprehensive FCF prompt using REAL cell references from P&L and Assumptions
+  generateRealFCFPrompt(modelData, plStructure, assumptionStructure) {
+    console.log('🤖 Generating REAL FCF AI prompt with discovered cell references...');
+    
+    const periods = this.calculatePeriods(modelData.projectStartDate, modelData.projectEndDate, modelData.modelPeriods);
+    const maxPeriods = Math.min(periods, 36);
+    
+    // Build period headers
+    const periodHeaders = [];
+    const startDate = new Date(modelData.projectStartDate);
+    for (let i = 0; i < maxPeriods; i++) {
+      periodHeaders.push(this.formatPeriodHeader(startDate, i, modelData.modelPeriods));
+    }
+
+    const prompt = `You are a senior financial analyst specializing in M&A Free Cash Flow modeling. You have been provided with ACTUAL cell references from an existing P&L Statement and Assumptions sheet.
+
+**PROJECT OVERVIEW:**
+- Deal Name: ${modelData.dealName}
+- Currency: ${modelData.currency}
+- Period Type: ${modelData.modelPeriods}
+- Total Periods: ${maxPeriods}
+- Date Range: ${modelData.projectStartDate} to ${modelData.projectEndDate}
+
+**ACTUAL P&L SHEET STRUCTURE DISCOVERED:**
+${this.formatPLStructureForPrompt(plStructure, maxPeriods)}
+
+**ACTUAL ASSUMPTIONS SHEET REFERENCES:**
+${this.formatAssumptionStructureForPrompt(assumptionStructure)}
+
+**REQUIRED FCF SHEET STRUCTURE:**
+
+Create a comprehensive Free Cash Flow statement with the following structure:
+- Column A: Line item names  
+- Columns B through ${this.getColumnLetter(maxPeriods)}: Period data (${maxPeriods} periods total)
+- Period Headers: ${periodHeaders.join(', ')}
+
+**FCF CALCULATION METHODOLOGY:**
+
+1. **OPERATING CASH FLOW SECTION:**
+   - EBITDA: Reference the exact EBITDA row from P&L
+   - Less: Tax (25% of EBITDA)
+   - = NOPAT (Net Operating Profit After Tax)
+
+2. **WORKING CAPITAL ADJUSTMENTS:**
+   - Change in Working Capital (2% of Total Revenue change)
+   - Calculate as: Current Period Revenue * 2% - Previous Period Revenue * 2%
+
+3. **CAPITAL EXPENDITURES:**
+   - Reference capital expense items from Assumptions if any exist
+   - Apply growth rates if specified
+
+4. **UNLEVERED FREE CASH FLOW:**
+   - = NOPAT - Change in Working Capital - Capital Expenditures
+
+5. **FINANCING CASH FLOWS:**
+   - Interest Payments: Reference from P&L Interest Expense line
+   - Principal Repayments (if applicable)
+
+6. **LEVERED FREE CASH FLOW:**
+   - = Unlevered FCF - Interest Payments - Principal Repayments
+
+7. **CUMULATIVE METRICS:**
+   - Cumulative FCF
+   - IRR calculation base
+
+**CRITICAL REQUIREMENTS:**
+
+1. **Use EXACT cell references** from the discovered P&L and Assumptions structures above
+2. **Reference format**: Use 'P&L Statement'!B15 or 'Assumptions'!B23 format  
+3. **Handle missing data**: If a P&L line item is not found, use conservative estimates
+4. **Most Important**: ALWAYS reference the Net Income line from P&L as the starting point for FCF calculations
+5. **Period consistency**: Ensure all ${maxPeriods} periods are calculated
+6. **Formula accuracy**: All formulas must be valid Excel syntax
+
+**NET INCOME PRIORITY:**
+The most critical value to extract from the P&L is the Net Income for each period, located at: ${plStructure.lineItems?.netIncome?.cellRef || 'Not Found - Please locate manually'}
+
+**EXPECTED OUTPUT:**
+Provide complete Excel range setup with exact cell addresses and formulas for all ${maxPeriods} periods. Include proper formatting instructions and ensure all calculations reference the actual discovered cell locations.
+
+If any critical P&L references are missing, clearly state what assumptions you're making and recommend manual verification.`;
+
+    return prompt;
+  }
+
+  // Format P&L structure for AI prompt
+  formatPLStructureForPrompt(plStructure, maxPeriods) {
+    if (!plStructure.sheetExists) {
+      return `❌ P&L Sheet not found or unreadable. Error: ${plStructure.error || 'Unknown error'}`;
+    }
+
+    let output = `✅ P&L Sheet discovered with ${plStructure.periodColumns} period columns\n`;
+    output += `📍 Used Range: ${plStructure.usedRange}\n\n`;
+    
+    output += `**KEY P&L LINE ITEMS FOUND:**\n`;
+    
+    if (plStructure.lineItems.totalRevenue) {
+      output += `- Total Revenue: Row ${plStructure.lineItems.totalRevenue.row}, Range B${plStructure.lineItems.totalRevenue.row}:${this.getColumnLetter(maxPeriods)}${plStructure.lineItems.totalRevenue.row}\n`;
+    }
+    
+    if (plStructure.lineItems.totalOpEx) {
+      output += `- Total Operating Expenses: Row ${plStructure.lineItems.totalOpEx.row}, Range B${plStructure.lineItems.totalOpEx.row}:${this.getColumnLetter(maxPeriods)}${plStructure.lineItems.totalOpEx.row}\n`;
+    }
+    
+    if (plStructure.lineItems.ebitda) {
+      output += `- EBITDA: Row ${plStructure.lineItems.ebitda.row}, Range B${plStructure.lineItems.ebitda.row}:${this.getColumnLetter(maxPeriods)}${plStructure.lineItems.ebitda.row}\n`;
+    }
+    
+    if (plStructure.lineItems.interestExpense) {
+      output += `- Interest Expense: Row ${plStructure.lineItems.interestExpense.row}, Range B${plStructure.lineItems.interestExpense.row}:${this.getColumnLetter(maxPeriods)}${plStructure.lineItems.interestExpense.row}\n`;
+    }
+    
+    if (plStructure.lineItems.netIncome) {
+      output += `- 🎯 NET INCOME (CRITICAL): Row ${plStructure.lineItems.netIncome.row}, Range B${plStructure.lineItems.netIncome.row}:${this.getColumnLetter(maxPeriods)}${plStructure.lineItems.netIncome.row}\n`;
+    }
+    
+    if (plStructure.lineItems.totalCapEx) {
+      output += `- Total CapEx: Row ${plStructure.lineItems.totalCapEx.row}, Range B${plStructure.lineItems.totalCapEx.row}:${this.getColumnLetter(maxPeriods)}${plStructure.lineItems.totalCapEx.row}\n`;
+    }
+
+    output += `\n**REFERENCE FORMAT:** Use 'P&L Statement'!B[row]:[column][row] for ranges\n`;
+    output += `**EXAMPLE:** 'P&L Statement'!B${plStructure.lineItems.netIncome?.row || '15'}:${this.getColumnLetter(maxPeriods)}${plStructure.lineItems.netIncome?.row || '15'} for Net Income across all periods\n\n`;
+
+    return output;
+  }
+
+  // Format Assumptions structure for AI prompt  
+  formatAssumptionStructureForPrompt(assumptionStructure) {
+    if (!assumptionStructure.sheetExists) {
+      return `❌ Assumptions Sheet not found or unreadable. Error: ${assumptionStructure.error || 'Unknown error'}`;
+    }
+
+    let output = `✅ Assumptions Sheet discovered\n`;
+    output += `📍 Used Range: ${assumptionStructure.usedRange}\n\n`;
+    
+    output += `**KEY ASSUMPTIONS AVAILABLE:**\n`;
+    
+    const assumptions = assumptionStructure.assumptions;
+    
+    if (assumptions.currency) {
+      output += `- Currency: ${assumptions.currency.cellRef} (${assumptions.currency.value})\n`;
+    }
+    if (assumptions.dealValue) {
+      output += `- Deal Value: ${assumptions.dealValue.cellRef} (${assumptions.dealValue.value})\n`;
+    }
+    if (assumptions.dealLTV) {
+      output += `- Deal LTV: ${assumptions.dealLTV.cellRef} (${assumptions.dealLTV.value}%)\n`;
+    }
+    if (assumptions.interestRate) {
+      output += `- Interest Rate: ${assumptions.interestRate.cellRef} (${assumptions.interestRate.value}%)\n`;
+    }
+    if (assumptions.terminalCapRate) {
+      output += `- Terminal Cap Rate: ${assumptions.terminalCapRate.cellRef} (${assumptions.terminalCapRate.value}%)\n`;
+    }
+    if (assumptions.disposalCost) {
+      output += `- Disposal Cost: ${assumptions.disposalCost.cellRef} (${assumptions.disposalCost.value}%)\n`;
+    }
+
+    if (assumptions.revenueItems && assumptions.revenueItems.length > 0) {
+      output += `\n**REVENUE ITEMS:**\n`;
+      assumptions.revenueItems.forEach(item => {
+        output += `- ${item.name}: ${item.cellRef} (${item.value})\n`;
+      });
+    }
+
+    if (assumptions.operatingExpenses && assumptions.operatingExpenses.length > 0) {
+      output += `\n**OPERATING EXPENSES:**\n`;
+      assumptions.operatingExpenses.forEach(item => {
+        output += `- ${item.name}: ${item.cellRef} (${item.value})\n`;
+      });
+    }
+
+    if (assumptions.capitalExpenses && assumptions.capitalExpenses.length > 0) {
+      output += `\n**CAPITAL EXPENSES:**\n`;
+      assumptions.capitalExpenses.forEach(item => {
+        output += `- ${item.name}: ${item.cellRef} (${item.value})\n`;
+      });
+    }
+
+    output += `\n**REFERENCE FORMAT:** Use 'Assumptions'!B[row] for individual cells\n\n`;
+
+    return output;
   }
 }
 
