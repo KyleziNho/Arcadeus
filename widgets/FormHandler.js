@@ -33,7 +33,8 @@ class FormHandler {
       
       // Exit Assumptions
       { id: 'disposalCost', name: 'Disposal Cost' },
-      { id: 'terminalCapRate', name: 'Terminal Cap Rate' }
+      { id: 'terminalCapRate', name: 'Terminal Cap Rate' },
+      { id: 'discountRate', name: 'Discount Rate (WACC)' }
     ];
     
     // Check required fields
@@ -91,6 +92,7 @@ class FormHandler {
       // Exit Assumptions
       disposalCost: parseFloat(document.getElementById('disposalCost')?.value) || 2.5,
       terminalCapRate: parseFloat(document.getElementById('terminalCapRate')?.value) || 8.5,
+      discountRate: parseFloat(document.getElementById('discountRate')?.value) || 10.0,
       
       // Debt Model
       hasDebt: this.checkDebtEligibility(),
@@ -670,6 +672,7 @@ class FormHandler {
     // Exit Assumptions
     data.disposalCost = parseFloat(document.getElementById('disposalCost')?.value) || 0;
     data.terminalCapRate = parseFloat(document.getElementById('terminalCapRate')?.value) || 0;
+    data.discountRate = parseFloat(document.getElementById('discountRate')?.value) || 10.0;
     
     // Debt Model
     data.interestRateType = document.querySelector('input[name="rateType"]:checked')?.value || 'fixed';

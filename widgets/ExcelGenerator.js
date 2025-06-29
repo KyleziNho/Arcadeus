@@ -355,6 +355,12 @@ class ExcelGenerator {
     this.cellTracker.recordCell('terminalCapRate', 'Assumptions', `B${currentRow}`);
     currentRow++;
     
+    // Discount Rate (WACC)
+    sheet.getRange(`A${currentRow}`).values = [['Discount Rate - WACC (%)']];
+    sheet.getRange(`B${currentRow}`).values = [[data.discountRate || 10.0]];
+    this.cellTracker.recordCell('discountRate', 'Assumptions', `B${currentRow}`);
+    currentRow++;
+    
     currentRow += 2; // Add space
     
     // DEBT MODEL SECTION
@@ -1525,26 +1531,61 @@ Provide the COMPLETE Free Cash Flow model with exact Excel formulas for every ce
         fcfSheet.getRange(`A${currentRow}`).format.fill.color = '#e2efda';
         currentRow++;
         
+        // Store the Levered FCF row for reference
+        const leveredFCFRow = currentRow - 4;
+        
         // Cumulative FCF
         fcfSheet.getRange(`A${currentRow}`).values = [['Cumulative Free Cash Flow']];
         fcfSheet.getRange(`A${currentRow}`).format.font.bold = true;
         for (let col = 1; col <= periodColumns; col++) {
           const colLetter = this.getColumnLetter(col);
           if (col === 1) {
-            fcfSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${colLetter}${currentRow-4}`]];
+            fcfSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${colLetter}${leveredFCFRow}`]];
           } else {
             const prevCol = this.getColumnLetter(col - 1);
-            fcfSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${prevCol}${currentRow}+${colLetter}${currentRow-4}`]];
+            fcfSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${prevCol}${currentRow}+${colLetter}${leveredFCFRow}`]];
           }
+        }
+        currentRow += 2;
+        
+        // NPV CALCULATIONS SECTION
+        fcfSheet.getRange(`A${currentRow}`).values = [['NPV CALCULATIONS']];
+        fcfSheet.getRange(`A${currentRow}`).format.font.bold = true;
+        fcfSheet.getRange(`A${currentRow}`).format.fill.color = '#d5e4bc';
+        currentRow++;
+        
+        // Undiscounted NPV (simple sum)
+        fcfSheet.getRange(`A${currentRow}`).values = [['Undiscounted NPV (Sum of FCF)']];
+        fcfSheet.getRange(`A${currentRow}`).format.font.bold = true;
+        const undiscountedRange = `B${leveredFCFRow}:${this.getColumnLetter(periodColumns)}${leveredFCFRow}`;
+        fcfSheet.getRange(`B${currentRow}`).formulas = [[`=SUM(${undiscountedRange})`]];
+        currentRow++;
+        
+        // Discounted NPV using WACC from assumptions
+        fcfSheet.getRange(`A${currentRow}`).values = [['Discounted NPV @ WACC']];
+        fcfSheet.getRange(`A${currentRow}`).format.font.bold = true;
+        fcfSheet.getRange(`A${currentRow}`).format.font.italic = true;
+        if (assumptionStructure && assumptionStructure.assumptions.discountRate) {
+          const waccCellRef = assumptionStructure.assumptions.discountRate.cellRef;
+          fcfSheet.getRange(`B${currentRow}`).formulas = [[`=NPV('Assumptions'!${waccCellRef}/100,${undiscountedRange})`]];
+        } else {
+          // Fallback to 10% if WACC not found
+          fcfSheet.getRange(`B${currentRow}`).formulas = [[`=NPV(0.1,${undiscountedRange})`]];
         }
         currentRow++;
         
-        // NPV Calculation (using 10% discount rate as default)
-        fcfSheet.getRange(`A${currentRow}`).values = [['NPV @ 10% Discount Rate']];
+        // IRR Calculation
+        fcfSheet.getRange(`A${currentRow}`).values = [['Internal Rate of Return (IRR)']];
         fcfSheet.getRange(`A${currentRow}`).format.font.bold = true;
         fcfSheet.getRange(`A${currentRow}`).format.font.italic = true;
-        const npvRange = `B${currentRow-5}:${this.getColumnLetter(periodColumns)}${currentRow-5}`;
-        fcfSheet.getRange(`B${currentRow}`).formulas = [[`=NPV(0.1,${npvRange})`]];
+        // Add initial investment as negative value in period 0
+        if (assumptionStructure && assumptionStructure.assumptions.dealValue) {
+          const dealValueRef = assumptionStructure.assumptions.dealValue.cellRef;
+          // Create IRR range including initial investment
+          fcfSheet.getRange(`B${currentRow}`).formulas = [[`=IRR({-'Assumptions'!${dealValueRef};${undiscountedRange}})`]];
+        } else {
+          fcfSheet.getRange(`B${currentRow}`).values = [['Deal Value not found for IRR calculation']];
+        }
         
       } else {
         // Fallback if P&L structure not found
@@ -2202,6 +2243,9 @@ Provide the COMPLETE Free Cash Flow model with exact Excel formulas for every ce
             if (lowerLabel.includes('terminal cap rate')) {
               structure.assumptions.terminalCapRate = { cellRef, value: dataValue };
             }
+            if (lowerLabel.includes('discount rate') || lowerLabel.includes('wacc')) {
+              structure.assumptions.discountRate = { cellRef, value: dataValue };
+            }
             if (lowerLabel.includes('interest rate') && !lowerLabel.includes('type')) {
               structure.assumptions.interestRate = { cellRef, value: dataValue };
             }
@@ -2324,7 +2368,9 @@ Create a comprehensive Free Cash Flow statement with the following structure:
 
 7. **CUMULATIVE METRICS:**
    - Cumulative FCF
-   - IRR calculation base
+   - Undiscounted NPV (simple sum of FCF)
+   - Discounted NPV using WACC from Assumptions
+   - IRR calculation including initial investment
 
 **CRITICAL REQUIREMENTS:**
 
@@ -2417,6 +2463,9 @@ If any critical P&L references are missing, clearly state what assumptions you'r
     }
     if (assumptions.disposalCost) {
       output += `- Disposal Cost: ${assumptions.disposalCost.cellRef} (${assumptions.disposalCost.value}%)\n`;
+    }
+    if (assumptions.discountRate) {
+      output += `- Discount Rate (WACC): ${assumptions.discountRate.cellRef} (${assumptions.discountRate.value}%)\n`;
     }
 
     if (assumptions.revenueItems && assumptions.revenueItems.length > 0) {
