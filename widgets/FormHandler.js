@@ -279,13 +279,13 @@ class FormHandler {
     
     switch (periodType) {
       case 'daily':
-        return Math.min(diffDays, 365);
+        return Math.min(diffDays, 1000); // Increased cap for daily periods
       case 'monthly':
-        return Math.min(Math.ceil(diffDays / 30), 60);
+        return Math.ceil(diffDays / 30); // Removed cap for monthly periods
       case 'quarterly':
-        return Math.min(Math.ceil(diffDays / 90), 20);
+        return Math.ceil(diffDays / 90); // Removed cap for quarterly periods
       case 'yearly':
-        return Math.min(Math.ceil(diffDays / 365), 10);
+        return Math.ceil(diffDays / 365); // Removed cap for yearly periods
       default:
         return 12;
     }
