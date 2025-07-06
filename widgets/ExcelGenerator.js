@@ -2753,7 +2753,7 @@ If any critical P&L references are missing, clearly state what assumptions you'r
         batchType: 'financial_analysis',
         systemPrompt: null, // Let chat.js handle the system prompt based on batchType
         temperature: 0.1,
-        maxTokens: 1000 // Limit response tokens
+        maxTokens: 1500 // Increased for comprehensive IRR/MOIC analysis
       };
       
       console.log('🤖 Sending Multiples & IRR request to OpenAI...');
@@ -2811,32 +2811,82 @@ If any critical P&L references are missing, clearly state what assumptions you'r
     }
   }
   
-  // Generate optimized AI prompt for Multiples & IRR calculations
+  // Generate comprehensive AI prompt with ALL actual data for IRR/MOIC calculations
   generateMultiplesAndIRRPrompt(modelData, fcfStructure, fcfData, plData, assumptionStructure) {
-    console.log('🤖 Generating optimized Multiples & IRR AI prompt...');
+    console.log('🤖 Generating comprehensive AI prompt with actual financial data...');
     
-    // Calculate periods
+    // Calculate periods and other key metrics
     const periods = this.calculatePeriods(modelData.projectStartDate, modelData.projectEndDate, modelData.modelPeriods);
-    const lastCol = this.getColumnLetter(fcfStructure.periodColumns || 10);
+    const holdingPeriodYears = periods / (modelData.modelPeriods === 'monthly' ? 12 : 
+                                          modelData.modelPeriods === 'quarterly' ? 4 : 
+                                          modelData.modelPeriods === 'yearly' ? 1 : 12);
     
-    // Optimized prompt with reduced tokens
-    const prompt = `Generate Excel IRR/MOIC formulas.
+    // Get actual FCF values
+    const leveredFCFValues = fcfData.leveredFCFValues || [];
+    const unleveredFCFValues = fcfData.unleveredFCFValues || [];
+    
+    // Calculate equity contribution if missing
+    let equityContribution = modelData.equityContribution;
+    if (!equityContribution || equityContribution === 0) {
+      const dealValue = modelData.dealValue || 0;
+      const dealLTV = modelData.dealLTV || 70;
+      equityContribution = dealValue * (100 - dealLTV) / 100;
+    }
+    
+    const prompt = `You are an expert M&A financial analyst. I need you to calculate IRR and MOIC for this investment and provide Excel formulas.
 
-INPUT:
-- Investment: ${modelData.equityContribution}
-- FCF Levered Row: ${fcfStructure.leveredFCF}
-- FCF Unlevered Row: ${fcfStructure.unleveredFCF}
-- Range: B${fcfStructure.leveredFCF}:${lastCol}${fcfStructure.leveredFCF}
+**INVESTMENT DETAILS:**
+- Deal Value: ${modelData.dealValue} ${modelData.currency}
+- Equity Investment: ${equityContribution} ${modelData.currency}
+- Investment Period: ${holdingPeriodYears} years (${modelData.projectStartDate} to ${modelData.projectEndDate})
+- Model Frequency: ${modelData.modelPeriods}
 
-RETURN JSON:
+**ACTUAL CASH FLOW DATA:**
+Levered Free Cash Flow (${leveredFCFValues.length} periods): [${leveredFCFValues.slice(0, 10).join(', ')}${leveredFCFValues.length > 10 ? '...' : ''}]
+Unlevered Free Cash Flow (${unleveredFCFValues.length} periods): [${unleveredFCFValues.slice(0, 10).join(', ')}${unleveredFCFValues.length > 10 ? '...' : ''}]
+
+**EXCEL SHEET STRUCTURE:**
+- FCF Sheet Name: "${fcfStructure.sheetName}"
+- Levered FCF Row: ${fcfStructure.leveredFCF}
+- Unlevered FCF Row: ${fcfStructure.unleveredFCF}
+- Data Columns: B to ${this.getColumnLetter(fcfStructure.periodColumns || 10)}
+
+**TASK:**
+Create Excel formulas for:
+1. Levered IRR - Include initial equity investment as Year 0 cash flow
+2. Unlevered IRR - Include initial equity investment as Year 0 cash flow  
+3. Levered MOIC - Total cash returns / Initial investment
+4. Unlevered MOIC - Total unlevered returns / Initial investment
+
+**CRITICAL REQUIREMENTS:**
+- IRR formulas MUST include the initial investment (-${equityContribution}) as the first cash flow
+- Use proper Excel IRR syntax with cash flow arrays
+- Handle potential #NUM! errors with IFERROR
+- Formulas must reference the actual Excel sheet ranges provided
+
+**RETURN FORMAT:**
 {
   "calculations": {
-    "leveredIRR": {"formula": "=IRR('Free Cash Flow'!B${fcfStructure.leveredFCF}:${lastCol}${fcfStructure.leveredFCF})"},
-    "leveredMOIC": {"formula": "=SUM('Free Cash Flow'!B${fcfStructure.leveredFCF}:${lastCol}${fcfStructure.leveredFCF})/${modelData.equityContribution}"},
-    "unleveredIRR": {"formula": "=IRR('Free Cash Flow'!B${fcfStructure.unleveredFCF}:${lastCol}${fcfStructure.unleveredFCF})"},
-    "unleveredMOIC": {"formula": "=SUM('Free Cash Flow'!B${fcfStructure.unleveredFCF}:${lastCol}${fcfStructure.unleveredFCF})/${modelData.equityContribution}"}
+    "leveredIRR": {
+      "formula": "=IFERROR(IRR({initial_investment;cash_flows}), 0)",
+      "description": "Levered IRR including initial investment"
+    },
+    "unleveredIRR": {
+      "formula": "=IFERROR(IRR({initial_investment;cash_flows}), 0)", 
+      "description": "Unlevered IRR including initial investment"
+    },
+    "leveredMOIC": {
+      "formula": "=SUM(range)/${equityContribution}",
+      "description": "Levered MOIC calculation"
+    },
+    "unleveredMOIC": {
+      "formula": "=SUM(range)/${equityContribution}",
+      "description": "Unlevered MOIC calculation"
+    }
   }
-}`;
+}
+
+Generate working Excel formulas using the provided data and structure.`;
 
     return prompt;
   }
@@ -3023,41 +3073,6 @@ RETURN JSON:
       multiplesSheet.getRange(`A${currentRow}`).format.fill.color = '#E2EFDA';
       currentRow++;
       
-      // Create helper section for IRR calculation with proper cash flow structure
-      currentRow++; // Add some space
-      multiplesSheet.getRange(`A${currentRow}`).values = [['IRR Cash Flow Analysis (Helper)']];
-      multiplesSheet.getRange(`A${currentRow}`).format.font.bold = true;
-      multiplesSheet.getRange(`A${currentRow}`).format.font.size = 10;
-      multiplesSheet.getRange(`A${currentRow}`).format.fill.color = '#F2F2F2';
-      currentRow++;
-      
-      // Initial Investment (Year 0)
-      multiplesSheet.getRange(`A${currentRow}`).values = [['Year 0 (Investment)']];
-      multiplesSheet.getRange(`B${currentRow}`).values = [[-equityContribution]]; // Negative investment
-      const year0Row = currentRow;
-      currentRow++;
-      
-      // Cash flows from FCF (Years 1+) - Levered
-      multiplesSheet.getRange(`A${currentRow}`).values = [['Years 1+ (Levered Returns)']];
-      if (fcfStructure.leveredFCF) {
-        multiplesSheet.getRange(`B${currentRow}`).formulas = [[`=SUM('Free Cash Flow'!${fcfStructure.cashFlowRange})`]];
-      } else {
-        multiplesSheet.getRange(`B${currentRow}`).values = [[0]];
-      }
-      const leveredReturnsRow = currentRow;
-      currentRow++;
-      
-      // Cash flows from FCF (Years 1+) - Unlevered
-      multiplesSheet.getRange(`A${currentRow}`).values = [['Years 1+ (Unlevered Returns)']];
-      if (fcfStructure.unleveredFCF) {
-        const unleveredRange = `B${fcfStructure.unleveredFCF}:${this.getColumnLetter(fcfStructure.periodColumns || 10)}${fcfStructure.unleveredFCF}`;
-        multiplesSheet.getRange(`B${currentRow}`).formulas = [[`=SUM('Free Cash Flow'!${unleveredRange})`]];
-      } else {
-        multiplesSheet.getRange(`B${currentRow}`).values = [[0]];
-      }
-      const unleveredReturnsRow = currentRow;
-      currentRow += 2;
-      
       // Levered IRR using AI-generated formula ONLY
       multiplesSheet.getRange(`A${currentRow}`).values = [['Levered IRR']];
       multiplesSheet.getRange(`A${currentRow}`).format.font.bold = true;
@@ -3083,9 +3098,15 @@ RETURN JSON:
       multiplesSheet.getRange(`A${currentRow}`).format.fill.color = '#FFF2CC';
       currentRow++;
       
-      // Total Cash Inflows using helper calculation
+      // Total Cash Inflows - let AI handle this calculation
       multiplesSheet.getRange(`A${currentRow}`).values = [['Total Cash Inflows']];
-      multiplesSheet.getRange(`B${currentRow}`).formulas = [[`=B${leveredReturnsRow}`]]; // Reference the helper row
+      if (calculations.totalCashInflows && calculations.totalCashInflows.formula) {
+        multiplesSheet.getRange(`B${currentRow}`).formulas = [[calculations.totalCashInflows.formula]];
+      } else if (fcfStructure.leveredFCF) {
+        multiplesSheet.getRange(`B${currentRow}`).formulas = [[`=SUM('Free Cash Flow'!${fcfStructure.cashFlowRange})`]];
+      } else {
+        multiplesSheet.getRange(`B${currentRow}`).values = [[0]];
+      }
       const inflowsRow = currentRow;
       currentRow++;
       

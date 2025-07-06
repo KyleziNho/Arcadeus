@@ -311,28 +311,45 @@ INSTRUCTIONS:
 Document Content: ${documentContext}`;
           
         } else if (batchType === 'financial_analysis') {
-          finalMaxTokens = 1000; // Small for focused IRR/MOIC calculations
-          finalSystemPrompt = `You are an expert financial analyst specializing in IRR and MOIC calculations for M&A transactions.
+          finalMaxTokens = 1500; // Adequate for detailed IRR/MOIC calculations
+          finalSystemPrompt = `You are an expert M&A financial analyst specializing in IRR and MOIC calculations.
 
-TASK: Generate Excel formulas for investment return calculations.
+TASK: Create Excel formulas for investment return analysis based on actual cash flow data.
 
-INSTRUCTIONS:
-1. Review the provided cash flow data and investment amount
-2. Generate proper Excel IRR and MOIC formulas 
-3. Use exact cell references provided in the prompt
-4. Return only valid JSON with Excel formulas
+CRITICAL REQUIREMENTS:
+1. IRR formulas must include initial investment as first cash flow (negative value)
+2. Use proper Excel array syntax: =IRR({-investment;range_of_cash_flows})
+3. Wrap in IFERROR to handle calculation errors
+4. MOIC = Total Returns / Initial Investment
+5. Use exact Excel sheet references provided in the prompt
 
-REQUIRED OUTPUT FORMAT:
+EXCEL SYNTAX EXAMPLES:
+- IRR with investment: =IFERROR(IRR({-12000000;'Free Cash Flow'!B21:BJ21}), "N/A")
+- MOIC calculation: =SUM('Free Cash Flow'!B21:BJ21)/12000000
+
+REQUIRED JSON OUTPUT:
 {
   "calculations": {
-    "leveredIRR": {"formula": "=IRR(...)", "description": "..."},
-    "unleveredIRR": {"formula": "=IRR(...)", "description": "..."},
-    "leveredMOIC": {"formula": "=SUM(...)/...", "description": "..."},
-    "unleveredMOIC": {"formula": "=SUM(...)/...", "description": "..."}
+    "leveredIRR": {
+      "formula": "=IFERROR(IRR({-investment;cash_flow_range}), \"N/A\")",
+      "description": "Levered IRR with initial investment"
+    },
+    "unleveredIRR": {
+      "formula": "=IFERROR(IRR({-investment;cash_flow_range}), \"N/A\")",
+      "description": "Unlevered IRR with initial investment"
+    },
+    "leveredMOIC": {
+      "formula": "=SUM(cash_flow_range)/investment",
+      "description": "Levered MOIC calculation"
+    },
+    "unleveredMOIC": {
+      "formula": "=SUM(cash_flow_range)/investment", 
+      "description": "Unlevered MOIC calculation"
+    }
   }
 }
 
-Return ONLY the JSON structure with valid Excel formulas.`;
+Analyze the provided data and generate working Excel formulas.`;
           
         } else {
           // Fallback to original large prompt (legacy support)
