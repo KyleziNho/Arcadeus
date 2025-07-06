@@ -717,7 +717,7 @@ Please provide the complete P&L structure with exact cell addresses and formulas
       
       // Calculate periods and prepare headers
       const periods = this.calculatePeriods(modelData.projectStartDate, modelData.projectEndDate, modelData.modelPeriods);
-      const periodColumns = Math.min(periods, 36); // Show up to 36 periods
+      const periodColumns = periods; // Use full calculated periods
       
       let currentRow = 1;
       
@@ -1352,7 +1352,7 @@ Provide the COMPLETE Free Cash Flow model with exact Excel formulas for every ce
       
       // Calculate periods
       const periods = this.calculatePeriods(modelData.projectStartDate, modelData.projectEndDate, modelData.modelPeriods);
-      const periodColumns = Math.min(periods, 36);
+      const periodColumns = periods; // Use full calculated periods
       
       let currentRow = 1;
       
@@ -1721,7 +1721,7 @@ Provide the COMPLETE Free Cash Flow model with exact Excel formulas for every ce
       
       // Calculate number of periods
       const periods = this.calculatePeriods(modelData.projectStartDate, modelData.projectEndDate, modelData.modelPeriods);
-      const periodColumns = Math.min(periods, 36); // Show more periods
+      const periodColumns = periods; // Use full calculated periods
       
       // HEADER
       plSheet.getRange('A1').values = [['P&L Statement']];
