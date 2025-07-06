@@ -12,6 +12,15 @@
     <link rel="stylesheet" href="taskpane.css">
     <!-- Widget Scripts -->
     <script src="widgets/ExcelGenerator.js"></script>
+    <script>
+        // Verify ExcelGenerator loaded
+        console.log('ExcelGenerator loaded:', typeof ExcelGenerator !== 'undefined');
+        if (typeof ExcelGenerator === 'undefined') {
+            console.error('❌ ExcelGenerator failed to load from widgets/ExcelGenerator.js');
+        } else {
+            console.log('✅ ExcelGenerator class available');
+        }
+    </script>
     <script src="widgets/FormHandler.js"></script>
     <script src="widgets/FileUploader.js"></script>
     <script src="widgets/ChatHandler.js"></script>

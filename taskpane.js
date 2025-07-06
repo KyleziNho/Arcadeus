@@ -79,6 +79,7 @@ class MAModelingAddin {
 
   initializeWidgets() {
     console.log('Initializing widgets...');
+    console.log('Window object keys related to Excel:', Object.keys(window).filter(key => key.includes('Excel')));
     console.log('Available classes:', {
       ExcelGenerator: typeof ExcelGenerator,
       FormHandler: typeof FormHandler,

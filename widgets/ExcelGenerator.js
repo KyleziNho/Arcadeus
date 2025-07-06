@@ -2752,7 +2752,7 @@ Generate the complete Excel sheet structure with all formulas and proper formatt
       if (fcfStructure.leveredFCF && fcfStructure.cashFlowRange) {
         // Create cash flow range including initial investment
         const cashFlowRange = `B${equityRow},'Free Cash Flow'!${fcfStructure.cashFlowRange}`;
-        multiplesSheet.getRange(`B${currentRow}`).values = [['=IRR({-'+ `B${equityRow}` + `,'Free Cash Flow'!${fcfStructure.cashFlowRange}})']];
+        multiplesSheet.getRange(`B${currentRow}`).formulas = [[`=IRR({-B${equityRow},'Free Cash Flow'!${fcfStructure.cashFlowRange}})`]];
         multiplesSheet.getRange(`B${currentRow}`).format.numberFormat = [['0.00%']];
       } else {
         multiplesSheet.getRange(`B${currentRow}`).values = [['Manual calculation required']];
@@ -2764,7 +2764,7 @@ Generate the complete Excel sheet structure with all formulas and proper formatt
       multiplesSheet.getRange(`A${currentRow}`).format.font.bold = true;
       if (fcfStructure.unleveredFCF) {
         const unleveredRange = `B${fcfStructure.unleveredFCF}:${this.getColumnLetter(fcfStructure.periodColumns)}${fcfStructure.unleveredFCF}`;
-        multiplesSheet.getRange(`B${currentRow}`).values = [['=IRR({-'+ `B${equityRow}` + `,'Free Cash Flow'!${unleveredRange}})']];
+        multiplesSheet.getRange(`B${currentRow}`).formulas = [[`=IRR({-B${equityRow},'Free Cash Flow'!${unleveredRange}})`]];
         multiplesSheet.getRange(`B${currentRow}`).format.numberFormat = [['0.00%']];
       } else {
         multiplesSheet.getRange(`B${currentRow}`).values = [['Manual calculation required']];
@@ -2868,3 +2868,9 @@ Generate the complete Excel sheet structure with all formulas and proper formatt
 // Export for use in main application
 window.ExcelGenerator = ExcelGenerator;
 window.CellTracker = CellTracker;
+
+// Debug: Confirm export successful
+console.log('🔧 ExcelGenerator.js: Classes exported to window', {
+  ExcelGenerator: typeof window.ExcelGenerator,
+  CellTracker: typeof window.CellTracker
+});
