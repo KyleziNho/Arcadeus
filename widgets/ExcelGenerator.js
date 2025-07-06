@@ -2894,14 +2894,14 @@ RETURN JSON:
     
     return {
       leveredIRR: {
-        formula: `=IFERROR(IRR({-${initialInvestment};'Free Cash Flow'!B${leveredRow}:${lastColumn}${leveredRow}}), "N/A")`,
-        description: "Levered IRR with initial investment (Fallback)",
-        result: "Calculated from cash flows"
+        formula: `=IFERROR(POWER(SUM('Free Cash Flow'!B${leveredRow}:${lastColumn}${leveredRow})/${initialInvestment}, 1/5)-1, "No Solution")`,
+        description: "Levered IRR simplified calculation (Fallback)",
+        result: "Calculated from total returns"
       },
       unleveredIRR: {
-        formula: `=IFERROR(IRR({-${initialInvestment};'Free Cash Flow'!B${unleveredRow}:${lastColumn}${unleveredRow}}), "N/A")`,
-        description: "Unlevered IRR with initial investment (Fallback)", 
-        result: "Calculated from cash flows"
+        formula: `=IFERROR(POWER(SUM('Free Cash Flow'!B${unleveredRow}:${lastColumn}${unleveredRow})/${initialInvestment}, 1/5)-1, "No Solution")`,
+        description: "Unlevered IRR simplified calculation (Fallback)", 
+        result: "Calculated from total returns"
       },
       leveredMOIC: {
         formula: `=SUM('Free Cash Flow'!B${leveredRow}:${lastColumn}${leveredRow})/${initialInvestment}`,
@@ -2987,6 +2987,11 @@ RETURN JSON:
       let currentRow = 1;
       const periods = this.calculatePeriods(modelData.projectStartDate, modelData.projectEndDate, modelData.modelPeriods);
       
+      // Calculate holding period in years
+      const holdingPeriodYears = periods / (modelData.modelPeriods === 'monthly' ? 12 : 
+                                            modelData.modelPeriods === 'quarterly' ? 4 : 
+                                            modelData.modelPeriods === 'yearly' ? 1 : 12);
+      
       // HEADER
       const headerText = usingFallback ? 'Multiples & IRR Analysis (Fallback Mode)' : 'Multiples & IRR Analysis (AI-Powered)';
       multiplesSheet.getRange('A1').values = [[headerText]];
@@ -3038,6 +3043,41 @@ RETURN JSON:
       multiplesSheet.getRange(`A${currentRow}`).format.fill.color = '#E2EFDA';
       currentRow++;
       
+      // Create helper section for IRR calculation with proper cash flow structure
+      currentRow++; // Add some space
+      multiplesSheet.getRange(`A${currentRow}`).values = [['IRR Cash Flow Analysis (Helper)']];
+      multiplesSheet.getRange(`A${currentRow}`).format.font.bold = true;
+      multiplesSheet.getRange(`A${currentRow}`).format.font.size = 10;
+      multiplesSheet.getRange(`A${currentRow}`).format.fill.color = '#F2F2F2';
+      currentRow++;
+      
+      // Initial Investment (Year 0)
+      multiplesSheet.getRange(`A${currentRow}`).values = [['Year 0 (Investment)']];
+      multiplesSheet.getRange(`B${currentRow}`).values = [[-equityContribution]]; // Negative investment
+      const year0Row = currentRow;
+      currentRow++;
+      
+      // Cash flows from FCF (Years 1+) - Levered
+      multiplesSheet.getRange(`A${currentRow}`).values = [['Years 1+ (Levered Returns)']];
+      if (fcfStructure.leveredFCF) {
+        multiplesSheet.getRange(`B${currentRow}`).formulas = [[`=SUM('Free Cash Flow'!${fcfStructure.cashFlowRange})`]];
+      } else {
+        multiplesSheet.getRange(`B${currentRow}`).values = [[0]];
+      }
+      const leveredReturnsRow = currentRow;
+      currentRow++;
+      
+      // Cash flows from FCF (Years 1+) - Unlevered
+      multiplesSheet.getRange(`A${currentRow}`).values = [['Years 1+ (Unlevered Returns)']];
+      if (fcfStructure.unleveredFCF) {
+        const unleveredRange = `B${fcfStructure.unleveredFCF}:${this.getColumnLetter(fcfStructure.periodColumns || 10)}${fcfStructure.unleveredFCF}`;
+        multiplesSheet.getRange(`B${currentRow}`).formulas = [[`=SUM('Free Cash Flow'!${unleveredRange})`]];
+      } else {
+        multiplesSheet.getRange(`B${currentRow}`).values = [[0]];
+      }
+      const unleveredReturnsRow = currentRow;
+      currentRow += 2;
+      
       // Levered IRR using AI-generated formula
       multiplesSheet.getRange(`A${currentRow}`).values = [['Levered IRR']];
       multiplesSheet.getRange(`A${currentRow}`).format.font.bold = true;
@@ -3055,9 +3095,9 @@ RETURN JSON:
             fcfStructure.cashFlowRange : 
             `B${fcfStructure.leveredFCF || 10}:${this.getColumnLetter(fcfStructure.periodColumns || 10)}${fcfStructure.leveredFCF || 10}`;
           
-          const fallbackFormula = `=IFERROR(IRR({-${equityContribution};'Free Cash Flow'!${irrRange}}), "N/A")`;
-          console.log('🔄 Using fallback Levered IRR formula:', fallbackFormula);
-          multiplesSheet.getRange(`B${currentRow}`).formulas = [[fallbackFormula]];
+          const simpleReturnFormula = `=IFERROR(POWER(B${leveredReturnsRow}/${equityContribution}, 1/${holdingPeriodYears})-1, "No Solution")`;
+          console.log('🔄 Using simplified IRR approximation (AI fallback):', simpleReturnFormula);
+          multiplesSheet.getRange(`B${currentRow}`).formulas = [[simpleReturnFormula]];
           multiplesSheet.getRange(`B${currentRow}`).format.numberFormat = [['0.00%']];
           multiplesSheet.getRange(`C${currentRow}`).values = [['Fallback calculation']];
         }
@@ -3067,10 +3107,10 @@ RETURN JSON:
           fcfStructure.cashFlowRange : 
           `B${fcfStructure.leveredFCF || 10}:${this.getColumnLetter(fcfStructure.periodColumns || 10)}${fcfStructure.leveredFCF || 10}`;
         
-        // IRR needs initial investment as negative value - add it to the beginning of the cash flow series
-        const fallbackFormula = `=IFERROR(IRR({-${equityContribution};'Free Cash Flow'!${irrRange}}), "N/A")`;
-        console.log('🔄 Using fallback Levered IRR formula with initial investment:', fallbackFormula);
-        multiplesSheet.getRange(`B${currentRow}`).formulas = [[fallbackFormula]];
+        // Use simple calculation: (Total Returns / Initial Investment)^(1/years) - 1
+        const simpleReturnFormula = `=IFERROR(POWER(B${leveredReturnsRow}/${equityContribution}, 1/${holdingPeriodYears})-1, "No Solution")`;
+        console.log('🔄 Using simplified IRR approximation formula:', simpleReturnFormula);
+        multiplesSheet.getRange(`B${currentRow}`).formulas = [[simpleReturnFormula]];
         multiplesSheet.getRange(`B${currentRow}`).format.numberFormat = [['0.00%']];
         multiplesSheet.getRange(`C${currentRow}`).values = [['Fallback calculation']];
       }
@@ -3089,17 +3129,17 @@ RETURN JSON:
           console.error('❌ Error setting AI Unlevered IRR formula, using fallback:', formulaError);
           // Use fallback if AI formula fails - include initial investment
           const unleveredRange = `B${fcfStructure.unleveredFCF || 11}:${this.getColumnLetter(fcfStructure.periodColumns || 10)}${fcfStructure.unleveredFCF || 11}`;
-          const fallbackFormula = `=IFERROR(IRR({-${equityContribution};'Free Cash Flow'!${unleveredRange}}), "N/A")`;
-          console.log('🔄 Using fallback Unlevered IRR formula:', fallbackFormula);
-          multiplesSheet.getRange(`B${currentRow}`).formulas = [[fallbackFormula]];
+          const unleveredReturnFormula = `=IFERROR(POWER(B${unleveredReturnsRow}/${equityContribution}, 1/${holdingPeriodYears})-1, "No Solution")`;
+          console.log('🔄 Using simplified Unlevered IRR approximation (AI fallback):', unleveredReturnFormula);
+          multiplesSheet.getRange(`B${currentRow}`).formulas = [[unleveredReturnFormula]];
           multiplesSheet.getRange(`B${currentRow}`).format.numberFormat = [['0.00%']];
           multiplesSheet.getRange(`C${currentRow}`).values = [['Fallback calculation']];
         }
       } else {
         // Fallback to simple IRR calculation with initial investment
         const unleveredRange = `B${fcfStructure.unleveredFCF || 11}:${this.getColumnLetter(fcfStructure.periodColumns || 10)}${fcfStructure.unleveredFCF || 11}`;
-        const fallbackFormula = `=IFERROR(IRR({-${equityContribution};'Free Cash Flow'!${unleveredRange}}), "N/A")`;
-        multiplesSheet.getRange(`B${currentRow}`).formulas = [[fallbackFormula]];
+        const unleveredReturnFormula = `=IFERROR(POWER(B${unleveredReturnsRow}/${equityContribution}, 1/${holdingPeriodYears})-1, "No Solution")`;
+        multiplesSheet.getRange(`B${currentRow}`).formulas = [[unleveredReturnFormula]];
         multiplesSheet.getRange(`B${currentRow}`).format.numberFormat = [['0.00%']];
         multiplesSheet.getRange(`C${currentRow}`).values = [['Fallback calculation']];
       }
@@ -3111,15 +3151,9 @@ RETURN JSON:
       multiplesSheet.getRange(`A${currentRow}`).format.fill.color = '#FFF2CC';
       currentRow++;
       
-      // Total Cash Inflows using AI-generated formula
+      // Total Cash Inflows using helper calculation
       multiplesSheet.getRange(`A${currentRow}`).values = [['Total Cash Inflows']];
-      if (calculations.totalCashInflows && calculations.totalCashInflows.formula) {
-        multiplesSheet.getRange(`B${currentRow}`).formulas = [[calculations.totalCashInflows.formula]];
-      } else if (fcfStructure.leveredFCF) {
-        multiplesSheet.getRange(`B${currentRow}`).formulas = [[`=SUM('Free Cash Flow'!${fcfStructure.cashFlowRange})`]];
-      } else {
-        multiplesSheet.getRange(`B${currentRow}`).values = [[0]];
-      }
+      multiplesSheet.getRange(`B${currentRow}`).formulas = [[`=B${leveredReturnsRow}`]]; // Reference the helper row
       const inflowsRow = currentRow;
       currentRow++;
       
@@ -3157,15 +3191,13 @@ RETURN JSON:
           multiplesSheet.getRange(`C${currentRow}`).values = [[calculations.unleveredMOIC.description || 'AI-calculated']];
         } catch (formulaError) {
           console.error('❌ Error setting AI Unlevered MOIC formula, using fallback:', formulaError);
-          // Fallback MOIC for unlevered
-          const unleveredRange = `B${fcfStructure.unleveredFCF || 11}:${this.getColumnLetter(fcfStructure.periodColumns || 10)}${fcfStructure.unleveredFCF || 11}`;
-          multiplesSheet.getRange(`B${currentRow}`).formulas = [[`=SUM('Free Cash Flow'!${unleveredRange})/B${outflowsRow}`]];
+          // Fallback MOIC for unlevered using helper row
+          multiplesSheet.getRange(`B${currentRow}`).formulas = [[`=B${unleveredReturnsRow}/B${outflowsRow}`]];
           multiplesSheet.getRange(`C${currentRow}`).values = [['Fallback calculation']];
         }
       } else {
-        // Fallback MOIC for unlevered
-        const unleveredRange = `B${fcfStructure.unleveredFCF || 11}:${this.getColumnLetter(fcfStructure.periodColumns || 10)}${fcfStructure.unleveredFCF || 11}`;
-        multiplesSheet.getRange(`B${currentRow}`).formulas = [[`=SUM('Free Cash Flow'!${unleveredRange})/B${outflowsRow}`]];
+        // Fallback MOIC for unlevered using helper row
+        multiplesSheet.getRange(`B${currentRow}`).formulas = [[`=B${unleveredReturnsRow}/B${outflowsRow}`]];
         multiplesSheet.getRange(`C${currentRow}`).values = [['Fallback calculation']];
       }
       multiplesSheet.getRange(`B${currentRow}`).format.numberFormat = [['0.00"x"']];
