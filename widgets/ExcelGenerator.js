@@ -3025,13 +3025,27 @@ RETURN JSON:
       multiplesSheet.getRange(`A${currentRow}`).format.font.bold = true;
       if (calculations.leveredIRR && calculations.leveredIRR.formula) {
         console.log('📊 Using AI Levered IRR formula:', calculations.leveredIRR.formula);
-        multiplesSheet.getRange(`B${currentRow}`).formulas = [[calculations.leveredIRR.formula]];
-        multiplesSheet.getRange(`B${currentRow}`).format.numberFormat = [['0.00%']];
-        // Add description as comment
-        multiplesSheet.getRange(`C${currentRow}`).values = [[calculations.leveredIRR.description || 'AI-calculated']];
+        try {
+          multiplesSheet.getRange(`B${currentRow}`).formulas = [[calculations.leveredIRR.formula]];
+          multiplesSheet.getRange(`B${currentRow}`).format.numberFormat = [['0.00%']];
+          // Add description as comment
+          multiplesSheet.getRange(`C${currentRow}`).values = [[calculations.leveredIRR.description || 'AI-calculated']];
+        } catch (formulaError) {
+          console.error('❌ Error setting AI IRR formula, using fallback:', formulaError);
+          // Use fallback if AI formula fails
+          const fallbackFormula = fcfStructure.cashFlowRange ? 
+            `=IRR('Free Cash Flow'!${fcfStructure.cashFlowRange})` : 
+            `=IRR('Free Cash Flow'!B${fcfStructure.leveredFCF || 10}:${this.getColumnLetter(fcfStructure.periodColumns || 10)}${fcfStructure.leveredFCF || 10})`;
+          console.log('🔄 Using fallback Levered IRR formula:', fallbackFormula);
+          multiplesSheet.getRange(`B${currentRow}`).formulas = [[fallbackFormula]];
+          multiplesSheet.getRange(`B${currentRow}`).format.numberFormat = [['0.00%']];
+          multiplesSheet.getRange(`C${currentRow}`).values = [['Fallback calculation']];
+        }
       } else {
         // Fallback to simple IRR calculation
-        const fallbackFormula = `=IRR('Free Cash Flow'!${fcfStructure.cashFlowRange})`;
+        const fallbackFormula = fcfStructure.cashFlowRange ? 
+          `=IRR('Free Cash Flow'!${fcfStructure.cashFlowRange})` : 
+          `=IRR('Free Cash Flow'!B${fcfStructure.leveredFCF || 10}:${this.getColumnLetter(fcfStructure.periodColumns || 10)}${fcfStructure.leveredFCF || 10})`;
         console.log('🔄 Using fallback Levered IRR formula:', fallbackFormula);
         multiplesSheet.getRange(`B${currentRow}`).formulas = [[fallbackFormula]];
         multiplesSheet.getRange(`B${currentRow}`).format.numberFormat = [['0.00%']];
@@ -3043,15 +3057,26 @@ RETURN JSON:
       multiplesSheet.getRange(`A${currentRow}`).values = [['Unlevered IRR']];
       multiplesSheet.getRange(`A${currentRow}`).format.font.bold = true;
       if (calculations.unleveredIRR && calculations.unleveredIRR.formula) {
-        multiplesSheet.getRange(`B${currentRow}`).formulas = [[calculations.unleveredIRR.formula]];
-        multiplesSheet.getRange(`B${currentRow}`).format.numberFormat = [['0.00%']];
-        // Add description as comment
-        multiplesSheet.getRange(`C${currentRow}`).values = [[calculations.unleveredIRR.description || 'AI-calculated']];
+        try {
+          multiplesSheet.getRange(`B${currentRow}`).formulas = [[calculations.unleveredIRR.formula]];
+          multiplesSheet.getRange(`B${currentRow}`).format.numberFormat = [['0.00%']];
+          // Add description as comment
+          multiplesSheet.getRange(`C${currentRow}`).values = [[calculations.unleveredIRR.description || 'AI-calculated']];
+        } catch (formulaError) {
+          console.error('❌ Error setting AI Unlevered IRR formula, using fallback:', formulaError);
+          // Use fallback if AI formula fails
+          const fallbackFormula = `=IRR('Free Cash Flow'!B${fcfStructure.unleveredFCF || 11}:${this.getColumnLetter(fcfStructure.periodColumns || 10)}${fcfStructure.unleveredFCF || 11})`;
+          console.log('🔄 Using fallback Unlevered IRR formula:', fallbackFormula);
+          multiplesSheet.getRange(`B${currentRow}`).formulas = [[fallbackFormula]];
+          multiplesSheet.getRange(`B${currentRow}`).format.numberFormat = [['0.00%']];
+          multiplesSheet.getRange(`C${currentRow}`).values = [['Fallback calculation']];
+        }
       } else {
         // Fallback to simple IRR calculation
-        const unleveredRange = `B${fcfStructure.unleveredFCF}:${this.getColumnLetter(fcfStructure.periodColumns)}${fcfStructure.unleveredFCF}`;
+        const unleveredRange = `B${fcfStructure.unleveredFCF || 11}:${this.getColumnLetter(fcfStructure.periodColumns || 10)}${fcfStructure.unleveredFCF || 11}`;
         multiplesSheet.getRange(`B${currentRow}`).formulas = [[`=IRR('Free Cash Flow'!${unleveredRange})`]];
         multiplesSheet.getRange(`B${currentRow}`).format.numberFormat = [['0.00%']];
+        multiplesSheet.getRange(`C${currentRow}`).values = [['Fallback calculation']];
       }
       currentRow += 2;
       
@@ -3083,10 +3108,17 @@ RETURN JSON:
       multiplesSheet.getRange(`A${currentRow}`).values = [['Levered MOIC']];
       multiplesSheet.getRange(`A${currentRow}`).format.font.bold = true;
       if (calculations.leveredMOIC && calculations.leveredMOIC.formula) {
-        multiplesSheet.getRange(`B${currentRow}`).formulas = [[calculations.leveredMOIC.formula]];
-        multiplesSheet.getRange(`C${currentRow}`).values = [[calculations.leveredMOIC.description || 'AI-calculated']];
+        try {
+          multiplesSheet.getRange(`B${currentRow}`).formulas = [[calculations.leveredMOIC.formula]];
+          multiplesSheet.getRange(`C${currentRow}`).values = [[calculations.leveredMOIC.description || 'AI-calculated']];
+        } catch (formulaError) {
+          console.error('❌ Error setting AI Levered MOIC formula, using fallback:', formulaError);
+          multiplesSheet.getRange(`B${currentRow}`).formulas = [[`=B${inflowsRow}/B${outflowsRow}`]];
+          multiplesSheet.getRange(`C${currentRow}`).values = [['Fallback calculation']];
+        }
       } else {
         multiplesSheet.getRange(`B${currentRow}`).formulas = [[`=B${inflowsRow}/B${outflowsRow}`]];
+        multiplesSheet.getRange(`C${currentRow}`).values = [['Fallback calculation']];
       }
       multiplesSheet.getRange(`B${currentRow}`).format.numberFormat = [['0.00"x"']];
       currentRow++;
@@ -3095,12 +3127,21 @@ RETURN JSON:
       multiplesSheet.getRange(`A${currentRow}`).values = [['Unlevered MOIC']];
       multiplesSheet.getRange(`A${currentRow}`).format.font.bold = true;
       if (calculations.unleveredMOIC && calculations.unleveredMOIC.formula) {
-        multiplesSheet.getRange(`B${currentRow}`).formulas = [[calculations.unleveredMOIC.formula]];
-        multiplesSheet.getRange(`C${currentRow}`).values = [[calculations.unleveredMOIC.description || 'AI-calculated']];
+        try {
+          multiplesSheet.getRange(`B${currentRow}`).formulas = [[calculations.unleveredMOIC.formula]];
+          multiplesSheet.getRange(`C${currentRow}`).values = [[calculations.unleveredMOIC.description || 'AI-calculated']];
+        } catch (formulaError) {
+          console.error('❌ Error setting AI Unlevered MOIC formula, using fallback:', formulaError);
+          // Fallback MOIC for unlevered
+          const unleveredRange = `B${fcfStructure.unleveredFCF || 11}:${this.getColumnLetter(fcfStructure.periodColumns || 10)}${fcfStructure.unleveredFCF || 11}`;
+          multiplesSheet.getRange(`B${currentRow}`).formulas = [[`=SUM('Free Cash Flow'!${unleveredRange})/B${outflowsRow}`]];
+          multiplesSheet.getRange(`C${currentRow}`).values = [['Fallback calculation']];
+        }
       } else {
         // Fallback MOIC for unlevered
-        const unleveredRange = `B${fcfStructure.unleveredFCF}:${this.getColumnLetter(fcfStructure.periodColumns)}${fcfStructure.unleveredFCF}`;
+        const unleveredRange = `B${fcfStructure.unleveredFCF || 11}:${this.getColumnLetter(fcfStructure.periodColumns || 10)}${fcfStructure.unleveredFCF || 11}`;
         multiplesSheet.getRange(`B${currentRow}`).formulas = [[`=SUM('Free Cash Flow'!${unleveredRange})/B${outflowsRow}`]];
+        multiplesSheet.getRange(`C${currentRow}`).values = [['Fallback calculation']];
       }
       multiplesSheet.getRange(`B${currentRow}`).format.numberFormat = [['0.00"x"']];
       currentRow += 2;

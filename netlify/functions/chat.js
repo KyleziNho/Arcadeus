@@ -435,8 +435,8 @@ ${documentContext}`;
             'Authorization': `Bearer ${OPENAI_API_KEY}`,
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify(requestBody),
-          timeout: 25000 // Add 25 second timeout
+          body: JSON.stringify(requestBody)
+          // Note: fetch timeout is controlled by Netlify function timeout (up to 10 seconds for free tier)
         });
         
         console.log('🤖 OpenAI API response status:', response.status);
