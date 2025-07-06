@@ -715,25 +715,15 @@ Please provide the complete P&L structure with exact cell addresses and formulas
       // Step 5: Generate comprehensive AI prompt with ACTUAL financial data
       const multiplesPrompt = this.generateMultiplesAndIRRPrompt(modelData, fcfStructure, fcfData, plData, assumptionStructure);
       
-      // Step 6: Call OpenAI API for intelligent calculation (with fallback)
-      let aiResponse = null;
-      try {
-        console.log('🤖 Calling OpenAI API for Multiples & IRR calculation...');
-        aiResponse = await this.callOpenAIForMultiples(multiplesPrompt);
-        console.log('🤖 AI Response received:', aiResponse);
-      } catch (apiError) {
-        console.warn('⚠️ OpenAI API unavailable, using fallback calculations:', apiError.message);
-        // Continue without AI - the fallback will be used in createAIMultiplesAndIRRSheet
-        aiResponse = { error: apiError.message, useFallback: true };
-      }
+      // Step 6: Call OpenAI API for intelligent calculation (NO fallback - API required)
+      console.log('🤖 Calling OpenAI API for Multiples & IRR calculation...');
+      const aiResponse = await this.callOpenAIForMultiples(multiplesPrompt);
+      console.log('🤖 AI Response received:', aiResponse);
       
-      // Step 7: Create professional Multiples & IRR sheet using AI-generated formulas or fallback
+      // Step 7: Create professional Multiples & IRR sheet using AI-generated formulas ONLY
       await this.createAIMultiplesAndIRRSheet(modelData, aiResponse, fcfStructure, fcfData, assumptionStructure);
       
-      const successMessage = aiResponse && aiResponse.useFallback ? 
-        'Professional Multiples & IRR Analysis generated using fallback calculations with your actual data!' :
-        'Professional Multiples & IRR Analysis generated using AI calculations!';
-      return { success: true, message: successMessage };
+      return { success: true, message: 'Professional Multiples & IRR Analysis generated using AI calculations!' };
       
     } catch (error) {
       console.error('❌ Error generating Multiples & IRR:', error);
@@ -2927,37 +2917,29 @@ RETURN JSON:
   // Create the AI-powered Multiples & IRR sheet with calculated formulas
   async createAIMultiplesAndIRRSheet(modelData, aiResponse, fcfStructure, fcfData, assumptionStructure) {
     return Excel.run(async (context) => {
-      // Parse AI response to extract calculations
+      // Parse AI response to extract calculations (AI ONLY - no fallback)
       let calculations = {};
-      let usingFallback = false;
       
-      if (aiResponse && aiResponse.useFallback) {
-        console.log('🔄 Using fallback calculations due to API error');
-        calculations = this.createFallbackCalculations(fcfData, modelData, fcfStructure);
-        usingFallback = true;
-      } else {
-        try {
-          // Try to parse JSON response from AI
-          if (typeof aiResponse.response === 'string') {
-            const jsonMatch = aiResponse.response.match(/\{[\s\S]*\}/);
-            if (jsonMatch) {
-              const parsed = JSON.parse(jsonMatch[0]);
-              calculations = parsed.calculations || {};
-            }
-          } else if (aiResponse.calculations) {
-            calculations = aiResponse.calculations;
+      try {
+        // Try to parse JSON response from AI
+        if (typeof aiResponse.response === 'string') {
+          const jsonMatch = aiResponse.response.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            const parsed = JSON.parse(jsonMatch[0]);
+            calculations = parsed.calculations || {};
           }
-          console.log('🤖 Parsed AI calculations:', calculations);
-          
-          // Validate that we have essential calculations
-          if (!calculations.leveredIRR || !calculations.leveredMOIC) {
-            throw new Error('Missing essential calculations in AI response');
-          }
-        } catch (error) {
-          console.warn('⚠️ Could not parse AI response, using fallback calculations:', error.message);
-          calculations = this.createFallbackCalculations(fcfData, modelData, fcfStructure);
-          usingFallback = true;
+        } else if (aiResponse.calculations) {
+          calculations = aiResponse.calculations;
         }
+        console.log('🤖 Parsed AI calculations:', calculations);
+        
+        // Validate that we have essential calculations
+        if (!calculations.leveredIRR || !calculations.leveredMOIC) {
+          throw new Error('Missing essential calculations in AI response - calculations incomplete');
+        }
+      } catch (error) {
+        console.error('❌ Could not parse AI response:', error.message);
+        throw new Error(`AI response parsing failed: ${error.message}. Cannot generate Multiples & IRR without valid AI calculations.`);
       }
       
       const sheets = context.workbook.worksheets;
@@ -2993,21 +2975,19 @@ RETURN JSON:
                                             modelData.modelPeriods === 'yearly' ? 1 : 12);
       
       // HEADER
-      const headerText = usingFallback ? 'Multiples & IRR Analysis (Fallback Mode)' : 'Multiples & IRR Analysis (AI-Powered)';
+      const headerText = 'Multiples & IRR Analysis (AI-Powered)';
       multiplesSheet.getRange('A1').values = [[headerText]];
       multiplesSheet.getRange('A1').format.font.bold = true;
       multiplesSheet.getRange('A1').format.font.size = 16;
-      multiplesSheet.getRange('A1').format.fill.color = usingFallback ? '#FF9500' : '#4472C4';
+      multiplesSheet.getRange('A1').format.fill.color = '#4472C4';
       multiplesSheet.getRange('A1').format.font.color = 'white';
       
       // Add mode explanation
       currentRow = 2;
-      const modeText = usingFallback ? 
-        'Note: Using fallback calculations due to API unavailability. All formulas use actual data from your FCF sheet.' :
-        'Note: Calculations powered by AI analysis of your actual financial data.';
+      const modeText = 'Note: Calculations powered by AI analysis of your actual financial data.';
       multiplesSheet.getRange(`A${currentRow}`).values = [[modeText]];
       multiplesSheet.getRange(`A${currentRow}`).format.font.italic = true;
-      multiplesSheet.getRange(`A${currentRow}`).format.font.color = usingFallback ? '#FF6600' : '#666666';
+      multiplesSheet.getRange(`A${currentRow}`).format.font.color = '#666666';
       currentRow = 4;
       
       // INVESTMENT SUMMARY SECTION
@@ -3078,71 +3058,23 @@ RETURN JSON:
       const unleveredReturnsRow = currentRow;
       currentRow += 2;
       
-      // Levered IRR using AI-generated formula
+      // Levered IRR using AI-generated formula ONLY
       multiplesSheet.getRange(`A${currentRow}`).values = [['Levered IRR']];
       multiplesSheet.getRange(`A${currentRow}`).format.font.bold = true;
-      if (calculations.leveredIRR && calculations.leveredIRR.formula) {
-        console.log('📊 Using AI Levered IRR formula:', calculations.leveredIRR.formula);
-        try {
-          multiplesSheet.getRange(`B${currentRow}`).formulas = [[calculations.leveredIRR.formula]];
-          multiplesSheet.getRange(`B${currentRow}`).format.numberFormat = [['0.00%']];
-          // Add description as comment
-          multiplesSheet.getRange(`C${currentRow}`).values = [[calculations.leveredIRR.description || 'AI-calculated']];
-        } catch (formulaError) {
-          console.error('❌ Error setting AI IRR formula, using fallback:', formulaError);
-          // Use fallback if AI formula fails
-          const irrRange = fcfStructure.cashFlowRange ? 
-            fcfStructure.cashFlowRange : 
-            `B${fcfStructure.leveredFCF || 10}:${this.getColumnLetter(fcfStructure.periodColumns || 10)}${fcfStructure.leveredFCF || 10}`;
-          
-          const simpleReturnFormula = `=IFERROR(POWER(B${leveredReturnsRow}/${equityContribution}, 1/${holdingPeriodYears})-1, "No Solution")`;
-          console.log('🔄 Using simplified IRR approximation (AI fallback):', simpleReturnFormula);
-          multiplesSheet.getRange(`B${currentRow}`).formulas = [[simpleReturnFormula]];
-          multiplesSheet.getRange(`B${currentRow}`).format.numberFormat = [['0.00%']];
-          multiplesSheet.getRange(`C${currentRow}`).values = [['Fallback calculation']];
-        }
-      } else {
-        // Fallback to simple IRR calculation - create array with initial investment
-        const irrRange = fcfStructure.cashFlowRange ? 
-          fcfStructure.cashFlowRange : 
-          `B${fcfStructure.leveredFCF || 10}:${this.getColumnLetter(fcfStructure.periodColumns || 10)}${fcfStructure.leveredFCF || 10}`;
-        
-        // Use simple calculation: (Total Returns / Initial Investment)^(1/years) - 1
-        const simpleReturnFormula = `=IFERROR(POWER(B${leveredReturnsRow}/${equityContribution}, 1/${holdingPeriodYears})-1, "No Solution")`;
-        console.log('🔄 Using simplified IRR approximation formula:', simpleReturnFormula);
-        multiplesSheet.getRange(`B${currentRow}`).formulas = [[simpleReturnFormula]];
-        multiplesSheet.getRange(`B${currentRow}`).format.numberFormat = [['0.00%']];
-        multiplesSheet.getRange(`C${currentRow}`).values = [['Fallback calculation']];
-      }
+      console.log('📊 Using AI Levered IRR formula:', calculations.leveredIRR.formula);
+      multiplesSheet.getRange(`B${currentRow}`).formulas = [[calculations.leveredIRR.formula]];
+      multiplesSheet.getRange(`B${currentRow}`).format.numberFormat = [['0.00%']];
+      // Add description as comment
+      multiplesSheet.getRange(`C${currentRow}`).values = [[calculations.leveredIRR.description || 'AI-calculated']];
       currentRow++;
       
-      // Unlevered IRR using AI-generated formula
+      // Unlevered IRR using AI-generated formula ONLY
       multiplesSheet.getRange(`A${currentRow}`).values = [['Unlevered IRR']];
       multiplesSheet.getRange(`A${currentRow}`).format.font.bold = true;
-      if (calculations.unleveredIRR && calculations.unleveredIRR.formula) {
-        try {
-          multiplesSheet.getRange(`B${currentRow}`).formulas = [[calculations.unleveredIRR.formula]];
-          multiplesSheet.getRange(`B${currentRow}`).format.numberFormat = [['0.00%']];
-          // Add description as comment
-          multiplesSheet.getRange(`C${currentRow}`).values = [[calculations.unleveredIRR.description || 'AI-calculated']];
-        } catch (formulaError) {
-          console.error('❌ Error setting AI Unlevered IRR formula, using fallback:', formulaError);
-          // Use fallback if AI formula fails - include initial investment
-          const unleveredRange = `B${fcfStructure.unleveredFCF || 11}:${this.getColumnLetter(fcfStructure.periodColumns || 10)}${fcfStructure.unleveredFCF || 11}`;
-          const unleveredReturnFormula = `=IFERROR(POWER(B${unleveredReturnsRow}/${equityContribution}, 1/${holdingPeriodYears})-1, "No Solution")`;
-          console.log('🔄 Using simplified Unlevered IRR approximation (AI fallback):', unleveredReturnFormula);
-          multiplesSheet.getRange(`B${currentRow}`).formulas = [[unleveredReturnFormula]];
-          multiplesSheet.getRange(`B${currentRow}`).format.numberFormat = [['0.00%']];
-          multiplesSheet.getRange(`C${currentRow}`).values = [['Fallback calculation']];
-        }
-      } else {
-        // Fallback to simple IRR calculation with initial investment
-        const unleveredRange = `B${fcfStructure.unleveredFCF || 11}:${this.getColumnLetter(fcfStructure.periodColumns || 10)}${fcfStructure.unleveredFCF || 11}`;
-        const unleveredReturnFormula = `=IFERROR(POWER(B${unleveredReturnsRow}/${equityContribution}, 1/${holdingPeriodYears})-1, "No Solution")`;
-        multiplesSheet.getRange(`B${currentRow}`).formulas = [[unleveredReturnFormula]];
-        multiplesSheet.getRange(`B${currentRow}`).format.numberFormat = [['0.00%']];
-        multiplesSheet.getRange(`C${currentRow}`).values = [['Fallback calculation']];
-      }
+      multiplesSheet.getRange(`B${currentRow}`).formulas = [[calculations.unleveredIRR.formula]];
+      multiplesSheet.getRange(`B${currentRow}`).format.numberFormat = [['0.00%']];
+      // Add description as comment
+      multiplesSheet.getRange(`C${currentRow}`).values = [[calculations.unleveredIRR.description || 'AI-calculated']];
       currentRow += 2;
       
       // MOIC ANALYSIS SECTION
@@ -3163,43 +3095,19 @@ RETURN JSON:
       const outflowsRow = currentRow;
       currentRow++;
       
-      // Levered MOIC using AI-generated formula
+      // Levered MOIC using AI-generated formula ONLY
       multiplesSheet.getRange(`A${currentRow}`).values = [['Levered MOIC']];
       multiplesSheet.getRange(`A${currentRow}`).format.font.bold = true;
-      if (calculations.leveredMOIC && calculations.leveredMOIC.formula) {
-        try {
-          multiplesSheet.getRange(`B${currentRow}`).formulas = [[calculations.leveredMOIC.formula]];
-          multiplesSheet.getRange(`C${currentRow}`).values = [[calculations.leveredMOIC.description || 'AI-calculated']];
-        } catch (formulaError) {
-          console.error('❌ Error setting AI Levered MOIC formula, using fallback:', formulaError);
-          multiplesSheet.getRange(`B${currentRow}`).formulas = [[`=B${inflowsRow}/B${outflowsRow}`]];
-          multiplesSheet.getRange(`C${currentRow}`).values = [['Fallback calculation']];
-        }
-      } else {
-        multiplesSheet.getRange(`B${currentRow}`).formulas = [[`=B${inflowsRow}/B${outflowsRow}`]];
-        multiplesSheet.getRange(`C${currentRow}`).values = [['Fallback calculation']];
-      }
+      multiplesSheet.getRange(`B${currentRow}`).formulas = [[calculations.leveredMOIC.formula]];
+      multiplesSheet.getRange(`C${currentRow}`).values = [[calculations.leveredMOIC.description || 'AI-calculated']];
       multiplesSheet.getRange(`B${currentRow}`).format.numberFormat = [['0.00"x"']];
       currentRow++;
       
-      // Unlevered MOIC using AI-generated formula
+      // Unlevered MOIC using AI-generated formula ONLY
       multiplesSheet.getRange(`A${currentRow}`).values = [['Unlevered MOIC']];
       multiplesSheet.getRange(`A${currentRow}`).format.font.bold = true;
-      if (calculations.unleveredMOIC && calculations.unleveredMOIC.formula) {
-        try {
-          multiplesSheet.getRange(`B${currentRow}`).formulas = [[calculations.unleveredMOIC.formula]];
-          multiplesSheet.getRange(`C${currentRow}`).values = [[calculations.unleveredMOIC.description || 'AI-calculated']];
-        } catch (formulaError) {
-          console.error('❌ Error setting AI Unlevered MOIC formula, using fallback:', formulaError);
-          // Fallback MOIC for unlevered using helper row
-          multiplesSheet.getRange(`B${currentRow}`).formulas = [[`=B${unleveredReturnsRow}/B${outflowsRow}`]];
-          multiplesSheet.getRange(`C${currentRow}`).values = [['Fallback calculation']];
-        }
-      } else {
-        // Fallback MOIC for unlevered using helper row
-        multiplesSheet.getRange(`B${currentRow}`).formulas = [[`=B${unleveredReturnsRow}/B${outflowsRow}`]];
-        multiplesSheet.getRange(`C${currentRow}`).values = [['Fallback calculation']];
-      }
+      multiplesSheet.getRange(`B${currentRow}`).formulas = [[calculations.unleveredMOIC.formula]];
+      multiplesSheet.getRange(`C${currentRow}`).values = [[calculations.unleveredMOIC.description || 'AI-calculated']];
       multiplesSheet.getRange(`B${currentRow}`).format.numberFormat = [['0.00"x"']];
       currentRow += 2;
       
