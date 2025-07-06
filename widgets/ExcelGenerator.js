@@ -695,26 +695,35 @@ Please provide the complete P&L structure with exact cell addresses and formulas
     try {
       console.log('📊 Generating Multiples & IRR Analysis with AI...');
       
-      // Step 1: Read the actual FCF sheet to get real cell structure
+      // Step 1: Read the actual FCF sheet to get real cell structure and data
       const fcfStructure = await this.readFCFSheetStructure();
       console.log('💰 FCF Structure discovered:', fcfStructure);
       
-      // Step 2: Read assumption sheet structure
+      // Step 2: Read actual FCF data values
+      const fcfData = await this.readFCFSheetData();
+      console.log('💰 FCF Data extracted:', fcfData);
+      
+      // Step 3: Read P&L sheet structure and data
+      const plStructure = await this.readPLSheetStructure();
+      const plData = await this.readPLSheetData();
+      console.log('📊 P&L Data extracted:', plData);
+      
+      // Step 4: Read assumption sheet structure and data
       const assumptionStructure = await this.readAssumptionSheetStructure();
       console.log('📊 Assumption Structure discovered:', assumptionStructure);
       
-      // Step 3: Generate comprehensive Multiples & IRR AI prompt with ACTUAL cell references
-      const multiplesPrompt = this.generateMultiplesAndIRRPrompt(modelData, fcfStructure, assumptionStructure);
+      // Step 5: Generate comprehensive AI prompt with ACTUAL financial data
+      const multiplesPrompt = this.generateMultiplesAndIRRPrompt(modelData, fcfStructure, fcfData, plData, assumptionStructure);
       
-      // Step 4: Create professional Multiples & IRR sheet using discovered cell references
-      await this.createMultiplesAndIRRSheet(modelData, multiplesPrompt, fcfStructure, assumptionStructure);
+      // Step 6: Call OpenAI API for intelligent calculation
+      console.log('🤖 Calling OpenAI API for Multiples & IRR calculation...');
+      const aiResponse = await this.callOpenAIForMultiples(multiplesPrompt);
+      console.log('🤖 AI Response received:', aiResponse);
       
-      console.log('📋 REAL Multiples & IRR AI Prompt for OpenAI:');
-      console.log('='.repeat(100));
-      console.log(multiplesPrompt);
-      console.log('='.repeat(100));
+      // Step 7: Create professional Multiples & IRR sheet using AI-generated formulas
+      await this.createAIMultiplesAndIRRSheet(modelData, aiResponse, fcfStructure, fcfData, assumptionStructure);
       
-      return { success: true, message: 'Professional Multiples & IRR Analysis generated using real FCF cell references!' };
+      return { success: true, message: 'Professional Multiples & IRR Analysis generated using AI calculations!' };
       
     } catch (error) {
       console.error('❌ Error generating Multiples & IRR:', error);
@@ -2599,95 +2608,351 @@ If any critical P&L references are missing, clearly state what assumptions you'r
     });
   }
   
+  // Read actual FCF sheet data values
+  async readFCFSheetData() {
+    return Excel.run(async (context) => {
+      try {
+        const sheets = context.workbook.worksheets;
+        const fcfSheet = sheets.getItemOrNullObject('Free Cash Flow');
+        fcfSheet.load('name');
+        await context.sync();
+        
+        if (fcfSheet.isNullObject) {
+          throw new Error('Free Cash Flow sheet not found');
+        }
+        
+        // Read the entire sheet data
+        const range = fcfSheet.getUsedRange();
+        range.load('values');
+        await context.sync();
+        
+        const values = range.values;
+        const fcfData = {
+          sheetName: 'Free Cash Flow',
+          rawData: values,
+          leveredFCFValues: [],
+          unleveredFCFValues: [],
+          periodHeaders: [],
+          cashFlowPeriods: []
+        };
+        
+        // Extract period headers (first row)
+        if (values.length > 0) {
+          fcfData.periodHeaders = values[0].slice(1); // Remove first column (labels)
+        }
+        
+        // Find and extract actual cash flow values
+        for (let i = 0; i < values.length; i++) {
+          const row = values[i];
+          if (row && row[0]) {
+            const cellValue = row[0].toString().toLowerCase();
+            
+            if (cellValue.includes('levered free cash flow')) {
+              fcfData.leveredFCFValues = row.slice(1); // Remove first column (label)
+            } else if (cellValue.includes('unlevered free cash flow')) {
+              fcfData.unleveredFCFValues = row.slice(1); // Remove first column (label)
+            }
+          }
+        }
+        
+        // Create cash flow periods for IRR calculation
+        fcfData.cashFlowPeriods = fcfData.leveredFCFValues.map((value, index) => ({
+          period: fcfData.periodHeaders[index] || `Period ${index + 1}`,
+          leveredFCF: parseFloat(value) || 0,
+          unleveredFCF: parseFloat(fcfData.unleveredFCFValues[index]) || 0
+        }));
+        
+        console.log('💰 FCF Data extracted:', fcfData);
+        return fcfData;
+        
+      } catch (error) {
+        console.error('Error reading FCF sheet data:', error);
+        throw error;
+      }
+    });
+  }
+  
+  // Read actual P&L sheet data values
+  async readPLSheetData() {
+    return Excel.run(async (context) => {
+      try {
+        const sheets = context.workbook.worksheets;
+        const plSheet = sheets.getItemOrNullObject('P&L Statement');
+        plSheet.load('name');
+        await context.sync();
+        
+        if (plSheet.isNullObject) {
+          throw new Error('P&L Statement sheet not found');
+        }
+        
+        // Read the entire sheet data
+        const range = plSheet.getUsedRange();
+        range.load('values');
+        await context.sync();
+        
+        const values = range.values;
+        const plData = {
+          sheetName: 'P&L Statement',
+          rawData: values,
+          revenue: [],
+          expenses: [],
+          ebitda: [],
+          netIncome: [],
+          periodHeaders: []
+        };
+        
+        // Extract period headers (first row)
+        if (values.length > 0) {
+          plData.periodHeaders = values[0].slice(1); // Remove first column (labels)
+        }
+        
+        // Find and extract key P&L line items
+        for (let i = 0; i < values.length; i++) {
+          const row = values[i];
+          if (row && row[0]) {
+            const cellValue = row[0].toString().toLowerCase();
+            
+            if (cellValue.includes('total revenue')) {
+              plData.revenue = row.slice(1);
+            } else if (cellValue.includes('ebitda')) {
+              plData.ebitda = row.slice(1);
+            } else if (cellValue.includes('net income')) {
+              plData.netIncome = row.slice(1);
+            }
+          }
+        }
+        
+        console.log('📊 P&L Data extracted:', plData);
+        return plData;
+        
+      } catch (error) {
+        console.error('Error reading P&L sheet data:', error);
+        throw error;
+      }
+    });
+  }
+  
+  // Call OpenAI API for Multiples & IRR calculation
+  async callOpenAIForMultiples(prompt) {
+    try {
+      // Use the same API endpoint as AIExtractionService
+      const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      const apiEndpoint = isLocal ? 'http://localhost:8888/.netlify/functions/chat' : '/.netlify/functions/chat';
+      
+      const requestBody = {
+        message: prompt,
+        autoFillMode: false,
+        batchType: 'financial_analysis',
+        requireFormulas: true
+      };
+      
+      console.log('🤖 Sending Multiples & IRR request to OpenAI...');
+      
+      const response = await fetch(apiEndpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(requestBody)
+      });
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
+      return data;
+      
+    } catch (error) {
+      console.error('❌ Error calling OpenAI for Multiples & IRR:', error);
+      throw error;
+    }
+  }
+  
   // Generate comprehensive AI prompt for Multiples & IRR calculations
-  generateMultiplesAndIRRPrompt(modelData, fcfStructure, assumptionStructure) {
-    console.log('🤖 Generating Multiples & IRR AI prompt...');
+  generateMultiplesAndIRRPrompt(modelData, fcfStructure, fcfData, plData, assumptionStructure) {
+    console.log('🤖 Generating Multiples & IRR AI prompt with real financial data...');
     
     // Calculate periods
     const periods = this.calculatePeriods(modelData.projectStartDate, modelData.projectEndDate, modelData.modelPeriods);
     
-    const prompt = `You are a world-class M&A financial modeling expert. You have been provided with complete Assumptions and Free Cash Flow Statement data. Your task is to create a comprehensive Multiples & IRR Analysis sheet that calculates investment returns and multiples using Excel formulas.
+    const prompt = `You are a world-class M&A financial modeling expert. You have been provided with ACTUAL financial data from the completed P&L Statement, Free Cash Flow Statement, and Assumptions sheets. Your task is to calculate accurate IRR and MOIC multiples using the real data provided and generate proper Excel formulas.
 
-**DEAL OVERVIEW:**
-- Deal: ${modelData.dealName}
+**ACTUAL FINANCIAL DATA PROVIDED:**
+
+## DEAL PARAMETERS:
+- Deal Name: ${modelData.dealName}
 - Deal Value: ${modelData.dealValue} ${modelData.currency}
 - Equity Contribution: ${modelData.equityContribution} ${modelData.currency}
+- Initial Investment: ${modelData.equityContribution} ${modelData.currency}
 - Currency: ${modelData.currency}
 - Period Type: ${modelData.modelPeriods}
 - Duration: ${modelData.projectStartDate} to ${modelData.projectEndDate}
-- Periods: ${periods}
+- Total Periods: ${periods}
 
-**AVAILABLE FCF SHEET DATA:**
-- Sheet Name: "${fcfStructure.sheetName}"
+## ACTUAL FREE CASH FLOW DATA:
+Period Headers: ${fcfData.periodHeaders ? fcfData.periodHeaders.join(', ') : 'Not available'}
+
+Levered FCF Values: ${fcfData.leveredFCFValues ? fcfData.leveredFCFValues.join(', ') : 'Not available'}
+
+Unlevered FCF Values: ${fcfData.unleveredFCFValues ? fcfData.unleveredFCFValues.join(', ') : 'Not available'}
+
+Cash Flow Periods for IRR:
+${fcfData.cashFlowPeriods ? fcfData.cashFlowPeriods.map(p => `  ${p.period}: Levered FCF ${p.leveredFCF}, Unlevered FCF ${p.unleveredFCF}`).join('\n') : 'Not available'}
+
+## ACTUAL P&L DATA:
+Period Headers: ${plData.periodHeaders ? plData.periodHeaders.join(', ') : 'Not available'}
+Revenue by Period: ${plData.revenue ? plData.revenue.join(', ') : 'Not available'}
+EBITDA by Period: ${plData.ebitda ? plData.ebitda.join(', ') : 'Not available'}
+Net Income by Period: ${plData.netIncome ? plData.netIncome.join(', ') : 'Not available'}
+
+## EXCEL SHEET REFERENCES:
+- FCF Sheet: "${fcfStructure.sheetName}"
 - Levered FCF Row: ${fcfStructure.leveredFCF}
 - Unlevered FCF Row: ${fcfStructure.unleveredFCF}
 - Cash Flow Range: ${fcfStructure.cashFlowRange}
 - Period Columns: ${fcfStructure.periodColumns}
 
-**AVAILABLE ASSUMPTIONS SHEET DATA:**
-${this.formatDetailedAssumptions(assumptionStructure.assumptions)}
+**REQUIRED CALCULATIONS:**
 
-**YOUR TASK:**
-Create a comprehensive Multiples & IRR Analysis sheet with the following sections using ONLY Excel formulas:
+## 1. LEVERED IRR CALCULATION
+- Use the actual levered FCF values: [${fcfData.leveredFCFValues ? fcfData.leveredFCFValues.join(', ') : 'Not available'}]
+- Initial investment (negative): -${modelData.equityContribution}
+- Calculate using IRR or XIRR function
+- Excel formula should reference: ='Free Cash Flow'!${fcfStructure.cashFlowRange}
 
-## 1. INVESTMENT SUMMARY
-- Initial Investment (from Assumptions)
-- Total Equity Contribution
-- Deal Value
-- Exit Value (Terminal Value calculation)
+## 2. UNLEVERED IRR CALCULATION  
+- Use the actual unlevered FCF values: [${fcfData.unleveredFCFValues ? fcfData.unleveredFCFValues.join(', ') : 'Not available'}]
+- Initial investment (negative): -${modelData.equityContribution}
+- Calculate using IRR or XIRR function
 
-## 2. LEVERED IRR ANALYSIS
-- Use XIRR function with dates and levered FCF
-- Reference: ='Free Cash Flow'!${fcfStructure.cashFlowRange}
-- Include initial investment as negative cash flow
-- Calculate levered IRR %
+## 3. LEVERED MOIC CALCULATION
+- Total Cash Inflows = Sum of positive levered FCF values
+- Total Cash Outflows = Initial investment (${modelData.equityContribution})
+- MOIC = Total Inflows / Total Outflows
+- Based on actual values: [${fcfData.leveredFCFValues ? fcfData.leveredFCFValues.join(', ') : 'Not available'}]
 
-## 3. UNLEVERED IRR ANALYSIS
-- Use XIRR function with dates and unlevered FCF
-- Reference: ='Free Cash Flow'!B${fcfStructure.unleveredFCF}:${this.getColumnLetter(fcfStructure.periodColumns)}${fcfStructure.unleveredFCF}
-- Calculate unlevered IRR %
+## 4. UNLEVERED MOIC CALCULATION
+- Total Cash Inflows = Sum of positive unlevered FCF values  
+- Total Cash Outflows = Initial investment (${modelData.equityContribution})
+- MOIC = Total Inflows / Total Outflows
+- Based on actual values: [${fcfData.unleveredFCFValues ? fcfData.unleveredFCFValues.join(', ') : 'Not available'}]
 
-## 4. MOIC CALCULATIONS
-- Total Cash Inflows (sum of positive FCF)
-- Total Cash Outflows (sum of negative FCF + initial investment)
-- Levered MOIC = Total Inflows / Total Outflows
-- Unlevered MOIC calculation
+**RESPONSE FORMAT REQUIRED:**
+Please provide a JSON response with the following structure:
+{
+  "calculations": {
+    "leveredIRR": {
+      "formula": "Excel formula for levered IRR",
+      "description": "Explanation of calculation",
+      "result": "Calculated percentage"
+    },
+    "unleveredIRR": {
+      "formula": "Excel formula for unlevered IRR", 
+      "description": "Explanation of calculation",
+      "result": "Calculated percentage"
+    },
+    "leveredMOIC": {
+      "formula": "Excel formula for levered MOIC",
+      "description": "Explanation of calculation", 
+      "result": "Calculated multiple"
+    },
+    "unleveredMOIC": {
+      "formula": "Excel formula for unlevered MOIC",
+      "description": "Explanation of calculation",
+      "result": "Calculated multiple"
+    },
+    "totalCashInflows": {
+      "formula": "Excel formula for total cash inflows",
+      "result": "Total inflows value"
+    },
+    "paybackPeriod": {
+      "formula": "Excel formula for payback period",
+      "result": "Payback in periods"
+    }
+  }
+}
 
-## 5. SENSITIVITY ANALYSIS
-- IRR sensitivity to exit multiples
-- MOIC sensitivity to exit multiples
-- Create sensitivity table with different exit scenarios
+**IMPORTANT NOTES:**
+- Use actual cell references from the Free Cash Flow sheet
+- Ensure formulas work with the real data provided  
+- Calculate accurate percentages and multiples
+- Include error handling for invalid data
 
-## 6. RETURN SUMMARY
-- Annualized Returns
-- Total Return %
-- Payback Period calculation
-- Break-even analysis
-
-**CRITICAL REQUIREMENTS:**
-1. Use ONLY Excel formulas and cell references
-2. Reference actual FCF sheet cells: ='Free Cash Flow'!CellReference
-3. Reference assumptions: ='Assumptions'!CellReference
-4. Use XIRR for IRR calculations (more accurate than IRR)
-5. Use proper date ranges for XIRR function
-6. Include professional formatting and headers
-7. Add data validation and error handling
-8. Create clear, readable financial metrics
-
-**EXCEL FORMULA EXAMPLES:**
-- IRR: =XIRR(CashFlowRange, DateRange)
-- MOIC: =SUM(PositiveCashFlows)/ABS(SUM(NegativeCashFlows))
-- NPV: =NPV(DiscountRate, CashFlowRange)
-- Payback: Use nested IF statements to find payback period
-
-Generate the complete Excel sheet structure with all formulas and proper formatting.`;
+Please analyze the provided cash flow data and return the JSON response with accurate calculations.`;
 
     return prompt;
   }
   
-  // Create the actual Multiples & IRR sheet with formulas
-  async createMultiplesAndIRRSheet(modelData, prompt, fcfStructure, assumptionStructure) {
+  // Create fallback calculations when AI response is not available
+  createFallbackCalculations(fcfData, modelData) {
+    console.log('🔄 Creating fallback calculations with actual data');
+    
+    const leveredTotal = fcfData.leveredFCFValues ? fcfData.leveredFCFValues.reduce((sum, val) => sum + (parseFloat(val) || 0), 0) : 0;
+    const unleveredTotal = fcfData.unleveredFCFValues ? fcfData.unleveredFCFValues.reduce((sum, val) => sum + (parseFloat(val) || 0), 0) : 0;
+    const initialInvestment = parseFloat(modelData.equityContribution) || 0;
+    
+    return {
+      leveredIRR: {
+        formula: "=IRR('Free Cash Flow'!B" + (fcfData.leveredFCFRow || '10') + ":Z" + (fcfData.leveredFCFRow || '10') + ")",
+        description: "Levered IRR calculated from FCF data",
+        result: "Calculated based on cash flows"
+      },
+      unleveredIRR: {
+        formula: "=IRR('Free Cash Flow'!B" + (fcfData.unleveredFCFRow || '11') + ":Z" + (fcfData.unleveredFCFRow || '11') + ")",
+        description: "Unlevered IRR calculated from FCF data", 
+        result: "Calculated based on cash flows"
+      },
+      leveredMOIC: {
+        formula: `=SUM('Free Cash Flow'!B${fcfData.leveredFCFRow || '10'}:Z${fcfData.leveredFCFRow || '10'})/${initialInvestment}`,
+        description: "Levered MOIC = Total Cash Inflows / Initial Investment",
+        result: (leveredTotal / initialInvestment).toFixed(2) + "x"
+      },
+      unleveredMOIC: {
+        formula: `=SUM('Free Cash Flow'!B${fcfData.unleveredFCFRow || '11'}:Z${fcfData.unleveredFCFRow || '11'})/${initialInvestment}`,
+        description: "Unlevered MOIC = Total Cash Inflows / Initial Investment",
+        result: (unleveredTotal / initialInvestment).toFixed(2) + "x"
+      },
+      totalCashInflows: {
+        formula: `=SUM('Free Cash Flow'!B${fcfData.leveredFCFRow || '10'}:Z${fcfData.leveredFCFRow || '10'})`,
+        result: leveredTotal.toFixed(0)
+      },
+      paybackPeriod: {
+        formula: "Manual calculation required",
+        result: "TBD"
+      }
+    };
+  }
+  
+  // Create the AI-powered Multiples & IRR sheet with calculated formulas
+  async createAIMultiplesAndIRRSheet(modelData, aiResponse, fcfStructure, fcfData, assumptionStructure) {
     return Excel.run(async (context) => {
+      // Parse AI response to extract calculations
+      let calculations = {};
+      try {
+        // Try to parse JSON response from AI
+        if (typeof aiResponse.response === 'string') {
+          const jsonMatch = aiResponse.response.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            const parsed = JSON.parse(jsonMatch[0]);
+            calculations = parsed.calculations || {};
+          }
+        } else if (aiResponse.calculations) {
+          calculations = aiResponse.calculations;
+        }
+        console.log('🤖 Parsed AI calculations:', calculations);
+      } catch (error) {
+        console.warn('⚠️ Could not parse AI response, using fallback calculations');
+        // Create fallback calculations using the actual data
+        calculations = this.createFallbackCalculations(fcfData, modelData);
+      }
+      
       const sheets = context.workbook.worksheets;
       
       // Delete existing sheet if it exists
@@ -2746,27 +3011,34 @@ Generate the complete Excel sheet structure with all formulas and proper formatt
       multiplesSheet.getRange(`A${currentRow}`).format.fill.color = '#E2EFDA';
       currentRow++;
       
-      // Levered IRR
+      // Levered IRR using AI-generated formula
       multiplesSheet.getRange(`A${currentRow}`).values = [['Levered IRR']];
       multiplesSheet.getRange(`A${currentRow}`).format.font.bold = true;
-      if (fcfStructure.leveredFCF && fcfStructure.cashFlowRange) {
-        // Create a simple reference to the FCF range for IRR calculation
+      if (calculations.leveredIRR && calculations.leveredIRR.formula) {
+        multiplesSheet.getRange(`B${currentRow}`).formulas = [[calculations.leveredIRR.formula]];
+        multiplesSheet.getRange(`B${currentRow}`).format.numberFormat = [['0.00%']];
+        // Add description as comment
+        multiplesSheet.getRange(`C${currentRow}`).values = [[calculations.leveredIRR.description || 'AI-calculated']];
+      } else {
+        // Fallback to simple IRR calculation
         multiplesSheet.getRange(`B${currentRow}`).formulas = [[`=IRR('Free Cash Flow'!${fcfStructure.cashFlowRange})`]];
         multiplesSheet.getRange(`B${currentRow}`).format.numberFormat = [['0.00%']];
-      } else {
-        multiplesSheet.getRange(`B${currentRow}`).values = [['Manual calculation required']];
       }
       currentRow++;
       
-      // Unlevered IRR
+      // Unlevered IRR using AI-generated formula
       multiplesSheet.getRange(`A${currentRow}`).values = [['Unlevered IRR']];
       multiplesSheet.getRange(`A${currentRow}`).format.font.bold = true;
-      if (fcfStructure.unleveredFCF) {
+      if (calculations.unleveredIRR && calculations.unleveredIRR.formula) {
+        multiplesSheet.getRange(`B${currentRow}`).formulas = [[calculations.unleveredIRR.formula]];
+        multiplesSheet.getRange(`B${currentRow}`).format.numberFormat = [['0.00%']];
+        // Add description as comment
+        multiplesSheet.getRange(`C${currentRow}`).values = [[calculations.unleveredIRR.description || 'AI-calculated']];
+      } else {
+        // Fallback to simple IRR calculation
         const unleveredRange = `B${fcfStructure.unleveredFCF}:${this.getColumnLetter(fcfStructure.periodColumns)}${fcfStructure.unleveredFCF}`;
         multiplesSheet.getRange(`B${currentRow}`).formulas = [[`=IRR('Free Cash Flow'!${unleveredRange})`]];
         multiplesSheet.getRange(`B${currentRow}`).format.numberFormat = [['0.00%']];
-      } else {
-        multiplesSheet.getRange(`B${currentRow}`).values = [['Manual calculation required']];
       }
       currentRow += 2;
       
