@@ -2750,9 +2750,8 @@ Generate the complete Excel sheet structure with all formulas and proper formatt
       multiplesSheet.getRange(`A${currentRow}`).values = [['Levered IRR']];
       multiplesSheet.getRange(`A${currentRow}`).format.font.bold = true;
       if (fcfStructure.leveredFCF && fcfStructure.cashFlowRange) {
-        // Create cash flow range including initial investment
-        const cashFlowRange = `B${equityRow},'Free Cash Flow'!${fcfStructure.cashFlowRange}`;
-        multiplesSheet.getRange(`B${currentRow}`).formulas = [[`=IRR({-B${equityRow},'Free Cash Flow'!${fcfStructure.cashFlowRange}})`]];
+        // Create a simple reference to the FCF range for IRR calculation
+        multiplesSheet.getRange(`B${currentRow}`).formulas = [[`=IRR('Free Cash Flow'!${fcfStructure.cashFlowRange})`]];
         multiplesSheet.getRange(`B${currentRow}`).format.numberFormat = [['0.00%']];
       } else {
         multiplesSheet.getRange(`B${currentRow}`).values = [['Manual calculation required']];
@@ -2764,7 +2763,7 @@ Generate the complete Excel sheet structure with all formulas and proper formatt
       multiplesSheet.getRange(`A${currentRow}`).format.font.bold = true;
       if (fcfStructure.unleveredFCF) {
         const unleveredRange = `B${fcfStructure.unleveredFCF}:${this.getColumnLetter(fcfStructure.periodColumns)}${fcfStructure.unleveredFCF}`;
-        multiplesSheet.getRange(`B${currentRow}`).formulas = [[`=IRR({-B${equityRow},'Free Cash Flow'!${unleveredRange}})`]];
+        multiplesSheet.getRange(`B${currentRow}`).formulas = [[`=IRR('Free Cash Flow'!${unleveredRange})`]];
         multiplesSheet.getRange(`B${currentRow}`).format.numberFormat = [['0.00%']];
       } else {
         multiplesSheet.getRange(`B${currentRow}`).values = [['Manual calculation required']];
