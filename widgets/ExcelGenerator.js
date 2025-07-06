@@ -693,59 +693,53 @@ Please provide the complete P&L structure with exact cell addresses and formulas
   }
   
   async generateMultiplesAndIRR(modelData) {
-    console.log('🔥 ANTI-CACHE VERSION: AI-Only Multiples & IRR (v4.0 - NO FALLBACK MODE)');
-    console.log('🔥 Input data:', modelData);
+    console.log('🔥 NEW CLEAN VERSION v5.0 - ZERO FALLBACK LOGIC');
     console.log('🔥 TIMESTAMP:', new Date().toISOString());
-    console.log('🔥 This is the NEW VERSION - if you see Fallback Mode, clear browser cache!');
     
-    // Immediate API test
     try {
-      // Step 1: Quick validation
+      // Validate inputs
       if (!modelData.dealValue || modelData.dealValue === 0) {
-        throw new Error('Deal value is required for Multiples & IRR calculation');
+        throw new Error('Deal value is required for IRR/MOIC calculation');
       }
       
-      console.log('✅ Starting AI-only Multiples & IRR generation...');
-      
-      // Step 2: Read FCF data
+      // Read FCF data from existing sheet
       const fcfData = await this.readFCFSheetData();
-      console.log('📊 FCF Data:', fcfData);
+      console.log('📊 FCF data read:', fcfData);
       
-      // Step 3: Calculate equity if missing
+      // Calculate equity contribution
       let equityContribution = modelData.equityContribution;
       if (!equityContribution || equityContribution === 0) {
         const dealLTV = modelData.dealLTV || 70;
         equityContribution = modelData.dealValue * (100 - dealLTV) / 100;
-        console.log(`🔧 Calculated equity: ${equityContribution}`);
       }
       
-      // Step 4: Create simple AI prompt
-      const prompt = `Calculate IRR and MOIC for M&A investment:
+      // Call AI API for IRR/MOIC formulas
+      const aiPrompt = `Calculate IRR and MOIC for M&A deal. Return Excel formulas in JSON format.
       
 Deal Value: ${modelData.dealValue}
-Equity Investment: ${equityContribution}
-Levered FCF: [${fcfData.leveredFCFValues?.slice(0, 5).join(', ')}...]
-Unlevered FCF: [${fcfData.unleveredFCFValues?.slice(0, 5).join(', ')}...]
+Equity: ${equityContribution}
+FCF Data: ${JSON.stringify(fcfData)}
 
-Return Excel formulas in JSON:
+Required format:
 {
   "calculations": {
-    "leveredIRR": {"formula": "=POWER(total_returns/investment, 1/years)-1"},
-    "leveredMOIC": {"formula": "=total_returns/investment"}
+    "leveredIRR": {"formula": "=IRR formula here"},
+    "leveredMOIC": {"formula": "=MOIC formula here"}
   }
 }`;
       
-      console.log('🤖 Calling OpenAI...');
-      const aiResponse = await this.callOpenAIForMultiples(prompt);
+      console.log('🤖 Calling AI API...');
+      const aiResponse = await this.callOpenAIForMultiples(aiPrompt);
+      console.log('🤖 AI response:', aiResponse);
       
-      console.log('✅ AI Response received, creating sheet...');
-      await this.createSimpleMultiplesSheet(modelData, aiResponse, equityContribution, fcfData);
+      // Create Excel sheet with AI results
+      await this.createCleanMultiplesSheet(modelData, aiResponse, equityContribution);
       
-      return { success: true, message: 'AI Multiples & IRR Analysis created successfully!' };
+      return { success: true, message: 'IRR & MOIC Analysis created successfully!' };
       
     } catch (error) {
-      console.error('❌ AI Multiples & IRR failed:', error);
-      throw error; // Don't catch - let it fail completely if API doesn't work
+      console.error('❌ IRR/MOIC generation failed:', error);
+      throw new Error(`IRR/MOIC calculation failed: ${error.message}`);
     }
   }
   
@@ -2909,10 +2903,10 @@ Generate working Excel formulas using the provided data and structure.`;
     return prompt;
   }
   
-  // Simple AI-only sheet creation
-  async createSimpleMultiplesSheet(modelData, aiResponse, equityContribution, fcfData) {
+  // NEW: Clean AI-only sheet creation with NO fallback logic
+  async createCleanMultiplesSheet(modelData, aiResponse, equityContribution) {
     return Excel.run(async (context) => {
-      console.log('📊 Creating AI-only Multiples & IRR sheet...');
+      console.log('📊 Creating CLEAN IRR/MOIC sheet (v5.0)...');
       
       // Parse AI response
       let calculations = {};
@@ -2925,18 +2919,18 @@ Generate working Excel formulas using the provided data and structure.`;
           }
         } else if (aiResponse.calculations) {
           calculations = aiResponse.calculations;
+        } else if (aiResponse.extractedData) {
+          calculations = aiResponse.extractedData.calculations || {};
         }
-        console.log('🤖 AI calculations:', calculations);
+        console.log('🤖 Parsed calculations:', calculations);
       } catch (error) {
         throw new Error(`Failed to parse AI response: ${error.message}`);
       }
       
-      // Create sheet
+      // Delete existing sheet if it exists
       const sheets = context.workbook.worksheets;
-      
-      // Delete existing sheet
       try {
-        const existingSheet = sheets.getItemOrNullObject('Multiples & IRR');
+        const existingSheet = sheets.getItemOrNullObject('IRR & MOIC Analysis');
         existingSheet.load('name');
         await context.sync();
         if (!existingSheet.isNullObject) {
@@ -2945,63 +2939,60 @@ Generate working Excel formulas using the provided data and structure.`;
         }
       } catch (e) {}
       
-      // Create new sheet
-      const sheet = sheets.add('Multiples & IRR');
+      // Create new sheet with different name
+      const sheet = sheets.add('IRR & MOIC Analysis');
       sheet.activate();
       await context.sync();
       
-      let row = 1;
-      
-      // Title with version identifier
-      sheet.getRange('A1').values = [['AI MULTIPLES & IRR (v4.0 - NO FALLBACK)']];
+      // Set title - NO FALLBACK ANYWHERE
+      sheet.getRange('A1').values = [['AI-POWERED IRR & MOIC ANALYSIS']];
       sheet.getRange('A1').format.font.bold = true;
-      sheet.getRange('A1').format.font.size = 16;
-      sheet.getRange('A1').format.fill.color = '#4472C4';
+      sheet.getRange('A1').format.font.size = 18;
+      sheet.getRange('A1').format.fill.color = '#2E8B57';
       sheet.getRange('A1').format.font.color = 'white';
-      row = 3;
       
-      // Investment Summary
-      sheet.getRange(`A${row}`).values = [['Deal Value']];
+      let row = 3;
+      
+      // Deal summary
+      sheet.getRange(`A${row}`).values = [['Deal Value:']];
       sheet.getRange(`B${row}`).values = [[modelData.dealValue]];
+      sheet.getRange(`B${row}`).format.numberFormat = [['#,##0']];
       row++;
       
-      sheet.getRange(`A${row}`).values = [['Equity Investment']];
+      sheet.getRange(`A${row}`).values = [['Equity Investment:']];
       sheet.getRange(`B${row}`).values = [[equityContribution]];
+      sheet.getRange(`B${row}`).format.numberFormat = [['#,##0']];
       row += 2;
       
-      // AI Results with validation
-      if (calculations.leveredIRR) {
-        sheet.getRange(`A${row}`).values = [['Levered IRR']];
+      // AI-generated calculations
+      if (calculations.leveredIRR && calculations.leveredIRR.formula) {
+        sheet.getRange(`A${row}`).values = [['Levered IRR:']];
         try {
-          const formula = calculations.leveredIRR.formula || '=0';
-          console.log('Setting levered IRR formula:', formula);
-          sheet.getRange(`B${row}`).formulas = [[formula]];
+          sheet.getRange(`B${row}`).formulas = [[calculations.leveredIRR.formula]];
           sheet.getRange(`B${row}`).format.numberFormat = [['0.00%']];
-        } catch (error) {
-          console.error('Error setting levered IRR formula:', error);
-          sheet.getRange(`B${row}`).values = [['Formula Error']];
+        } catch (formulaError) {
+          console.error('IRR formula error:', formulaError);
+          sheet.getRange(`B${row}`).values = [['AI Formula Error']];
         }
         row++;
       }
       
-      if (calculations.leveredMOIC) {
-        sheet.getRange(`A${row}`).values = [['Levered MOIC']];
+      if (calculations.leveredMOIC && calculations.leveredMOIC.formula) {
+        sheet.getRange(`A${row}`).values = [['Levered MOIC:']];
         try {
-          const formula = calculations.leveredMOIC.formula || '=0';
-          console.log('Setting levered MOIC formula:', formula);
-          sheet.getRange(`B${row}`).formulas = [[formula]];
+          sheet.getRange(`B${row}`).formulas = [[calculations.leveredMOIC.formula]];
           sheet.getRange(`B${row}`).format.numberFormat = [['0.00"x"']];
-        } catch (error) {
-          console.error('Error setting levered MOIC formula:', error);
-          sheet.getRange(`B${row}`).values = [['Formula Error']];
+        } catch (formulaError) {
+          console.error('MOIC formula error:', formulaError);
+          sheet.getRange(`B${row}`).values = [['AI Formula Error']];
         }
         row++;
       }
       
-      // Format
+      // Auto-fit columns
       sheet.getRange('A:B').format.autofitColumns();
       
-      console.log('✅ Simple AI sheet created successfully');
+      console.log('✅ Clean IRR/MOIC sheet created successfully - NO FALLBACK MODE');
     });
   }
   
