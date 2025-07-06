@@ -693,43 +693,59 @@ Please provide the complete P&L structure with exact cell addresses and formulas
   }
   
   async generateMultiplesAndIRR(modelData) {
+    console.log('🔥 ANTI-CACHE VERSION: AI-Only Multiples & IRR (v4.0 - NO FALLBACK MODE)');
+    console.log('🔥 Input data:', modelData);
+    console.log('🔥 TIMESTAMP:', new Date().toISOString());
+    console.log('🔥 This is the NEW VERSION - if you see Fallback Mode, clear browser cache!');
+    
+    // Immediate API test
     try {
-      console.log('🔥 NEW VERSION: Generating Multiples & IRR Analysis with AI ONLY (no fallback) - v2.1...');
-      console.log('🔥 Model data received:', modelData);
+      // Step 1: Quick validation
+      if (!modelData.dealValue || modelData.dealValue === 0) {
+        throw new Error('Deal value is required for Multiples & IRR calculation');
+      }
       
-      // Step 1: Read the actual FCF sheet to get real cell structure and data
-      const fcfStructure = await this.readFCFSheetStructure();
-      console.log('💰 FCF Structure discovered:', fcfStructure);
+      console.log('✅ Starting AI-only Multiples & IRR generation...');
       
-      // Step 2: Read actual FCF data values
+      // Step 2: Read FCF data
       const fcfData = await this.readFCFSheetData();
-      console.log('💰 FCF Data extracted:', fcfData);
+      console.log('📊 FCF Data:', fcfData);
       
-      // Step 3: Read P&L sheet structure and data
-      const plStructure = await this.readPLSheetStructure();
-      const plData = await this.readPLSheetData();
-      console.log('📊 P&L Data extracted:', plData);
+      // Step 3: Calculate equity if missing
+      let equityContribution = modelData.equityContribution;
+      if (!equityContribution || equityContribution === 0) {
+        const dealLTV = modelData.dealLTV || 70;
+        equityContribution = modelData.dealValue * (100 - dealLTV) / 100;
+        console.log(`🔧 Calculated equity: ${equityContribution}`);
+      }
       
-      // Step 4: Read assumption sheet structure and data
-      const assumptionStructure = await this.readAssumptionSheetStructure();
-      console.log('📊 Assumption Structure discovered:', assumptionStructure);
+      // Step 4: Create simple AI prompt
+      const prompt = `Calculate IRR and MOIC for M&A investment:
       
-      // Step 5: Generate comprehensive AI prompt with ACTUAL financial data
-      const multiplesPrompt = this.generateMultiplesAndIRRPrompt(modelData, fcfStructure, fcfData, plData, assumptionStructure);
+Deal Value: ${modelData.dealValue}
+Equity Investment: ${equityContribution}
+Levered FCF: [${fcfData.leveredFCFValues?.slice(0, 5).join(', ')}...]
+Unlevered FCF: [${fcfData.unleveredFCFValues?.slice(0, 5).join(', ')}...]
+
+Return Excel formulas in JSON:
+{
+  "calculations": {
+    "leveredIRR": {"formula": "=POWER(total_returns/investment, 1/years)-1"},
+    "leveredMOIC": {"formula": "=total_returns/investment"}
+  }
+}`;
       
-      // Step 6: Call OpenAI API for intelligent calculation (NO fallback - API required)
-      console.log('🤖 Calling OpenAI API for Multiples & IRR calculation...');
-      const aiResponse = await this.callOpenAIForMultiples(multiplesPrompt);
-      console.log('🤖 AI Response received:', aiResponse);
+      console.log('🤖 Calling OpenAI...');
+      const aiResponse = await this.callOpenAIForMultiples(prompt);
       
-      // Step 7: Create professional Multiples & IRR sheet using AI-generated formulas ONLY
-      await this.createAIMultiplesAndIRRSheet(modelData, aiResponse, fcfStructure, fcfData, assumptionStructure);
+      console.log('✅ AI Response received, creating sheet...');
+      await this.createSimpleMultiplesSheet(modelData, aiResponse, equityContribution, fcfData);
       
-      return { success: true, message: 'Professional Multiples & IRR Analysis generated using AI calculations!' };
+      return { success: true, message: 'AI Multiples & IRR Analysis created successfully!' };
       
     } catch (error) {
-      console.error('❌ Error generating Multiples & IRR:', error);
-      return { success: false, error: error.message };
+      console.error('❌ AI Multiples & IRR failed:', error);
+      throw error; // Don't catch - let it fail completely if API doesn't work
     }
   }
   
@@ -2893,16 +2909,14 @@ Generate working Excel formulas using the provided data and structure.`;
     return prompt;
   }
   
-  // REMOVED: All fallback calculations - API required for accuracy
-  
-  // Create the AI-powered Multiples & IRR sheet with calculated formulas
-  async createAIMultiplesAndIRRSheet(modelData, aiResponse, fcfStructure, fcfData, assumptionStructure) {
+  // Simple AI-only sheet creation
+  async createSimpleMultiplesSheet(modelData, aiResponse, equityContribution, fcfData) {
     return Excel.run(async (context) => {
-      // Parse AI response to extract calculations (AI ONLY - no fallback)
-      let calculations = {};
+      console.log('📊 Creating AI-only Multiples & IRR sheet...');
       
+      // Parse AI response
+      let calculations = {};
       try {
-        // Try to parse JSON response from AI
         if (typeof aiResponse.response === 'string') {
           const jsonMatch = aiResponse.response.match(/\{[\s\S]*\}/);
           if (jsonMatch) {
@@ -2912,220 +2926,86 @@ Generate working Excel formulas using the provided data and structure.`;
         } else if (aiResponse.calculations) {
           calculations = aiResponse.calculations;
         }
-        console.log('🤖 Parsed AI calculations:', calculations);
-        
-        // Validate that we have essential calculations
-        if (!calculations.leveredIRR || !calculations.leveredMOIC) {
-          throw new Error('Missing essential calculations in AI response - calculations incomplete');
-        }
+        console.log('🤖 AI calculations:', calculations);
       } catch (error) {
-        console.error('❌ Could not parse AI response:', error.message);
-        throw new Error(`AI response parsing failed: ${error.message}. Cannot generate Multiples & IRR without valid AI calculations.`);
+        throw new Error(`Failed to parse AI response: ${error.message}`);
       }
       
+      // Create sheet
       const sheets = context.workbook.worksheets;
       
-      // Delete existing sheet if it exists
+      // Delete existing sheet
       try {
         const existingSheet = sheets.getItemOrNullObject('Multiples & IRR');
         existingSheet.load('name');
         await context.sync();
-        
         if (!existingSheet.isNullObject) {
-          console.log('🗑️ Deleting existing Multiples & IRR sheet');
           existingSheet.delete();
           await context.sync();
         }
-      } catch (e) {
-        // Sheet doesn't exist, continue
-      }
+      } catch (e) {}
       
       // Create new sheet
-      const multiplesSheet = sheets.add('Multiples & IRR');
-      multiplesSheet.activate();
+      const sheet = sheets.add('Multiples & IRR');
+      sheet.activate();
       await context.sync();
       
-      console.log('📊 Creating Multiples & IRR Analysis sheet...');
+      let row = 1;
       
-      let currentRow = 1;
-      const periods = this.calculatePeriods(modelData.projectStartDate, modelData.projectEndDate, modelData.modelPeriods);
+      // Title with version identifier
+      sheet.getRange('A1').values = [['AI MULTIPLES & IRR (v4.0 - NO FALLBACK)']];
+      sheet.getRange('A1').format.font.bold = true;
+      sheet.getRange('A1').format.font.size = 16;
+      sheet.getRange('A1').format.fill.color = '#4472C4';
+      sheet.getRange('A1').format.font.color = 'white';
+      row = 3;
       
-      // Calculate holding period in years
-      const holdingPeriodYears = periods / (modelData.modelPeriods === 'monthly' ? 12 : 
-                                            modelData.modelPeriods === 'quarterly' ? 4 : 
-                                            modelData.modelPeriods === 'yearly' ? 1 : 12);
+      // Investment Summary
+      sheet.getRange(`A${row}`).values = [['Deal Value']];
+      sheet.getRange(`B${row}`).values = [[modelData.dealValue]];
+      row++;
       
-      // HEADER
-      const headerText = 'Multiples & IRR Analysis (AI-Powered)';
-      multiplesSheet.getRange('A1').values = [[headerText]];
-      multiplesSheet.getRange('A1').format.font.bold = true;
-      multiplesSheet.getRange('A1').format.font.size = 16;
-      multiplesSheet.getRange('A1').format.fill.color = '#4472C4';
-      multiplesSheet.getRange('A1').format.font.color = 'white';
+      sheet.getRange(`A${row}`).values = [['Equity Investment']];
+      sheet.getRange(`B${row}`).values = [[equityContribution]];
+      row += 2;
       
-      // Add mode explanation
-      currentRow = 2;
-      const modeText = 'Note: Calculations powered by AI analysis of your actual financial data.';
-      multiplesSheet.getRange(`A${currentRow}`).values = [[modeText]];
-      multiplesSheet.getRange(`A${currentRow}`).format.font.italic = true;
-      multiplesSheet.getRange(`A${currentRow}`).format.font.color = '#666666';
-      currentRow = 4;
-      
-      // INVESTMENT SUMMARY SECTION
-      multiplesSheet.getRange(`A${currentRow}`).values = [['INVESTMENT SUMMARY']];
-      multiplesSheet.getRange(`A${currentRow}`).format.font.bold = true;
-      multiplesSheet.getRange(`A${currentRow}`).format.fill.color = '#D9E1F2';
-      currentRow++;
-      
-      // Deal Value
-      multiplesSheet.getRange(`A${currentRow}`).values = [['Deal Value']];
-      multiplesSheet.getRange(`B${currentRow}`).values = [[modelData.dealValue || 0]];
-      currentRow++;
-      
-      // Equity Contribution - calculate if not provided
-      multiplesSheet.getRange(`A${currentRow}`).values = [['Equity Contribution']];
-      let equityContribution = modelData.equityContribution;
-      
-      // Calculate equity contribution if not provided or is zero
-      if (!equityContribution || equityContribution === 0) {
-        const dealValue = modelData.dealValue || 0;
-        const dealLTV = modelData.dealLTV || 70; // Default LTV if not provided
-        equityContribution = dealValue * (100 - dealLTV) / 100;
-        console.log(`🔧 Calculated equity contribution: ${dealValue} * (100 - ${dealLTV}) / 100 = ${equityContribution}`);
-      }
-      
-      multiplesSheet.getRange(`B${currentRow}`).values = [[equityContribution]];
-      const equityRow = currentRow;
-      currentRow += 2;
-      
-      // IRR ANALYSIS SECTION
-      multiplesSheet.getRange(`A${currentRow}`).values = [['IRR ANALYSIS']];
-      multiplesSheet.getRange(`A${currentRow}`).format.font.bold = true;
-      multiplesSheet.getRange(`A${currentRow}`).format.fill.color = '#E2EFDA';
-      currentRow++;
-      
-      // Levered IRR using AI-generated formula ONLY
-      multiplesSheet.getRange(`A${currentRow}`).values = [['Levered IRR']];
-      multiplesSheet.getRange(`A${currentRow}`).format.font.bold = true;
-      console.log('📊 Using AI Levered IRR formula:', calculations.leveredIRR.formula);
-      multiplesSheet.getRange(`B${currentRow}`).formulas = [[calculations.leveredIRR.formula]];
-      multiplesSheet.getRange(`B${currentRow}`).format.numberFormat = [['0.00%']];
-      // Add description as comment
-      multiplesSheet.getRange(`C${currentRow}`).values = [[calculations.leveredIRR.description || 'AI-calculated']];
-      currentRow++;
-      
-      // Unlevered IRR using AI-generated formula ONLY
-      multiplesSheet.getRange(`A${currentRow}`).values = [['Unlevered IRR']];
-      multiplesSheet.getRange(`A${currentRow}`).format.font.bold = true;
-      multiplesSheet.getRange(`B${currentRow}`).formulas = [[calculations.unleveredIRR.formula]];
-      multiplesSheet.getRange(`B${currentRow}`).format.numberFormat = [['0.00%']];
-      // Add description as comment
-      multiplesSheet.getRange(`C${currentRow}`).values = [[calculations.unleveredIRR.description || 'AI-calculated']];
-      currentRow += 2;
-      
-      // MOIC ANALYSIS SECTION
-      multiplesSheet.getRange(`A${currentRow}`).values = [['MOIC ANALYSIS']];
-      multiplesSheet.getRange(`A${currentRow}`).format.font.bold = true;
-      multiplesSheet.getRange(`A${currentRow}`).format.fill.color = '#FFF2CC';
-      currentRow++;
-      
-      // Total Cash Inflows - let AI handle this calculation
-      multiplesSheet.getRange(`A${currentRow}`).values = [['Total Cash Inflows']];
-      if (calculations.totalCashInflows && calculations.totalCashInflows.formula) {
-        multiplesSheet.getRange(`B${currentRow}`).formulas = [[calculations.totalCashInflows.formula]];
-      } else if (fcfStructure.leveredFCF) {
-        multiplesSheet.getRange(`B${currentRow}`).formulas = [[`=SUM('Free Cash Flow'!${fcfStructure.cashFlowRange})`]];
-      } else {
-        multiplesSheet.getRange(`B${currentRow}`).values = [[0]];
-      }
-      const inflowsRow = currentRow;
-      currentRow++;
-      
-      // Total Cash Outflows (Initial Investment)
-      multiplesSheet.getRange(`A${currentRow}`).values = [['Total Cash Outflows']];
-      multiplesSheet.getRange(`B${currentRow}`).values = [[equityContribution]]; // Use calculated equity contribution
-      const outflowsRow = currentRow;
-      currentRow++;
-      
-      // Levered MOIC using AI-generated formula ONLY
-      multiplesSheet.getRange(`A${currentRow}`).values = [['Levered MOIC']];
-      multiplesSheet.getRange(`A${currentRow}`).format.font.bold = true;
-      multiplesSheet.getRange(`B${currentRow}`).formulas = [[calculations.leveredMOIC.formula]];
-      multiplesSheet.getRange(`C${currentRow}`).values = [[calculations.leveredMOIC.description || 'AI-calculated']];
-      multiplesSheet.getRange(`B${currentRow}`).format.numberFormat = [['0.00"x"']];
-      currentRow++;
-      
-      // Unlevered MOIC using AI-generated formula ONLY
-      multiplesSheet.getRange(`A${currentRow}`).values = [['Unlevered MOIC']];
-      multiplesSheet.getRange(`A${currentRow}`).format.font.bold = true;
-      multiplesSheet.getRange(`B${currentRow}`).formulas = [[calculations.unleveredMOIC.formula]];
-      multiplesSheet.getRange(`C${currentRow}`).values = [[calculations.unleveredMOIC.description || 'AI-calculated']];
-      multiplesSheet.getRange(`B${currentRow}`).format.numberFormat = [['0.00"x"']];
-      currentRow += 2;
-      
-      // RETURN SUMMARY SECTION
-      multiplesSheet.getRange(`A${currentRow}`).values = [['RETURN SUMMARY']];
-      multiplesSheet.getRange(`A${currentRow}`).format.font.bold = true;
-      multiplesSheet.getRange(`A${currentRow}`).format.fill.color = '#F2F2F2';
-      currentRow++;
-      
-      // Total Return %
-      multiplesSheet.getRange(`A${currentRow}`).values = [['Total Return %']];
-      multiplesSheet.getRange(`B${currentRow}`).formulas = [[`=(B${inflowsRow}/B${outflowsRow}-1)*100`]];
-      multiplesSheet.getRange(`B${currentRow}`).format.numberFormat = [['0.00%']];
-      currentRow++;
-      
-      // Holding Period
-      multiplesSheet.getRange(`A${currentRow}`).values = [['Holding Period (Years)']];
-      const holdingPeriodYears = periods / (modelData.modelPeriods === 'monthly' ? 12 : 
-                                            modelData.modelPeriods === 'quarterly' ? 4 : 
-                                            modelData.modelPeriods === 'yearly' ? 1 : 12);
-      multiplesSheet.getRange(`B${currentRow}`).values = [[holdingPeriodYears]];
-      multiplesSheet.getRange(`B${currentRow}`).format.numberFormat = [['0.00']];
-      currentRow++;
-      
-      // Annualized Return
-      multiplesSheet.getRange(`A${currentRow}`).values = [['Annualized Return']];
-      multiplesSheet.getRange(`B${currentRow}`).formulas = [[`=POWER(B${inflowsRow}/B${outflowsRow},1/B${currentRow-1})-1`]];
-      multiplesSheet.getRange(`B${currentRow}`).format.numberFormat = [['0.00%']];
-      currentRow += 2;
-      
-      // NPV ANALYSIS SECTION
-      multiplesSheet.getRange(`A${currentRow}`).values = [['NPV ANALYSIS']];
-      multiplesSheet.getRange(`A${currentRow}`).format.font.bold = true;
-      multiplesSheet.getRange(`A${currentRow}`).format.fill.color = '#E2EFDA';
-      currentRow++;
-      
-      // NPV at different discount rates
-      const discountRates = [0.08, 0.10, 0.12, 0.15, 0.20];
-      multiplesSheet.getRange(`A${currentRow}`).values = [['Discount Rate']];
-      multiplesSheet.getRange(`B${currentRow}`).values = [['NPV']];
-      multiplesSheet.getRange(`A${currentRow}:B${currentRow}`).format.font.bold = true;
-      currentRow++;
-      
-      discountRates.forEach(rate => {
-        multiplesSheet.getRange(`A${currentRow}`).values = [[rate]];
-        multiplesSheet.getRange(`A${currentRow}`).format.numberFormat = [['0.00%']];
-        if (fcfStructure.leveredFCF) {
-          multiplesSheet.getRange(`B${currentRow}`).formulas = [[`=NPV(A${currentRow},'Free Cash Flow'!${fcfStructure.cashFlowRange})-${equityContribution}`]];
-        } else {
-          multiplesSheet.getRange(`B${currentRow}`).values = [[0]];
+      // AI Results with validation
+      if (calculations.leveredIRR) {
+        sheet.getRange(`A${row}`).values = [['Levered IRR']];
+        try {
+          const formula = calculations.leveredIRR.formula || '=0';
+          console.log('Setting levered IRR formula:', formula);
+          sheet.getRange(`B${row}`).formulas = [[formula]];
+          sheet.getRange(`B${row}`).format.numberFormat = [['0.00%']];
+        } catch (error) {
+          console.error('Error setting levered IRR formula:', error);
+          sheet.getRange(`B${row}`).values = [['Formula Error']];
         }
-        currentRow++;
-      });
+        row++;
+      }
       
-      // Format the sheet
-      multiplesSheet.getRange(`A:B`).format.autofitColumns();
-      multiplesSheet.getRange(`A1:B${currentRow}`).format.borders.getItem('InsideHorizontal').style = 'Thin';
-      multiplesSheet.getRange(`A1:B${currentRow}`).format.borders.getItem('InsideVertical').style = 'Thin';
-      multiplesSheet.getRange(`A1:B${currentRow}`).format.borders.getItem('EdgeBottom').style = 'Thin';
-      multiplesSheet.getRange(`A1:B${currentRow}`).format.borders.getItem('EdgeLeft').style = 'Thin';
-      multiplesSheet.getRange(`A1:B${currentRow}`).format.borders.getItem('EdgeRight').style = 'Thin';
-      multiplesSheet.getRange(`A1:B${currentRow}`).format.borders.getItem('EdgeTop').style = 'Thin';
+      if (calculations.leveredMOIC) {
+        sheet.getRange(`A${row}`).values = [['Levered MOIC']];
+        try {
+          const formula = calculations.leveredMOIC.formula || '=0';
+          console.log('Setting levered MOIC formula:', formula);
+          sheet.getRange(`B${row}`).formulas = [[formula]];
+          sheet.getRange(`B${row}`).format.numberFormat = [['0.00"x"']];
+        } catch (error) {
+          console.error('Error setting levered MOIC formula:', error);
+          sheet.getRange(`B${row}`).values = [['Formula Error']];
+        }
+        row++;
+      }
       
-      console.log('✅ Multiples & IRR Analysis sheet created successfully');
+      // Format
+      sheet.getRange('A:B').format.autofitColumns();
+      
+      console.log('✅ Simple AI sheet created successfully');
     });
   }
+  
+  // REMOVED: Old complex AI sheet creation - replaced with simple version above
 }
 
 // Export for use in main application
