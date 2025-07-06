@@ -310,6 +310,30 @@ INSTRUCTIONS:
 
 Document Content: ${documentContext}`;
           
+        } else if (batchType === 'financial_analysis') {
+          finalMaxTokens = 1000; // Small for focused IRR/MOIC calculations
+          finalSystemPrompt = `You are an expert financial analyst specializing in IRR and MOIC calculations for M&A transactions.
+
+TASK: Generate Excel formulas for investment return calculations.
+
+INSTRUCTIONS:
+1. Review the provided cash flow data and investment amount
+2. Generate proper Excel IRR and MOIC formulas 
+3. Use exact cell references provided in the prompt
+4. Return only valid JSON with Excel formulas
+
+REQUIRED OUTPUT FORMAT:
+{
+  "calculations": {
+    "leveredIRR": {"formula": "=IRR(...)", "description": "..."},
+    "unleveredIRR": {"formula": "=IRR(...)", "description": "..."},
+    "leveredMOIC": {"formula": "=SUM(...)/...", "description": "..."},
+    "unleveredMOIC": {"formula": "=SUM(...)/...", "description": "..."}
+  }
+}
+
+Return ONLY the JSON structure with valid Excel formulas.`;
+          
         } else {
           // Fallback to original large prompt (legacy support)
           finalMaxTokens = 4000;

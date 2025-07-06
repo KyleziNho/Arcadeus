@@ -2749,14 +2749,25 @@ If any critical P&L references are missing, clearly state what assumptions you'r
       const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
       const apiEndpoint = isLocal ? 'http://localhost:8888/.netlify/functions/chat' : '/.netlify/functions/chat';
       
+      // Calculate approximate token count
+      const tokenCount = Math.ceil(prompt.length / 4); // Rough estimate: 4 chars per token
+      console.log(`🤖 API Request Details:
+        - Endpoint: ${apiEndpoint}
+        - Prompt length: ${prompt.length} characters
+        - Estimated tokens: ${tokenCount}
+        - Request type: financial_analysis`);
+      
       const requestBody = {
         message: prompt,
-        autoFillMode: false,
+        autoFillMode: true, // Set to true to use batch processing
         batchType: 'financial_analysis',
-        requireFormulas: true
+        systemPrompt: null, // Let chat.js handle the system prompt based on batchType
+        temperature: 0.1,
+        maxTokens: 1000 // Limit response tokens
       };
       
       console.log('🤖 Sending Multiples & IRR request to OpenAI...');
+      console.log('📝 Request body:', JSON.stringify(requestBody, null, 2));
       
       const response = await fetch(apiEndpoint, {
         method: 'POST',
@@ -2767,11 +2778,32 @@ If any critical P&L references are missing, clearly state what assumptions you'r
         body: JSON.stringify(requestBody)
       });
 
+      console.log(`📡 API Response Status: ${response.status} ${response.statusText}`);
+      
       if (!response.ok) {
-        throw new Error(`API error: ${response.status} ${response.statusText}`);
+        // Try to get error details from response
+        let errorDetails = response.statusText;
+        try {
+          const errorData = await response.text();
+          console.log('❌ API Error Response:', errorData);
+          errorDetails = errorData || response.statusText;
+          
+          // Check for specific error types
+          if (response.status === 502) {
+            console.log('❌ 502 Bad Gateway - likely token limit or API timeout');
+          } else if (response.status === 413) {
+            console.log('❌ 413 Payload Too Large - request body too large');
+          } else if (response.status === 429) {
+            console.log('❌ 429 Too Many Requests - rate limit exceeded');
+          }
+        } catch (e) {
+          console.log('❌ Could not read error response');
+        }
+        throw new Error(`API error: ${response.status} ${errorDetails}`);
       }
 
       const data = await response.json();
+      console.log('✅ API Response Data:', data);
       
       if (data.error) {
         throw new Error(data.error);
@@ -2781,121 +2813,40 @@ If any critical P&L references are missing, clearly state what assumptions you'r
       
     } catch (error) {
       console.error('❌ Error calling OpenAI for Multiples & IRR:', error);
+      console.error('❌ Error details:', {
+        message: error.message,
+        stack: error.stack
+      });
       throw error;
     }
   }
   
-  // Generate comprehensive AI prompt for Multiples & IRR calculations
+  // Generate optimized AI prompt for Multiples & IRR calculations
   generateMultiplesAndIRRPrompt(modelData, fcfStructure, fcfData, plData, assumptionStructure) {
-    console.log('🤖 Generating Multiples & IRR AI prompt with real financial data...');
+    console.log('🤖 Generating optimized Multiples & IRR AI prompt...');
     
     // Calculate periods
     const periods = this.calculatePeriods(modelData.projectStartDate, modelData.projectEndDate, modelData.modelPeriods);
+    const lastCol = this.getColumnLetter(fcfStructure.periodColumns || 10);
     
-    const prompt = `You are a world-class M&A financial modeling expert. You have been provided with ACTUAL financial data from the completed P&L Statement, Free Cash Flow Statement, and Assumptions sheets. Your task is to calculate accurate IRR and MOIC multiples using the real data provided and generate proper Excel formulas.
+    // Optimized prompt with reduced tokens
+    const prompt = `Generate Excel IRR/MOIC formulas.
 
-**ACTUAL FINANCIAL DATA PROVIDED:**
+INPUT:
+- Investment: ${modelData.equityContribution}
+- FCF Levered Row: ${fcfStructure.leveredFCF}
+- FCF Unlevered Row: ${fcfStructure.unleveredFCF}
+- Range: B${fcfStructure.leveredFCF}:${lastCol}${fcfStructure.leveredFCF}
 
-## DEAL PARAMETERS:
-- Deal Name: ${modelData.dealName}
-- Deal Value: ${modelData.dealValue} ${modelData.currency}
-- Equity Contribution: ${modelData.equityContribution} ${modelData.currency}
-- Initial Investment: ${modelData.equityContribution} ${modelData.currency}
-- Currency: ${modelData.currency}
-- Period Type: ${modelData.modelPeriods}
-- Duration: ${modelData.projectStartDate} to ${modelData.projectEndDate}
-- Total Periods: ${periods}
-
-## ACTUAL FREE CASH FLOW DATA:
-Period Headers: ${fcfData.periodHeaders ? fcfData.periodHeaders.join(', ') : 'Not available'}
-
-Levered FCF Values: ${fcfData.leveredFCFValues ? fcfData.leveredFCFValues.join(', ') : 'Not available'}
-
-Unlevered FCF Values: ${fcfData.unleveredFCFValues ? fcfData.unleveredFCFValues.join(', ') : 'Not available'}
-
-Cash Flow Periods for IRR:
-${fcfData.cashFlowPeriods ? fcfData.cashFlowPeriods.map(p => `  ${p.period}: Levered FCF ${p.leveredFCF}, Unlevered FCF ${p.unleveredFCF}`).join('\n') : 'Not available'}
-
-## ACTUAL P&L DATA:
-Period Headers: ${plData.periodHeaders ? plData.periodHeaders.join(', ') : 'Not available'}
-Revenue by Period: ${plData.revenue ? plData.revenue.join(', ') : 'Not available'}
-EBITDA by Period: ${plData.ebitda ? plData.ebitda.join(', ') : 'Not available'}
-Net Income by Period: ${plData.netIncome ? plData.netIncome.join(', ') : 'Not available'}
-
-## EXCEL SHEET REFERENCES:
-- FCF Sheet: "${fcfStructure.sheetName}"
-- Levered FCF Row: ${fcfStructure.leveredFCF}
-- Unlevered FCF Row: ${fcfStructure.unleveredFCF}
-- Cash Flow Range: ${fcfStructure.cashFlowRange}
-- Period Columns: ${fcfStructure.periodColumns}
-
-**REQUIRED CALCULATIONS:**
-
-## 1. LEVERED IRR CALCULATION
-- Use the actual levered FCF values: [${fcfData.leveredFCFValues ? fcfData.leveredFCFValues.join(', ') : 'Not available'}]
-- Initial investment (negative): -${modelData.equityContribution}
-- Calculate using IRR or XIRR function
-- Excel formula should reference: ='Free Cash Flow'!${fcfStructure.cashFlowRange}
-
-## 2. UNLEVERED IRR CALCULATION  
-- Use the actual unlevered FCF values: [${fcfData.unleveredFCFValues ? fcfData.unleveredFCFValues.join(', ') : 'Not available'}]
-- Initial investment (negative): -${modelData.equityContribution}
-- Calculate using IRR or XIRR function
-
-## 3. LEVERED MOIC CALCULATION
-- Total Cash Inflows = Sum of positive levered FCF values
-- Total Cash Outflows = Initial investment (${modelData.equityContribution})
-- MOIC = Total Inflows / Total Outflows
-- Based on actual values: [${fcfData.leveredFCFValues ? fcfData.leveredFCFValues.join(', ') : 'Not available'}]
-
-## 4. UNLEVERED MOIC CALCULATION
-- Total Cash Inflows = Sum of positive unlevered FCF values  
-- Total Cash Outflows = Initial investment (${modelData.equityContribution})
-- MOIC = Total Inflows / Total Outflows
-- Based on actual values: [${fcfData.unleveredFCFValues ? fcfData.unleveredFCFValues.join(', ') : 'Not available'}]
-
-**RESPONSE FORMAT REQUIRED:**
-Please provide a JSON response with the following structure:
+RETURN JSON:
 {
   "calculations": {
-    "leveredIRR": {
-      "formula": "Excel formula for levered IRR",
-      "description": "Explanation of calculation",
-      "result": "Calculated percentage"
-    },
-    "unleveredIRR": {
-      "formula": "Excel formula for unlevered IRR", 
-      "description": "Explanation of calculation",
-      "result": "Calculated percentage"
-    },
-    "leveredMOIC": {
-      "formula": "Excel formula for levered MOIC",
-      "description": "Explanation of calculation", 
-      "result": "Calculated multiple"
-    },
-    "unleveredMOIC": {
-      "formula": "Excel formula for unlevered MOIC",
-      "description": "Explanation of calculation",
-      "result": "Calculated multiple"
-    },
-    "totalCashInflows": {
-      "formula": "Excel formula for total cash inflows",
-      "result": "Total inflows value"
-    },
-    "paybackPeriod": {
-      "formula": "Excel formula for payback period",
-      "result": "Payback in periods"
-    }
+    "leveredIRR": {"formula": "=IRR('Free Cash Flow'!B${fcfStructure.leveredFCF}:${lastCol}${fcfStructure.leveredFCF})"},
+    "leveredMOIC": {"formula": "=SUM('Free Cash Flow'!B${fcfStructure.leveredFCF}:${lastCol}${fcfStructure.leveredFCF})/${modelData.equityContribution}"},
+    "unleveredIRR": {"formula": "=IRR('Free Cash Flow'!B${fcfStructure.unleveredFCF}:${lastCol}${fcfStructure.unleveredFCF})"},
+    "unleveredMOIC": {"formula": "=SUM('Free Cash Flow'!B${fcfStructure.unleveredFCF}:${lastCol}${fcfStructure.unleveredFCF})/${modelData.equityContribution}"}
   }
-}
-
-**IMPORTANT NOTES:**
-- Use actual cell references from the Free Cash Flow sheet
-- Ensure formulas work with the real data provided  
-- Calculate accurate percentages and multiples
-- Include error handling for invalid data
-
-Please analyze the provided cash flow data and return the JSON response with accurate calculations.`;
+}`;
 
     return prompt;
   }
@@ -2916,27 +2867,42 @@ Please analyze the provided cash flow data and return the JSON response with acc
     // Use actual FCF structure for proper cell references
     const leveredRow = fcfStructure.leveredFCF || 10;
     const unleveredRow = fcfStructure.unleveredFCF || 11;
-    const lastColumn = this.getColumnLetter(fcfStructure.periodColumns || 10);
+    const lastColumn = this.getColumnLetter(fcfStructure.periodColumns || 10); // Fixed: removed -1 which was causing incorrect range
+    
+    console.log('🔧 Fallback formula details:', {
+      leveredRow, unleveredRow, lastColumn, 
+      initialInvestment, leveredTotal, unleveredTotal,
+      periodColumns: fcfStructure.periodColumns
+    });
+    
+    // Create cash flow array including initial investment for proper IRR calculation
+    const leveredCashFlows = [-initialInvestment, ...(fcfData.leveredFCFValues?.map(v => parseFloat(v) || 0) || [])];
+    const unleveredCashFlows = [-initialInvestment, ...(fcfData.unleveredFCFValues?.map(v => parseFloat(v) || 0) || [])];
+    
+    console.log('🔧 Cash flow arrays for IRR:', {
+      leveredCashFlows: leveredCashFlows.slice(0, 5), // Show first 5 for debugging
+      unleveredCashFlows: unleveredCashFlows.slice(0, 5)
+    });
     
     return {
       leveredIRR: {
         formula: `=IRR('Free Cash Flow'!B${leveredRow}:${lastColumn}${leveredRow})`,
-        description: "Levered IRR calculated from actual FCF data (Fallback mode)",
-        result: "Calculated based on cash flows"
+        description: "Levered IRR from FCF (includes negative initial investment in FCF) (Fallback)",
+        result: "Calculated from cash flows"
       },
       unleveredIRR: {
         formula: `=IRR('Free Cash Flow'!B${unleveredRow}:${lastColumn}${unleveredRow})`,
-        description: "Unlevered IRR calculated from actual FCF data (Fallback mode)", 
-        result: "Calculated based on cash flows"
+        description: "Unlevered IRR from FCF (includes negative initial investment in FCF) (Fallback)", 
+        result: "Calculated from cash flows"
       },
       leveredMOIC: {
         formula: `=SUM('Free Cash Flow'!B${leveredRow}:${lastColumn}${leveredRow})/${initialInvestment}`,
-        description: `Levered MOIC = Total Cash Inflows (${leveredTotal.toFixed(0)}) / Initial Investment (${initialInvestment})`,
+        description: `Levered MOIC = ${leveredTotal.toFixed(0)} / ${initialInvestment} = ${(leveredTotal / initialInvestment).toFixed(2)}x`,
         result: (leveredTotal / initialInvestment).toFixed(2) + "x"
       },
       unleveredMOIC: {
         formula: `=SUM('Free Cash Flow'!B${unleveredRow}:${lastColumn}${unleveredRow})/${initialInvestment}`,
-        description: `Unlevered MOIC = Total Cash Inflows (${unleveredTotal.toFixed(0)}) / Initial Investment (${initialInvestment})`,
+        description: `Unlevered MOIC = ${unleveredTotal.toFixed(0)} / ${initialInvestment} = ${(unleveredTotal / initialInvestment).toFixed(2)}x`,
         result: (unleveredTotal / initialInvestment).toFixed(2) + "x"
       },
       totalCashInflows: {
@@ -2944,8 +2910,8 @@ Please analyze the provided cash flow data and return the JSON response with acc
         result: leveredTotal.toFixed(0)
       },
       paybackPeriod: {
-        formula: "Manual calculation required",
-        result: `Approx ${Math.ceil(initialInvestment / (leveredTotal / fcfData.leveredFCFValues.length))} periods`
+        formula: "=MATCH(TRUE,OFFSET('Free Cash Flow'!A1,0,0,1,1)>0,0)",
+        result: `Estimated ${Math.ceil(initialInvestment / (leveredTotal / (fcfData.leveredFCFValues?.length || 1)))} periods`
       }
     };
   }
@@ -3058,14 +3024,18 @@ Please analyze the provided cash flow data and return the JSON response with acc
       multiplesSheet.getRange(`A${currentRow}`).values = [['Levered IRR']];
       multiplesSheet.getRange(`A${currentRow}`).format.font.bold = true;
       if (calculations.leveredIRR && calculations.leveredIRR.formula) {
+        console.log('📊 Using AI Levered IRR formula:', calculations.leveredIRR.formula);
         multiplesSheet.getRange(`B${currentRow}`).formulas = [[calculations.leveredIRR.formula]];
         multiplesSheet.getRange(`B${currentRow}`).format.numberFormat = [['0.00%']];
         // Add description as comment
         multiplesSheet.getRange(`C${currentRow}`).values = [[calculations.leveredIRR.description || 'AI-calculated']];
       } else {
         // Fallback to simple IRR calculation
-        multiplesSheet.getRange(`B${currentRow}`).formulas = [[`=IRR('Free Cash Flow'!${fcfStructure.cashFlowRange})`]];
+        const fallbackFormula = `=IRR('Free Cash Flow'!${fcfStructure.cashFlowRange})`;
+        console.log('🔄 Using fallback Levered IRR formula:', fallbackFormula);
+        multiplesSheet.getRange(`B${currentRow}`).formulas = [[fallbackFormula]];
         multiplesSheet.getRange(`B${currentRow}`).format.numberFormat = [['0.00%']];
+        multiplesSheet.getRange(`C${currentRow}`).values = [['Fallback calculation']];
       }
       currentRow++;
       
