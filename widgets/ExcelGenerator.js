@@ -715,15 +715,25 @@ Please provide the complete P&L structure with exact cell addresses and formulas
       // Step 5: Generate comprehensive AI prompt with ACTUAL financial data
       const multiplesPrompt = this.generateMultiplesAndIRRPrompt(modelData, fcfStructure, fcfData, plData, assumptionStructure);
       
-      // Step 6: Call OpenAI API for intelligent calculation
-      console.log('🤖 Calling OpenAI API for Multiples & IRR calculation...');
-      const aiResponse = await this.callOpenAIForMultiples(multiplesPrompt);
-      console.log('🤖 AI Response received:', aiResponse);
+      // Step 6: Call OpenAI API for intelligent calculation (with fallback)
+      let aiResponse = null;
+      try {
+        console.log('🤖 Calling OpenAI API for Multiples & IRR calculation...');
+        aiResponse = await this.callOpenAIForMultiples(multiplesPrompt);
+        console.log('🤖 AI Response received:', aiResponse);
+      } catch (apiError) {
+        console.warn('⚠️ OpenAI API unavailable, using fallback calculations:', apiError.message);
+        // Continue without AI - the fallback will be used in createAIMultiplesAndIRRSheet
+        aiResponse = { error: apiError.message, useFallback: true };
+      }
       
-      // Step 7: Create professional Multiples & IRR sheet using AI-generated formulas
+      // Step 7: Create professional Multiples & IRR sheet using AI-generated formulas or fallback
       await this.createAIMultiplesAndIRRSheet(modelData, aiResponse, fcfStructure, fcfData, assumptionStructure);
       
-      return { success: true, message: 'Professional Multiples & IRR Analysis generated using AI calculations!' };
+      const successMessage = aiResponse && aiResponse.useFallback ? 
+        'Professional Multiples & IRR Analysis generated using fallback calculations with your actual data!' :
+        'Professional Multiples & IRR Analysis generated using AI calculations!';
+      return { success: true, message: successMessage };
       
     } catch (error) {
       console.error('❌ Error generating Multiples & IRR:', error);
@@ -2891,41 +2901,51 @@ Please analyze the provided cash flow data and return the JSON response with acc
   }
   
   // Create fallback calculations when AI response is not available
-  createFallbackCalculations(fcfData, modelData) {
+  createFallbackCalculations(fcfData, modelData, fcfStructure) {
     console.log('🔄 Creating fallback calculations with actual data');
+    console.log('📊 FCF Data for calculations:', {
+      leveredFCFValues: fcfData.leveredFCFValues,
+      unleveredFCFValues: fcfData.unleveredFCFValues,
+      fcfStructure: fcfStructure
+    });
     
     const leveredTotal = fcfData.leveredFCFValues ? fcfData.leveredFCFValues.reduce((sum, val) => sum + (parseFloat(val) || 0), 0) : 0;
     const unleveredTotal = fcfData.unleveredFCFValues ? fcfData.unleveredFCFValues.reduce((sum, val) => sum + (parseFloat(val) || 0), 0) : 0;
     const initialInvestment = parseFloat(modelData.equityContribution) || 0;
     
+    // Use actual FCF structure for proper cell references
+    const leveredRow = fcfStructure.leveredFCF || 10;
+    const unleveredRow = fcfStructure.unleveredFCF || 11;
+    const lastColumn = this.getColumnLetter(fcfStructure.periodColumns || 10);
+    
     return {
       leveredIRR: {
-        formula: "=IRR('Free Cash Flow'!B" + (fcfData.leveredFCFRow || '10') + ":Z" + (fcfData.leveredFCFRow || '10') + ")",
-        description: "Levered IRR calculated from FCF data",
+        formula: `=IRR('Free Cash Flow'!B${leveredRow}:${lastColumn}${leveredRow})`,
+        description: "Levered IRR calculated from actual FCF data (Fallback mode)",
         result: "Calculated based on cash flows"
       },
       unleveredIRR: {
-        formula: "=IRR('Free Cash Flow'!B" + (fcfData.unleveredFCFRow || '11') + ":Z" + (fcfData.unleveredFCFRow || '11') + ")",
-        description: "Unlevered IRR calculated from FCF data", 
+        formula: `=IRR('Free Cash Flow'!B${unleveredRow}:${lastColumn}${unleveredRow})`,
+        description: "Unlevered IRR calculated from actual FCF data (Fallback mode)", 
         result: "Calculated based on cash flows"
       },
       leveredMOIC: {
-        formula: `=SUM('Free Cash Flow'!B${fcfData.leveredFCFRow || '10'}:Z${fcfData.leveredFCFRow || '10'})/${initialInvestment}`,
-        description: "Levered MOIC = Total Cash Inflows / Initial Investment",
+        formula: `=SUM('Free Cash Flow'!B${leveredRow}:${lastColumn}${leveredRow})/${initialInvestment}`,
+        description: `Levered MOIC = Total Cash Inflows (${leveredTotal.toFixed(0)}) / Initial Investment (${initialInvestment})`,
         result: (leveredTotal / initialInvestment).toFixed(2) + "x"
       },
       unleveredMOIC: {
-        formula: `=SUM('Free Cash Flow'!B${fcfData.unleveredFCFRow || '11'}:Z${fcfData.unleveredFCFRow || '11'})/${initialInvestment}`,
-        description: "Unlevered MOIC = Total Cash Inflows / Initial Investment",
+        formula: `=SUM('Free Cash Flow'!B${unleveredRow}:${lastColumn}${unleveredRow})/${initialInvestment}`,
+        description: `Unlevered MOIC = Total Cash Inflows (${unleveredTotal.toFixed(0)}) / Initial Investment (${initialInvestment})`,
         result: (unleveredTotal / initialInvestment).toFixed(2) + "x"
       },
       totalCashInflows: {
-        formula: `=SUM('Free Cash Flow'!B${fcfData.leveredFCFRow || '10'}:Z${fcfData.leveredFCFRow || '10'})`,
+        formula: `=SUM('Free Cash Flow'!B${leveredRow}:${lastColumn}${leveredRow})`,
         result: leveredTotal.toFixed(0)
       },
       paybackPeriod: {
         formula: "Manual calculation required",
-        result: "TBD"
+        result: `Approx ${Math.ceil(initialInvestment / (leveredTotal / fcfData.leveredFCFValues.length))} periods`
       }
     };
   }
@@ -2935,22 +2955,35 @@ Please analyze the provided cash flow data and return the JSON response with acc
     return Excel.run(async (context) => {
       // Parse AI response to extract calculations
       let calculations = {};
-      try {
-        // Try to parse JSON response from AI
-        if (typeof aiResponse.response === 'string') {
-          const jsonMatch = aiResponse.response.match(/\{[\s\S]*\}/);
-          if (jsonMatch) {
-            const parsed = JSON.parse(jsonMatch[0]);
-            calculations = parsed.calculations || {};
+      let usingFallback = false;
+      
+      if (aiResponse && aiResponse.useFallback) {
+        console.log('🔄 Using fallback calculations due to API error');
+        calculations = this.createFallbackCalculations(fcfData, modelData, fcfStructure);
+        usingFallback = true;
+      } else {
+        try {
+          // Try to parse JSON response from AI
+          if (typeof aiResponse.response === 'string') {
+            const jsonMatch = aiResponse.response.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+              const parsed = JSON.parse(jsonMatch[0]);
+              calculations = parsed.calculations || {};
+            }
+          } else if (aiResponse.calculations) {
+            calculations = aiResponse.calculations;
           }
-        } else if (aiResponse.calculations) {
-          calculations = aiResponse.calculations;
+          console.log('🤖 Parsed AI calculations:', calculations);
+          
+          // Validate that we have essential calculations
+          if (!calculations.leveredIRR || !calculations.leveredMOIC) {
+            throw new Error('Missing essential calculations in AI response');
+          }
+        } catch (error) {
+          console.warn('⚠️ Could not parse AI response, using fallback calculations:', error.message);
+          calculations = this.createFallbackCalculations(fcfData, modelData, fcfStructure);
+          usingFallback = true;
         }
-        console.log('🤖 Parsed AI calculations:', calculations);
-      } catch (error) {
-        console.warn('⚠️ Could not parse AI response, using fallback calculations');
-        // Create fallback calculations using the actual data
-        calculations = this.createFallbackCalculations(fcfData, modelData);
       }
       
       const sheets = context.workbook.worksheets;
@@ -2981,12 +3014,22 @@ Please analyze the provided cash flow data and return the JSON response with acc
       const periods = this.calculatePeriods(modelData.projectStartDate, modelData.projectEndDate, modelData.modelPeriods);
       
       // HEADER
-      multiplesSheet.getRange('A1').values = [['Multiples & IRR Analysis']];
+      const headerText = usingFallback ? 'Multiples & IRR Analysis (Fallback Mode)' : 'Multiples & IRR Analysis (AI-Powered)';
+      multiplesSheet.getRange('A1').values = [[headerText]];
       multiplesSheet.getRange('A1').format.font.bold = true;
       multiplesSheet.getRange('A1').format.font.size = 16;
-      multiplesSheet.getRange('A1').format.fill.color = '#4472C4';
+      multiplesSheet.getRange('A1').format.fill.color = usingFallback ? '#FF9500' : '#4472C4';
       multiplesSheet.getRange('A1').format.font.color = 'white';
-      currentRow = 3;
+      
+      // Add mode explanation
+      currentRow = 2;
+      const modeText = usingFallback ? 
+        'Note: Using fallback calculations due to API unavailability. All formulas use actual data from your FCF sheet.' :
+        'Note: Calculations powered by AI analysis of your actual financial data.';
+      multiplesSheet.getRange(`A${currentRow}`).values = [[modeText]];
+      multiplesSheet.getRange(`A${currentRow}`).format.font.italic = true;
+      multiplesSheet.getRange(`A${currentRow}`).format.font.color = usingFallback ? '#FF6600' : '#666666';
+      currentRow = 4;
       
       // INVESTMENT SUMMARY SECTION
       multiplesSheet.getRange(`A${currentRow}`).values = [['INVESTMENT SUMMARY']];
@@ -3048,9 +3091,11 @@ Please analyze the provided cash flow data and return the JSON response with acc
       multiplesSheet.getRange(`A${currentRow}`).format.fill.color = '#FFF2CC';
       currentRow++;
       
-      // Total Cash Inflows
+      // Total Cash Inflows using AI-generated formula
       multiplesSheet.getRange(`A${currentRow}`).values = [['Total Cash Inflows']];
-      if (fcfStructure.leveredFCF) {
+      if (calculations.totalCashInflows && calculations.totalCashInflows.formula) {
+        multiplesSheet.getRange(`B${currentRow}`).formulas = [[calculations.totalCashInflows.formula]];
+      } else if (fcfStructure.leveredFCF) {
         multiplesSheet.getRange(`B${currentRow}`).formulas = [[`=SUM('Free Cash Flow'!${fcfStructure.cashFlowRange})`]];
       } else {
         multiplesSheet.getRange(`B${currentRow}`).values = [[0]];
@@ -3058,17 +3103,36 @@ Please analyze the provided cash flow data and return the JSON response with acc
       const inflowsRow = currentRow;
       currentRow++;
       
-      // Total Cash Outflows
+      // Total Cash Outflows (Initial Investment)
       multiplesSheet.getRange(`A${currentRow}`).values = [['Total Cash Outflows']];
-      multiplesSheet.getRange(`B${currentRow}`).formulas = [[`=B${equityRow}`]];
+      multiplesSheet.getRange(`B${currentRow}`).values = [[modelData.equityContribution || 0]];
       const outflowsRow = currentRow;
       currentRow++;
       
-      // Levered MOIC
+      // Levered MOIC using AI-generated formula
       multiplesSheet.getRange(`A${currentRow}`).values = [['Levered MOIC']];
       multiplesSheet.getRange(`A${currentRow}`).format.font.bold = true;
-      multiplesSheet.getRange(`B${currentRow}`).formulas = [[`=B${inflowsRow}/B${outflowsRow}`]];
-      multiplesSheet.getRange(`B${currentRow}`).format.numberFormat = [['0.00x']];
+      if (calculations.leveredMOIC && calculations.leveredMOIC.formula) {
+        multiplesSheet.getRange(`B${currentRow}`).formulas = [[calculations.leveredMOIC.formula]];
+        multiplesSheet.getRange(`C${currentRow}`).values = [[calculations.leveredMOIC.description || 'AI-calculated']];
+      } else {
+        multiplesSheet.getRange(`B${currentRow}`).formulas = [[`=B${inflowsRow}/B${outflowsRow}`]];
+      }
+      multiplesSheet.getRange(`B${currentRow}`).format.numberFormat = [['0.00"x"']];
+      currentRow++;
+      
+      // Unlevered MOIC using AI-generated formula
+      multiplesSheet.getRange(`A${currentRow}`).values = [['Unlevered MOIC']];
+      multiplesSheet.getRange(`A${currentRow}`).format.font.bold = true;
+      if (calculations.unleveredMOIC && calculations.unleveredMOIC.formula) {
+        multiplesSheet.getRange(`B${currentRow}`).formulas = [[calculations.unleveredMOIC.formula]];
+        multiplesSheet.getRange(`C${currentRow}`).values = [[calculations.unleveredMOIC.description || 'AI-calculated']];
+      } else {
+        // Fallback MOIC for unlevered
+        const unleveredRange = `B${fcfStructure.unleveredFCF}:${this.getColumnLetter(fcfStructure.periodColumns)}${fcfStructure.unleveredFCF}`;
+        multiplesSheet.getRange(`B${currentRow}`).formulas = [[`=SUM('Free Cash Flow'!${unleveredRange})/B${outflowsRow}`]];
+      }
+      multiplesSheet.getRange(`B${currentRow}`).format.numberFormat = [['0.00"x"']];
       currentRow += 2;
       
       // RETURN SUMMARY SECTION
