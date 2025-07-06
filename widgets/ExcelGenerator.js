@@ -1,6 +1,7 @@
 /* global Office, Excel */
 
 // Simple Cell Reference Tracker - keeps track of where data is stored
+// Updated: Removed all fallback calculations - API required for IRR/MOIC accuracy - v2.1
 class CellTracker {
   constructor() {
     this.cellMap = new Map(); // Map of data keys to cell references
@@ -693,7 +694,8 @@ Please provide the complete P&L structure with exact cell addresses and formulas
   
   async generateMultiplesAndIRR(modelData) {
     try {
-      console.log('📊 Generating Multiples & IRR Analysis with AI...');
+      console.log('🔥 NEW VERSION: Generating Multiples & IRR Analysis with AI ONLY (no fallback) - v2.1...');
+      console.log('🔥 Model data received:', modelData);
       
       // Step 1: Read the actual FCF sheet to get real cell structure and data
       const fcfStructure = await this.readFCFSheetStructure();
@@ -2891,78 +2893,7 @@ Generate working Excel formulas using the provided data and structure.`;
     return prompt;
   }
   
-  // Create fallback calculations when AI response is not available
-  createFallbackCalculations(fcfData, modelData, fcfStructure) {
-    console.log('🔄 Creating fallback calculations with actual data');
-    console.log('📊 FCF Data for calculations:', {
-      leveredFCFValues: fcfData.leveredFCFValues,
-      unleveredFCFValues: fcfData.unleveredFCFValues,
-      fcfStructure: fcfStructure
-    });
-    
-    const leveredTotal = fcfData.leveredFCFValues ? fcfData.leveredFCFValues.reduce((sum, val) => sum + (parseFloat(val) || 0), 0) : 0;
-    const unleveredTotal = fcfData.unleveredFCFValues ? fcfData.unleveredFCFValues.reduce((sum, val) => sum + (parseFloat(val) || 0), 0) : 0;
-    
-    // Calculate equity contribution if not provided or is zero
-    let initialInvestment = parseFloat(modelData.equityContribution) || 0;
-    if (initialInvestment === 0) {
-      const dealValue = modelData.dealValue || 0;
-      const dealLTV = modelData.dealLTV || 70;
-      initialInvestment = dealValue * (100 - dealLTV) / 100;
-      console.log(`🔧 Fallback calculated equity: ${dealValue} * (100 - ${dealLTV}) / 100 = ${initialInvestment}`);
-    }
-    
-    // Use actual FCF structure for proper cell references
-    const leveredRow = fcfStructure.leveredFCF || 10;
-    const unleveredRow = fcfStructure.unleveredFCF || 11;
-    const lastColumn = this.getColumnLetter(fcfStructure.periodColumns || 10); // Fixed: removed -1 which was causing incorrect range
-    
-    console.log('🔧 Fallback formula details:', {
-      leveredRow, unleveredRow, lastColumn, 
-      initialInvestment, leveredTotal, unleveredTotal,
-      periodColumns: fcfStructure.periodColumns
-    });
-    
-    // Create cash flow array including initial investment for proper IRR calculation
-    const leveredCashFlows = [-initialInvestment, ...(fcfData.leveredFCFValues?.map(v => parseFloat(v) || 0) || [])];
-    const unleveredCashFlows = [-initialInvestment, ...(fcfData.unleveredFCFValues?.map(v => parseFloat(v) || 0) || [])];
-    
-    console.log('🔧 Cash flow arrays for IRR:', {
-      leveredCashFlows: leveredCashFlows.slice(0, 5), // Show first 5 for debugging
-      unleveredCashFlows: unleveredCashFlows.slice(0, 5)
-    });
-    
-    return {
-      leveredIRR: {
-        formula: `=IFERROR(POWER(SUM('Free Cash Flow'!B${leveredRow}:${lastColumn}${leveredRow})/${initialInvestment}, 1/5)-1, "No Solution")`,
-        description: "Levered IRR simplified calculation (Fallback)",
-        result: "Calculated from total returns"
-      },
-      unleveredIRR: {
-        formula: `=IFERROR(POWER(SUM('Free Cash Flow'!B${unleveredRow}:${lastColumn}${unleveredRow})/${initialInvestment}, 1/5)-1, "No Solution")`,
-        description: "Unlevered IRR simplified calculation (Fallback)", 
-        result: "Calculated from total returns"
-      },
-      leveredMOIC: {
-        formula: `=SUM('Free Cash Flow'!B${leveredRow}:${lastColumn}${leveredRow})/${initialInvestment}`,
-        description: `Levered MOIC = ${leveredTotal.toFixed(0)} / ${initialInvestment} = ${(leveredTotal / initialInvestment).toFixed(2)}x`,
-        result: (leveredTotal / initialInvestment).toFixed(2) + "x"
-      },
-      unleveredMOIC: {
-        formula: `=SUM('Free Cash Flow'!B${unleveredRow}:${lastColumn}${unleveredRow})/${initialInvestment}`,
-        description: `Unlevered MOIC = ${unleveredTotal.toFixed(0)} / ${initialInvestment} = ${(unleveredTotal / initialInvestment).toFixed(2)}x`,
-        result: (unleveredTotal / initialInvestment).toFixed(2) + "x"
-      },
-      totalCashInflows: {
-        formula: `=SUM('Free Cash Flow'!B${leveredRow}:${lastColumn}${leveredRow})`,
-        result: leveredTotal.toFixed(0)
-      },
-      paybackPeriod: {
-        formula: "=MATCH(TRUE,OFFSET('Free Cash Flow'!A1,0,0,1,1)>0,0)",
-        result: `Estimated ${Math.ceil(initialInvestment / (leveredTotal / (fcfData.leveredFCFValues?.length || 1)))} periods`
-      }
-    };
-  }
+  // REMOVED: All fallback calculations - API required for accuracy
   
   // Create the AI-powered Multiples & IRR sheet with calculated formulas
   async createAIMultiplesAndIRRSheet(modelData, aiResponse, fcfStructure, fcfData, assumptionStructure) {
