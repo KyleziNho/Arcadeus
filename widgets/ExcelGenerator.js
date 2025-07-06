@@ -691,6 +691,37 @@ Please provide the complete P&L structure with exact cell addresses and formulas
     }
   }
   
+  async generateMultiplesAndIRR(modelData) {
+    try {
+      console.log('📊 Generating Multiples & IRR Analysis with AI...');
+      
+      // Step 1: Read the actual FCF sheet to get real cell structure
+      const fcfStructure = await this.readFCFSheetStructure();
+      console.log('💰 FCF Structure discovered:', fcfStructure);
+      
+      // Step 2: Read assumption sheet structure
+      const assumptionStructure = await this.readAssumptionSheetStructure();
+      console.log('📊 Assumption Structure discovered:', assumptionStructure);
+      
+      // Step 3: Generate comprehensive Multiples & IRR AI prompt with ACTUAL cell references
+      const multiplesPrompt = this.generateMultiplesAndIRRPrompt(modelData, fcfStructure, assumptionStructure);
+      
+      // Step 4: Create professional Multiples & IRR sheet using discovered cell references
+      await this.createMultiplesAndIRRSheet(modelData, multiplesPrompt, fcfStructure, assumptionStructure);
+      
+      console.log('📋 REAL Multiples & IRR AI Prompt for OpenAI:');
+      console.log('='.repeat(100));
+      console.log(multiplesPrompt);
+      console.log('='.repeat(100));
+      
+      return { success: true, message: 'Professional Multiples & IRR Analysis generated using real FCF cell references!' };
+      
+    } catch (error) {
+      console.error('❌ Error generating Multiples & IRR:', error);
+      return { success: false, error: error.message };
+    }
+  }
+  
   // Create the actual P&L sheet with formulas
   async createPLSheet(modelData) {
     return Excel.run(async (context) => {
@@ -2496,6 +2527,341 @@ If any critical P&L references are missing, clearly state what assumptions you'r
     output += `\n**REFERENCE FORMAT:** Use 'Assumptions'!B[row] for individual cells\n\n`;
 
     return output;
+  }
+  
+  // Read FCF sheet structure to get cell references
+  async readFCFSheetStructure() {
+    return Excel.run(async (context) => {
+      try {
+        const sheets = context.workbook.worksheets;
+        const fcfSheet = sheets.getItemOrNullObject('Free Cash Flow');
+        fcfSheet.load('name');
+        await context.sync();
+        
+        if (fcfSheet.isNullObject) {
+          throw new Error('Free Cash Flow sheet not found');
+        }
+        
+        // Read the entire sheet to find structure
+        const range = fcfSheet.getUsedRange();
+        range.load('values');
+        await context.sync();
+        
+        const values = range.values;
+        const structure = {
+          sheetName: 'Free Cash Flow',
+          periodColumns: 0,
+          leveredFCF: null,
+          unleveredFCF: null,
+          cumulativeFCF: null,
+          discountedNPV: null,
+          undiscountedNPV: null,
+          cashFlowRange: null
+        };
+        
+        // Find key rows and structure
+        for (let i = 0; i < values.length; i++) {
+          const row = values[i];
+          if (row && row[0]) {
+            const cellValue = row[0].toString().toLowerCase();
+            
+            if (cellValue.includes('levered free cash flow')) {
+              structure.leveredFCF = i + 1;
+            } else if (cellValue.includes('unlevered free cash flow')) {
+              structure.unleveredFCF = i + 1;
+            } else if (cellValue.includes('cumulative free cash flow')) {
+              structure.cumulativeFCF = i + 1;
+            } else if (cellValue.includes('discounted npv')) {
+              structure.discountedNPV = i + 1;
+            } else if (cellValue.includes('undiscounted npv')) {
+              structure.undiscountedNPV = i + 1;
+            }
+          }
+        }
+        
+        // Find number of period columns
+        if (values.length > 0) {
+          structure.periodColumns = values[0].length - 1; // Subtract 1 for the label column
+        }
+        
+        // Define cash flow range for IRR calculations
+        if (structure.leveredFCF) {
+          structure.cashFlowRange = `B${structure.leveredFCF}:${this.getColumnLetter(structure.periodColumns)}${structure.leveredFCF}`;
+        }
+        
+        console.log('📊 FCF Structure discovered:', structure);
+        return structure;
+        
+      } catch (error) {
+        console.error('Error reading FCF sheet structure:', error);
+        throw error;
+      }
+    });
+  }
+  
+  // Generate comprehensive AI prompt for Multiples & IRR calculations
+  generateMultiplesAndIRRPrompt(modelData, fcfStructure, assumptionStructure) {
+    console.log('🤖 Generating Multiples & IRR AI prompt...');
+    
+    // Calculate periods
+    const periods = this.calculatePeriods(modelData.projectStartDate, modelData.projectEndDate, modelData.modelPeriods);
+    
+    const prompt = `You are a world-class M&A financial modeling expert. You have been provided with complete Assumptions and Free Cash Flow Statement data. Your task is to create a comprehensive Multiples & IRR Analysis sheet that calculates investment returns and multiples using Excel formulas.
+
+**DEAL OVERVIEW:**
+- Deal: ${modelData.dealName}
+- Deal Value: ${modelData.dealValue} ${modelData.currency}
+- Equity Contribution: ${modelData.equityContribution} ${modelData.currency}
+- Currency: ${modelData.currency}
+- Period Type: ${modelData.modelPeriods}
+- Duration: ${modelData.projectStartDate} to ${modelData.projectEndDate}
+- Periods: ${periods}
+
+**AVAILABLE FCF SHEET DATA:**
+- Sheet Name: "${fcfStructure.sheetName}"
+- Levered FCF Row: ${fcfStructure.leveredFCF}
+- Unlevered FCF Row: ${fcfStructure.unleveredFCF}
+- Cash Flow Range: ${fcfStructure.cashFlowRange}
+- Period Columns: ${fcfStructure.periodColumns}
+
+**AVAILABLE ASSUMPTIONS SHEET DATA:**
+${this.formatDetailedAssumptions(assumptionStructure.assumptions)}
+
+**YOUR TASK:**
+Create a comprehensive Multiples & IRR Analysis sheet with the following sections using ONLY Excel formulas:
+
+## 1. INVESTMENT SUMMARY
+- Initial Investment (from Assumptions)
+- Total Equity Contribution
+- Deal Value
+- Exit Value (Terminal Value calculation)
+
+## 2. LEVERED IRR ANALYSIS
+- Use XIRR function with dates and levered FCF
+- Reference: ='Free Cash Flow'!${fcfStructure.cashFlowRange}
+- Include initial investment as negative cash flow
+- Calculate levered IRR %
+
+## 3. UNLEVERED IRR ANALYSIS
+- Use XIRR function with dates and unlevered FCF
+- Reference: ='Free Cash Flow'!B${fcfStructure.unleveredFCF}:${this.getColumnLetter(fcfStructure.periodColumns)}${fcfStructure.unleveredFCF}
+- Calculate unlevered IRR %
+
+## 4. MOIC CALCULATIONS
+- Total Cash Inflows (sum of positive FCF)
+- Total Cash Outflows (sum of negative FCF + initial investment)
+- Levered MOIC = Total Inflows / Total Outflows
+- Unlevered MOIC calculation
+
+## 5. SENSITIVITY ANALYSIS
+- IRR sensitivity to exit multiples
+- MOIC sensitivity to exit multiples
+- Create sensitivity table with different exit scenarios
+
+## 6. RETURN SUMMARY
+- Annualized Returns
+- Total Return %
+- Payback Period calculation
+- Break-even analysis
+
+**CRITICAL REQUIREMENTS:**
+1. Use ONLY Excel formulas and cell references
+2. Reference actual FCF sheet cells: ='Free Cash Flow'!CellReference
+3. Reference assumptions: ='Assumptions'!CellReference
+4. Use XIRR for IRR calculations (more accurate than IRR)
+5. Use proper date ranges for XIRR function
+6. Include professional formatting and headers
+7. Add data validation and error handling
+8. Create clear, readable financial metrics
+
+**EXCEL FORMULA EXAMPLES:**
+- IRR: =XIRR(CashFlowRange, DateRange)
+- MOIC: =SUM(PositiveCashFlows)/ABS(SUM(NegativeCashFlows))
+- NPV: =NPV(DiscountRate, CashFlowRange)
+- Payback: Use nested IF statements to find payback period
+
+Generate the complete Excel sheet structure with all formulas and proper formatting.`;
+
+    return prompt;
+  }
+  
+  // Create the actual Multiples & IRR sheet with formulas
+  async createMultiplesAndIRRSheet(modelData, prompt, fcfStructure, assumptionStructure) {
+    return Excel.run(async (context) => {
+      const sheets = context.workbook.worksheets;
+      
+      // Delete existing sheet if it exists
+      try {
+        const existingSheet = sheets.getItemOrNullObject('Multiples & IRR');
+        existingSheet.load('name');
+        await context.sync();
+        
+        if (!existingSheet.isNullObject) {
+          console.log('🗑️ Deleting existing Multiples & IRR sheet');
+          existingSheet.delete();
+          await context.sync();
+        }
+      } catch (e) {
+        // Sheet doesn't exist, continue
+      }
+      
+      // Create new sheet
+      const multiplesSheet = sheets.add('Multiples & IRR');
+      multiplesSheet.activate();
+      await context.sync();
+      
+      console.log('📊 Creating Multiples & IRR Analysis sheet...');
+      
+      let currentRow = 1;
+      const periods = this.calculatePeriods(modelData.projectStartDate, modelData.projectEndDate, modelData.modelPeriods);
+      
+      // HEADER
+      multiplesSheet.getRange('A1').values = [['Multiples & IRR Analysis']];
+      multiplesSheet.getRange('A1').format.font.bold = true;
+      multiplesSheet.getRange('A1').format.font.size = 16;
+      multiplesSheet.getRange('A1').format.fill.color = '#4472C4';
+      multiplesSheet.getRange('A1').format.font.color = 'white';
+      currentRow = 3;
+      
+      // INVESTMENT SUMMARY SECTION
+      multiplesSheet.getRange(`A${currentRow}`).values = [['INVESTMENT SUMMARY']];
+      multiplesSheet.getRange(`A${currentRow}`).format.font.bold = true;
+      multiplesSheet.getRange(`A${currentRow}`).format.fill.color = '#D9E1F2';
+      currentRow++;
+      
+      // Deal Value
+      multiplesSheet.getRange(`A${currentRow}`).values = [['Deal Value']];
+      multiplesSheet.getRange(`B${currentRow}`).values = [[modelData.dealValue || 0]];
+      currentRow++;
+      
+      // Equity Contribution
+      multiplesSheet.getRange(`A${currentRow}`).values = [['Equity Contribution']];
+      multiplesSheet.getRange(`B${currentRow}`).values = [[modelData.equityContribution || 0]];
+      const equityRow = currentRow;
+      currentRow += 2;
+      
+      // IRR ANALYSIS SECTION
+      multiplesSheet.getRange(`A${currentRow}`).values = [['IRR ANALYSIS']];
+      multiplesSheet.getRange(`A${currentRow}`).format.font.bold = true;
+      multiplesSheet.getRange(`A${currentRow}`).format.fill.color = '#E2EFDA';
+      currentRow++;
+      
+      // Levered IRR
+      multiplesSheet.getRange(`A${currentRow}`).values = [['Levered IRR']];
+      multiplesSheet.getRange(`A${currentRow}`).format.font.bold = true;
+      if (fcfStructure.leveredFCF && fcfStructure.cashFlowRange) {
+        // Create cash flow range including initial investment
+        const cashFlowRange = `B${equityRow},'Free Cash Flow'!${fcfStructure.cashFlowRange}`;
+        multiplesSheet.getRange(`B${currentRow}`).values = [['=IRR({-'+ `B${equityRow}` + `,'Free Cash Flow'!${fcfStructure.cashFlowRange}})']];
+        multiplesSheet.getRange(`B${currentRow}`).format.numberFormat = [['0.00%']];
+      } else {
+        multiplesSheet.getRange(`B${currentRow}`).values = [['Manual calculation required']];
+      }
+      currentRow++;
+      
+      // Unlevered IRR
+      multiplesSheet.getRange(`A${currentRow}`).values = [['Unlevered IRR']];
+      multiplesSheet.getRange(`A${currentRow}`).format.font.bold = true;
+      if (fcfStructure.unleveredFCF) {
+        const unleveredRange = `B${fcfStructure.unleveredFCF}:${this.getColumnLetter(fcfStructure.periodColumns)}${fcfStructure.unleveredFCF}`;
+        multiplesSheet.getRange(`B${currentRow}`).values = [['=IRR({-'+ `B${equityRow}` + `,'Free Cash Flow'!${unleveredRange}})']];
+        multiplesSheet.getRange(`B${currentRow}`).format.numberFormat = [['0.00%']];
+      } else {
+        multiplesSheet.getRange(`B${currentRow}`).values = [['Manual calculation required']];
+      }
+      currentRow += 2;
+      
+      // MOIC ANALYSIS SECTION
+      multiplesSheet.getRange(`A${currentRow}`).values = [['MOIC ANALYSIS']];
+      multiplesSheet.getRange(`A${currentRow}`).format.font.bold = true;
+      multiplesSheet.getRange(`A${currentRow}`).format.fill.color = '#FFF2CC';
+      currentRow++;
+      
+      // Total Cash Inflows
+      multiplesSheet.getRange(`A${currentRow}`).values = [['Total Cash Inflows']];
+      if (fcfStructure.leveredFCF) {
+        multiplesSheet.getRange(`B${currentRow}`).formulas = [[`=SUM('Free Cash Flow'!${fcfStructure.cashFlowRange})`]];
+      } else {
+        multiplesSheet.getRange(`B${currentRow}`).values = [[0]];
+      }
+      const inflowsRow = currentRow;
+      currentRow++;
+      
+      // Total Cash Outflows
+      multiplesSheet.getRange(`A${currentRow}`).values = [['Total Cash Outflows']];
+      multiplesSheet.getRange(`B${currentRow}`).formulas = [[`=B${equityRow}`]];
+      const outflowsRow = currentRow;
+      currentRow++;
+      
+      // Levered MOIC
+      multiplesSheet.getRange(`A${currentRow}`).values = [['Levered MOIC']];
+      multiplesSheet.getRange(`A${currentRow}`).format.font.bold = true;
+      multiplesSheet.getRange(`B${currentRow}`).formulas = [[`=B${inflowsRow}/B${outflowsRow}`]];
+      multiplesSheet.getRange(`B${currentRow}`).format.numberFormat = [['0.00x']];
+      currentRow += 2;
+      
+      // RETURN SUMMARY SECTION
+      multiplesSheet.getRange(`A${currentRow}`).values = [['RETURN SUMMARY']];
+      multiplesSheet.getRange(`A${currentRow}`).format.font.bold = true;
+      multiplesSheet.getRange(`A${currentRow}`).format.fill.color = '#F2F2F2';
+      currentRow++;
+      
+      // Total Return %
+      multiplesSheet.getRange(`A${currentRow}`).values = [['Total Return %']];
+      multiplesSheet.getRange(`B${currentRow}`).formulas = [[`=(B${inflowsRow}/B${outflowsRow}-1)*100`]];
+      multiplesSheet.getRange(`B${currentRow}`).format.numberFormat = [['0.00%']];
+      currentRow++;
+      
+      // Holding Period
+      multiplesSheet.getRange(`A${currentRow}`).values = [['Holding Period (Years)']];
+      const holdingPeriodYears = periods / (modelData.modelPeriods === 'monthly' ? 12 : 
+                                            modelData.modelPeriods === 'quarterly' ? 4 : 
+                                            modelData.modelPeriods === 'yearly' ? 1 : 12);
+      multiplesSheet.getRange(`B${currentRow}`).values = [[holdingPeriodYears]];
+      multiplesSheet.getRange(`B${currentRow}`).format.numberFormat = [['0.00']];
+      currentRow++;
+      
+      // Annualized Return
+      multiplesSheet.getRange(`A${currentRow}`).values = [['Annualized Return']];
+      multiplesSheet.getRange(`B${currentRow}`).formulas = [[`=POWER(B${inflowsRow}/B${outflowsRow},1/B${currentRow-1})-1`]];
+      multiplesSheet.getRange(`B${currentRow}`).format.numberFormat = [['0.00%']];
+      currentRow += 2;
+      
+      // NPV ANALYSIS SECTION
+      multiplesSheet.getRange(`A${currentRow}`).values = [['NPV ANALYSIS']];
+      multiplesSheet.getRange(`A${currentRow}`).format.font.bold = true;
+      multiplesSheet.getRange(`A${currentRow}`).format.fill.color = '#E2EFDA';
+      currentRow++;
+      
+      // NPV at different discount rates
+      const discountRates = [0.08, 0.10, 0.12, 0.15, 0.20];
+      multiplesSheet.getRange(`A${currentRow}`).values = [['Discount Rate']];
+      multiplesSheet.getRange(`B${currentRow}`).values = [['NPV']];
+      multiplesSheet.getRange(`A${currentRow}:B${currentRow}`).format.font.bold = true;
+      currentRow++;
+      
+      discountRates.forEach(rate => {
+        multiplesSheet.getRange(`A${currentRow}`).values = [[rate]];
+        multiplesSheet.getRange(`A${currentRow}`).format.numberFormat = [['0.00%']];
+        if (fcfStructure.leveredFCF) {
+          multiplesSheet.getRange(`B${currentRow}`).formulas = [[`=NPV(A${currentRow},'Free Cash Flow'!${fcfStructure.cashFlowRange})-B${equityRow}`]];
+        } else {
+          multiplesSheet.getRange(`B${currentRow}`).values = [[0]];
+        }
+        currentRow++;
+      });
+      
+      // Format the sheet
+      multiplesSheet.getRange(`A:B`).format.autofitColumns();
+      multiplesSheet.getRange(`A1:B${currentRow}`).format.borders.getItem('InsideHorizontal').style = 'Thin';
+      multiplesSheet.getRange(`A1:B${currentRow}`).format.borders.getItem('InsideVertical').style = 'Thin';
+      multiplesSheet.getRange(`A1:B${currentRow}`).format.borders.getItem('EdgeBottom').style = 'Thin';
+      multiplesSheet.getRange(`A1:B${currentRow}`).format.borders.getItem('EdgeLeft').style = 'Thin';
+      multiplesSheet.getRange(`A1:B${currentRow}`).format.borders.getItem('EdgeRight').style = 'Thin';
+      multiplesSheet.getRange(`A1:B${currentRow}`).format.borders.getItem('EdgeTop').style = 'Thin';
+      
+      console.log('✅ Multiples & IRR Analysis sheet created successfully');
+    });
   }
 }
 

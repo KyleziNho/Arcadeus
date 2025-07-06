@@ -178,6 +178,13 @@ class MAModelingAddin {
       console.log('Generate FCF button listener added');
     }
     
+    // Generate Multiples & IRR button
+    const generateMultiplesBtn = document.getElementById('generateMultiplesBtn');
+    if (generateMultiplesBtn) {
+      generateMultiplesBtn.addEventListener('click', () => this.generateMultiplesAndIRR());
+      console.log('Generate Multiples & IRR button listener added');
+    }
+    
     // Validate Model button (if exists)
     const validateModelBtn = document.getElementById('validateModelBtn');
     if (validateModelBtn) {
@@ -432,6 +439,13 @@ class MAModelingAddin {
           } else {
             alert('Free Cash Flow Statement created successfully! Check the Free Cash Flow sheet in Excel.');
           }
+          
+          // Show the Multiples & IRR button
+          const generateMultiplesBtn = document.getElementById('generateMultiplesBtn');
+          if (generateMultiplesBtn) {
+            generateMultiplesBtn.style.display = 'inline-flex';
+            console.log('Multiples & IRR button shown');
+          }
         } else {
           console.error('FCF generation failed:', result.error);
           if (this.uiController) {
@@ -447,6 +461,51 @@ class MAModelingAddin {
       
     } catch (error) {
       console.error('Error in generateFCFWithAI:', error);
+      if (this.uiController) {
+        this.uiController.showMessage('Unexpected error: ' + error.message, 'error');
+      } else {
+        alert('Unexpected error: ' + error.message);
+      }
+    }
+  }
+  
+  async generateMultiplesAndIRR() {
+    console.log('Starting Multiples & IRR generation...');
+    
+    try {
+      // Collect model data
+      let modelData = {};
+      if (this.formHandler) {
+        modelData = this.formHandler.collectAllModelData();
+        console.log('Model data for Multiples & IRR:', modelData);
+      }
+      
+      // Generate Multiples & IRR using AI
+      if (this.excelGenerator) {
+        const result = await this.excelGenerator.generateMultiplesAndIRR(modelData);
+        
+        if (result.success) {
+          console.log('Multiples & IRR generated successfully');
+          if (this.uiController) {
+            this.uiController.showMessage('Multiples & IRR Analysis created! Check the Multiples & IRR sheet.', 'success');
+          } else {
+            alert('Multiples & IRR Analysis created successfully! Check the Multiples & IRR sheet in Excel.');
+          }
+        } else {
+          console.error('Multiples & IRR generation failed:', result.error);
+          if (this.uiController) {
+            this.uiController.showMessage('Error generating Multiples & IRR: ' + result.error, 'error');
+          } else {
+            alert('Error generating Multiples & IRR: ' + result.error);
+          }
+        }
+      } else {
+        console.error('ExcelGenerator not available');
+        alert('Excel generator not available. Please refresh the page.');
+      }
+      
+    } catch (error) {
+      console.error('Error in generateMultiplesAndIRR:', error);
       if (this.uiController) {
         this.uiController.showMessage('Unexpected error: ' + error.message, 'error');
       } else {
