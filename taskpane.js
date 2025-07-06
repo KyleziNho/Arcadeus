@@ -79,12 +79,25 @@ class MAModelingAddin {
 
   initializeWidgets() {
     console.log('Initializing widgets...');
+    console.log('Available classes:', {
+      ExcelGenerator: typeof ExcelGenerator,
+      FormHandler: typeof FormHandler,
+      UIController: typeof UIController
+    });
     
     // Initialize ExcelGenerator
     if (typeof ExcelGenerator !== 'undefined') {
-      this.excelGenerator = new ExcelGenerator();
-      window.excelGenerator = this.excelGenerator;
-      console.log('✅ ExcelGenerator initialized');
+      try {
+        this.excelGenerator = new ExcelGenerator();
+        window.excelGenerator = this.excelGenerator;
+        console.log('✅ ExcelGenerator initialized successfully');
+      } catch (error) {
+        console.error('❌ Error creating ExcelGenerator:', error);
+        this.excelGenerator = null;
+      }
+    } else {
+      console.error('❌ ExcelGenerator class not found. Check if ExcelGenerator.js is loaded.');
+      this.excelGenerator = null;
     }
     
     // Initialize FormHandler
@@ -310,9 +323,11 @@ class MAModelingAddin {
       if (this.formHandler) {
         const validation = this.formHandler.validateAllFields();
         if (!validation.isValid) {
-          const errorMessage = 'Please complete the following required fields:\n' + validation.errors.join('\n');
-          alert(errorMessage);
+          const errorMessage = 'Please complete the following required fields: ' + validation.errors.join(', ');
           console.log('Validation failed:', validation.errors);
+          if (this.uiController) {
+            this.uiController.showMessage(errorMessage, 'error');
+          }
           return;
         }
       }
@@ -340,19 +355,29 @@ class MAModelingAddin {
           if (this.uiController) {
             this.uiController.showMessage('Assumptions sheet created! You can now generate the P&L.', 'success');
           } else {
-            alert('Assumptions sheet created successfully! You can now generate the P&L using AI.');
+            console.log('Assumptions sheet created successfully!');
           }
         } else {
           console.error('Assumptions generation failed:', result.error);
           if (this.uiController) {
             this.uiController.showMessage('Error generating assumptions: ' + result.error, 'error');
           } else {
-            alert('Error generating assumptions: ' + result.error);
+            console.error('Error generating assumptions:', result.error);
+            if (this.uiController) {
+              this.uiController.showMessage('Error generating assumptions: ' + result.error, 'error');
+            }
           }
         }
       } else {
-        console.error('ExcelGenerator not available');
-        alert('Excel generator not available. Please refresh the page.');
+        console.error('Debug info:', {
+          excelGenerator: this.excelGenerator,
+          ExcelGeneratorClass: typeof ExcelGenerator,
+          windowExcelGenerator: typeof window.ExcelGenerator
+        });
+        console.error('Excel generator not available. Please refresh the page.');
+        if (this.uiController) {
+          this.uiController.showMessage('Excel generator not available. Please refresh the page.', 'error');
+        }
       }
       
     } catch (error) {
@@ -360,7 +385,10 @@ class MAModelingAddin {
       if (this.uiController) {
         this.uiController.showMessage('Unexpected error: ' + error.message, 'error');
       } else {
-        alert('Unexpected error: ' + error.message);
+        console.error('Unexpected error:', error.message);
+        if (this.uiController) {
+          this.uiController.showMessage('Unexpected error: ' + error.message, 'error');
+        }
       }
     }
   }
@@ -392,19 +420,32 @@ class MAModelingAddin {
           if (this.uiController) {
             this.uiController.showMessage('P&L Statement created! You can now generate the Free Cash Flow.', 'success');
           } else {
-            alert('P&L Statement created successfully! You can now generate the Free Cash Flow.');
+            console.log('P&L Statement created successfully!');
+            if (this.uiController) {
+              this.uiController.showMessage('P&L Statement created successfully! You can now generate the Free Cash Flow.', 'success');
+            }
           }
         } else {
           console.error('AI P&L generation failed:', result.error);
           if (this.uiController) {
             this.uiController.showMessage('Error generating AI P&L: ' + result.error, 'error');
           } else {
-            alert('Error generating AI P&L: ' + result.error);
+            console.error('Error generating AI P&L:', result.error);
+            if (this.uiController) {
+              this.uiController.showMessage('Error generating AI P&L: ' + result.error, 'error');
+            }
           }
         }
       } else {
-        console.error('ExcelGenerator not available');
-        alert('Excel generator not available. Please refresh the page.');
+        console.error('Debug info:', {
+          excelGenerator: this.excelGenerator,
+          ExcelGeneratorClass: typeof ExcelGenerator,
+          windowExcelGenerator: typeof window.ExcelGenerator
+        });
+        console.error('Excel generator not available. Please refresh the page.');
+        if (this.uiController) {
+          this.uiController.showMessage('Excel generator not available. Please refresh the page.', 'error');
+        }
       }
       
     } catch (error) {
@@ -412,7 +453,10 @@ class MAModelingAddin {
       if (this.uiController) {
         this.uiController.showMessage('Unexpected error: ' + error.message, 'error');
       } else {
-        alert('Unexpected error: ' + error.message);
+        console.error('Unexpected error:', error.message);
+        if (this.uiController) {
+          this.uiController.showMessage('Unexpected error: ' + error.message, 'error');
+        }
       }
     }
   }
@@ -437,7 +481,10 @@ class MAModelingAddin {
           if (this.uiController) {
             this.uiController.showMessage('Free Cash Flow Statement created! Check the Free Cash Flow sheet.', 'success');
           } else {
-            alert('Free Cash Flow Statement created successfully! Check the Free Cash Flow sheet in Excel.');
+            console.log('Free Cash Flow Statement created successfully!');
+            if (this.uiController) {
+              this.uiController.showMessage('Free Cash Flow Statement created successfully! Check the Free Cash Flow sheet in Excel.', 'success');
+            }
           }
           
           // Show the Multiples & IRR button
@@ -451,12 +498,22 @@ class MAModelingAddin {
           if (this.uiController) {
             this.uiController.showMessage('Error generating FCF: ' + result.error, 'error');
           } else {
-            alert('Error generating FCF: ' + result.error);
+            console.error('Error generating FCF:', result.error);
+            if (this.uiController) {
+              this.uiController.showMessage('Error generating FCF: ' + result.error, 'error');
+            }
           }
         }
       } else {
-        console.error('ExcelGenerator not available');
-        alert('Excel generator not available. Please refresh the page.');
+        console.error('Debug info:', {
+          excelGenerator: this.excelGenerator,
+          ExcelGeneratorClass: typeof ExcelGenerator,
+          windowExcelGenerator: typeof window.ExcelGenerator
+        });
+        console.error('Excel generator not available. Please refresh the page.');
+        if (this.uiController) {
+          this.uiController.showMessage('Excel generator not available. Please refresh the page.', 'error');
+        }
       }
       
     } catch (error) {
@@ -464,7 +521,10 @@ class MAModelingAddin {
       if (this.uiController) {
         this.uiController.showMessage('Unexpected error: ' + error.message, 'error');
       } else {
-        alert('Unexpected error: ' + error.message);
+        console.error('Unexpected error:', error.message);
+        if (this.uiController) {
+          this.uiController.showMessage('Unexpected error: ' + error.message, 'error');
+        }
       }
     }
   }
@@ -489,19 +549,32 @@ class MAModelingAddin {
           if (this.uiController) {
             this.uiController.showMessage('Multiples & IRR Analysis created! Check the Multiples & IRR sheet.', 'success');
           } else {
-            alert('Multiples & IRR Analysis created successfully! Check the Multiples & IRR sheet in Excel.');
+            console.log('Multiples & IRR Analysis created successfully!');
+            if (this.uiController) {
+              this.uiController.showMessage('Multiples & IRR Analysis created successfully! Check the Multiples & IRR sheet in Excel.', 'success');
+            }
           }
         } else {
           console.error('Multiples & IRR generation failed:', result.error);
           if (this.uiController) {
             this.uiController.showMessage('Error generating Multiples & IRR: ' + result.error, 'error');
           } else {
-            alert('Error generating Multiples & IRR: ' + result.error);
+            console.error('Error generating Multiples & IRR:', result.error);
+            if (this.uiController) {
+              this.uiController.showMessage('Error generating Multiples & IRR: ' + result.error, 'error');
+            }
           }
         }
       } else {
-        console.error('ExcelGenerator not available');
-        alert('Excel generator not available. Please refresh the page.');
+        console.error('Debug info:', {
+          excelGenerator: this.excelGenerator,
+          ExcelGeneratorClass: typeof ExcelGenerator,
+          windowExcelGenerator: typeof window.ExcelGenerator
+        });
+        console.error('Excel generator not available. Please refresh the page.');
+        if (this.uiController) {
+          this.uiController.showMessage('Excel generator not available. Please refresh the page.', 'error');
+        }
       }
       
     } catch (error) {
@@ -509,7 +582,10 @@ class MAModelingAddin {
       if (this.uiController) {
         this.uiController.showMessage('Unexpected error: ' + error.message, 'error');
       } else {
-        alert('Unexpected error: ' + error.message);
+        console.error('Unexpected error:', error.message);
+        if (this.uiController) {
+          this.uiController.showMessage('Unexpected error: ' + error.message, 'error');
+        }
       }
     }
   }
@@ -524,9 +600,11 @@ class MAModelingAddin {
       if (this.formHandler) {
         const validation = this.formHandler.validateAllFields();
         if (!validation.isValid) {
-          const errorMessage = 'Please complete the following required fields:\n' + validation.errors.join('\n');
-          alert(errorMessage);
+          const errorMessage = 'Please complete the following required fields: ' + validation.errors.join(', ');
           console.log('Validation failed:', validation.errors);
+          if (this.uiController) {
+            this.uiController.showMessage(errorMessage, 'error');
+          }
           return;
         }
       }
@@ -547,19 +625,32 @@ class MAModelingAddin {
           if (this.uiController) {
             this.uiController.showMessage('Excel model generated successfully!', 'success');
           } else {
-            alert('Excel model generated successfully!');
+            console.log('Excel model generated successfully!');
+            if (this.uiController) {
+              this.uiController.showMessage('Excel model generated successfully!', 'success');
+            }
           }
         } else {
           console.error('Model generation failed:', result.error);
           if (this.uiController) {
             this.uiController.showMessage('Error generating model: ' + result.error, 'error');
           } else {
-            alert('Error generating model: ' + result.error);
+            console.error('Error generating model:', result.error);
+            if (this.uiController) {
+              this.uiController.showMessage('Error generating model: ' + result.error, 'error');
+            }
           }
         }
       } else {
-        console.error('ExcelGenerator not available');
-        alert('Excel generator not available. Please refresh the page.');
+        console.error('Debug info:', {
+          excelGenerator: this.excelGenerator,
+          ExcelGeneratorClass: typeof ExcelGenerator,
+          windowExcelGenerator: typeof window.ExcelGenerator
+        });
+        console.error('Excel generator not available. Please refresh the page.');
+        if (this.uiController) {
+          this.uiController.showMessage('Excel generator not available. Please refresh the page.', 'error');
+        }
       }
       
     } catch (error) {
@@ -567,7 +658,10 @@ class MAModelingAddin {
       if (this.uiController) {
         this.uiController.showMessage('Unexpected error: ' + error.message, 'error');
       } else {
-        alert('Unexpected error: ' + error.message);
+        console.error('Unexpected error:', error.message);
+        if (this.uiController) {
+          this.uiController.showMessage('Unexpected error: ' + error.message, 'error');
+        }
       }
     }
   }
@@ -583,7 +677,10 @@ class MAModelingAddin {
           if (this.uiController) {
             this.uiController.showMessage('All required fields are completed! Ready to generate model.', 'success');
           } else {
-            alert('All required fields are completed! Ready to generate model.');
+            console.log('All required fields are completed!');
+            if (this.uiController) {
+              this.uiController.showMessage('All required fields are completed! Ready to generate model.', 'success');
+            }
           }
         } else {
           const errorMessage = 'Missing required fields:\n' + validation.errors.join('\n');
@@ -591,11 +688,17 @@ class MAModelingAddin {
             this.uiController.showMessage('Validation failed. Check console for details.', 'warning');
           }
           console.log('Validation errors:', validation.errors);
-          alert(errorMessage);
+          console.log('Validation errors:', validation.errors);
+          if (this.uiController) {
+            this.uiController.showMessage(errorMessage, 'error');
+          }
         }
       } else {
         console.error('FormHandler not available');
-        alert('Form validation not available. Please refresh the page.');
+        console.error('Form validation not available. Please refresh the page.');
+        if (this.uiController) {
+          this.uiController.showMessage('Form validation not available. Please refresh the page.', 'error');
+        }
       }
       
     } catch (error) {
@@ -603,7 +706,10 @@ class MAModelingAddin {
       if (this.uiController) {
         this.uiController.showMessage('Error during validation: ' + error.message, 'error');
       } else {
-        alert('Error during validation: ' + error.message);
+        console.error('Error during validation:', error.message);
+        if (this.uiController) {
+          this.uiController.showMessage('Error during validation: ' + error.message, 'error');
+        }
       }
     }
   }
