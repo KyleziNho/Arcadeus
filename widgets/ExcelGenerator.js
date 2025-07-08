@@ -817,15 +817,16 @@ Required format:
                 plSheet.getRange(`${colLetter}${currentRow}`).values = [[item.value || 0]];
               }
             } else {
-              // Growth formula for subsequent periods
+              // Growth formula for subsequent periods - reference assumptions sheet
               const prevCol = this.getColumnLetter(col - 1);
-              const growthRate = item.annualGrowthRate || 0;
+              const growthRateRef = this.cellTracker.getCellReference(`revenue_${index}_growth_rate`);
               const periodAdjustment = this.getPeriodAdjustment(modelData.modelPeriods);
               
-              if (growthRate > 0) {
+              if (growthRateRef) {
                 plSheet.getRange(`${colLetter}${currentRow}`).formulas = 
-                  [[`=${prevCol}${currentRow}*(1+${growthRate}${periodAdjustment}/100)`]];
+                  [[`=${prevCol}${currentRow}*(1+Assumptions!${growthRateRef}${periodAdjustment}/100)`]];
               } else {
+                // Fallback if growth rate not found in assumptions
                 plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${prevCol}${currentRow}`]];
               }
             }
@@ -875,15 +876,16 @@ Required format:
                 plSheet.getRange(`${colLetter}${currentRow}`).values = [[-item.value || 0]];
               }
             } else {
-              // Growth formula for subsequent periods
+              // Growth formula for subsequent periods - reference assumptions sheet
               const prevCol = this.getColumnLetter(col - 1);
-              const growthRate = item.annualGrowthRate || 0;
+              const growthRateRef = this.cellTracker.getCellReference(`opex_${index}_growth_rate`);
               const periodAdjustment = this.getPeriodAdjustment(modelData.modelPeriods);
               
-              if (growthRate > 0) {
+              if (growthRateRef) {
                 plSheet.getRange(`${colLetter}${currentRow}`).formulas = 
-                  [[`=${prevCol}${currentRow}*(1+${growthRate}${periodAdjustment}/100)`]];
+                  [[`=${prevCol}${currentRow}*(1+Assumptions!${growthRateRef}${periodAdjustment}/100)`]];
               } else {
+                // Fallback if growth rate not found in assumptions
                 plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${prevCol}${currentRow}`]];
               }
             }
@@ -1649,9 +1651,10 @@ Provide the COMPLETE Free Cash Flow model with exact Excel formulas for every ce
         fcfSheet.getRange(`A${currentRow}`).format.fill.color = '#ffcccc';
       }
       
-      // Format all numbers as currency
+      // Format all numbers as currency based on selected currency
       const dataRange = fcfSheet.getRange(`B5:${this.getColumnLetter(periodColumns)}${currentRow}`);
-      dataRange.numberFormat = [['[$$-en-US] #,##0;[Red][$$-en-US] -#,##0']];
+      const currencyFormat = this.getCurrencyFormat(modelData.currency || 'USD');
+      dataRange.numberFormat = [[currencyFormat]];
       
       // Auto-fit columns
       fcfSheet.getRange(`A:${this.getColumnLetter(periodColumns)}`).format.autofitColumns();
@@ -2051,6 +2054,24 @@ Provide the COMPLETE Free Cash Flow model with exact Excel formulas for every ce
       temp = Math.floor(temp / 26) - 1;
     }
     return result;
+  }
+
+  // Helper method to get currency format based on selected currency
+  getCurrencyFormat(currency) {
+    const currencyFormats = {
+      'USD': '[$$-en-US] #,##0;[Red][$$-en-US] -#,##0',
+      'EUR': '[$€-en-US] #,##0;[Red][$€-en-US] -#,##0',
+      'GBP': '[$£-en-GB] #,##0;[Red][$£-en-GB] -#,##0',
+      'JPY': '[$¥-ja-JP] #,##0;[Red][$¥-ja-JP] -#,##0',
+      'CAD': '[$C$-en-CA] #,##0;[Red][$C$-en-CA] -#,##0',
+      'AUD': '[$A$-en-AU] #,##0;[Red][$A$-en-AU] -#,##0',
+      'CHF': '[$CHF-de-CH] #,##0;[Red][$CHF-de-CH] -#,##0',
+      'CNY': '[$¥-zh-CN] #,##0;[Red][$¥-zh-CN] -#,##0',
+      'SEK': '[$kr-sv-SE] #,##0;[Red][$kr-sv-SE] -#,##0',
+      'NOK': '[$kr-nb-NO] #,##0;[Red][$kr-nb-NO] -#,##0'
+    };
+    
+    return currencyFormats[currency] || currencyFormats['USD'];
   }
   
   // Calculate number of periods between dates
