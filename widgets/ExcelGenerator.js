@@ -53,9 +53,14 @@ class ExcelGenerator {
       console.log('🚀 Starting fresh model generation...');
       console.log('📊 Model data:', modelData);
       
-      // Reset cell trackers
-      this.cellTracker = new CellTracker();
-      this.plCellTracker = new CellTracker();
+      // Only reset cell trackers if they're empty (first time)
+      // This preserves references between Assumptions and P&L generation
+      if (!this.cellTracker || this.cellTracker.cellMap.size === 0) {
+        this.cellTracker = new CellTracker();
+      }
+      if (!this.plCellTracker || this.plCellTracker.cellMap.size === 0) {
+        this.plCellTracker = new CellTracker();
+      }
       
       // Step 1: Create Assumptions sheet only
       await this.createAssumptionsSheet(modelData);
@@ -822,11 +827,16 @@ Required format:
               const growthRateRef = this.cellTracker.getCellReference(`revenue_${index}_growth_rate`);
               const periodAdjustment = this.getPeriodAdjustment(modelData.modelPeriods);
               
+              console.log(`Revenue ${index} growth ref:`, growthRateRef);
+              
               if (growthRateRef) {
+                // Extract just the cell reference (e.g., "B24" from "Assumptions!B24")
+                const cellRef = growthRateRef.includes('!') ? growthRateRef.split('!')[1] : growthRateRef;
                 plSheet.getRange(`${colLetter}${currentRow}`).formulas = 
-                  [[`=${prevCol}${currentRow}*(1+Assumptions!${growthRateRef}${periodAdjustment}/100)`]];
+                  [[`=${prevCol}${currentRow}*(1+Assumptions!${cellRef}${periodAdjustment}/100)`]];
               } else {
-                // Fallback if growth rate not found in assumptions
+                // No growth rate in assumptions - use flat growth
+                console.log(`No growth rate reference found for revenue ${index}`);
                 plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${prevCol}${currentRow}`]];
               }
             }
@@ -881,11 +891,16 @@ Required format:
               const growthRateRef = this.cellTracker.getCellReference(`opex_${index}_growth_rate`);
               const periodAdjustment = this.getPeriodAdjustment(modelData.modelPeriods);
               
+              console.log(`OpEx ${index} growth ref:`, growthRateRef);
+              
               if (growthRateRef) {
+                // Extract just the cell reference (e.g., "B24" from "Assumptions!B24")
+                const cellRef = growthRateRef.includes('!') ? growthRateRef.split('!')[1] : growthRateRef;
                 plSheet.getRange(`${colLetter}${currentRow}`).formulas = 
-                  [[`=${prevCol}${currentRow}*(1+Assumptions!${growthRateRef}${periodAdjustment}/100)`]];
+                  [[`=${prevCol}${currentRow}*(1+Assumptions!${cellRef}${periodAdjustment}/100)`]];
               } else {
-                // Fallback if growth rate not found in assumptions
+                // No growth rate in assumptions - use flat growth
+                console.log(`No growth rate reference found for opex ${index}`);
                 plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${prevCol}${currentRow}`]];
               }
             }
