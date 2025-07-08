@@ -978,9 +978,10 @@ Required format:
       // Track Net Income row
       this.plCellTracker.recordCell('net_income', 'P&L Statement', `B${currentRow}:${this.getColumnLetter(periodColumns)}${currentRow}`);
       
-      // Format numbers
+      // Format numbers with proper currency
       const dataRange = plSheet.getRange(`B5:${this.getColumnLetter(periodColumns)}${currentRow}`);
-      dataRange.numberFormat = [['#,##0;[Red](#,##0)']];
+      const currencyFormat = this.getCurrencyFormat(modelData.currency || 'USD');
+      dataRange.numberFormat = [[currencyFormat]];
       
       // Auto-fit columns
       plSheet.getRange(`A:${this.getColumnLetter(periodColumns)}`).format.autofitColumns();
@@ -1746,7 +1747,8 @@ Provide the COMPLETE Free Cash Flow model with exact Excel formulas for every ce
   }
 
   // P&L Sheet generation using proper structure
-  async createPLSheet(modelData) {
+  // DUPLICATE METHOD - COMMENTED OUT - Use the first createPLSheet method above
+  async createPLSheet_OLD_DUPLICATE(modelData) {
     return Excel.run(async (context) => {
       console.log('📈 Creating P&L sheet...');
       
