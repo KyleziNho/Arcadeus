@@ -692,10 +692,17 @@ class FormHandler {
       const itemNum = index + 1;
       const nameEl = document.getElementById(`revenueName_${itemNum}`);
       const valueEl = document.getElementById(`revenueValue_${itemNum}`);
-      const growthTypeEl = document.getElementById(`revenueGrowthType_${itemNum}`);
-      const annualGrowthInput = document.getElementById(`revenueAnnualGrowth_${itemNum}`);
+      const growthTypeEl = document.getElementById(`growthType_${itemNum}`);
+      const annualGrowthInput = document.getElementById(`annualGrowth_${itemNum}`);
       
       if (nameEl && valueEl && nameEl.value && valueEl.value) {
+        console.log(`📊 Reading revenue item ${itemNum}:`, {
+          name: nameEl.value,
+          value: valueEl.value,
+          growthType: growthTypeEl?.value,
+          annualGrowthRate: annualGrowthInput?.value
+        });
+        
         const revenueItem = {
           name: nameEl.value,
           value: parseFloat(valueEl.value) || 0,
@@ -718,8 +725,8 @@ class FormHandler {
       const itemNum = index + 1;
       const nameEl = document.getElementById(`opExName_${itemNum}`);
       const valueEl = document.getElementById(`opExValue_${itemNum}`);
-      const growthTypeEl = document.getElementById(`opExGrowthType_${itemNum}`);
-      const annualGrowthInput = document.getElementById(`opExAnnualGrowth_${itemNum}`);
+      const growthTypeEl = document.getElementById(`growthType_opEx_${itemNum}`);
+      const annualGrowthInput = document.getElementById(`annualGrowth_opEx_${itemNum}`);
       
       if (nameEl && valueEl && nameEl.value && valueEl.value) {
         const opexItem = {
@@ -743,8 +750,8 @@ class FormHandler {
       const itemNum = index + 1;
       const nameEl = document.getElementById(`capExName_${itemNum}`);
       const valueEl = document.getElementById(`capExValue_${itemNum}`);
-      const growthTypeEl = document.getElementById(`capExGrowthType_${itemNum}`);
-      const annualGrowthInput = document.getElementById(`capExAnnualGrowth_${itemNum}`);
+      const growthTypeEl = document.getElementById(`growthType_capEx_${itemNum}`);
+      const annualGrowthInput = document.getElementById(`annualGrowth_capEx_${itemNum}`);
       
       if (nameEl && valueEl && nameEl.value && valueEl.value) {
         const capexItem = {
