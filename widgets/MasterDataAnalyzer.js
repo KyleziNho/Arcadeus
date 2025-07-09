@@ -355,15 +355,15 @@ RETURN ONLY THE JSON STRUCTURE - NO OTHER TEXT.`;
           {
             name: "Primary Revenue",
             currentValue: dealValue * 0.1, // Estimate 10% of deal value as annual revenue
-            growthRate: 15,
-            growthType: "compound"
+            growthRate: 0, // No fallback - must be provided by user
+            growthType: "linear"
           }
         ],
         operatingExpenses: [
           {
             name: "Staff Costs",
             currentValue: dealValue * 0.05, // Estimate 5% of deal value
-            inflationRate: 3,
+            inflationRate: 0, // No fallback - must be provided by user
             category: "staff"
           }
         ],

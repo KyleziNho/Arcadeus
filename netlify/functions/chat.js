@@ -124,13 +124,13 @@ EXTRACT AND RETURN:
       "dealLTV": percentage_from_Acquisition_LTV
     },
     "revenueItems": [
-      {"name": "Revenue Item 1", "initialValue": 500000, "growthType": "linear", "growthRate": 2}
+      {"name": "actual_revenue_name", "initialValue": actual_number, "growthType": "linear|annual", "growthRate": actual_rate_from_document}
     ],
     "operatingExpenses": [
-      {"name": "Staff expenses", "initialValue": 60000, "growthType": "linear", "growthRate": 0.5}
+      {"name": "actual_expense_name", "initialValue": actual_number, "growthType": "linear|annual", "growthRate": actual_rate_from_document}
     ],
     "capitalExpenses": [
-      {"name": "Cost Item 3", "initialValue": 20000, "growthType": "linear", "growthRate": 1.5}
+      {"name": "actual_capex_name", "initialValue": actual_number, "growthType": "linear|annual", "growthRate": actual_rate_from_document}
     ],
     "exitAssumptions": {
       "disposalCost": percentage_from_Disposal_Costs,

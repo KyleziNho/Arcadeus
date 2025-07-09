@@ -696,11 +696,15 @@ class FormHandler {
       const annualGrowthInput = document.getElementById(`annualGrowth_${itemNum}`);
       
       if (nameEl && valueEl && nameEl.value && valueEl.value) {
+        // Also check for linear growth input
+        const linearGrowthInput = document.getElementById(`linearGrowth_${itemNum}`);
+        
         console.log(`📊 Reading revenue item ${itemNum}:`, {
           name: nameEl.value,
           value: valueEl.value,
           growthType: growthTypeEl?.value,
-          annualGrowthRate: annualGrowthInput?.value
+          annualGrowthRate: annualGrowthInput?.value,
+          linearGrowthRate: linearGrowthInput?.value
         });
         
         const revenueItem = {
@@ -709,10 +713,13 @@ class FormHandler {
           growthType: growthTypeEl?.value || 'none'
         };
         
-        // Only add growth rate if growth type is annual and rate is provided
+        // Add growth rate based on growth type
         if (revenueItem.growthType === 'annual' && annualGrowthInput?.value) {
           revenueItem.annualGrowthRate = parseFloat(annualGrowthInput.value) || 0;
-          console.log(`📊 Collected revenue growth rate: ${revenueItem.annualGrowthRate}% for ${revenueItem.name}`);
+          console.log(`📊 Collected ANNUAL growth rate: ${revenueItem.annualGrowthRate}% for ${revenueItem.name}`);
+        } else if (revenueItem.growthType === 'linear' && linearGrowthInput?.value) {
+          revenueItem.linearGrowthRate = parseFloat(linearGrowthInput.value) || 0;
+          console.log(`📊 Collected LINEAR growth rate: ${revenueItem.linearGrowthRate}% for ${revenueItem.name}`);
         }
         
         data.revenueItems.push(revenueItem);
@@ -725,19 +732,34 @@ class FormHandler {
       const itemNum = index + 1;
       const nameEl = document.getElementById(`opExName_${itemNum}`);
       const valueEl = document.getElementById(`opExValue_${itemNum}`);
-      const growthTypeEl = document.getElementById(`growthType_opEx_${itemNum}`);
+      const growthTypeEl = document.getElementById(`opExGrowthType_${itemNum}`);
       const annualGrowthInput = document.getElementById(`annualGrowth_opEx_${itemNum}`);
       
       if (nameEl && valueEl && nameEl.value && valueEl.value) {
+        // Also check for linear growth input
+        const linearGrowthInput = document.getElementById(`linearGrowth_opEx_${itemNum}`);
+        
+        console.log(`📊 Reading operating expense item ${itemNum}:`, {
+          name: nameEl.value,
+          value: valueEl.value,
+          growthType: growthTypeEl?.value,
+          annualGrowthRate: annualGrowthInput?.value,
+          linearGrowthRate: linearGrowthInput?.value
+        });
+        
         const opexItem = {
           name: nameEl.value,
           value: parseFloat(valueEl.value) || 0,
           growthType: growthTypeEl?.value || 'none'
         };
         
-        // Only add growth rate if growth type is annual and rate is provided
+        // Add growth rate based on growth type
         if (opexItem.growthType === 'annual' && annualGrowthInput?.value) {
           opexItem.annualGrowthRate = parseFloat(annualGrowthInput.value) || 0;
+          console.log(`📊 Collected ANNUAL growth rate: ${opexItem.annualGrowthRate}% for OpEx ${opexItem.name}`);
+        } else if (opexItem.growthType === 'linear' && linearGrowthInput?.value) {
+          opexItem.linearGrowthRate = parseFloat(linearGrowthInput.value) || 0;
+          console.log(`📊 Collected LINEAR growth rate: ${opexItem.linearGrowthRate}% for OpEx ${opexItem.name}`);
         }
         
         data.operatingExpenses.push(opexItem);
@@ -750,19 +772,34 @@ class FormHandler {
       const itemNum = index + 1;
       const nameEl = document.getElementById(`capExName_${itemNum}`);
       const valueEl = document.getElementById(`capExValue_${itemNum}`);
-      const growthTypeEl = document.getElementById(`growthType_capEx_${itemNum}`);
+      const growthTypeEl = document.getElementById(`capExGrowthType_${itemNum}`);
       const annualGrowthInput = document.getElementById(`annualGrowth_capEx_${itemNum}`);
       
       if (nameEl && valueEl && nameEl.value && valueEl.value) {
+        // Also check for linear growth input
+        const linearGrowthInput = document.getElementById(`linearGrowth_capEx_${itemNum}`);
+        
+        console.log(`📊 Reading capital expense item ${itemNum}:`, {
+          name: nameEl.value,
+          value: valueEl.value,
+          growthType: growthTypeEl?.value,
+          annualGrowthRate: annualGrowthInput?.value,
+          linearGrowthRate: linearGrowthInput?.value
+        });
+        
         const capexItem = {
           name: nameEl.value,
           value: parseFloat(valueEl.value) || 0,
           growthType: growthTypeEl?.value || 'none'
         };
         
-        // Only add growth rate if growth type is annual and rate is provided
+        // Add growth rate based on growth type
         if (capexItem.growthType === 'annual' && annualGrowthInput?.value) {
           capexItem.annualGrowthRate = parseFloat(annualGrowthInput.value) || 0;
+          console.log(`📊 Collected ANNUAL growth rate: ${capexItem.annualGrowthRate}% for CapEx ${capexItem.name}`);
+        } else if (capexItem.growthType === 'linear' && linearGrowthInput?.value) {
+          capexItem.linearGrowthRate = parseFloat(linearGrowthInput.value) || 0;
+          console.log(`📊 Collected LINEAR growth rate: ${capexItem.linearGrowthRate}% for CapEx ${capexItem.name}`);
         }
         
         data.capitalExpenses.push(capexItem);

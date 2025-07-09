@@ -52,6 +52,9 @@ class ExcelGenerator {
     try {
       console.log('🚀 Starting fresh model generation...');
       console.log('📊 Model data:', modelData);
+      console.log('📊 Revenue items received:', modelData.revenueItems);
+      console.log('📊 Operating expenses received:', modelData.operatingExpenses);
+      console.log('📊 Capital expenses received:', modelData.capitalExpenses);
       
       // Only reset cell trackers if they're empty (first time)
       // This preserves references between Assumptions and P&L generation
@@ -234,18 +237,29 @@ class ExcelGenerator {
       currentRow++;
       
       data.revenueItems.forEach((item, index) => {
+        console.log(`📊 Processing revenue item ${index + 1} for growth rates:`, item);
         const itemName = item.name || `Revenue Item ${index + 1}`;
         sheet.getRange(`A${currentRow}`).values = [[`${itemName} - Growth Type`]];
         sheet.getRange(`B${currentRow}`).values = [[item.growthType || 'None']];
         this.cellTracker.recordCell(`revenue_${index}_growth_type`, 'Assumptions', `B${currentRow}`);
         currentRow++;
         
+        console.log(`📊 Checking growth type: ${item.growthType}, annual rate: ${item.annualGrowthRate}, linear rate: ${item.linearGrowthRate}`);
+        
         if (item.growthType === 'annual' && item.annualGrowthRate) {
-          console.log(`📊 Writing revenue growth rate: ${item.annualGrowthRate}% for ${itemName}`);
+          console.log(`📊 Writing revenue ANNUAL growth rate: ${item.annualGrowthRate}% for ${itemName}`);
           sheet.getRange(`A${currentRow}`).values = [[`${itemName} - Annual Growth Rate (%)`]];
           sheet.getRange(`B${currentRow}`).values = [[item.annualGrowthRate]];
           this.cellTracker.recordCell(`revenue_${index}_growth_rate`, 'Assumptions', `B${currentRow}`);
           currentRow++;
+        } else if (item.growthType === 'linear' && item.linearGrowthRate) {
+          console.log(`📊 Writing revenue LINEAR growth rate: ${item.linearGrowthRate}% for ${itemName}`);
+          sheet.getRange(`A${currentRow}`).values = [[`${itemName} - Linear Growth Rate (%)`]];
+          sheet.getRange(`B${currentRow}`).values = [[item.linearGrowthRate]];
+          this.cellTracker.recordCell(`revenue_${index}_growth_rate`, 'Assumptions', `B${currentRow}`);
+          currentRow++;
+        } else {
+          console.log(`📊 ⚠️  No growth rate written for ${itemName} - growthType: ${item.growthType}, annualGrowthRate: ${item.annualGrowthRate}, linearGrowthRate: ${item.linearGrowthRate}`);
         }
       });
       
@@ -292,6 +306,11 @@ class ExcelGenerator {
           sheet.getRange(`B${currentRow}`).values = [[item.annualGrowthRate]];
           this.cellTracker.recordCell(`opex_${index}_growth_rate`, 'Assumptions', `B${currentRow}`);
           currentRow++;
+        } else if (item.growthType === 'linear' && item.linearGrowthRate) {
+          sheet.getRange(`A${currentRow}`).values = [[`${itemName} - Linear Growth Rate (%)`]];
+          sheet.getRange(`B${currentRow}`).values = [[item.linearGrowthRate]];
+          this.cellTracker.recordCell(`opex_${index}_growth_rate`, 'Assumptions', `B${currentRow}`);
+          currentRow++;
         }
       });
       
@@ -334,8 +353,15 @@ class ExcelGenerator {
         currentRow++;
         
         if (item.growthType === 'annual' && item.annualGrowthRate) {
+          console.log(`📊 Writing capital expense ANNUAL growth rate: ${item.annualGrowthRate}% for ${itemName}`);
           sheet.getRange(`A${currentRow}`).values = [[`${itemName} - Annual Growth Rate (%)`]];
           sheet.getRange(`B${currentRow}`).values = [[item.annualGrowthRate]];
+          this.cellTracker.recordCell(`capex_${index}_growth_rate`, 'Assumptions', `B${currentRow}`);
+          currentRow++;
+        } else if (item.growthType === 'linear' && item.linearGrowthRate) {
+          console.log(`📊 Writing capital expense LINEAR growth rate: ${item.linearGrowthRate}% for ${itemName}`);
+          sheet.getRange(`A${currentRow}`).values = [[`${itemName} - Linear Growth Rate (%)`]];
+          sheet.getRange(`B${currentRow}`).values = [[item.linearGrowthRate]];
           this.cellTracker.recordCell(`capex_${index}_growth_rate`, 'Assumptions', `B${currentRow}`);
           currentRow++;
         }
