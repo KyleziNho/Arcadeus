@@ -241,6 +241,7 @@ class ExcelGenerator {
         currentRow++;
         
         if (item.growthType === 'annual' && item.annualGrowthRate) {
+          console.log(`📊 Writing revenue growth rate: ${item.annualGrowthRate}% for ${itemName}`);
           sheet.getRange(`A${currentRow}`).values = [[`${itemName} - Annual Growth Rate (%)`]];
           sheet.getRange(`B${currentRow}`).values = [[item.annualGrowthRate]];
           this.cellTracker.recordCell(`revenue_${index}_growth_rate`, 'Assumptions', `B${currentRow}`);
@@ -596,12 +597,14 @@ Please provide the complete P&L structure with exact cell addresses and formulas
     modelData.operatingExpenses.forEach((item, index) => {
       const nameRef = this.cellTracker.getCellReference(`opex_${index}_name`);
       const valueRef = this.cellTracker.getCellReference(`opex_${index}`);
+      const growthRateRef = this.cellTracker.getCellReference(`opex_${index}_growth_rate`);
       
       output += `\n- ${item.name || `OpEx Item ${index + 1}`}:\n`;
-      output += `  * Base Value: ${valueRef}\n`;
+      output += `  * Base Value Cell: ${valueRef}\n`;
       output += `  * Growth Type: ${item.growthType || 'none'}\n`;
-      if (item.growthType === 'annual' && item.annualGrowthRate) {
-        output += `  * Annual Growth Rate: ${item.annualGrowthRate}%\n`;
+      if (item.growthType === 'annual' && growthRateRef) {
+        output += `  * Annual Growth Rate Cell: ${growthRateRef} (${item.annualGrowthRate}%)\n`;
+        output += `  * IMPORTANT: Use formula referencing ${growthRateRef} for growth calculations\n`;
       }
     });
     return output;
@@ -617,12 +620,14 @@ Please provide the complete P&L structure with exact cell addresses and formulas
     modelData.capitalExpenses.forEach((item, index) => {
       const nameRef = this.cellTracker.getCellReference(`capex_${index}_name`);
       const valueRef = this.cellTracker.getCellReference(`capex_${index}`);
+      const growthRateRef = this.cellTracker.getCellReference(`capex_${index}_growth_rate`);
       
       output += `\n- ${item.name || `CapEx Item ${index + 1}`}:\n`;
-      output += `  * Base Value: ${valueRef}\n`;
+      output += `  * Base Value Cell: ${valueRef}\n`;
       output += `  * Growth Type: ${item.growthType || 'none'}\n`;
-      if (item.growthType === 'annual' && item.annualGrowthRate) {
-        output += `  * Annual Growth Rate: ${item.annualGrowthRate}%\n`;
+      if (item.growthType === 'annual' && growthRateRef) {
+        output += `  * Annual Growth Rate Cell: ${growthRateRef} (${item.annualGrowthRate}%)\n`;
+        output += `  * IMPORTANT: Use formula referencing ${growthRateRef} for growth calculations\n`;
       }
     });
     return output;

@@ -686,54 +686,79 @@ class FormHandler {
     data.operatingExpenses = [];
     data.capitalExpenses = [];
     
-    // Collect revenue items
+    // Collect revenue items from form inputs
     const revenueItems = document.querySelectorAll('.revenue-item');
     revenueItems.forEach((item, index) => {
       const itemNum = index + 1;
       const nameEl = document.getElementById(`revenueName_${itemNum}`);
       const valueEl = document.getElementById(`revenueValue_${itemNum}`);
+      const growthTypeEl = document.getElementById(`revenueGrowthType_${itemNum}`);
+      const annualGrowthInput = document.getElementById(`revenueAnnualGrowth_${itemNum}`);
       
       if (nameEl && valueEl && nameEl.value && valueEl.value) {
-        data.revenueItems.push({
+        const revenueItem = {
           name: nameEl.value,
           value: parseFloat(valueEl.value) || 0,
-          growthType: 'annual',
-          annualGrowthRate: 5 // Default for now
-        });
+          growthType: growthTypeEl?.value || 'none'
+        };
+        
+        // Only add growth rate if growth type is annual and rate is provided
+        if (revenueItem.growthType === 'annual' && annualGrowthInput?.value) {
+          revenueItem.annualGrowthRate = parseFloat(annualGrowthInput.value) || 0;
+          console.log(`📊 Collected revenue growth rate: ${revenueItem.annualGrowthRate}% for ${revenueItem.name}`);
+        }
+        
+        data.revenueItems.push(revenueItem);
       }
     });
     
-    // Collect operating expenses
+    // Collect operating expenses from form inputs
     const opexItems = document.querySelectorAll('#operatingExpensesContainer .cost-item');
     opexItems.forEach((item, index) => {
       const itemNum = index + 1;
       const nameEl = document.getElementById(`opExName_${itemNum}`);
       const valueEl = document.getElementById(`opExValue_${itemNum}`);
+      const growthTypeEl = document.getElementById(`opExGrowthType_${itemNum}`);
+      const annualGrowthInput = document.getElementById(`opExAnnualGrowth_${itemNum}`);
       
       if (nameEl && valueEl && nameEl.value && valueEl.value) {
-        data.operatingExpenses.push({
+        const opexItem = {
           name: nameEl.value,
           value: parseFloat(valueEl.value) || 0,
-          growthType: 'annual',
-          annualGrowthRate: 3 // Default for now
-        });
+          growthType: growthTypeEl?.value || 'none'
+        };
+        
+        // Only add growth rate if growth type is annual and rate is provided
+        if (opexItem.growthType === 'annual' && annualGrowthInput?.value) {
+          opexItem.annualGrowthRate = parseFloat(annualGrowthInput.value) || 0;
+        }
+        
+        data.operatingExpenses.push(opexItem);
       }
     });
     
-    // Collect capital expenses
+    // Collect capital expenses from form inputs
     const capexItems = document.querySelectorAll('#capitalExpensesContainer .cost-item');
     capexItems.forEach((item, index) => {
       const itemNum = index + 1;
       const nameEl = document.getElementById(`capExName_${itemNum}`);
       const valueEl = document.getElementById(`capExValue_${itemNum}`);
+      const growthTypeEl = document.getElementById(`capExGrowthType_${itemNum}`);
+      const annualGrowthInput = document.getElementById(`capExAnnualGrowth_${itemNum}`);
       
       if (nameEl && valueEl && nameEl.value && valueEl.value) {
-        data.capitalExpenses.push({
+        const capexItem = {
           name: nameEl.value,
           value: parseFloat(valueEl.value) || 0,
-          growthType: 'annual',
-          annualGrowthRate: 2 // Default for now
-        });
+          growthType: growthTypeEl?.value || 'none'
+        };
+        
+        // Only add growth rate if growth type is annual and rate is provided
+        if (capexItem.growthType === 'annual' && annualGrowthInput?.value) {
+          capexItem.annualGrowthRate = parseFloat(annualGrowthInput.value) || 0;
+        }
+        
+        data.capitalExpenses.push(capexItem);
       }
     });
     
