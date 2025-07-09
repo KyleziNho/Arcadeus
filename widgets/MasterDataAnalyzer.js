@@ -248,10 +248,82 @@ ANALYSIS GUIDELINES:
 RETURN ONLY THE JSON STRUCTURE - NO OTHER TEXT.`;
   }
 
+  // Helper method to build revenue streams from form data
+  buildRevenueStreamsFromForm(formData, dealValue) {
+    if (formData && formData.revenueItems && formData.revenueItems.length > 0) {
+      console.log('🔍 Using actual form revenue items instead of hardcoded values');
+      return formData.revenueItems.map(item => ({
+        name: item.name || "Revenue Item",
+        currentValue: item.value || 0,
+        growthRate: item.linearGrowthRate || item.annualGrowthRate || 0,
+        growthType: item.growthType === 'annual' ? 'compound' : 'linear'
+      }));
+    } else {
+      console.log('🔍 No form revenue items found - using minimal fallback');
+      return [{
+        name: "Primary Revenue",
+        currentValue: dealValue ? dealValue * 0.1 : 0,
+        growthRate: 0,
+        growthType: "linear"
+      }];
+    }
+  }
+
+  // Helper method to build operating expenses from form data
+  buildOperatingExpensesFromForm(formData, dealValue) {
+    if (formData && formData.operatingExpenses && formData.operatingExpenses.length > 0) {
+      console.log('🔍 Using actual form operating expenses instead of hardcoded values');
+      return formData.operatingExpenses.map(item => ({
+        name: item.name || "Operating Expense",
+        currentValue: item.value || 0,
+        inflationRate: item.linearGrowthRate || item.annualGrowthRate || 0,
+        category: "operational"
+      }));
+    } else {
+      console.log('🔍 No form operating expenses found - using minimal fallback');
+      return [{
+        name: "Staff Costs",
+        currentValue: dealValue ? dealValue * 0.05 : 0,
+        inflationRate: 0,
+        category: "staff"
+      }];
+    }
+  }
+
+  // Helper method to build capital expenses from form data
+  buildCapitalExpensesFromForm(formData, dealValue) {
+    if (formData && formData.capitalExpenses && formData.capitalExpenses.length > 0) {
+      console.log('🔍 Using actual form capital expenses instead of hardcoded values');
+      return formData.capitalExpenses.map(item => ({
+        name: item.name || "Capital Expense",
+        currentValue: item.value || 0,
+        growthRate: item.linearGrowthRate || item.annualGrowthRate || 0,
+        frequency: "annual"
+      }));
+    } else {
+      console.log('🔍 No form capital expenses found - using minimal fallback');
+      return [{
+        name: "Equipment & Technology",
+        currentValue: dealValue ? dealValue * 0.02 : 0,
+        growthRate: 0,
+        frequency: "annual"
+      }];
+    }
+  }
+
   // Create fallback standardized data when AI fails
   createFallbackStandardizedData(fileContents) {
     console.log('🔍 Creating fallback standardized data...');
     console.log('🔍 File contents length:', fileContents ? fileContents.length : 0);
+    
+    // Get current form data to use instead of hardcoded values
+    const formData = window.formHandler ? window.formHandler.collectAllModelData() : null;
+    console.log('🔍 Form data available:', formData ? 'YES' : 'NO');
+    if (formData) {
+      console.log('🔍 Form revenue items:', formData.revenueItems);
+      console.log('🔍 Form operating expenses:', formData.operatingExpenses);
+      console.log('🔍 Form capital expenses:', formData.capitalExpenses);
+    }
     
     // CRITICAL: Check if we have actual file content to extract from
     if (!fileContents || fileContents.length === 0) {
@@ -351,29 +423,9 @@ RETURN ONLY THE JSON STRUCTURE - NO OTHER TEXT.`;
       },
       historicalFinancials: {
         baseYear: new Date().getFullYear().toString(),
-        revenueStreams: [
-          {
-            name: "Primary Revenue",
-            currentValue: dealValue * 0.1, // Estimate 10% of deal value as annual revenue
-            growthRate: 0, // No fallback - must be provided by user
-            growthType: "linear"
-          }
-        ],
-        operatingExpenses: [
-          {
-            name: "Staff Costs",
-            currentValue: dealValue * 0.05, // Estimate 5% of deal value
-            inflationRate: 0, // No fallback - must be provided by user
-            category: "staff"
-          }
-        ],
-        capitalExpenses: [
-          {
-            name: "Equipment & Technology",
-            currentValue: dealValue * 0.02, // Estimate 2% of deal value
-            frequency: "annual"
-          }
-        ]
+        revenueStreams: this.buildRevenueStreamsFromForm(formData, dealValue),
+        operatingExpenses: this.buildOperatingExpensesFromForm(formData, dealValue),
+        capitalExpenses: this.buildCapitalExpensesFromForm(formData, dealValue)
       },
       projectionAssumptions: {
         projectionPeriod: "5 years",
