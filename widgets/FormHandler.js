@@ -453,7 +453,7 @@ class FormHandler {
         <div class="growth-inputs" id="growthInputs_${itemId}">
           <div class="form-group">
             <label for="linearGrowth_${itemCount}">Linear Growth Rate (%)</label>
-            <input type="number" id="linearGrowth_${itemCount}" placeholder="5" step="0.1" />
+            <input type="number" id="linearGrowth_${itemCount}" placeholder="Enter growth %" step="0.1" />
           </div>
         </div>
       </div>
@@ -498,7 +498,7 @@ class FormHandler {
         <div class="growth-inputs" id="growthInputs_${itemId}">
           <div class="form-group">
             <label for="linearGrowth_opEx_${itemCount}">Linear Growth Rate (%)</label>
-            <input type="number" id="linearGrowth_opEx_${itemCount}" placeholder="2" step="0.1" />
+            <input type="number" id="linearGrowth_opEx_${itemCount}" placeholder="Enter growth %" step="0.1" />
           </div>
         </div>
       </div>
@@ -543,7 +543,7 @@ class FormHandler {
         <div class="growth-inputs" id="growthInputs_${itemId}">
           <div class="form-group">
             <label for="linearGrowth_capEx_${itemCount}">Linear Growth Rate (%)</label>
-            <input type="number" id="linearGrowth_capEx_${itemCount}" placeholder="1" step="0.1" />
+            <input type="number" id="linearGrowth_capEx_${itemCount}" placeholder="Enter growth %" step="0.1" />
           </div>
         </div>
       </div>
@@ -565,7 +565,7 @@ class FormHandler {
         inputsHTML = `
           <div class="form-group">
             <label for="linearGrowth_${itemNumber}">Linear Growth Rate (%)</label>
-            <input type="number" id="linearGrowth_${itemNumber}" placeholder="5" step="0.1" />
+            <input type="number" id="linearGrowth_${itemNumber}" placeholder="Enter growth %" step="0.1" />
           </div>
         `;
         break;
@@ -574,7 +574,7 @@ class FormHandler {
         inputsHTML = `
           <div class="form-group">
             <label for="annualGrowth_${itemNumber}">Annual Growth Rate (%)</label>
-            <input type="number" id="annualGrowth_${itemNumber}" placeholder="10" step="0.1" />
+            <input type="number" id="annualGrowth_${itemNumber}" placeholder="Enter annual %" step="0.1" />
           </div>
         `;
         break;

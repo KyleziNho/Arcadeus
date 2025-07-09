@@ -398,21 +398,21 @@ class AutoFillIntegrator {
                 value: 15000000,
                 initialValue: 15000000,
                 growthType: "linear",
-                growthRate: 3
+                growthRate: 0 // No test data growth rate - use user input
               },
               {
                 name: "Support Services", 
                 value: 8000000,
                 initialValue: 8000000,
                 growthType: "linear",
-                growthRate: 2
+                growthRate: 0 // No test data growth rate - use user input
               },
               {
                 name: "Professional Services",
                 value: 5000000,
                 initialValue: 5000000,
                 growthType: "linear",
-                growthRate: 5
+                growthRate: 0 // No test data growth rate - use user input
               }
             ],
             confidence: 0.8,
@@ -427,21 +427,21 @@ class AutoFillIntegrator {
                 value: 12000000,
                 initialValue: 12000000,
                 growthType: "linear",
-                growthRate: 4
+                growthRate: 0 // No test data growth rate - use user input
               },
               {
                 name: "Marketing",
                 value: 3000000,
                 initialValue: 3000000,
                 growthType: "linear",
-                growthRate: 2
+                growthRate: 0 // No test data growth rate - use user input
               },
               {
                 name: "Office Rent",
                 value: 1200000,
                 initialValue: 1200000,
                 growthType: "linear",
-                growthRate: 1
+                growthRate: 0 // No test data growth rate - use user input
               }
             ],
             confidence: 0.8,
@@ -1219,7 +1219,7 @@ class AutoFillIntegrator {
             name: 'Product Sales',
             value: 2000000,
             growthType: 'linear',
-            growthRate: 5,
+            growthRate: 0, // No fallback - user input required
             confidence: 0.3,
             source: 'fallback'
           },
@@ -1227,7 +1227,7 @@ class AutoFillIntegrator {
             name: 'Service Revenue',
             value: 800000,
             growthType: 'linear',
-            growthRate: 3,
+            growthRate: 0, // No fallback - user input required
             confidence: 0.3,
             source: 'fallback'
           }
@@ -1242,7 +1242,7 @@ class AutoFillIntegrator {
               name: 'Staff Costs',
               value: 1200000,
               growthType: 'linear',
-              growthRate: 2,
+              growthRate: 0, // No fallback - user input required
               confidence: 0.3,
               source: 'fallback'
             },
@@ -1250,7 +1250,7 @@ class AutoFillIntegrator {
               name: 'Marketing Expenses',
               value: 300000,
               growthType: 'linear',
-              growthRate: 1.5,
+              growthRate: 0, // No fallback - user input required
               confidence: 0.3,
               source: 'fallback'
             }
@@ -1264,7 +1264,7 @@ class AutoFillIntegrator {
               name: 'IT Infrastructure',
               value: 500000,
               growthType: 'linear',
-              growthRate: 1,
+              growthRate: 0, // No fallback - user input required
               confidence: 0.3,
               source: 'fallback'
             }
