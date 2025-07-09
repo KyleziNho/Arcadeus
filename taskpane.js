@@ -149,18 +149,18 @@ class MAModelingAddin {
       console.log('✅ MasterDataAnalyzer initialized');
     }
     
-    // Initialize New AI Extraction System
-    if (typeof AutoFillIntegrator !== 'undefined') {
-      this.autoFillIntegrator = new AutoFillIntegrator();
-      // Initialize async
-      this.autoFillIntegrator.initialize().then(() => {
-        console.log('✅ AutoFillIntegrator async initialization completed');
-      }).catch(error => {
-        console.error('❌ AutoFillIntegrator initialization failed:', error);
-      });
-      window.autoFillIntegrator = this.autoFillIntegrator;
-      console.log('✅ AutoFillIntegrator initialization started');
-    }
+    // Initialize New AI Extraction System - DISABLED
+    // if (typeof AutoFillIntegrator !== 'undefined') {
+    //   this.autoFillIntegrator = new AutoFillIntegrator();
+    //   // Initialize async
+    //   this.autoFillIntegrator.initialize().then(() => {
+    //     console.log('✅ AutoFillIntegrator async initialization completed');
+    //   }).catch(error => {
+    //     console.error('❌ AutoFillIntegrator initialization failed:', error);
+    //   });
+    //   window.autoFillIntegrator = this.autoFillIntegrator;
+    //   console.log('✅ AutoFillIntegrator initialization started');
+    // }
     
     // Auto-load saved data
     if (this.dataManager) {

@@ -98,21 +98,12 @@
                 <h3>Uploaded Files</h3>
                 <div class="files-grid" id="filesGrid"></div>
                 <div class="autofill-section">
-                    <button class="autofill-btn" id="autoFillBtn">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M9 12l2 2 4-4"></path>
-                            <circle cx="12" cy="12" r="9"></circle>
-                        </svg>
-                        Auto Fill with AI
-                    </button>
-                    <button class="autofill-btn" id="testAutoFillBtn" style="background: #F59E0B; margin-top: 8px;">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M12 2L12 22"></path>
-                            <path d="M2 12L22 12"></path>
-                        </svg>
-                        Test with Sample Data
-                    </button>
-                    <small class="autofill-help">AI will analyze your files and populate all sections below</small>
+                    <!-- AutoFill buttons disabled - manual input only -->
+                    <div style="display: none;">
+                        <button class="autofill-btn" id="autoFillBtn" disabled>Auto Fill Disabled</button>
+                        <button class="autofill-btn" id="testAutoFillBtn" disabled>Test Data Disabled</button>
+                    </div>
+                    <small class="autofill-help">AutoFill disabled - Please enter data manually in the sections below</small>
                 </div>
             </div>
         </div>

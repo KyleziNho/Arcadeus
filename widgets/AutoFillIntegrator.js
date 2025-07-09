@@ -194,21 +194,19 @@ class AutoFillIntegrator {
   setupEventHandlers() {
     console.log('🔗 Setting up event handlers...');
     
-    // Hook into the existing autofill button
+    // AutoFill functionality disabled - buttons hidden in HTML
     const autoFillBtn = document.getElementById('autoFillBtn');
     if (autoFillBtn) {
-      // Remove existing handlers and add our new one
-      autoFillBtn.replaceWith(autoFillBtn.cloneNode(true));
-      const newAutoFillBtn = document.getElementById('autoFillBtn');
-      newAutoFillBtn.addEventListener('click', () => this.handleAutoFill());
-      console.log('✅ AutoFill button handler attached');
+      autoFillBtn.disabled = true;
+      autoFillBtn.style.display = 'none';
+      console.log('🚫 AutoFill button disabled - manual input only');
     }
     
-    // Hook into the test autofill button
     const testAutoFillBtn = document.getElementById('testAutoFillBtn');
     if (testAutoFillBtn) {
-      testAutoFillBtn.addEventListener('click', () => this.handleTestAutoFill());
-      console.log('✅ Test AutoFill button handler attached');
+      testAutoFillBtn.disabled = true;
+      testAutoFillBtn.style.display = 'none';
+      console.log('🚫 Test AutoFill button disabled - manual input only');
     }
     
     // Hook into file upload handlers
@@ -230,16 +228,10 @@ class AutoFillIntegrator {
   }
 
   async handleAutoFill() {
-    console.log('🚀 AutoFill button clicked!');
-    console.log('🔍 Current state check:');
-    console.log('  - isProcessing:', this.isProcessing);
-    console.log('  - uploadedFiles:', this.uploadedFiles);
-    console.log('  - uploadedFiles length:', this.uploadedFiles ? this.uploadedFiles.length : 'null');
+    console.log('🚀 AutoFill functionality disabled - manual input only');
     
-    if (this.isProcessing) {
-      this.showError('Extraction already in progress. Please wait...');
-      return;
-    }
+    this.showError('AutoFill functionality has been disabled. Please enter data manually.');
+    return;
     
     if (!this.uploadedFiles || this.uploadedFiles.length === 0) {
       console.error('❌ No files uploaded! Checking file uploader...');
@@ -362,15 +354,10 @@ class AutoFillIntegrator {
   }
 
   async handleTestAutoFill() {
-    console.log('🧪 Test AutoFill button clicked!');
+    console.log('🧪 Test AutoFill disabled - manual input only');
     
-    if (this.isProcessing) {
-      this.showError('Extraction already in progress. Please wait...');
-      return;
-    }
-    
-    console.log('🎯 Creating sample data for testing...');
-    this.isProcessing = true;
+    this.showError('Test AutoFill functionality has been disabled. Please enter data manually.');
+    return;
     
     try {
       this.showLoadingState(true);
@@ -1164,144 +1151,23 @@ class AutoFillIntegrator {
 
   /**
    * Get fallback data when AI extraction fails
+   * DISABLED - No hardcoded values should be used
    */
   getFallbackData() {
-    console.log('🔄 Using fallback data system');
+    console.log('🔄 Fallback data system disabled - returning empty structure');
     
+    // Return empty structure - no hardcoded values
     return {
-      highLevelParameters: {
-        currency: {
-          value: 'USD',
-          confidence: 0.5,
-          source: 'fallback'
-        },
-        projectStartDate: {
-          value: new Date().toISOString().split('T')[0],
-          confidence: 0.5,
-          source: 'fallback'
-        },
-        projectEndDate: {
-          value: new Date(Date.now() + 3 * 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-          confidence: 0.5,
-          source: 'fallback'
-        },
-        modelPeriods: {
-          value: 'monthly',
-          confidence: 0.5,
-          source: 'fallback'
-        }
-      },
-      dealAssumptions: {
-        dealName: {
-          value: 'Sample M&A Deal',
-          confidence: 0.3,
-          source: 'fallback'
-        },
-        dealValue: {
-          value: 50000000,
-          confidence: 0.3,
-          source: 'fallback'
-        },
-        transactionFee: {
-          value: 2.5,
-          confidence: 0.3,
-          source: 'fallback'
-        },
-        dealLTV: {
-          value: 70,
-          confidence: 0.3,
-          source: 'fallback'
-        }
-      },
-      revenueItems: {
-        value: [
-          {
-            name: 'Product Sales',
-            value: 2000000,
-            growthType: 'linear',
-            growthRate: 0, // No fallback - user input required
-            confidence: 0.3,
-            source: 'fallback'
-          },
-          {
-            name: 'Service Revenue',
-            value: 800000,
-            growthType: 'linear',
-            growthRate: 0, // No fallback - user input required
-            confidence: 0.3,
-            source: 'fallback'
-          }
-        ],
-        confidence: 0.3,
-        source: 'fallback'
-      },
+      // Return empty structure - no hardcoded fallback values
+      highLevelParameters: {},
+      dealAssumptions: {},
+      revenueItems: { value: [], confidence: 0, source: 'disabled' },
       costItems: {
-        operatingExpenses: {
-          value: [
-            {
-              name: 'Staff Costs',
-              value: 1200000,
-              growthType: 'linear',
-              growthRate: 0, // No fallback - user input required
-              confidence: 0.3,
-              source: 'fallback'
-            },
-            {
-              name: 'Marketing Expenses',
-              value: 300000,
-              growthType: 'linear',
-              growthRate: 0, // No fallback - user input required
-              confidence: 0.3,
-              source: 'fallback'
-            }
-          ],
-          confidence: 0.3,
-          source: 'fallback'
-        },
-        capitalExpenses: {
-          value: [
-            {
-              name: 'IT Infrastructure',
-              value: 500000,
-              growthType: 'linear',
-              growthRate: 0, // No fallback - user input required
-              confidence: 0.3,
-              source: 'fallback'
-            }
-          ],
-          confidence: 0.3,
-          source: 'fallback'
-        }
+        operatingExpenses: { value: [], confidence: 0, source: 'disabled' },
+        capitalExpenses: { value: [], confidence: 0, source: 'disabled' }
       },
-      debtModel: {
-        loanIssuanceFees: {
-          value: 1.5,
-          confidence: 0.3,
-          source: 'fallback'
-        },
-        interestRateType: {
-          value: 'fixed',
-          confidence: 0.3,
-          source: 'fallback'
-        },
-        interestRate: {
-          value: 5.5,
-          confidence: 0.3,
-          source: 'fallback'
-        }
-      },
-      exitAssumptions: {
-        disposalCost: {
-          value: 2.5,
-          confidence: 0.3,
-          source: 'fallback'
-        },
-        terminalCapRate: {
-          value: 8.5,
-          confidence: 0.3,
-          source: 'fallback'
-        }
-      }
+      debtModel: {},
+      exitAssumptions: {}
     };
   }
 
