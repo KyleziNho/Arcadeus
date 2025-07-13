@@ -235,43 +235,6 @@ class ExcelGenerator {
       this.cellTracker.recordCell('revenue_range', 'Assumptions', `B${revenueStartRow}:B${currentRow - 1}`);
       this.cellTracker.recordCell('revenue_count', 'Assumptions', data.revenueItems.length.toString());
       
-      // Add growth rates for revenue items
-      currentRow++;
-      sheet.getRange(`A${currentRow}`).values = [['Revenue Growth Rates']];
-      sheet.getRange(`A${currentRow}`).format.font.bold = true;
-      sheet.getRange(`A${currentRow}`).format.font.italic = true;
-      currentRow++;
-      
-      data.revenueItems.forEach((item, index) => {
-        console.log(`📝 ====== PROCESSING REVENUE ITEM ${index + 1} GROWTH RATES ======`);
-        console.log(`📝 Item object:`, item);
-        console.log(`📝 Growth type: "${item.growthType}"`);
-        console.log(`📝 Annual growth rate: "${item.annualGrowthRate}"`);
-        console.log(`📝 Linear growth rate: "${item.linearGrowthRate}"`);
-        
-        const itemName = item.name || `Revenue Item ${index + 1}`;
-        sheet.getRange(`A${currentRow}`).values = [[`${itemName} - Growth Type`]];
-        sheet.getRange(`B${currentRow}`).values = [[item.growthType || 'None']];
-        this.cellTracker.recordCell(`revenue_${index}_growth_type`, 'Assumptions', `B${currentRow}`);
-        currentRow++;
-        
-        if (item.growthType === 'annual') {
-          console.log(`📝 ✅ WRITING ANNUAL GROWTH RATE: ${item.annualGrowthRate || 0}% for ${itemName}`);
-          sheet.getRange(`A${currentRow}`).values = [[`${itemName} - Annual Growth Rate (%)`]];
-          sheet.getRange(`B${currentRow}`).values = [[item.annualGrowthRate || 0]];
-          this.cellTracker.recordCell(`revenue_${index}_growth_rate`, 'Assumptions', `B${currentRow}`);
-          currentRow++;
-        } else if (item.growthType === 'linear') {
-          console.log(`📝 ✅ WRITING LINEAR GROWTH RATE: ${item.linearGrowthRate || 0}% for ${itemName}`);
-          sheet.getRange(`A${currentRow}`).values = [[`${itemName} - Linear Growth Rate (%)`]];
-          sheet.getRange(`B${currentRow}`).values = [[item.linearGrowthRate || 0]];
-          this.cellTracker.recordCell(`revenue_${index}_growth_rate`, 'Assumptions', `B${currentRow}`);
-          currentRow++;
-        } else {
-          console.log(`📝 ⚠️  NO GROWTH RATE WRITTEN for ${itemName} - type: "${item.growthType}", annual: "${item.annualGrowthRate}", linear: "${item.linearGrowthRate}"`);
-        }
-      });
-      
       currentRow += 2; // Add space
     }
     
@@ -296,33 +259,6 @@ class ExcelGenerator {
       this.cellTracker.recordCell('opex_range', 'Assumptions', `B${opexStartRow}:B${currentRow - 1}`);
       this.cellTracker.recordCell('opex_count', 'Assumptions', data.operatingExpenses.length.toString());
       
-      // Add growth rates for operating expenses
-      currentRow++;
-      sheet.getRange(`A${currentRow}`).values = [['Operating Expense Growth Rates']];
-      sheet.getRange(`A${currentRow}`).format.font.bold = true;
-      sheet.getRange(`A${currentRow}`).format.font.italic = true;
-      currentRow++;
-      
-      data.operatingExpenses.forEach((item, index) => {
-        const itemName = item.name || `OpEx Item ${index + 1}`;
-        sheet.getRange(`A${currentRow}`).values = [[`${itemName} - Growth Type`]];
-        sheet.getRange(`B${currentRow}`).values = [[item.growthType || 'None']];
-        this.cellTracker.recordCell(`opex_${index}_growth_type`, 'Assumptions', `B${currentRow}`);
-        currentRow++;
-        
-        if (item.growthType === 'annual') {
-          sheet.getRange(`A${currentRow}`).values = [[`${itemName} - Annual Growth Rate (%)`]];
-          sheet.getRange(`B${currentRow}`).values = [[item.annualGrowthRate || 0]];
-          this.cellTracker.recordCell(`opex_${index}_growth_rate`, 'Assumptions', `B${currentRow}`);
-          currentRow++;
-        } else if (item.growthType === 'linear') {
-          sheet.getRange(`A${currentRow}`).values = [[`${itemName} - Linear Growth Rate (%)`]];
-          sheet.getRange(`B${currentRow}`).values = [[item.linearGrowthRate || 0]];
-          this.cellTracker.recordCell(`opex_${index}_growth_rate`, 'Assumptions', `B${currentRow}`);
-          currentRow++;
-        }
-      });
-      
       currentRow += 2; // Add space
     }
     
@@ -346,35 +282,6 @@ class ExcelGenerator {
       // Record the range of capital expenses for future reference
       this.cellTracker.recordCell('capex_range', 'Assumptions', `B${capexStartRow}:B${currentRow - 1}`);
       this.cellTracker.recordCell('capex_count', 'Assumptions', data.capitalExpenses.length.toString());
-      
-      // Add growth rates for capital expenses
-      currentRow++;
-      sheet.getRange(`A${currentRow}`).values = [['Capital Expense Growth Rates']];
-      sheet.getRange(`A${currentRow}`).format.font.bold = true;
-      sheet.getRange(`A${currentRow}`).format.font.italic = true;
-      currentRow++;
-      
-      data.capitalExpenses.forEach((item, index) => {
-        const itemName = item.name || `CapEx Item ${index + 1}`;
-        sheet.getRange(`A${currentRow}`).values = [[`${itemName} - Growth Type`]];
-        sheet.getRange(`B${currentRow}`).values = [[item.growthType || 'None']];
-        this.cellTracker.recordCell(`capex_${index}_growth_type`, 'Assumptions', `B${currentRow}`);
-        currentRow++;
-        
-        if (item.growthType === 'annual') {
-          console.log(`📊 Writing capital expense ANNUAL growth rate: ${item.annualGrowthRate}% for ${itemName}`);
-          sheet.getRange(`A${currentRow}`).values = [[`${itemName} - Annual Growth Rate (%)`]];
-          sheet.getRange(`B${currentRow}`).values = [[item.annualGrowthRate || 0]];
-          this.cellTracker.recordCell(`capex_${index}_growth_rate`, 'Assumptions', `B${currentRow}`);
-          currentRow++;
-        } else if (item.growthType === 'linear') {
-          console.log(`📊 Writing capital expense LINEAR growth rate: ${item.linearGrowthRate}% for ${itemName}`);
-          sheet.getRange(`A${currentRow}`).values = [[`${itemName} - Linear Growth Rate (%)`]];
-          sheet.getRange(`B${currentRow}`).values = [[item.linearGrowthRate || 0]];
-          this.cellTracker.recordCell(`capex_${index}_growth_rate`, 'Assumptions', `B${currentRow}`);
-          currentRow++;
-        }
-      });
       
       currentRow += 2; // Add space
     }
@@ -608,16 +515,9 @@ Please provide the complete P&L structure with exact cell addresses and formulas
     modelData.revenueItems.forEach((item, index) => {
       const nameRef = this.cellTracker.getCellReference(`revenue_${index}_name`);
       const valueRef = this.cellTracker.getCellReference(`revenue_${index}`);
-      const growthTypeRef = this.cellTracker.getCellReference(`revenue_${index}_growth_type`);
-      const growthRateRef = this.cellTracker.getCellReference(`revenue_${index}_growth_rate`);
       
       output += `\n- ${item.name || `Revenue Item ${index + 1}`}:\n`;
       output += `  * Base Value Cell: ${valueRef}\n`;
-      output += `  * Growth Type: ${item.growthType || 'none'}\n`;
-      if (item.growthType === 'annual' && growthRateRef) {
-        output += `  * Annual Growth Rate Cell: ${growthRateRef} (${item.annualGrowthRate}%)\n`;
-        output += `  * IMPORTANT: Use formula referencing ${growthRateRef} for growth calculations\n`;
-      }
     });
     return output;
   }

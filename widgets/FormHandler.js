@@ -142,32 +142,10 @@ class FormHandler {
       if (nameInput && valueInput && nameInput.value && valueInput.value) {
         const item = {
           name: nameInput.value || `Revenue Item ${itemNumber}`,
-          value: parseFloat(valueInput.value) || 0,
-          growthType: growthTypeSelect?.value || 'linear'
+          value: parseFloat(valueInput.value) || 0
         };
 
-        // Collect growth data based on type using specific IDs
-        if (item.growthType === 'periodic') {
-          item.periods = this.collectPeriodData(container);
-        } else if (item.growthType === 'annual') {
-          const annualGrowthInput = document.getElementById(`annualGrowth_${itemNumber}`);
-          item.annualGrowthRate = parseFloat(annualGrowthInput?.value) || 0;
-          console.log(`📊 Annual growth for item ${itemNumber}:`, {
-            input: !!annualGrowthInput,
-            value: annualGrowthInput?.value,
-            parsed: item.annualGrowthRate
-          });
-        } else if (item.growthType === 'linear') {
-          const linearGrowthInput = document.getElementById(`linearGrowth_${itemNumber}`);
-          item.linearGrowthRate = parseFloat(linearGrowthInput?.value) || 0;
-          console.log(`📊 Linear growth for item ${itemNumber}:`, {
-            input: !!linearGrowthInput,
-            value: linearGrowthInput?.value,
-            parsed: item.linearGrowthRate
-          });
-        }
-
-        console.log(`📊 Final revenue item ${itemNumber}:`, item);
+        console.log(`📊 Revenue item ${itemNumber}:`, item);
         items.push(item);
       }
     });
@@ -198,20 +176,8 @@ class FormHandler {
       if (nameInput && valueInput && nameInput.value && valueInput.value) {
         const item = {
           name: nameInput.value || `Operating Expense ${itemNumber}`,
-          value: parseFloat(valueInput.value) || 0,
-          growthType: growthTypeSelect?.value || 'linear'
+          value: parseFloat(valueInput.value) || 0
         };
-
-        // Collect growth data using specific IDs
-        if (item.growthType === 'periodic') {
-          item.periods = this.collectPeriodData(container);
-        } else if (item.growthType === 'annual') {
-          const annualGrowthInput = document.getElementById(`annualGrowth_opEx_${itemNumber}`);
-          item.annualGrowthRate = parseFloat(annualGrowthInput?.value) || 0;
-        } else if (item.growthType === 'linear') {
-          const linearGrowthInput = document.getElementById(`linearGrowth_opEx_${itemNumber}`);
-          item.linearGrowthRate = parseFloat(linearGrowthInput?.value) || 0;
-        }
 
         items.push(item);
       }
@@ -243,20 +209,8 @@ class FormHandler {
       if (nameInput && valueInput && nameInput.value && valueInput.value) {
         const item = {
           name: nameInput.value || `Capital Expense ${itemNumber}`,
-          value: parseFloat(valueInput.value) || 0,
-          growthType: growthTypeSelect?.value || 'linear'
+          value: parseFloat(valueInput.value) || 0
         };
-
-        // Collect growth data using specific IDs
-        if (item.growthType === 'periodic') {
-          item.periods = this.collectPeriodData(container);
-        } else if (item.growthType === 'annual') {
-          const annualGrowthInput = document.getElementById(`annualGrowth_capEx_${itemNumber}`);
-          item.annualGrowthRate = parseFloat(annualGrowthInput?.value) || 0;
-        } else if (item.growthType === 'linear') {
-          const linearGrowthInput = document.getElementById(`linearGrowth_capEx_${itemNumber}`);
-          item.linearGrowthRate = parseFloat(linearGrowthInput?.value) || 0;
-        }
 
         items.push(item);
       }
@@ -265,18 +219,6 @@ class FormHandler {
     return items;
   }
 
-  collectPeriodData(container) {
-    const periods = [];
-    const periodInputs = container.querySelectorAll('.period-group input');
-    
-    periodInputs.forEach(input => {
-      periods.push({
-        value: parseFloat(input.value) || 0
-      });
-    });
-    
-    return periods;
-  }
 
   collectDebtSettings() {
     const loanIssuanceFees = document.getElementById('loanIssuanceFees')?.value || '1.5';
@@ -492,22 +434,6 @@ class FormHandler {
           <label for="revenueValue_${itemCount}">Base Value (Year 1)</label>
           <input type="number" id="revenueValue_${itemCount}" placeholder="100000" step="1000" />
         </div>
-        
-        <div class="form-group">
-          <label for="growthType_${itemCount}">Growth Pattern</label>
-          <select id="growthType_${itemCount}" onchange="window.formHandler.updateGrowthInputs('${itemId}', this.value)">
-            <option value="linear">Linear Growth (%)</option>
-            <option value="annual">Annual Growth Rate</option>
-            <option value="periodic">Period-by-Period Values</option>
-          </select>
-        </div>
-        
-        <div class="growth-inputs" id="growthInputs_${itemId}">
-          <div class="form-group">
-            <label for="linearGrowth_${itemCount}">Linear Growth Rate (%)</label>
-            <input type="number" id="linearGrowth_${itemCount}" placeholder="Enter growth %" step="0.1" />
-          </div>
-        </div>
       </div>
     `;
 
@@ -536,22 +462,6 @@ class FormHandler {
         <div class="form-group">
           <label for="opExValue_${itemCount}">Annual Value</label>
           <input type="number" id="opExValue_${itemCount}" placeholder="50000" step="1000" />
-        </div>
-        
-        <div class="form-group">
-          <label for="opExGrowthType_${itemCount}">Growth Pattern</label>
-          <select id="opExGrowthType_${itemCount}" onchange="window.formHandler.updateCostGrowthInputs('${itemId}', this.value)">
-            <option value="linear">Linear Growth (%)</option>
-            <option value="annual">Annual Growth Rate</option>
-            <option value="periodic">Period-by-Period Values</option>
-          </select>
-        </div>
-        
-        <div class="growth-inputs" id="growthInputs_${itemId}">
-          <div class="form-group">
-            <label for="linearGrowth_opEx_${itemCount}">Linear Growth Rate (%)</label>
-            <input type="number" id="linearGrowth_opEx_${itemCount}" placeholder="Enter growth %" step="0.1" />
-          </div>
         </div>
       </div>
     `;
@@ -582,89 +492,12 @@ class FormHandler {
           <label for="capExValue_${itemCount}">Initial Value</label>
           <input type="number" id="capExValue_${itemCount}" placeholder="25000" step="1000" />
         </div>
-        
-        <div class="form-group">
-          <label for="capExGrowthType_${itemCount}">Growth Pattern</label>
-          <select id="capExGrowthType_${itemCount}" onchange="window.formHandler.updateCostGrowthInputs('${itemId}', this.value)">
-            <option value="linear">Linear Growth (%)</option>
-            <option value="annual">Annual Growth Rate</option>
-            <option value="periodic">Period-by-Period Values</option>
-          </select>
-        </div>
-        
-        <div class="growth-inputs" id="growthInputs_${itemId}">
-          <div class="form-group">
-            <label for="linearGrowth_capEx_${itemCount}">Linear Growth Rate (%)</label>
-            <input type="number" id="linearGrowth_capEx_${itemCount}" placeholder="Enter growth %" step="0.1" />
-          </div>
-        </div>
       </div>
     `;
 
     container.insertAdjacentHTML('beforeend', itemHTML);
   }
 
-  updateGrowthInputs(itemId, growthType) {
-    const growthInputsContainer = document.getElementById(`growthInputs_${itemId}`);
-    if (!growthInputsContainer) return;
-
-    const itemNumber = itemId.split('_')[1];
-    
-    let inputsHTML = '';
-    
-    switch (growthType) {
-      case 'linear':
-        inputsHTML = `
-          <div class="form-group">
-            <label for="linearGrowth_${itemNumber}">Linear Growth Rate (%)</label>
-            <input type="number" id="linearGrowth_${itemNumber}" placeholder="Enter growth %" step="0.1" />
-          </div>
-        `;
-        break;
-        
-      case 'annual':
-        inputsHTML = `
-          <div class="form-group">
-            <label for="annualGrowth_${itemNumber}">Annual Growth Rate (%)</label>
-            <input type="number" id="annualGrowth_${itemNumber}" placeholder="Enter annual %" step="0.1" />
-          </div>
-        `;
-        break;
-        
-      case 'periodic':
-        inputsHTML = `
-          <div class="form-group">
-            <label>Period-by-Period Values</label>
-            <div class="period-inputs" id="periodInputs_${itemId}">
-              <button type="button" onclick="window.formHandler.addPeriodGroup('${itemId}')">Add Period</button>
-            </div>
-          </div>
-        `;
-        break;
-    }
-    
-    growthInputsContainer.innerHTML = inputsHTML;
-  }
-
-  updateCostGrowthInputs(itemId, growthType) {
-    this.updateGrowthInputs(itemId, growthType);
-  }
-
-  addPeriodGroup(itemId) {
-    const periodInputsContainer = document.getElementById(`periodInputs_${itemId}`);
-    if (!periodInputsContainer) return;
-
-    const periodCount = periodInputsContainer.children.length;
-    const periodHTML = `
-      <div class="period-group">
-        <label>Period ${periodCount}</label>
-        <input type="number" placeholder="Value" step="0.01" />
-        <button type="button" onclick="this.parentElement.remove()">Remove</button>
-      </div>
-    `;
-
-    periodInputsContainer.insertAdjacentHTML('beforeend', periodHTML);
-  }
 
   formatCurrency(value) {
     return new Intl.NumberFormat('en-US', {
