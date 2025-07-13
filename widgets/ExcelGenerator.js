@@ -218,16 +218,26 @@ class ExcelGenerator {
       sectionRows['revenueItems'] = currentRow;
       sheet.getRange(`A${currentRow}`).values = [['REVENUE ITEMS']];
       sheet.getRange(`A${currentRow}`).format.font.bold = true;
-      currentRow += 2;
+      currentRow += 1;
+      
+      // Add column headers
+      sheet.getRange(`A${currentRow}`).values = [['Name']];
+      sheet.getRange(`B${currentRow}`).values = [['Base Value']];
+      sheet.getRange(`C${currentRow}`).values = [['Growth Rate']];
+      sheet.getRange(`A${currentRow}:C${currentRow}`).format.font.bold = true;
+      currentRow += 1;
       
       const revenueStartRow = currentRow;
       data.revenueItems.forEach((item, index) => {
         console.log(`📝 Writing revenue item ${index + 1}:`, item);
         const itemName = item.name || `Revenue Item ${index + 1}`;
+        const growthRate = item.growthRate || 0;
         sheet.getRange(`A${currentRow}`).values = [[itemName]];
         sheet.getRange(`B${currentRow}`).values = [[item.value || 0]];
+        sheet.getRange(`C${currentRow}`).values = [[`${growthRate}%`]];
         this.cellTracker.recordCell(`revenue_${index}`, 'Assumptions', `B${currentRow}`);
         this.cellTracker.recordCell(`revenue_${index}_name`, 'Assumptions', `A${currentRow}`);
+        this.cellTracker.recordCell(`revenue_${index}_growth_rate`, 'Assumptions', `C${currentRow}`);
         currentRow++;
       });
       
@@ -243,15 +253,25 @@ class ExcelGenerator {
       sectionRows['operatingExpenses'] = currentRow;
       sheet.getRange(`A${currentRow}`).values = [['OPERATING EXPENSES']];
       sheet.getRange(`A${currentRow}`).format.font.bold = true;
-      currentRow += 2;
+      currentRow += 1;
+      
+      // Add column headers
+      sheet.getRange(`A${currentRow}`).values = [['Name']];
+      sheet.getRange(`B${currentRow}`).values = [['Base Value']];
+      sheet.getRange(`C${currentRow}`).values = [['Growth Rate']];
+      sheet.getRange(`A${currentRow}:C${currentRow}`).format.font.bold = true;
+      currentRow += 1;
       
       const opexStartRow = currentRow;
       data.operatingExpenses.forEach((item, index) => {
         const itemName = item.name || `OpEx Item ${index + 1}`;
+        const growthRate = item.growthRate || 0;
         sheet.getRange(`A${currentRow}`).values = [[itemName]];
         sheet.getRange(`B${currentRow}`).values = [[item.value || 0]];
+        sheet.getRange(`C${currentRow}`).values = [[`${growthRate}%`]];
         this.cellTracker.recordCell(`opex_${index}`, 'Assumptions', `B${currentRow}`);
         this.cellTracker.recordCell(`opex_${index}_name`, 'Assumptions', `A${currentRow}`);
+        this.cellTracker.recordCell(`opex_${index}_growth_rate`, 'Assumptions', `C${currentRow}`);
         currentRow++;
       });
       
@@ -267,15 +287,25 @@ class ExcelGenerator {
       sectionRows['capitalExpenses'] = currentRow;
       sheet.getRange(`A${currentRow}`).values = [['CAPITAL EXPENSES']];
       sheet.getRange(`A${currentRow}`).format.font.bold = true;
-      currentRow += 2;
+      currentRow += 1;
+      
+      // Add column headers
+      sheet.getRange(`A${currentRow}`).values = [['Name']];
+      sheet.getRange(`B${currentRow}`).values = [['Base Value']];
+      sheet.getRange(`C${currentRow}`).values = [['Growth Rate']];
+      sheet.getRange(`A${currentRow}:C${currentRow}`).format.font.bold = true;
+      currentRow += 1;
       
       const capexStartRow = currentRow;
       data.capitalExpenses.forEach((item, index) => {
         const itemName = item.name || `CapEx Item ${index + 1}`;
+        const growthRate = item.growthRate || 0;
         sheet.getRange(`A${currentRow}`).values = [[itemName]];
         sheet.getRange(`B${currentRow}`).values = [[item.value || 0]];
+        sheet.getRange(`C${currentRow}`).values = [[`${growthRate}%`]];
         this.cellTracker.recordCell(`capex_${index}`, 'Assumptions', `B${currentRow}`);
         this.cellTracker.recordCell(`capex_${index}_name`, 'Assumptions', `A${currentRow}`);
+        this.cellTracker.recordCell(`capex_${index}_growth_rate`, 'Assumptions', `C${currentRow}`);
         currentRow++;
       });
       
@@ -515,9 +545,12 @@ Please provide the complete P&L structure with exact cell addresses and formulas
     modelData.revenueItems.forEach((item, index) => {
       const nameRef = this.cellTracker.getCellReference(`revenue_${index}_name`);
       const valueRef = this.cellTracker.getCellReference(`revenue_${index}`);
+      const growthRateRef = this.cellTracker.getCellReference(`revenue_${index}_growth_rate`);
       
       output += `\n- ${item.name || `Revenue Item ${index + 1}`}:\n`;
       output += `  * Base Value Cell: ${valueRef}\n`;
+      output += `  * Growth Rate: ${item.growthRate || 0}% (Cell: ${growthRateRef})\n`;
+      output += `  * Growth Type: Linear (annual)\n`;
     });
     return output;
   }
@@ -536,11 +569,8 @@ Please provide the complete P&L structure with exact cell addresses and formulas
       
       output += `\n- ${item.name || `OpEx Item ${index + 1}`}:\n`;
       output += `  * Base Value Cell: ${valueRef}\n`;
-      output += `  * Growth Type: ${item.growthType || 'none'}\n`;
-      if (item.growthType === 'annual' && growthRateRef) {
-        output += `  * Annual Growth Rate Cell: ${growthRateRef} (${item.annualGrowthRate}%)\n`;
-        output += `  * IMPORTANT: Use formula referencing ${growthRateRef} for growth calculations\n`;
-      }
+      output += `  * Growth Rate: ${item.growthRate || 0}% (Cell: ${growthRateRef})\n`;
+      output += `  * Growth Type: Linear (annual)\n`;
     });
     return output;
   }
@@ -559,11 +589,8 @@ Please provide the complete P&L structure with exact cell addresses and formulas
       
       output += `\n- ${item.name || `CapEx Item ${index + 1}`}:\n`;
       output += `  * Base Value Cell: ${valueRef}\n`;
-      output += `  * Growth Type: ${item.growthType || 'none'}\n`;
-      if (item.growthType === 'annual' && growthRateRef) {
-        output += `  * Annual Growth Rate Cell: ${growthRateRef} (${item.annualGrowthRate}%)\n`;
-        output += `  * IMPORTANT: Use formula referencing ${growthRateRef} for growth calculations\n`;
-      }
+      output += `  * Growth Rate: ${item.growthRate || 0}% (Cell: ${growthRateRef})\n`;
+      output += `  * Growth Type: Linear (annual)\n`;
     });
     return output;
   }

@@ -163,9 +163,11 @@ class FormHandler {
       });
       
       if (nameInput && valueInput && nameInput.value && valueInput.value) {
+        const growthRateInput = document.getElementById(`revenueGrowthRate_${itemNumber}`);
         const item = {
           name: nameInput.value || `Revenue Item ${itemNumber}`,
-          value: parseFloat(valueInput.value) || 0
+          value: parseFloat(valueInput.value) || 0,
+          growthRate: growthRateInput ? (parseFloat(growthRateInput.value) || 0) : 0
         };
 
         console.log(`📊 Revenue item ${itemNumber}:`, item);
@@ -196,9 +198,11 @@ class FormHandler {
       const valueInput = document.getElementById(`opExValue_${itemNumber}`);
       
       if (nameInput && valueInput && nameInput.value && valueInput.value) {
+        const growthRateInput = document.getElementById(`opExGrowthRate_${itemNumber}`);
         const item = {
           name: nameInput.value || `Operating Expense ${itemNumber}`,
-          value: parseFloat(valueInput.value) || 0
+          value: parseFloat(valueInput.value) || 0,
+          growthRate: growthRateInput ? (parseFloat(growthRateInput.value) || 0) : 0
         };
 
         items.push(item);
@@ -228,9 +232,11 @@ class FormHandler {
       const valueInput = document.getElementById(`capExValue_${itemNumber}`);
       
       if (nameInput && valueInput && nameInput.value && valueInput.value) {
+        const growthRateInput = document.getElementById(`capExGrowthRate_${itemNumber}`);
         const item = {
           name: nameInput.value || `Capital Expense ${itemNumber}`,
-          value: parseFloat(valueInput.value) || 0
+          value: parseFloat(valueInput.value) || 0,
+          growthRate: growthRateInput ? (parseFloat(growthRateInput.value) || 0) : 0
         };
 
         items.push(item);
@@ -433,7 +439,6 @@ class FormHandler {
   }
 
   addRevenueItem() {
-    // Growth rate functionality has been removed - only name and value fields
     const container = document.getElementById('revenueItemsContainer');
     if (!container) return;
 
@@ -455,6 +460,12 @@ class FormHandler {
         <div class="form-group">
           <label for="revenueValue_${itemCount}">Base Value (Year 1)</label>
           <input type="number" id="revenueValue_${itemCount}" placeholder="100000" step="1000" />
+        </div>
+        
+        <div class="form-group">
+          <label for="revenueGrowthRate_${itemCount}">Linear Growth Rate (%)</label>
+          <input type="number" id="revenueGrowthRate_${itemCount}" placeholder="e.g., 5" step="0.1" />
+          <small class="help-text">Annual growth rate (e.g., 5 for 5% growth)</small>
         </div>
       </div>
     `;
@@ -485,6 +496,12 @@ class FormHandler {
           <label for="opExValue_${itemCount}">Annual Value</label>
           <input type="number" id="opExValue_${itemCount}" placeholder="50000" step="1000" />
         </div>
+        
+        <div class="form-group">
+          <label for="opExGrowthRate_${itemCount}">Linear Growth Rate (%)</label>
+          <input type="number" id="opExGrowthRate_${itemCount}" placeholder="e.g., 3" step="0.1" />
+          <small class="help-text">Annual growth rate (e.g., 3 for 3% growth)</small>
+        </div>
       </div>
     `;
 
@@ -513,6 +530,12 @@ class FormHandler {
         <div class="form-group">
           <label for="capExValue_${itemCount}">Initial Value</label>
           <input type="number" id="capExValue_${itemCount}" placeholder="25000" step="1000" />
+        </div>
+        
+        <div class="form-group">
+          <label for="capExGrowthRate_${itemCount}">Linear Growth Rate (%)</label>
+          <input type="number" id="capExGrowthRate_${itemCount}" placeholder="e.g., 2" step="0.1" />
+          <small class="help-text">Annual growth rate (e.g., 2 for 2% growth)</small>
         </div>
       </div>
     `;
