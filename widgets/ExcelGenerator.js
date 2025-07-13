@@ -1630,14 +1630,62 @@ Provide the COMPLETE Free Cash Flow model with exact Excel formulas for every ce
         }
         currentRow++;
         
-        // IRR Calculation - Skip for now to avoid formula errors
+        // IRR Calculation using Excel's built-in IRR function
         fcfSheet.getRange(`A${currentRow}`).values = [['Internal Rate of Return (IRR)']];
         fcfSheet.getRange(`A${currentRow}`).format.font.bold = true;
         fcfSheet.getRange(`A${currentRow}`).format.font.italic = true;
         
-        // Put a placeholder for IRR calculation
-        fcfSheet.getRange(`B${currentRow}`).values = [['Manual IRR calculation required']];
-        fcfSheet.getRange(`B${currentRow}`).format.font.italic = true;
+        // Calculate initial equity investment (negative cash flow at time 0)
+        let equityInvestment = modelData.equityContribution;
+        if (!equityInvestment || equityInvestment === 0) {
+          const dealLTV = modelData.dealLTV || 70;
+          equityInvestment = modelData.dealValue * (100 - dealLTV) / 100;
+        }
+        
+        // Add initial equity investment row
+        currentRow++;
+        fcfSheet.getRange(`A${currentRow}`).values = [['Initial Equity Investment']];
+        fcfSheet.getRange(`B${currentRow}`).values = [[-Math.abs(equityInvestment)]]; // Negative for cash outflow
+        currentRow++;
+        
+        // Add exit value at the end (using terminal cap rate)
+        fcfSheet.getRange(`A${currentRow}`).values = [['Exit Value']];
+        const lastCol = this.getColumnLetter(periodColumns);
+        if (assumptionStructure && assumptionStructure.assumptions.terminalCapRate) {
+          const capRateRef = assumptionStructure.assumptions.terminalCapRate.cellRef;
+          // Exit value = Final year FCF / Terminal Cap Rate
+          fcfSheet.getRange(`${lastCol}${currentRow}`).formulas = [[`=${lastCol}${fcfStructure.leveredFCF}/(Assumptions!${capRateRef}/100)`]];
+        } else {
+          // Fallback to 8.5% cap rate
+          fcfSheet.getRange(`${lastCol}${currentRow}`).formulas = [[`=${lastCol}${fcfStructure.leveredFCF}/0.085`]];
+        }
+        currentRow++;
+        
+        // Calculate IRR using initial investment + FCF + exit value
+        fcfSheet.getRange(`A${currentRow}`).values = [['Calculated IRR']];
+        fcfSheet.getRange(`A${currentRow}`).format.font.bold = true;
+        
+        // Build IRR formula: IRR(initial_investment, fcf_range + exit_value)
+        const initialInvestmentCell = `B${currentRow - 2}`;
+        const fcfRange = `B${fcfStructure.leveredFCF}:${this.getColumnLetter(periodColumns - 1)}${fcfStructure.leveredFCF}`;
+        const exitValueCell = `${lastCol}${currentRow - 1}`;
+        
+        // Create cash flow range for IRR: initial investment, FCF flows, plus exit value in final period
+        const irrFormula = `=IRR({${initialInvestmentCell};${fcfRange};${exitValueCell}})`;
+        fcfSheet.getRange(`B${currentRow}`).formulas = [[irrFormula]];
+        fcfSheet.getRange(`B${currentRow}`).format.numberFormat = [['0.00%']]; // Format as percentage
+        currentRow++;
+        
+        // Calculate MOIC (Multiple on Invested Capital)
+        fcfSheet.getRange(`A${currentRow}`).values = [['Multiple on Invested Capital (MOIC)']];
+        fcfSheet.getRange(`A${currentRow}`).format.font.bold = true;
+        
+        // MOIC = (Sum of all cash flows + exit value) / Initial investment
+        const totalCashFlowsCell = `C${currentRow}`;
+        fcfSheet.getRange(totalCashFlowsCell).formulas = [[`=SUM(${fcfRange})+${exitValueCell}`]];
+        const moicFormula = `=${totalCashFlowsCell}/(ABS(${initialInvestmentCell}))`;
+        fcfSheet.getRange(`B${currentRow}`).formulas = [[moicFormula]];
+        fcfSheet.getRange(`B${currentRow}`).format.numberFormat = [['0.00"x"']]; // Format as multiple (e.g., "2.50x")
         
       } else {
         // Fallback if P&L structure not found
