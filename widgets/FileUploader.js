@@ -582,7 +582,7 @@ class FileUploader {
           name: 'Staff Costs',
           value: 1200000,
           growthType: 'annual',
-          annualGrowthRate: 5
+          annualGrowthRate: 8
         },
         {
           name: 'Marketing',
