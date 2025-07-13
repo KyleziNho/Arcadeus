@@ -246,16 +246,16 @@ class ExcelGenerator {
         
         console.log(`📊 Checking growth type: ${item.growthType}, annual rate: ${item.annualGrowthRate}, linear rate: ${item.linearGrowthRate}`);
         
-        if (item.growthType === 'annual' && item.annualGrowthRate) {
+        if (item.growthType === 'annual') {
           console.log(`📊 Writing revenue ANNUAL growth rate: ${item.annualGrowthRate}% for ${itemName}`);
           sheet.getRange(`A${currentRow}`).values = [[`${itemName} - Annual Growth Rate (%)`]];
-          sheet.getRange(`B${currentRow}`).values = [[item.annualGrowthRate]];
+          sheet.getRange(`B${currentRow}`).values = [[item.annualGrowthRate || 0]];
           this.cellTracker.recordCell(`revenue_${index}_growth_rate`, 'Assumptions', `B${currentRow}`);
           currentRow++;
-        } else if (item.growthType === 'linear' && item.linearGrowthRate) {
+        } else if (item.growthType === 'linear') {
           console.log(`📊 Writing revenue LINEAR growth rate: ${item.linearGrowthRate}% for ${itemName}`);
           sheet.getRange(`A${currentRow}`).values = [[`${itemName} - Linear Growth Rate (%)`]];
-          sheet.getRange(`B${currentRow}`).values = [[item.linearGrowthRate]];
+          sheet.getRange(`B${currentRow}`).values = [[item.linearGrowthRate || 0]];
           this.cellTracker.recordCell(`revenue_${index}_growth_rate`, 'Assumptions', `B${currentRow}`);
           currentRow++;
         } else {
@@ -301,14 +301,14 @@ class ExcelGenerator {
         this.cellTracker.recordCell(`opex_${index}_growth_type`, 'Assumptions', `B${currentRow}`);
         currentRow++;
         
-        if (item.growthType === 'annual' && item.annualGrowthRate) {
+        if (item.growthType === 'annual') {
           sheet.getRange(`A${currentRow}`).values = [[`${itemName} - Annual Growth Rate (%)`]];
-          sheet.getRange(`B${currentRow}`).values = [[item.annualGrowthRate]];
+          sheet.getRange(`B${currentRow}`).values = [[item.annualGrowthRate || 0]];
           this.cellTracker.recordCell(`opex_${index}_growth_rate`, 'Assumptions', `B${currentRow}`);
           currentRow++;
-        } else if (item.growthType === 'linear' && item.linearGrowthRate) {
+        } else if (item.growthType === 'linear') {
           sheet.getRange(`A${currentRow}`).values = [[`${itemName} - Linear Growth Rate (%)`]];
-          sheet.getRange(`B${currentRow}`).values = [[item.linearGrowthRate]];
+          sheet.getRange(`B${currentRow}`).values = [[item.linearGrowthRate || 0]];
           this.cellTracker.recordCell(`opex_${index}_growth_rate`, 'Assumptions', `B${currentRow}`);
           currentRow++;
         }
@@ -352,16 +352,16 @@ class ExcelGenerator {
         this.cellTracker.recordCell(`capex_${index}_growth_type`, 'Assumptions', `B${currentRow}`);
         currentRow++;
         
-        if (item.growthType === 'annual' && item.annualGrowthRate) {
+        if (item.growthType === 'annual') {
           console.log(`📊 Writing capital expense ANNUAL growth rate: ${item.annualGrowthRate}% for ${itemName}`);
           sheet.getRange(`A${currentRow}`).values = [[`${itemName} - Annual Growth Rate (%)`]];
-          sheet.getRange(`B${currentRow}`).values = [[item.annualGrowthRate]];
+          sheet.getRange(`B${currentRow}`).values = [[item.annualGrowthRate || 0]];
           this.cellTracker.recordCell(`capex_${index}_growth_rate`, 'Assumptions', `B${currentRow}`);
           currentRow++;
-        } else if (item.growthType === 'linear' && item.linearGrowthRate) {
+        } else if (item.growthType === 'linear') {
           console.log(`📊 Writing capital expense LINEAR growth rate: ${item.linearGrowthRate}% for ${itemName}`);
           sheet.getRange(`A${currentRow}`).values = [[`${itemName} - Linear Growth Rate (%)`]];
-          sheet.getRange(`B${currentRow}`).values = [[item.linearGrowthRate]];
+          sheet.getRange(`B${currentRow}`).values = [[item.linearGrowthRate || 0]];
           this.cellTracker.recordCell(`capex_${index}_growth_rate`, 'Assumptions', `B${currentRow}`);
           currentRow++;
         }

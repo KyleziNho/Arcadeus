@@ -110,28 +110,56 @@ class FormHandler {
     const revenueContainers = revenueContainer.querySelectorAll('.revenue-item');
     
     revenueContainers.forEach((container, index) => {
-      const nameInput = container.querySelector(`input[id*="revenueName"]`);
-      const valueInput = container.querySelector(`input[id*="revenueValue"]`);
-      const growthTypeSelect = container.querySelector(`select[id*="growthType"]`);
+      // Extract the item number from the container ID or use index + 1
+      const itemId = container.id; // e.g., "revenueItem_1"
+      let itemNumber = index + 1;
+      if (itemId && itemId.includes('_')) {
+        itemNumber = parseInt(itemId.split('_')[1]) || (index + 1);
+      }
       
-      if (nameInput && valueInput) {
+      // Use specific IDs instead of generic selectors
+      const nameInput = document.getElementById(`revenueName_${itemNumber}`);
+      const valueInput = document.getElementById(`revenueValue_${itemNumber}`);
+      const growthTypeSelect = document.getElementById(`growthType_${itemNumber}`);
+      
+      console.log(`📊 Collecting revenue item ${itemNumber}:`, {
+        nameInput: nameInput?.value,
+        valueInput: valueInput?.value,
+        growthTypeSelect: growthTypeSelect?.value,
+        nameElement: !!nameInput,
+        valueElement: !!valueInput,
+        growthTypeElement: !!growthTypeSelect
+      });
+      
+      if (nameInput && valueInput && nameInput.value && valueInput.value) {
         const item = {
-          name: nameInput.value || `Revenue Item ${index + 1}`,
+          name: nameInput.value || `Revenue Item ${itemNumber}`,
           value: parseFloat(valueInput.value) || 0,
           growthType: growthTypeSelect?.value || 'linear'
         };
 
-        // Collect growth data based on type
+        // Collect growth data based on type using specific IDs
         if (item.growthType === 'periodic') {
           item.periods = this.collectPeriodData(container);
         } else if (item.growthType === 'annual') {
-          const annualGrowthInput = container.querySelector(`input[id*="annualGrowth"]`);
+          const annualGrowthInput = document.getElementById(`annualGrowth_${itemNumber}`);
           item.annualGrowthRate = parseFloat(annualGrowthInput?.value) || 0;
+          console.log(`📊 Annual growth for item ${itemNumber}:`, {
+            input: !!annualGrowthInput,
+            value: annualGrowthInput?.value,
+            parsed: item.annualGrowthRate
+          });
         } else if (item.growthType === 'linear') {
-          const linearGrowthInput = container.querySelector(`input[id*="linearGrowth"]`);
+          const linearGrowthInput = document.getElementById(`linearGrowth_${itemNumber}`);
           item.linearGrowthRate = parseFloat(linearGrowthInput?.value) || 0;
+          console.log(`📊 Linear growth for item ${itemNumber}:`, {
+            input: !!linearGrowthInput,
+            value: linearGrowthInput?.value,
+            parsed: item.linearGrowthRate
+          });
         }
 
+        console.log(`📊 Final revenue item ${itemNumber}:`, item);
         items.push(item);
       }
     });
@@ -147,25 +175,33 @@ class FormHandler {
     const costContainers = opExContainer.querySelectorAll('.cost-item');
     
     costContainers.forEach((container, index) => {
-      const nameInput = container.querySelector(`input[id*="opExName"]`);
-      const valueInput = container.querySelector(`input[id*="opExValue"]`);
-      const growthTypeSelect = container.querySelector(`select[id*="opExGrowthType"]`);
+      // Extract the item number from the container ID or use index + 1
+      const itemId = container.id; // e.g., "opExItem_1"
+      let itemNumber = index + 1;
+      if (itemId && itemId.includes('_')) {
+        itemNumber = parseInt(itemId.split('_')[1]) || (index + 1);
+      }
       
-      if (nameInput && valueInput) {
+      // Use specific IDs instead of generic selectors
+      const nameInput = document.getElementById(`opExName_${itemNumber}`);
+      const valueInput = document.getElementById(`opExValue_${itemNumber}`);
+      const growthTypeSelect = document.getElementById(`opExGrowthType_${itemNumber}`);
+      
+      if (nameInput && valueInput && nameInput.value && valueInput.value) {
         const item = {
-          name: nameInput.value || `Operating Expense ${index + 1}`,
+          name: nameInput.value || `Operating Expense ${itemNumber}`,
           value: parseFloat(valueInput.value) || 0,
           growthType: growthTypeSelect?.value || 'linear'
         };
 
-        // Collect growth data
+        // Collect growth data using specific IDs
         if (item.growthType === 'periodic') {
           item.periods = this.collectPeriodData(container);
         } else if (item.growthType === 'annual') {
-          const annualGrowthInput = container.querySelector(`input[id*="annualGrowth"]`);
+          const annualGrowthInput = document.getElementById(`annualGrowth_opEx_${itemNumber}`);
           item.annualGrowthRate = parseFloat(annualGrowthInput?.value) || 0;
         } else if (item.growthType === 'linear') {
-          const linearGrowthInput = container.querySelector(`input[id*="linearGrowth"]`);
+          const linearGrowthInput = document.getElementById(`linearGrowth_opEx_${itemNumber}`);
           item.linearGrowthRate = parseFloat(linearGrowthInput?.value) || 0;
         }
 
@@ -184,25 +220,33 @@ class FormHandler {
     const costContainers = capExContainer.querySelectorAll('.cost-item');
     
     costContainers.forEach((container, index) => {
-      const nameInput = container.querySelector(`input[id*="capExName"]`);
-      const valueInput = container.querySelector(`input[id*="capExValue"]`);
-      const growthTypeSelect = container.querySelector(`select[id*="capExGrowthType"]`);
+      // Extract the item number from the container ID or use index + 1
+      const itemId = container.id; // e.g., "capExItem_1"
+      let itemNumber = index + 1;
+      if (itemId && itemId.includes('_')) {
+        itemNumber = parseInt(itemId.split('_')[1]) || (index + 1);
+      }
       
-      if (nameInput && valueInput) {
+      // Use specific IDs instead of generic selectors
+      const nameInput = document.getElementById(`capExName_${itemNumber}`);
+      const valueInput = document.getElementById(`capExValue_${itemNumber}`);
+      const growthTypeSelect = document.getElementById(`capExGrowthType_${itemNumber}`);
+      
+      if (nameInput && valueInput && nameInput.value && valueInput.value) {
         const item = {
-          name: nameInput.value || `Capital Expense ${index + 1}`,
+          name: nameInput.value || `Capital Expense ${itemNumber}`,
           value: parseFloat(valueInput.value) || 0,
           growthType: growthTypeSelect?.value || 'linear'
         };
 
-        // Collect growth data
+        // Collect growth data using specific IDs
         if (item.growthType === 'periodic') {
           item.periods = this.collectPeriodData(container);
         } else if (item.growthType === 'annual') {
-          const annualGrowthInput = container.querySelector(`input[id*="annualGrowth"]`);
+          const annualGrowthInput = document.getElementById(`annualGrowth_capEx_${itemNumber}`);
           item.annualGrowthRate = parseFloat(annualGrowthInput?.value) || 0;
         } else if (item.growthType === 'linear') {
-          const linearGrowthInput = container.querySelector(`input[id*="linearGrowth"]`);
+          const linearGrowthInput = document.getElementById(`linearGrowth_capEx_${itemNumber}`);
           item.linearGrowthRate = parseFloat(linearGrowthInput?.value) || 0;
         }
 
