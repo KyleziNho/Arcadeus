@@ -115,7 +115,9 @@ class ExcelGenerator {
   }
 
   async populateAssumptionsSheet(context, sheet, data) {
-    console.log('📝 Populating Assumptions sheet with data...');
+    console.log('📝 ====== POPULATING ASSUMPTIONS SHEET ======');
+    console.log('📝 Received data object:', data);
+    console.log('📝 Revenue items received:', data.revenueItems);
     
     let currentRow = 1;
     
@@ -210,6 +212,9 @@ class ExcelGenerator {
     
     // REVENUE ITEMS SECTION
     if (data.revenueItems && data.revenueItems.length > 0) {
+      console.log('📝 ====== WRITING REVENUE ITEMS TO EXCEL ======');
+      console.log('📝 Number of revenue items:', data.revenueItems.length);
+      
       sectionRows['revenueItems'] = currentRow;
       sheet.getRange(`A${currentRow}`).values = [['REVENUE ITEMS']];
       sheet.getRange(`A${currentRow}`).format.font.bold = true;
@@ -217,6 +222,7 @@ class ExcelGenerator {
       
       const revenueStartRow = currentRow;
       data.revenueItems.forEach((item, index) => {
+        console.log(`📝 Writing revenue item ${index + 1}:`, item);
         const itemName = item.name || `Revenue Item ${index + 1}`;
         sheet.getRange(`A${currentRow}`).values = [[itemName]];
         sheet.getRange(`B${currentRow}`).values = [[item.value || 0]];
@@ -237,29 +243,32 @@ class ExcelGenerator {
       currentRow++;
       
       data.revenueItems.forEach((item, index) => {
-        console.log(`📊 Processing revenue item ${index + 1} for growth rates:`, item);
+        console.log(`📝 ====== PROCESSING REVENUE ITEM ${index + 1} GROWTH RATES ======`);
+        console.log(`📝 Item object:`, item);
+        console.log(`📝 Growth type: "${item.growthType}"`);
+        console.log(`📝 Annual growth rate: "${item.annualGrowthRate}"`);
+        console.log(`📝 Linear growth rate: "${item.linearGrowthRate}"`);
+        
         const itemName = item.name || `Revenue Item ${index + 1}`;
         sheet.getRange(`A${currentRow}`).values = [[`${itemName} - Growth Type`]];
         sheet.getRange(`B${currentRow}`).values = [[item.growthType || 'None']];
         this.cellTracker.recordCell(`revenue_${index}_growth_type`, 'Assumptions', `B${currentRow}`);
         currentRow++;
         
-        console.log(`📊 Checking growth type: ${item.growthType}, annual rate: ${item.annualGrowthRate}, linear rate: ${item.linearGrowthRate}`);
-        
         if (item.growthType === 'annual') {
-          console.log(`📊 Writing revenue ANNUAL growth rate: ${item.annualGrowthRate}% for ${itemName}`);
+          console.log(`📝 ✅ WRITING ANNUAL GROWTH RATE: ${item.annualGrowthRate || 0}% for ${itemName}`);
           sheet.getRange(`A${currentRow}`).values = [[`${itemName} - Annual Growth Rate (%)`]];
           sheet.getRange(`B${currentRow}`).values = [[item.annualGrowthRate || 0]];
           this.cellTracker.recordCell(`revenue_${index}_growth_rate`, 'Assumptions', `B${currentRow}`);
           currentRow++;
         } else if (item.growthType === 'linear') {
-          console.log(`📊 Writing revenue LINEAR growth rate: ${item.linearGrowthRate}% for ${itemName}`);
+          console.log(`📝 ✅ WRITING LINEAR GROWTH RATE: ${item.linearGrowthRate || 0}% for ${itemName}`);
           sheet.getRange(`A${currentRow}`).values = [[`${itemName} - Linear Growth Rate (%)`]];
           sheet.getRange(`B${currentRow}`).values = [[item.linearGrowthRate || 0]];
           this.cellTracker.recordCell(`revenue_${index}_growth_rate`, 'Assumptions', `B${currentRow}`);
           currentRow++;
         } else {
-          console.log(`📊 ⚠️  No growth rate written for ${itemName} - growthType: ${item.growthType}, annualGrowthRate: ${item.annualGrowthRate}, linearGrowthRate: ${item.linearGrowthRate}`);
+          console.log(`📝 ⚠️  NO GROWTH RATE WRITTEN for ${itemName} - type: "${item.growthType}", annual: "${item.annualGrowthRate}", linear: "${item.linearGrowthRate}"`);
         }
       });
       

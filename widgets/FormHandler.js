@@ -64,6 +64,8 @@ class FormHandler {
   }
 
   collectAllModelData() {
+    console.log('📊 ====== COLLECTING ALL MODEL DATA ======');
+    
     const data = {
       // High-Level Parameters
       currency: document.getElementById('currency')?.value || 'USD',
@@ -98,6 +100,12 @@ class FormHandler {
       hasDebt: this.checkDebtEligibility(),
       debtSettings: this.collectDebtSettings()
     };
+    
+    console.log('📊 ====== COMPLETE MODEL DATA COLLECTED ======');
+    console.log('📊 Revenue Items:', data.revenueItems);
+    console.log('📊 Operating Expenses:', data.operatingExpenses);
+    console.log('📊 Capital Expenses:', data.capitalExpenses);
+    console.log('📊 Complete Data Object:', data);
     
     return data;
   }
@@ -696,163 +704,6 @@ class FormHandler {
     }
   }
 
-  collectAllModelData() {
-    console.log('📊 Collecting all model data...');
-    
-    const data = {};
-    
-    // High-Level Parameters
-    data.currency = document.getElementById('currency')?.value;
-    data.projectStartDate = document.getElementById('projectStartDate')?.value;
-    data.projectEndDate = document.getElementById('projectEndDate')?.value;
-    data.modelPeriods = document.getElementById('modelPeriods')?.value;
-    
-    // Deal Assumptions
-    data.dealName = document.getElementById('dealName')?.value;
-    data.dealValue = parseFloat(document.getElementById('dealValue')?.value) || 0;
-    data.transactionFee = parseFloat(document.getElementById('transactionFee')?.value) || 0;
-    data.dealLTV = parseFloat(document.getElementById('dealLTV')?.value) || 0;
-    
-    // Exit Assumptions
-    data.disposalCost = parseFloat(document.getElementById('disposalCost')?.value) || 0;
-    data.terminalCapRate = parseFloat(document.getElementById('terminalCapRate')?.value) || 0;
-    data.discountRate = parseFloat(document.getElementById('discountRate')?.value) || 10.0;
-    
-    // Debt Model
-    data.interestRateType = document.querySelector('input[name="rateType"]:checked')?.value || 'fixed';
-    data.loanIssuanceFees = parseFloat(document.getElementById('loanIssuanceFees')?.value) || 0;
-    data.fixedRate = parseFloat(document.getElementById('fixedRate')?.value) || 0;
-    data.baseRate = parseFloat(document.getElementById('baseRate')?.value) || 0;
-    data.creditMargin = parseFloat(document.getElementById('creditMargin')?.value) || 0;
-    
-    // Simple item collection - just get basic data for now
-    data.revenueItems = [];
-    data.operatingExpenses = [];
-    data.capitalExpenses = [];
-    
-    // Collect revenue items from form inputs
-    const revenueItems = document.querySelectorAll('.revenue-item');
-    revenueItems.forEach((item, index) => {
-      const itemNum = index + 1;
-      const nameEl = document.getElementById(`revenueName_${itemNum}`);
-      const valueEl = document.getElementById(`revenueValue_${itemNum}`);
-      const growthTypeEl = document.getElementById(`growthType_${itemNum}`);
-      const annualGrowthInput = document.getElementById(`annualGrowth_${itemNum}`);
-      
-      if (nameEl && valueEl && nameEl.value && valueEl.value) {
-        // Also check for linear growth input
-        const linearGrowthInput = document.getElementById(`linearGrowth_${itemNum}`);
-        
-        console.log(`📊 Reading revenue item ${itemNum}:`, {
-          name: nameEl.value,
-          value: valueEl.value,
-          growthType: growthTypeEl?.value,
-          annualGrowthRate: annualGrowthInput?.value,
-          linearGrowthRate: linearGrowthInput?.value
-        });
-        
-        const revenueItem = {
-          name: nameEl.value,
-          value: parseFloat(valueEl.value) || 0,
-          growthType: growthTypeEl?.value || 'none'
-        };
-        
-        // Add growth rate based on growth type
-        if (revenueItem.growthType === 'annual' && annualGrowthInput?.value) {
-          revenueItem.annualGrowthRate = parseFloat(annualGrowthInput.value) || 0;
-          console.log(`📊 Collected ANNUAL growth rate: ${revenueItem.annualGrowthRate}% for ${revenueItem.name}`);
-        } else if (revenueItem.growthType === 'linear' && linearGrowthInput?.value) {
-          revenueItem.linearGrowthRate = parseFloat(linearGrowthInput.value) || 0;
-          console.log(`📊 Collected LINEAR growth rate: ${revenueItem.linearGrowthRate}% for ${revenueItem.name}`);
-        }
-        
-        data.revenueItems.push(revenueItem);
-      }
-    });
-    
-    // Collect operating expenses from form inputs
-    const opexItems = document.querySelectorAll('#operatingExpensesContainer .cost-item');
-    opexItems.forEach((item, index) => {
-      const itemNum = index + 1;
-      const nameEl = document.getElementById(`opExName_${itemNum}`);
-      const valueEl = document.getElementById(`opExValue_${itemNum}`);
-      const growthTypeEl = document.getElementById(`opExGrowthType_${itemNum}`);
-      const annualGrowthInput = document.getElementById(`annualGrowth_opEx_${itemNum}`);
-      
-      if (nameEl && valueEl && nameEl.value && valueEl.value) {
-        // Also check for linear growth input
-        const linearGrowthInput = document.getElementById(`linearGrowth_opEx_${itemNum}`);
-        
-        console.log(`📊 Reading operating expense item ${itemNum}:`, {
-          name: nameEl.value,
-          value: valueEl.value,
-          growthType: growthTypeEl?.value,
-          annualGrowthRate: annualGrowthInput?.value,
-          linearGrowthRate: linearGrowthInput?.value
-        });
-        
-        const opexItem = {
-          name: nameEl.value,
-          value: parseFloat(valueEl.value) || 0,
-          growthType: growthTypeEl?.value || 'none'
-        };
-        
-        // Add growth rate based on growth type
-        if (opexItem.growthType === 'annual' && annualGrowthInput?.value) {
-          opexItem.annualGrowthRate = parseFloat(annualGrowthInput.value) || 0;
-          console.log(`📊 Collected ANNUAL growth rate: ${opexItem.annualGrowthRate}% for OpEx ${opexItem.name}`);
-        } else if (opexItem.growthType === 'linear' && linearGrowthInput?.value) {
-          opexItem.linearGrowthRate = parseFloat(linearGrowthInput.value) || 0;
-          console.log(`📊 Collected LINEAR growth rate: ${opexItem.linearGrowthRate}% for OpEx ${opexItem.name}`);
-        }
-        
-        data.operatingExpenses.push(opexItem);
-      }
-    });
-    
-    // Collect capital expenses from form inputs
-    const capexItems = document.querySelectorAll('#capitalExpensesContainer .cost-item');
-    capexItems.forEach((item, index) => {
-      const itemNum = index + 1;
-      const nameEl = document.getElementById(`capExName_${itemNum}`);
-      const valueEl = document.getElementById(`capExValue_${itemNum}`);
-      const growthTypeEl = document.getElementById(`capExGrowthType_${itemNum}`);
-      const annualGrowthInput = document.getElementById(`annualGrowth_capEx_${itemNum}`);
-      
-      if (nameEl && valueEl && nameEl.value && valueEl.value) {
-        // Also check for linear growth input
-        const linearGrowthInput = document.getElementById(`linearGrowth_capEx_${itemNum}`);
-        
-        console.log(`📊 Reading capital expense item ${itemNum}:`, {
-          name: nameEl.value,
-          value: valueEl.value,
-          growthType: growthTypeEl?.value,
-          annualGrowthRate: annualGrowthInput?.value,
-          linearGrowthRate: linearGrowthInput?.value
-        });
-        
-        const capexItem = {
-          name: nameEl.value,
-          value: parseFloat(valueEl.value) || 0,
-          growthType: growthTypeEl?.value || 'none'
-        };
-        
-        // Add growth rate based on growth type
-        if (capexItem.growthType === 'annual' && annualGrowthInput?.value) {
-          capexItem.annualGrowthRate = parseFloat(annualGrowthInput.value) || 0;
-          console.log(`📊 Collected ANNUAL growth rate: ${capexItem.annualGrowthRate}% for CapEx ${capexItem.name}`);
-        } else if (capexItem.growthType === 'linear' && linearGrowthInput?.value) {
-          capexItem.linearGrowthRate = parseFloat(linearGrowthInput.value) || 0;
-          console.log(`📊 Collected LINEAR growth rate: ${capexItem.linearGrowthRate}% for CapEx ${capexItem.name}`);
-        }
-        
-        data.capitalExpenses.push(capexItem);
-      }
-    });
-    
-    console.log('📋 Collected model data:', data);
-    return data;
-  }
 }
 
 // Export for use in main application
