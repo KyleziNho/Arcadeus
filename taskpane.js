@@ -192,12 +192,8 @@ class MAModelingAddin {
       console.log('Generate FCF button listener added');
     }
     
-    // Generate Multiples & IRR button
-    const generateMultiplesBtn = document.getElementById('generateMultiplesBtn');
-    if (generateMultiplesBtn) {
-      generateMultiplesBtn.addEventListener('click', () => this.generateMultiplesAndIRR());
-      console.log('Generate Multiples & IRR button listener added');
-    }
+    // IRR & MOIC are now calculated automatically in FCF sheet
+    // No separate button needed
     
     // Validate Model button (if exists)
     const validateModelBtn = document.getElementById('validateModelBtn');
@@ -488,12 +484,7 @@ class MAModelingAddin {
             }
           }
           
-          // Show the Multiples & IRR button
-          const generateMultiplesBtn = document.getElementById('generateMultiplesBtn');
-          if (generateMultiplesBtn) {
-            generateMultiplesBtn.style.display = 'inline-flex';
-            console.log('Multiples & IRR button shown');
-          }
+          // IRR & MOIC are now calculated automatically in the FCF sheet
         } else {
           console.error('FCF generation failed:', result.error);
           if (this.uiController) {
@@ -530,66 +521,15 @@ class MAModelingAddin {
     }
   }
   
+  // IRR & MOIC calculations are now automatically included in the FCF sheet
+  // This method is no longer needed
+  /*
   async generateMultiplesAndIRR() {
-    console.log('Starting Multiples & IRR generation...');
-    
-    try {
-      // Collect model data
-      let modelData = {};
-      if (this.formHandler) {
-        modelData = this.formHandler.collectAllModelData();
-        console.log('Model data for Multiples & IRR:', modelData);
-      }
-      
-      // Generate Multiples & IRR using AI
-      if (this.excelGenerator) {
-        const result = await this.excelGenerator.generateMultiplesAndIRR(modelData);
-        
-        if (result.success) {
-          console.log('Multiples & IRR generated successfully');
-          if (this.uiController) {
-            this.uiController.showMessage('Multiples & IRR Analysis created! Check the Multiples & IRR sheet.', 'success');
-          } else {
-            console.log('Multiples & IRR Analysis created successfully!');
-            if (this.uiController) {
-              this.uiController.showMessage('Multiples & IRR Analysis created successfully! Check the Multiples & IRR sheet in Excel.', 'success');
-            }
-          }
-        } else {
-          console.error('Multiples & IRR generation failed:', result.error);
-          if (this.uiController) {
-            this.uiController.showMessage('Error generating Multiples & IRR: ' + result.error, 'error');
-          } else {
-            console.error('Error generating Multiples & IRR:', result.error);
-            if (this.uiController) {
-              this.uiController.showMessage('Error generating Multiples & IRR: ' + result.error, 'error');
-            }
-          }
-        }
-      } else {
-        console.error('Debug info:', {
-          excelGenerator: this.excelGenerator,
-          ExcelGeneratorClass: typeof ExcelGenerator,
-          windowExcelGenerator: typeof window.ExcelGenerator
-        });
-        console.error('Excel generator not available. Please refresh the page.');
-        if (this.uiController) {
-          this.uiController.showMessage('Excel generator not available. Please refresh the page.', 'error');
-        }
-      }
-      
-    } catch (error) {
-      console.error('Error in generateMultiplesAndIRR:', error);
-      if (this.uiController) {
-        this.uiController.showMessage('Unexpected error: ' + error.message, 'error');
-      } else {
-        console.error('Unexpected error:', error.message);
-        if (this.uiController) {
-          this.uiController.showMessage('Unexpected error: ' + error.message, 'error');
-        }
-      }
-    }
+    // This functionality has been moved to the FCF sheet
+    // IRR and MOIC are calculated automatically using Excel's built-in functions
+    console.log('IRR & MOIC are now calculated automatically in the FCF sheet');
   }
+  */
   
   // Legacy function for backward compatibility
   async generateModel() {
