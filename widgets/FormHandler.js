@@ -13,7 +13,33 @@ class FormHandler {
     this.initializeExitAssumptions();
     this.initializeDebtModel();
     
+    // Clear any existing items with old growth rate structure
+    this.clearAndResetAllItems();
+    
     this.isInitialized = true;
+  }
+
+  clearAndResetAllItems() {
+    // Clear any existing revenue items that might have old growth rate HTML
+    const revenueContainer = document.getElementById('revenueItemsContainer');
+    if (revenueContainer) {
+      revenueContainer.innerHTML = '';
+      console.log('Cleared existing revenue items with old structure');
+    }
+
+    // Clear any existing operating expense items
+    const opExContainer = document.getElementById('operatingExpensesContainer');
+    if (opExContainer) {
+      opExContainer.innerHTML = '';
+      console.log('Cleared existing operating expense items with old structure');
+    }
+
+    // Clear any existing capital expense items
+    const capExContainer = document.getElementById('capitalExpensesContainer');
+    if (capExContainer) {
+      capExContainer.innerHTML = '';
+      console.log('Cleared existing capital expense items with old structure');
+    }
   }
 
   validateAllFields() {
@@ -407,6 +433,7 @@ class FormHandler {
   }
 
   addRevenueItem() {
+    // Growth rate functionality has been removed - only name and value fields
     const container = document.getElementById('revenueItemsContainer');
     if (!container) return;
 
