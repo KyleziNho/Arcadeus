@@ -564,15 +564,11 @@ class FileUploader {
       revenueItems: [
         {
           name: 'Software Licenses',
-          value: 2000000,
-          growthType: 'annual',
-          annualGrowthRate: 15
+          value: 2000000
         },
         {
           name: 'Consulting Services',
-          value: 800000,
-          growthType: 'linear',
-          linearGrowthRate: 10
+          value: 800000
         }
       ],
       
@@ -580,15 +576,11 @@ class FileUploader {
       operatingExpenses: [
         {
           name: 'Staff Costs',
-          value: 1200000,
-          growthType: 'annual',
-          annualGrowthRate: 8
+          value: 1200000
         },
         {
           name: 'Marketing',
-          value: 300000,
-          growthType: 'linear',
-          linearGrowthRate: 8
+          value: 300000
         }
       ],
       
@@ -596,9 +588,7 @@ class FileUploader {
       capitalExpenses: [
         {
           name: 'IT Infrastructure',
-          value: 500000,
-          growthType: 'linear',
-          linearGrowthRate: 3
+          value: 500000
         }
       ],
       
@@ -681,23 +671,6 @@ class FileUploader {
         // Fill in the data
         this.setInputValue(`revenueName_${i + 1}`, item.name);
         this.setInputValue(`revenueValue_${i + 1}`, item.value);
-        
-        if (item.growthType) {
-          this.setInputValue(`growthType_${i + 1}`, item.growthType);
-          
-          // Update growth inputs and fill data
-          if (window.formHandler) {
-            window.formHandler.updateGrowthInputs(`revenue_${i + 1}`, item.growthType);
-            
-            await new Promise(resolve => setTimeout(resolve, 100));
-            
-            if (item.growthType === 'annual' && item.annualGrowthRate) {
-              this.setInputValue(`annualGrowth_${i + 1}`, item.annualGrowthRate);
-            } else if (item.growthType === 'linear' && item.linearGrowthRate) {
-              this.setInputValue(`linearGrowth_${i + 1}`, item.linearGrowthRate);
-            }
-          }
-        }
       }
     }
   }
@@ -722,22 +695,6 @@ class FileUploader {
         
         this.setInputValue(`opExName_${i + 1}`, item.name);
         this.setInputValue(`opExValue_${i + 1}`, item.value);
-        
-        if (item.growthType) {
-          this.setInputValue(`opExGrowthType_${i + 1}`, item.growthType);
-          
-          if (window.formHandler) {
-            window.formHandler.updateCostGrowthInputs(`opEx_${i + 1}`, item.growthType);
-            
-            await new Promise(resolve => setTimeout(resolve, 100));
-            
-            if (item.growthType === 'annual' && item.annualGrowthRate) {
-              this.setInputValue(`annualGrowth_opEx_${i + 1}`, item.annualGrowthRate);
-            } else if (item.growthType === 'linear' && item.linearGrowthRate) {
-              this.setInputValue(`linearGrowth_opEx_${i + 1}`, item.linearGrowthRate);
-            }
-          }
-        }
       }
     }
   }
@@ -762,22 +719,6 @@ class FileUploader {
         
         this.setInputValue(`capExName_${i + 1}`, item.name);
         this.setInputValue(`capExValue_${i + 1}`, item.value);
-        
-        if (item.growthType) {
-          this.setInputValue(`capExGrowthType_${i + 1}`, item.growthType);
-          
-          if (window.formHandler) {
-            window.formHandler.updateCostGrowthInputs(`capEx_${i + 1}`, item.growthType);
-            
-            await new Promise(resolve => setTimeout(resolve, 100));
-            
-            if (item.growthType === 'annual' && item.annualGrowthRate) {
-              this.setInputValue(`annualGrowth_capEx_${i + 1}`, item.annualGrowthRate);
-            } else if (item.growthType === 'linear' && item.linearGrowthRate) {
-              this.setInputValue(`linearGrowth_capEx_${i + 1}`, item.linearGrowthRate);
-            }
-          }
-        }
       }
     }
   }
