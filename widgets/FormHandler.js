@@ -128,15 +128,12 @@ class FormHandler {
       // Use specific IDs instead of generic selectors
       const nameInput = document.getElementById(`revenueName_${itemNumber}`);
       const valueInput = document.getElementById(`revenueValue_${itemNumber}`);
-      const growthTypeSelect = document.getElementById(`growthType_${itemNumber}`);
       
       console.log(`📊 Collecting revenue item ${itemNumber}:`, {
         nameInput: nameInput?.value,
         valueInput: valueInput?.value,
-        growthTypeSelect: growthTypeSelect?.value,
         nameElement: !!nameInput,
-        valueElement: !!valueInput,
-        growthTypeElement: !!growthTypeSelect
+        valueElement: !!valueInput
       });
       
       if (nameInput && valueInput && nameInput.value && valueInput.value) {
@@ -171,7 +168,6 @@ class FormHandler {
       // Use specific IDs instead of generic selectors
       const nameInput = document.getElementById(`opExName_${itemNumber}`);
       const valueInput = document.getElementById(`opExValue_${itemNumber}`);
-      const growthTypeSelect = document.getElementById(`opExGrowthType_${itemNumber}`);
       
       if (nameInput && valueInput && nameInput.value && valueInput.value) {
         const item = {
@@ -204,7 +200,6 @@ class FormHandler {
       // Use specific IDs instead of generic selectors
       const nameInput = document.getElementById(`capExName_${itemNumber}`);
       const valueInput = document.getElementById(`capExValue_${itemNumber}`);
-      const growthTypeSelect = document.getElementById(`capExGrowthType_${itemNumber}`);
       
       if (nameInput && valueInput && nameInput.value && valueInput.value) {
         const item = {
