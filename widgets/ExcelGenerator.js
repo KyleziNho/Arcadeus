@@ -792,7 +792,7 @@ Required format:
           plSheet.getRange(`A${currentRow}`).values = [[item.name || `Revenue ${index + 1}`]];
           
           // Add formulas for each period
-          for (let col = 1; col <= periodColumns; col++) {
+          for (let col = 1; col <= totalColumns; col++) {
             const colLetter = this.getColumnLetter(col);
             
             if (col === 1) {
@@ -856,7 +856,7 @@ Required format:
           plSheet.getRange(`A${currentRow}`).values = [[item.name || `OpEx ${index + 1}`]];
           
           // Add formulas for each period
-          for (let col = 1; col <= periodColumns; col++) {
+          for (let col = 1; col <= totalColumns; col++) {
             const colLetter = this.getColumnLetter(col);
             
             if (col === 1) {
@@ -1416,14 +1416,16 @@ Provide the COMPLETE Free Cash Flow model with exact Excel formulas for every ce
       fcfSheet.getRange('A1').format.font.color = 'white';
       currentRow = 3;
       
-      // TIME PERIOD HEADERS
+      // TIME PERIOD HEADERS - Include Period 0 for Initial Investment
       const headers = [''];
+      headers.push('Initial Investment'); // Period 0
       const startDate = new Date(modelData.projectStartDate);
       for (let i = 0; i < periodColumns; i++) {
         headers.push(this.formatPeriodHeader(startDate, i, modelData.modelPeriods));
       }
+      const totalColumns = periodColumns + 1; // +1 for Initial Investment period
       
-      const headerRange = fcfSheet.getRange(`A${currentRow}:${this.getColumnLetter(periodColumns)}${currentRow}`);
+      const headerRange = fcfSheet.getRange(`A${currentRow}:${this.getColumnLetter(totalColumns)}${currentRow}`);
       headerRange.values = [headers];
       headerRange.format.font.bold = true;
       headerRange.format.fill.color = '#d9d9d9';
@@ -1448,7 +1450,7 @@ Provide the COMPLETE Free Cash Flow model with exact Excel formulas for every ce
         fcfStructure.ebitda = currentRow;
         if (plStructure.lineItems.ebitda) {
           const ebitdaRow = plStructure.lineItems.ebitda.row;
-          for (let col = 1; col <= periodColumns; col++) {
+          for (let col = 1; col <= totalColumns; col++) {
             const colLetter = this.getColumnLetter(col);
             const plCol = this.getColumnLetter(col + 1); // P&L starts from column B
             fcfSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`='P&L Statement'!${plCol}${ebitdaRow}`]];
@@ -1487,7 +1489,7 @@ Provide the COMPLETE Free Cash Flow model with exact Excel formulas for every ce
         fcfStructure.workingCapital = currentRow;
         if (plStructure.lineItems.totalRevenue) {
           const revenueRow = plStructure.lineItems.totalRevenue.row;
-          for (let col = 1; col <= periodColumns; col++) {
+          for (let col = 1; col <= totalColumns; col++) {
             const colLetter = this.getColumnLetter(col);
             const plCol = this.getColumnLetter(col + 1);
             if (col === 1) {
@@ -1513,7 +1515,7 @@ Provide the COMPLETE Free Cash Flow model with exact Excel formulas for every ce
         fcfStructure.capex = currentRow;
         if (assumptionStructure && assumptionStructure.assumptions.capitalExpenses && assumptionStructure.assumptions.capitalExpenses.length > 0) {
           // Use actual capital expense references from assumptions
-          for (let col = 1; col <= periodColumns; col++) {
+          for (let col = 1; col <= totalColumns; col++) {
             const colLetter = this.getColumnLetter(col);
             let capexFormula = '';
             assumptionStructure.assumptions.capitalExpenses.forEach((item, index) => {
@@ -1526,7 +1528,7 @@ Provide the COMPLETE Free Cash Flow model with exact Excel formulas for every ce
             fcfSheet.getRange(`${colLetter}${currentRow}`).formulas = [[capexFormula]];
           }
         } else {
-          for (let col = 1; col <= periodColumns; col++) {
+          for (let col = 1; col <= totalColumns; col++) {
             const colLetter = this.getColumnLetter(col);
             fcfSheet.getRange(`${colLetter}${currentRow}`).values = [[0]];
           }
@@ -1559,14 +1561,14 @@ Provide the COMPLETE Free Cash Flow model with exact Excel formulas for every ce
         fcfStructure.interestPayments = currentRow;
         if (plStructure.lineItems.interestExpense) {
           const interestRow = plStructure.lineItems.interestExpense.row;
-          for (let col = 1; col <= periodColumns; col++) {
+          for (let col = 1; col <= totalColumns; col++) {
             const colLetter = this.getColumnLetter(col);
             const plCol = this.getColumnLetter(col + 1);
             fcfSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`='P&L Statement'!${plCol}${interestRow}`]];
           }
         } else {
           // No interest expense found
-          for (let col = 1; col <= periodColumns; col++) {
+          for (let col = 1; col <= totalColumns; col++) {
             const colLetter = this.getColumnLetter(col);
             fcfSheet.getRange(`${colLetter}${currentRow}`).values = [[0]];
           }
@@ -1852,7 +1854,7 @@ Provide the COMPLETE Free Cash Flow model with exact Excel formulas for every ce
             plSheet.getRange(`A${currentRow}`).values = [[itemName]];
             
             // Values for each period with growth
-            for (let col = 1; col <= periodColumns; col++) {
+            for (let col = 1; col <= totalColumns; col++) {
               const colLetter = this.getColumnLetter(col);
               
               if (col === 1) {
@@ -1918,7 +1920,7 @@ Provide the COMPLETE Free Cash Flow model with exact Excel formulas for every ce
             plSheet.getRange(`A${currentRow}`).values = [[itemName]];
             
             // Values for each period with growth
-            for (let col = 1; col <= periodColumns; col++) {
+            for (let col = 1; col <= totalColumns; col++) {
               const colLetter = this.getColumnLetter(col);
               
               if (col === 1) {
@@ -3155,15 +3157,23 @@ Generate working Excel formulas using the provided data and structure.`;
       prompt += `\nNo capital investments requiring depreciation.`;
     }
 
-    prompt += `\n\n**REQUIRED P&L STRUCTURE:**
+    prompt += `\n\n**REQUIRED P&L STRUCTURE WITH PERIOD 0:**
 You MUST create a P&L Statement with this EXACT structure:
 
-1. REVENUE section (use revenue items above)
-2. Total Revenue
-3. OPERATING EXPENSES section (use operating expense items above)
+**CRITICAL: Include Period 0 (Initial Investment) before operating periods**
+- Period 0: "Initial Investment" 
+- Period 1: First operating period (${modelData.projectStartDate})
+- Period 2+: Subsequent operating periods
+
+**P&L STRUCTURE:**
+1. REVENUE section (Period 0 = 0, then operating periods with growth)
+2. Total Revenue  
+3. OPERATING EXPENSES section (Period 0 = 0, then operating periods with growth)
 4. Total Operating Expenses  
 5. EBITDA (Total Revenue - Total Operating Expenses)
-6. DEPRECIATION & AMORTIZATION section:`;
+6. DEPRECIATION & AMORTIZATION section:
+   - Initial Capital Investments (Period 0 only - show total investment cost)
+   - Individual depreciation lines (Period 1+ only)`;
 
     if (modelData.capitalExpenses && modelData.capitalExpenses.length > 0) {
       modelData.capitalExpenses.forEach((item, index) => {
@@ -3336,14 +3346,16 @@ You MUST create a P&L Statement with this EXACT structure:
       plSheet.getRange('A1').format.font.color = 'white';
       currentRow = 3;
 
-      // TIME PERIOD HEADERS
+      // TIME PERIOD HEADERS - Include Period 0 for Initial Investment
       const headers = [''];
+      headers.push('Initial Investment'); // Period 0
       const startDate = new Date(modelData.projectStartDate);
       for (let i = 0; i < periodColumns; i++) {
         headers.push(this.formatPeriodHeader(startDate, i, modelData.modelPeriods));
       }
+      const totalColumns = periodColumns + 1; // +1 for Initial Investment period
 
-      const headerRange = plSheet.getRange(`A${currentRow}:${this.getColumnLetter(periodColumns)}${currentRow}`);
+      const headerRange = plSheet.getRange(`A${currentRow}:${this.getColumnLetter(totalColumns)}${currentRow}`);
       headerRange.values = [headers];
       headerRange.format.font.bold = true;
       headerRange.format.fill.color = '#d9d9d9';
@@ -3363,10 +3375,13 @@ You MUST create a P&L Statement with this EXACT structure:
           const valueRef = this.cellTracker.getCellReference(`revenue_${index}`);
           const growthRateRef = this.cellTracker.getCellReference(`revenue_${index}_growth_rate`);
           
-          for (let col = 1; col <= periodColumns; col++) {
+          for (let col = 1; col <= totalColumns; col++) {
             const colLetter = this.getColumnLetter(col);
             if (col === 1) {
-              // First period: base value
+              // Period 0 (Initial Investment): No revenue
+              plSheet.getRange(`${colLetter}${currentRow}`).values = [[0]];
+            } else if (col === 2) {
+              // First operating period: base value
               plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${valueRef}`]];
             } else {
               // Subsequent periods: apply growth
@@ -3393,7 +3408,7 @@ You MUST create a P&L Statement with this EXACT structure:
       plSheet.getRange(`A${currentRow}`).values = [['Total Revenue']];
       plSheet.getRange(`A${currentRow}`).format.font.bold = true;
       const totalRevenueRow = currentRow;
-      for (let col = 1; col <= periodColumns; col++) {
+      for (let col = 1; col <= totalColumns; col++) {
         const colLetter = this.getColumnLetter(col);
         const revenueStartRow = totalRevenueRow - modelData.revenueItems.length;
         const revenueEndRow = totalRevenueRow - 1;
@@ -3415,11 +3430,16 @@ You MUST create a P&L Statement with this EXACT structure:
           const valueRef = this.cellTracker.getCellReference(`opex_${index}`);
           const growthRateRef = this.cellTracker.getCellReference(`opex_${index}_growth_rate`);
           
-          for (let col = 1; col <= periodColumns; col++) {
+          for (let col = 1; col <= totalColumns; col++) {
             const colLetter = this.getColumnLetter(col);
             if (col === 1) {
+              // Period 0 (Initial Investment): No operating expenses
+              plSheet.getRange(`${colLetter}${currentRow}`).values = [[0]];
+            } else if (col === 2) {
+              // First operating period: base value
               plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=-${valueRef}`]];
             } else {
+              // Subsequent periods: apply growth
               if (growthRateRef) {
                 const prevColLetter = this.getColumnLetter(col - 1);
                 if (modelData.modelPeriods === 'monthly') {
@@ -3443,7 +3463,7 @@ You MUST create a P&L Statement with this EXACT structure:
       plSheet.getRange(`A${currentRow}`).values = [['Total Operating Expenses']];
       plSheet.getRange(`A${currentRow}`).format.font.bold = true;
       const totalOpExRow = currentRow;
-      for (let col = 1; col <= periodColumns; col++) {
+      for (let col = 1; col <= totalColumns; col++) {
         const colLetter = this.getColumnLetter(col);
         const opexStartRow = totalOpExRow - modelData.operatingExpenses.length;
         const opexEndRow = totalOpExRow - 1;
@@ -3456,7 +3476,7 @@ You MUST create a P&L Statement with this EXACT structure:
       plSheet.getRange(`A${currentRow}`).format.font.bold = true;
       plSheet.getRange(`A${currentRow}`).format.fill.color = '#fff2cc';
       const ebitdaRow = currentRow;
-      for (let col = 1; col <= periodColumns; col++) {
+      for (let col = 1; col <= totalColumns; col++) {
         const colLetter = this.getColumnLetter(col);
         plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${colLetter}${totalRevenueRow}+${colLetter}${totalOpExRow}`]];
       }
@@ -3469,7 +3489,43 @@ You MUST create a P&L Statement with this EXACT structure:
       currentRow++;
 
       const depreciationStartRow = currentRow;
-      // Add depreciation items
+      
+      // Add initial capital investment line (Period 0 only)
+      plSheet.getRange(`A${currentRow}`).values = [['Initial Capital Investments']];
+      plSheet.getRange(`A${currentRow}`).format.font.bold = true;
+      plSheet.getRange(`A${currentRow}`).format.fill.color = '#ffeaa7';
+      for (let col = 1; col <= totalColumns; col++) {
+        const colLetter = this.getColumnLetter(col);
+        if (col === 1) {
+          // Period 0: Show total initial capital investments
+          if (modelData.capitalExpenses && modelData.capitalExpenses.length > 0) {
+            let totalCapExFormula = '';
+            modelData.capitalExpenses.forEach((item, index) => {
+              const valueRef = this.cellTracker.getCellReference(`capex_${index}`);
+              if (valueRef) {
+                if (index === 0) {
+                  totalCapExFormula = `-${valueRef}`;
+                } else {
+                  totalCapExFormula += `-${valueRef}`;
+                }
+              }
+            });
+            if (totalCapExFormula) {
+              plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[totalCapExFormula]];
+            } else {
+              plSheet.getRange(`${colLetter}${currentRow}`).values = [[0]];
+            }
+          } else {
+            plSheet.getRange(`${colLetter}${currentRow}`).values = [[0]];
+          }
+        } else {
+          // Operating periods: No initial investments
+          plSheet.getRange(`${colLetter}${currentRow}`).values = [[0]];
+        }
+      }
+      currentRow++;
+      
+      // Add depreciation items (ongoing depreciation in operating periods)
       if (modelData.capitalExpenses && modelData.capitalExpenses.length > 0) {
         modelData.capitalExpenses.forEach((item, index) => {
           plSheet.getRange(`A${currentRow}`).values = [[`Depreciation - ${item.name}`]];
@@ -3478,14 +3534,20 @@ You MUST create a P&L Statement with this EXACT structure:
           const depreciationRef = this.cellTracker.getCellReference(`capex_${index}_depreciation`);
           
           if (valueRef && depreciationRef) {
-            for (let col = 1; col <= periodColumns; col++) {
+            for (let col = 1; col <= totalColumns; col++) {
               const colLetter = this.getColumnLetter(col);
-              if (modelData.modelPeriods === 'monthly') {
-                plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=-${valueRef}*${depreciationRef}/100/12`]];
-              } else if (modelData.modelPeriods === 'quarterly') {
-                plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=-${valueRef}*${depreciationRef}/100/4`]];
+              if (col === 1) {
+                // Period 0: No depreciation yet
+                plSheet.getRange(`${colLetter}${currentRow}`).values = [[0]];
               } else {
-                plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=-${valueRef}*${depreciationRef}/100`]];
+                // Operating periods: Calculate depreciation
+                if (modelData.modelPeriods === 'monthly') {
+                  plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=-${valueRef}*${depreciationRef}/100/12`]];
+                } else if (modelData.modelPeriods === 'quarterly') {
+                  plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=-${valueRef}*${depreciationRef}/100/4`]];
+                } else {
+                  plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=-${valueRef}*${depreciationRef}/100`]];
+                }
               }
             }
           }
@@ -3498,13 +3560,13 @@ You MUST create a P&L Statement with this EXACT structure:
       plSheet.getRange(`A${currentRow}`).format.font.bold = true;
       const totalDepreciationRow = currentRow;
       if (modelData.capitalExpenses && modelData.capitalExpenses.length > 0) {
-        for (let col = 1; col <= periodColumns; col++) {
+        for (let col = 1; col <= totalColumns; col++) {
           const colLetter = this.getColumnLetter(col);
           const depreciationEndRow = currentRow - 1;
           plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=SUM(${colLetter}${depreciationStartRow}:${colLetter}${depreciationEndRow})`]];
         }
       } else {
-        for (let col = 1; col <= periodColumns; col++) {
+        for (let col = 1; col <= totalColumns; col++) {
           const colLetter = this.getColumnLetter(col);
           plSheet.getRange(`${colLetter}${currentRow}`).values = [[0]];
         }
@@ -3516,7 +3578,7 @@ You MUST create a P&L Statement with this EXACT structure:
       plSheet.getRange(`A${currentRow}`).format.font.bold = true;
       plSheet.getRange(`A${currentRow}`).format.fill.color = '#e8f5e8';
       const ebitRow = currentRow;
-      for (let col = 1; col <= periodColumns; col++) {
+      for (let col = 1; col <= totalColumns; col++) {
         const colLetter = this.getColumnLetter(col);
         plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${colLetter}${ebitdaRow}+${colLetter}${totalDepreciationRow}`]];
       }
@@ -3528,7 +3590,7 @@ You MUST create a P&L Statement with this EXACT structure:
         plSheet.getRange(`A${currentRow}`).values = [['Interest Expense']];
         interestExpenseRow = currentRow;
         // Simplified interest calculation for now
-        for (let col = 1; col <= periodColumns; col++) {
+        for (let col = 1; col <= totalColumns; col++) {
           const colLetter = this.getColumnLetter(col);
           plSheet.getRange(`${colLetter}${currentRow}`).values = [[0]]; // Placeholder
         }
@@ -3539,7 +3601,7 @@ You MUST create a P&L Statement with this EXACT structure:
       plSheet.getRange(`A${currentRow}`).values = [['EBT (Earnings Before Tax)']];
       plSheet.getRange(`A${currentRow}`).format.font.bold = true;
       const ebtRow = currentRow;
-      for (let col = 1; col <= periodColumns; col++) {
+      for (let col = 1; col <= totalColumns; col++) {
         const colLetter = this.getColumnLetter(col);
         if (interestExpenseRow) {
           plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${colLetter}${ebitRow}-${colLetter}${interestExpenseRow}`]];
@@ -3552,7 +3614,7 @@ You MUST create a P&L Statement with this EXACT structure:
       // Tax Expense (25% default)
       plSheet.getRange(`A${currentRow}`).values = [['Tax Expense (25%)']];
       const taxExpenseRow = currentRow;
-      for (let col = 1; col <= periodColumns; col++) {
+      for (let col = 1; col <= totalColumns; col++) {
         const colLetter = this.getColumnLetter(col);
         plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${colLetter}${ebtRow}*0.25`]];
       }
@@ -3564,7 +3626,7 @@ You MUST create a P&L Statement with this EXACT structure:
       plSheet.getRange(`A${currentRow}`).format.fill.color = '#c5e0b4';
       plSheet.getRange(`A${currentRow}`).format.borders.getItem('EdgeTop').style = 'Double';
       plSheet.getRange(`A${currentRow}`).format.borders.getItem('EdgeTop').weight = 'Thick';
-      for (let col = 1; col <= periodColumns; col++) {
+      for (let col = 1; col <= totalColumns; col++) {
         const colLetter = this.getColumnLetter(col);
         plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${colLetter}${ebtRow}-${colLetter}${taxExpenseRow}`]];
         plSheet.getRange(`${colLetter}${currentRow}`).format.borders.getItem('EdgeTop').style = 'Double';
