@@ -1678,12 +1678,64 @@ Provide the COMPLETE Free Cash Flow model with exact Excel formulas for every ce
         }
         currentRow++;
         
-        // Simple IRR placeholder without cash flow analysis section
+        // IRR CALCULATION using Excel's built-in IRR function
         fcfSheet.getRange(`A${currentRow}`).values = [['Internal Rate of Return (IRR)']];
         fcfSheet.getRange(`A${currentRow}`).format.font.bold = true;
         fcfSheet.getRange(`A${currentRow}`).format.font.italic = true;
-        fcfSheet.getRange(`B${currentRow}`).values = [['Manual calculation required']];
-        fcfSheet.getRange(`B${currentRow}`).format.font.italic = true;
+        
+        // Create cash flow series starting with negative initial investment
+        // Initial investment is negative (cash outflow), followed by positive FCF (cash inflows)
+        let irrCashFlowRange = '';
+        if (modelData.dealValue) {
+          // Use the equity contribution as the initial investment (negative)
+          const equityContribution = modelData.dealValue * ((100 - (modelData.dealLTV || 70)) / 100);
+          
+          // Create a hidden row above for the IRR cash flow series
+          const irrCashFlowRow = currentRow + 1;
+          fcfSheet.getRange(`A${irrCashFlowRow}`).values = [['IRR Cash Flow Series (Hidden)']];
+          fcfSheet.getRange(`A${irrCashFlowRow}`).format.font.size = 8;
+          fcfSheet.getRange(`A${irrCashFlowRow}`).format.font.color = '#999999';
+          
+          // Period 0: Negative initial investment (equity contribution)
+          fcfSheet.getRange(`B${irrCashFlowRow}`).values = [[-equityContribution]];
+          
+          // Periods 1+: Reference the levered FCF values
+          for (let col = 2; col <= totalColumns; col++) {
+            const colLetter = this.getColumnLetter(col);
+            fcfSheet.getRange(`${colLetter}${irrCashFlowRow}`).formulas = [[`=${colLetter}${fcfStructure.leveredFCF}`]];
+          }
+          
+          // IRR calculation using the cash flow series
+          irrCashFlowRange = `B${irrCashFlowRow}:${this.getColumnLetter(totalColumns)}${irrCashFlowRow}`;
+          fcfSheet.getRange(`B${currentRow}`).formulas = [[`=IRR(${irrCashFlowRange})`]];
+          fcfSheet.getRange(`B${currentRow}`).format.numberFormat = [['0.00%']];
+          
+          currentRow++; // Skip the hidden cash flow row
+          currentRow++; // Move to next row for MOIC
+          
+          // MOIC (Multiple of Invested Capital) calculation
+          fcfSheet.getRange(`A${currentRow}`).values = [['Multiple of Invested Capital (MOIC)']];
+          fcfSheet.getRange(`A${currentRow}`).format.font.bold = true;
+          fcfSheet.getRange(`A${currentRow}`).format.font.italic = true;
+          
+          // MOIC = Total Cash Returned / Initial Investment
+          // Reference the undiscounted NPV cell (which is 3 rows above) + initial investment / initial investment
+          const undiscountedNPVRow = currentRow - 3;
+          fcfSheet.getRange(`B${currentRow}`).formulas = [[`=(B${undiscountedNPVRow} + ${equityContribution}) / ${equityContribution}`]];
+          fcfSheet.getRange(`B${currentRow}`).format.numberFormat = [['0.00"x"']];
+          
+        } else {
+          // Fallback if deal value not available
+          fcfSheet.getRange(`B${currentRow}`).values = [['Deal value required for IRR calculation']];
+          fcfSheet.getRange(`B${currentRow}`).format.font.italic = true;
+          currentRow++;
+          
+          fcfSheet.getRange(`A${currentRow}`).values = [['Multiple of Invested Capital (MOIC)']];
+          fcfSheet.getRange(`A${currentRow}`).format.font.bold = true;
+          fcfSheet.getRange(`A${currentRow}`).format.font.italic = true;
+          fcfSheet.getRange(`B${currentRow}`).values = [['Deal value required for MOIC calculation']];
+          fcfSheet.getRange(`B${currentRow}`).format.font.italic = true;
+        }
         
       } else {
         // Fallback if P&L structure not found
