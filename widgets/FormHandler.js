@@ -235,7 +235,7 @@ class FormHandler {
         const depreciationInput = document.getElementById(`capExDepreciation_${itemNumber}`);
         const disposalInput = document.getElementById(`capExDisposal_${itemNumber}`);
         const item = {
-          name: nameInput.value || `Initial Capital ${itemNumber}`,
+          name: nameInput.value || `Capital Investment ${itemNumber}`,
           value: parseFloat(valueInput.value) || 0,
           depreciation: depreciationInput ? (parseFloat(depreciationInput.value) || 0) : 0,
           disposalCost: disposalInput ? (parseFloat(disposalInput.value) || 0) : 0
@@ -520,17 +520,17 @@ class FormHandler {
     const itemHTML = `
       <div class="cost-item" id="capExItem_${itemCount}">
         <div class="cost-item-header">
-          <span class="cost-item-title">Initial Capital ${itemCount}</span>
+          <span class="cost-item-title">Capital Investment ${itemCount}</span>
         </div>
         <button class="remove-cost-item" onclick="this.parentElement.remove()">Remove</button>
         
         <div class="form-group">
-          <label for="capExName_${itemCount}">Initial Capital</label>
+          <label for="capExName_${itemCount}">Investment Name</label>
           <input type="text" id="capExName_${itemCount}" placeholder="e.g., Equipment Purchase" />
         </div>
         
         <div class="form-group">
-          <label for="capExValue_${itemCount}">Initial Capital</label>
+          <label for="capExValue_${itemCount}">Investment Value</label>
           <input type="number" id="capExValue_${itemCount}" placeholder="25000" step="1000" />
         </div>
         

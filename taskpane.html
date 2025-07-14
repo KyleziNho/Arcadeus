@@ -202,14 +202,14 @@
                 <small class="help-text">Loan-to-Value ratio for debt financing</small>
             </div>
             <div class="form-group">
-                <label>Equity Contribution (Calculated)</label>
+                <label>Acquisition Equity Contribution (Calculated)</label>
                 <input type="text" id="equityContribution" readonly placeholder="Will calculate based on Deal Value and LTV"/>
-                <small class="help-text">Automatically calculated: Deal Value × (100% - LTV%)</small>
+                <small class="help-text">Equity required to acquire the company: Deal Value × (100% - LTV%)</small>
             </div>
             <div class="form-group">
                 <label>Debt Financing (Calculated)</label>
                 <input type="text" id="debtFinancing" readonly placeholder="Will calculate based on Deal Value and LTV"/>
-                <small class="help-text">Automatically calculated: Deal Value × LTV%</small>
+                <small class="help-text">Debt portion of acquisition: Deal Value × LTV%</small>
             </div>
             </div>
         </div>
@@ -283,9 +283,12 @@
                     <polyline points="3.27,6.96 12,12.01 20.73,6.96"></polyline>
                     <line x1="12" y1="22.08" x2="12" y2="12"></line>
                 </svg>
-                Initial Capital
+                Post-Acquisition Capital Investments
             </h3>
             <div class="section-content" id="capExContent">
+                <p style="margin-bottom: 15px; color: #666; font-size: 14px;">
+                    Additional capital investments made after acquiring the company (equipment, technology, etc.)
+                </p>
                 <div class="cost-items-container" id="capitalExpensesContainer">
                     <!-- Capital expenses will be dynamically added here -->
                 </div>
@@ -296,7 +299,7 @@
                             <line x1="12" y1="8" x2="12" y2="16"></line>
                             <line x1="8" y1="12" x2="16" y2="12"></line>
                         </svg>
-                        Add Initial Capital
+                        Add Capital Investment
                     </button>
                 </div>
             </div>

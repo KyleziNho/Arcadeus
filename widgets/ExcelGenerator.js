@@ -282,16 +282,16 @@ class ExcelGenerator {
       currentRow += 2; // Add space
     }
     
-    // INITIAL CAPITAL SECTION
+    // POST-ACQUISITION CAPITAL INVESTMENTS SECTION
     if (data.capitalExpenses && data.capitalExpenses.length > 0) {
       sectionRows['capitalExpenses'] = currentRow;
-      sheet.getRange(`A${currentRow}`).values = [['INITIAL CAPITAL']];
+      sheet.getRange(`A${currentRow}`).values = [['POST-ACQUISITION CAPITAL INVESTMENTS']];
       sheet.getRange(`A${currentRow}`).format.font.bold = true;
       currentRow += 1;
       
       // Add column headers
-      sheet.getRange(`A${currentRow}`).values = [['Name']];
-      sheet.getRange(`B${currentRow}`).values = [['Initial Value']];
+      sheet.getRange(`A${currentRow}`).values = [['Investment Name']];
+      sheet.getRange(`B${currentRow}`).values = [['Investment Value']];
       sheet.getRange(`C${currentRow}`).values = [['Depreciation/Amortization (%)']];
       sheet.getRange(`D${currentRow}`).values = [['Disposal Cost (%)']];
       sheet.getRange(`A${currentRow}:D${currentRow}`).format.font.bold = true;
@@ -299,7 +299,7 @@ class ExcelGenerator {
       
       const capexStartRow = currentRow;
       data.capitalExpenses.forEach((item, index) => {
-        const itemName = item.name || `Initial Capital ${index + 1}`;
+        const itemName = item.name || `Capital Investment ${index + 1}`;
         const depreciation = item.depreciation || 0;
         const disposalCost = item.disposalCost || 0;
         sheet.getRange(`A${currentRow}`).values = [[itemName]];
@@ -313,7 +313,7 @@ class ExcelGenerator {
         currentRow++;
       });
       
-      // Record the range of initial capital for future reference
+      // Record the range of capital investments for future reference
       this.cellTracker.recordCell('capex_range', 'Assumptions', `B${capexStartRow}:B${currentRow - 1}`);
       this.cellTracker.recordCell('capex_count', 'Assumptions', data.capitalExpenses.length.toString());
       
@@ -1573,6 +1573,42 @@ Provide the COMPLETE Free Cash Flow model with exact Excel formulas for every ce
         }
         currentRow += 2;
         
+        // ASSET DISPOSAL PROCEEDS (Final Period Only)
+        fcfSheet.getRange(`A${currentRow}`).values = [['Asset Disposal Proceeds']];
+        fcfSheet.getRange(`A${currentRow}`).format.font.bold = true;
+        fcfSheet.getRange(`A${currentRow}`).format.fill.color = '#d5e8d4';
+        fcfStructure.assetDisposal = currentRow;
+        
+        // Calculate disposal proceeds only in final period
+        for (let col = 1; col <= periodColumns; col++) {
+          const colLetter = this.getColumnLetter(col);
+          if (col === periodColumns && assumptionStructure && assumptionStructure.assumptions.capitalExpenses && assumptionStructure.assumptions.capitalExpenses.length > 0) {
+            // Final period: Asset Value - Disposal Costs
+            let disposalFormula = '';
+            assumptionStructure.assumptions.capitalExpenses.forEach((item, index) => {
+              if (item.disposalCellRef) {
+                const assetValue = `Assumptions!${item.cellRef}`;
+                const disposalRate = `Assumptions!${item.disposalCellRef}`;
+                const netProceeds = `(${assetValue}*(1-${disposalRate}/100))`;
+                if (index === 0) {
+                  disposalFormula = netProceeds;
+                } else {
+                  disposalFormula += `+${netProceeds}`;
+                }
+              }
+            });
+            if (disposalFormula) {
+              fcfSheet.getRange(`${colLetter}${currentRow}`).formulas = [[disposalFormula]];
+            } else {
+              fcfSheet.getRange(`${colLetter}${currentRow}`).values = [[0]];
+            }
+          } else {
+            // Not final period: No disposal
+            fcfSheet.getRange(`${colLetter}${currentRow}`).values = [[0]];
+          }
+        }
+        currentRow += 2;
+        
         // LEVERED FREE CASH FLOW  
         fcfSheet.getRange(`A${currentRow}`).values = [['Levered Free Cash Flow']];
         fcfSheet.getRange(`A${currentRow}`).format.font.bold = true;
@@ -1582,7 +1618,7 @@ Provide the COMPLETE Free Cash Flow model with exact Excel formulas for every ce
         fcfStructure.leveredFCF = currentRow;
         for (let col = 1; col <= periodColumns; col++) {
           const colLetter = this.getColumnLetter(col);
-          fcfSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${colLetter}${fcfStructure.unleveredFCF}+${colLetter}${fcfStructure.interestPayments}`]];
+          fcfSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${colLetter}${fcfStructure.unleveredFCF}+${colLetter}${fcfStructure.interestPayments}+${colLetter}${fcfStructure.assetDisposal}`]];
           fcfSheet.getRange(`${colLetter}${currentRow}`).format.borders.getItem('EdgeTop').style = 'Double';
           fcfSheet.getRange(`${colLetter}${currentRow}`).format.borders.getItem('EdgeTop').weight = 'Thick';
         }
@@ -3089,11 +3125,43 @@ Generate working Excel formulas using the provided data and structure.`;
       });
     }
 
+    // Add depreciation/amortization from initial capital investments
+    prompt += `\n\n**DEPRECIATION & AMORTIZATION:**\n`;
+    if (modelData.capitalExpenses && modelData.capitalExpenses.length > 0) {
+      modelData.capitalExpenses.forEach((item, index) => {
+        const valueRef = this.cellTracker.getCellReference(`capex_${index}`);
+        const depreciationRef = this.cellTracker.getCellReference(`capex_${index}_depreciation`);
+        
+        if (valueRef && depreciationRef) {
+          const depreciationCellRef = depreciationRef.includes('!') ? depreciationRef.split('!')[1] : depreciationRef;
+          
+          prompt += `\n${index + 1}. Depreciation - ${item.name}:
+   - Annual Depreciation: =-${valueRef}*Assumptions!${depreciationCellRef}/100
+   - Period Adjustment: `;
+          
+          if (modelData.modelPeriods === 'monthly') {
+            prompt += `=AnnualDepreciation/12`;
+          } else if (modelData.modelPeriods === 'quarterly') {
+            prompt += `=AnnualDepreciation/4`;
+          } else {
+            prompt += `=AnnualDepreciation`;
+          }
+          
+          prompt += `\n   - Asset Value: ${valueRef}
+   - Depreciation Rate: Assumptions!${depreciationCellRef}`;
+        }
+      });
+    } else {
+      prompt += `\nNo capital investments requiring depreciation.`;
+    }
+
     prompt += `\n\n**FORMULA REQUIREMENTS:**
 1. ALL growth rates MUST reference Assumptions sheet cells
 2. NEVER hardcode growth rates in formulas
 3. Use exact cell references provided above
-4. Include proper currency formatting for ${modelData.currency}
+4. Include depreciation calculations for all capital investments
+5. Apply period adjustments for depreciation (monthly/quarterly/yearly)
+6. Include proper currency formatting for ${modelData.currency}
 
 Return Excel formulas in JSON format.`;
 
