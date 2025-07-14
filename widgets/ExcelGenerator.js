@@ -761,7 +761,7 @@ Required format:
       let currentRow = 1;
       
       // TITLE
-      plSheet.getRange('A1').values = [['P&L Statement']];
+      plSheet.getRange('A1').values = [[`P&L Statement (${modelData.currency})`]];
       plSheet.getRange('A1').format.font.bold = true;
       plSheet.getRange('A1').format.font.size = 16;
       currentRow = 3;
@@ -975,10 +975,10 @@ Required format:
       // Track Net Income row
       this.plCellTracker.recordCell('net_income', 'P&L Statement', `B${currentRow}:${this.getColumnLetter(periodColumns)}${currentRow}`);
       
-      // Format numbers with proper currency
+      // Format numbers with red brackets for negatives and dash for empty cells
       const dataRange = plSheet.getRange(`B5:${this.getColumnLetter(periodColumns)}${currentRow}`);
-      const currencyFormat = this.getCurrencyFormat(modelData.currency || 'USD');
-      dataRange.numberFormat = [[currencyFormat]];
+      const numberFormat = '#,##0_);[Red](#,##0);"-"'; // Positive, negative (red brackets), zero as dash
+      dataRange.numberFormat = [[numberFormat]];
       
       // Auto-fit columns
       plSheet.getRange(`A:${this.getColumnLetter(periodColumns)}`).format.autofitColumns();
@@ -1409,7 +1409,7 @@ Provide the COMPLETE Free Cash Flow model with exact Excel formulas for every ce
       let currentRow = 1;
       
       // TITLE
-      fcfSheet.getRange('A1').values = [['Free Cash Flow Statement']];
+      fcfSheet.getRange('A1').values = [[`Free Cash Flow Statement (${modelData.currency})`]];
       fcfSheet.getRange('A1').format.font.bold = true;
       fcfSheet.getRange('A1').format.font.size = 16;
       fcfSheet.getRange('A1').format.fill.color = '#1f4e79';
@@ -1452,7 +1452,7 @@ Provide the COMPLETE Free Cash Flow model with exact Excel formulas for every ce
           const ebitdaRow = plStructure.lineItems.ebitda.row;
           for (let col = 1; col <= totalColumns; col++) {
             const colLetter = this.getColumnLetter(col);
-            const plCol = this.getColumnLetter(col + 1); // P&L starts from column B
+            const plCol = this.getColumnLetter(col === 1 ? 2 : col + 1); // Period 0 references P&L column B, others offset by 1
             fcfSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`='P&L Statement'!${plCol}${ebitdaRow}`]];
           }
         }
@@ -1496,8 +1496,8 @@ Provide the COMPLETE Free Cash Flow model with exact Excel formulas for every ce
           
           for (let col = 2; col <= totalColumns; col++) {
             const colLetter = this.getColumnLetter(col);
-            const plCol = this.getColumnLetter(col + 1); // P&L starts from column B
-            const prevCol = this.getColumnLetter(col);     // Previous P&L column
+            const plCol = this.getColumnLetter(col === 2 ? 3 : col + 1); // First operational period is P&L column C, others offset by 1
+            const prevCol = this.getColumnLetter(col === 2 ? 2 : col);   // Previous P&L column
             
             if (col === 2) {
               // First operational period - initial working capital investment (3% of revenue)
@@ -1569,7 +1569,7 @@ Provide the COMPLETE Free Cash Flow model with exact Excel formulas for every ce
           const interestRow = plStructure.lineItems.interestExpense.row;
           for (let col = 1; col <= totalColumns; col++) {
             const colLetter = this.getColumnLetter(col);
-            const plCol = this.getColumnLetter(col + 1);
+            const plCol = this.getColumnLetter(col === 1 ? 2 : col + 1); // Period 0 references P&L column B, others offset by 1
             fcfSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`='P&L Statement'!${plCol}${interestRow}`]];
           }
         } else {
@@ -1691,10 +1691,10 @@ Provide the COMPLETE Free Cash Flow model with exact Excel formulas for every ce
         fcfSheet.getRange(`A${currentRow}`).format.fill.color = '#ffcccc';
       }
       
-      // Format all numbers as currency based on selected currency
+      // Format all numbers without currency symbols, with red brackets for negatives
       const dataRange = fcfSheet.getRange(`B5:${this.getColumnLetter(periodColumns)}${currentRow}`);
-      const currencyFormat = this.getCurrencyFormat(modelData.currency || 'USD');
-      dataRange.numberFormat = [[currencyFormat]];
+      const numberFormat = '#,##0_);[Red](#,##0);"-"'; // Positive, negative (red brackets), zero as dash
+      dataRange.numberFormat = [[numberFormat]];
       
       // Auto-fit columns
       fcfSheet.getRange(`A:${this.getColumnLetter(periodColumns)}`).format.autofitColumns();
@@ -2063,7 +2063,7 @@ Provide the COMPLETE Free Cash Flow model with exact Excel formulas for every ce
       
       // Format numbers for all data columns
       const dataRange = plSheet.getRange(`B5:${this.getColumnLetter(periodColumns)}${currentRow}`);
-      dataRange.numberFormat = [['#,##0.00;[Red](#,##0.00)']];
+      dataRange.numberFormat = [['#,##0_);[Red](#,##0);"-"']];
       
       // Auto-resize columns
       plSheet.getRange(`A:${this.getColumnLetter(periodColumns)}`).format.autofitColumns();
@@ -3018,12 +3018,12 @@ Generate working Excel formulas using the provided data and structure.`;
       // Deal summary
       sheet.getRange(`A${row}`).values = [['Deal Value:']];
       sheet.getRange(`B${row}`).values = [[modelData.dealValue]];
-      sheet.getRange(`B${row}`).format.numberFormat = [['#,##0']];
+      sheet.getRange(`B${row}`).format.numberFormat = [['#,##0_);[Red](#,##0)']];
       row++;
       
       sheet.getRange(`A${row}`).values = [['Equity Investment:']];
       sheet.getRange(`B${row}`).values = [[equityContribution]];
-      sheet.getRange(`B${row}`).format.numberFormat = [['#,##0']];
+      sheet.getRange(`B${row}`).format.numberFormat = [['#,##0_);[Red](#,##0)']];
       row += 2;
       
       // AI-generated calculations
