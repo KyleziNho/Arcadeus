@@ -1485,20 +1485,26 @@ Provide the COMPLETE Free Cash Flow model with exact Excel formulas for every ce
         currentRow++;
         
         // Working Capital Change using REAL Total Revenue reference
-        fcfSheet.getRange(`A${currentRow}`).values = [['Less: Change in Working Capital (2% of Revenue)']];
+        fcfSheet.getRange(`A${currentRow}`).values = [['Less: Change in Working Capital (3% of Revenue)']];
         fcfStructure.workingCapital = currentRow;
         if (plStructure.lineItems.totalRevenue) {
           const revenueRow = plStructure.lineItems.totalRevenue.row;
-          for (let col = 1; col <= totalColumns; col++) {
+          
+          // Handle Period 0 (initial period)
+          const period0Col = this.getColumnLetter(1);
+          fcfSheet.getRange(`${period0Col}${currentRow}`).values = [[0]]; // No working capital change in Period 0
+          
+          for (let col = 2; col <= totalColumns; col++) {
             const colLetter = this.getColumnLetter(col);
-            const plCol = this.getColumnLetter(col + 1);
-            if (col === 1) {
-              // First period - just 2% of revenue
-              fcfSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=-'P&L Statement'!${plCol}${revenueRow}*0.02`]];
+            const plCol = this.getColumnLetter(col + 1); // P&L starts from column B
+            const prevCol = this.getColumnLetter(col);     // Previous P&L column
+            
+            if (col === 2) {
+              // First operational period - initial working capital investment (3% of revenue)
+              fcfSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=-'P&L Statement'!${plCol}${revenueRow}*0.03`]];
             } else {
-              // Change from previous period
-              const prevPlCol = this.getColumnLetter(col);
-              fcfSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=-('P&L Statement'!${plCol}${revenueRow}*0.02-'P&L Statement'!${prevPlCol}${revenueRow}*0.02)`]];
+              // Subsequent periods - change in working capital from previous period
+              fcfSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=-('P&L Statement'!${plCol}${revenueRow}*0.03-'P&L Statement'!${prevCol}${revenueRow}*0.03)`]];
             }
           }
         }
@@ -3086,9 +3092,9 @@ Generate working Excel formulas using the provided data and structure.`;
         if (growthRateRef && item.growthType === 'annual') {
           const cellRef = growthRateRef.includes('!') ? growthRateRef.split('!')[1] : growthRateRef;
           if (modelData.modelPeriods === 'quarterly') {
-            prompt += `=PreviousCell*(1+Assumptions!${cellRef}/4/100)`;
+            prompt += `=PreviousCell*(1+Assumptions!${cellRef}/100/4)`;
           } else if (modelData.modelPeriods === 'monthly') {
-            prompt += `=PreviousCell*(1+Assumptions!${cellRef}/12/100)`;
+            prompt += `=PreviousCell*(1+Assumptions!${cellRef}/100/12)`;
           } else if (modelData.modelPeriods === 'yearly') {
             prompt += `=PreviousCell*(1+Assumptions!${cellRef}/100)`;
           }
@@ -3114,9 +3120,9 @@ Generate working Excel formulas using the provided data and structure.`;
         if (growthRateRef && item.growthType === 'annual') {
           const cellRef = growthRateRef.includes('!') ? growthRateRef.split('!')[1] : growthRateRef;
           if (modelData.modelPeriods === 'quarterly') {
-            prompt += `=PreviousCell*(1+Assumptions!${cellRef}/4/100)`;
+            prompt += `=PreviousCell*(1+Assumptions!${cellRef}/100/4)`;
           } else if (modelData.modelPeriods === 'monthly') {
-            prompt += `=PreviousCell*(1+Assumptions!${cellRef}/12/100)`;
+            prompt += `=PreviousCell*(1+Assumptions!${cellRef}/100/12)`;
           } else if (modelData.modelPeriods === 'yearly') {
             prompt += `=PreviousCell*(1+Assumptions!${cellRef}/100)`;
           }
@@ -3138,7 +3144,7 @@ Generate working Excel formulas using the provided data and structure.`;
           const depreciationCellRef = depreciationRef.includes('!') ? depreciationRef.split('!')[1] : depreciationRef;
           
           prompt += `\n${index + 1}. Depreciation - ${item.name}:
-   - Annual Depreciation: =-${valueRef}*Assumptions!${depreciationCellRef}/100
+   - Annual Depreciation: =${valueRef}*Assumptions!${depreciationCellRef}/100
    - Period Adjustment: `;
           
           if (modelData.modelPeriods === 'monthly') {
@@ -3186,11 +3192,11 @@ You MUST create a P&L Statement with this EXACT structure:
           prompt += `\n   - "Depreciation - ${item.name}" line with formula: `;
           
           if (modelData.modelPeriods === 'monthly') {
-            prompt += `=-${valueRef}*Assumptions!${depreciationCellRef}/100/12`;
+            prompt += `=${valueRef}*Assumptions!${depreciationCellRef}/100/12`;
           } else if (modelData.modelPeriods === 'quarterly') {
-            prompt += `=-${valueRef}*Assumptions!${depreciationCellRef}/100/4`;
+            prompt += `=${valueRef}*Assumptions!${depreciationCellRef}/100/4`;
           } else {
-            prompt += `=-${valueRef}*Assumptions!${depreciationCellRef}/100`;
+            prompt += `=${valueRef}*Assumptions!${depreciationCellRef}/100`;
           }
         }
       });
@@ -3388,9 +3394,9 @@ You MUST create a P&L Statement with this EXACT structure:
               if (growthRateRef) {
                 const prevColLetter = this.getColumnLetter(col - 1);
                 if (modelData.modelPeriods === 'monthly') {
-                  plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${prevColLetter}${currentRow}*(1+${growthRateRef}/12/100)`]];
+                  plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${prevColLetter}${currentRow}*(1+${growthRateRef}/100/12)`]];
                 } else if (modelData.modelPeriods === 'quarterly') {
-                  plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${prevColLetter}${currentRow}*(1+${growthRateRef}/4/100)`]];
+                  plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${prevColLetter}${currentRow}*(1+${growthRateRef}/100/4)`]];
                 } else {
                   plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${prevColLetter}${currentRow}*(1+${growthRateRef}/100)`]];
                 }
@@ -3443,9 +3449,9 @@ You MUST create a P&L Statement with this EXACT structure:
               if (growthRateRef) {
                 const prevColLetter = this.getColumnLetter(col - 1);
                 if (modelData.modelPeriods === 'monthly') {
-                  plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${prevColLetter}${currentRow}*(1+${growthRateRef}/12/100)`]];
+                  plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${prevColLetter}${currentRow}*(1+${growthRateRef}/100/12)`]];
                 } else if (modelData.modelPeriods === 'quarterly') {
-                  plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${prevColLetter}${currentRow}*(1+${growthRateRef}/4/100)`]];
+                  plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${prevColLetter}${currentRow}*(1+${growthRateRef}/100/4)`]];
                 } else {
                   plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${prevColLetter}${currentRow}*(1+${growthRateRef}/100)`]];
                 }
@@ -3542,11 +3548,11 @@ You MUST create a P&L Statement with this EXACT structure:
               } else {
                 // Operating periods: Calculate depreciation
                 if (modelData.modelPeriods === 'monthly') {
-                  plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=-${valueRef}*${depreciationRef}/100/12`]];
+                  plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${valueRef}*${depreciationRef}/100/12`]];
                 } else if (modelData.modelPeriods === 'quarterly') {
-                  plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=-${valueRef}*${depreciationRef}/100/4`]];
+                  plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${valueRef}*${depreciationRef}/100/4`]];
                 } else {
-                  plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=-${valueRef}*${depreciationRef}/100`]];
+                  plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${valueRef}*${depreciationRef}/100`]];
                 }
               }
             }
