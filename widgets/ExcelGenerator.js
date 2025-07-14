@@ -1490,16 +1490,16 @@ Provide the COMPLETE Free Cash Flow model with exact Excel formulas for every ce
         if (plStructure.lineItems.totalRevenue) {
           const revenueRow = plStructure.lineItems.totalRevenue.row;
           
-          // Handle Period 0 (initial period)
-          const period0Col = this.getColumnLetter(1);
+          // Handle Period 0 (initial period) - Column B is Initial Investment
+          const period0Col = this.getColumnLetter(2);
           fcfSheet.getRange(`${period0Col}${currentRow}`).values = [[0]]; // No working capital change in Period 0
           
-          for (let col = 2; col <= totalColumns; col++) {
+          for (let col = 3; col <= totalColumns; col++) {
             const colLetter = this.getColumnLetter(col);
-            const plCol = this.getColumnLetter(col === 2 ? 3 : col + 1); // First operational period is P&L column C, others offset by 1
-            const prevCol = this.getColumnLetter(col === 2 ? 2 : col);   // Previous P&L column
+            const plCol = this.getColumnLetter(col); // Direct mapping: FCF column C -> P&L column C, etc.
+            const prevCol = this.getColumnLetter(col - 1);   // Previous P&L column
             
-            if (col === 2) {
+            if (col === 3) {
               // First operational period - initial working capital investment (3% of revenue)
               fcfSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=-'P&L Statement'!${plCol}${revenueRow}*0.03`]];
             } else {
@@ -1820,7 +1820,7 @@ Provide the COMPLETE Free Cash Flow model with exact Excel formulas for every ce
       const periodColumns = periods; // Use full calculated periods
       
       // HEADER
-      plSheet.getRange('A1').values = [['P&L Statement']];
+      plSheet.getRange('A1').values = [[`P&L Statement (${modelData.currency})`]];
       plSheet.getRange('A1').format.font.bold = true;
       plSheet.getRange('A1').format.font.size = 16;
       currentRow = 3;
@@ -3639,6 +3639,11 @@ You MUST create a P&L Statement with this EXACT structure:
         plSheet.getRange(`${colLetter}${currentRow}`).format.borders.getItem('EdgeTop').weight = 'Thick';
       }
 
+      // Format all data cells with red brackets for negatives and dash for empty cells
+      const dataRange = plSheet.getRange(`B5:${this.getColumnLetter(totalColumns)}${currentRow}`);
+      const numberFormat = '#,##0_);[Red](#,##0);"-"'; // Positive, negative (red brackets), zero as dash
+      dataRange.numberFormat = [[numberFormat]];
+      
       // Auto-resize columns
       plSheet.getUsedRange().format.autofitColumns();
       
