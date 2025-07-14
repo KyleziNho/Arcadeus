@@ -1587,26 +1587,21 @@ Provide the COMPLETE Free Cash Flow model with exact Excel formulas for every ce
         fcfSheet.getRange(`A${currentRow}`).format.fill.color = '#d5e8d4';
         fcfStructure.assetDisposal = currentRow;
         
-        // Calculate disposal proceeds only in final period
-        for (let col = 1; col <= periodColumns; col++) {
+        // Calculate disposal proceeds only in final period using general disposal cost %
+        for (let col = 1; col <= totalColumns; col++) {
           const colLetter = this.getColumnLetter(col);
-          if (col === periodColumns && assumptionStructure && assumptionStructure.assumptions.capitalExpenses && assumptionStructure.assumptions.capitalExpenses.length > 0) {
-            // Final period: Asset Value - Disposal Costs
-            let disposalFormula = '';
-            assumptionStructure.assumptions.capitalExpenses.forEach((item, index) => {
-              if (item.disposalCellRef) {
-                const assetValue = `Assumptions!${item.cellRef}`;
-                const disposalRate = `Assumptions!${item.disposalCellRef}`;
-                const netProceeds = `(${assetValue}*(1-${disposalRate}/100))`;
-                if (index === 0) {
-                  disposalFormula = netProceeds;
-                } else {
-                  disposalFormula += `+${netProceeds}`;
-                }
-              }
-            });
-            if (disposalFormula) {
-              fcfSheet.getRange(`${colLetter}${currentRow}`).formulas = [[disposalFormula]];
+          if (col === totalColumns) {
+            // Final period: Deal Value * (1 - Disposal Cost %)
+            const dealValueRef = this.cellTracker.getCellReference('dealValue');
+            const disposalCostRef = this.cellTracker.getCellReference('disposalCost');
+            
+            if (dealValueRef && disposalCostRef) {
+              // Net disposal proceeds = Deal Value * (1 - Disposal Cost %)
+              fcfSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${dealValueRef}*(1-${disposalCostRef}/100)`]];
+            } else if (modelData.dealValue && modelData.disposalCost) {
+              // Fallback: use direct values if cell references not available
+              const netProceeds = modelData.dealValue * (1 - (modelData.disposalCost / 100));
+              fcfSheet.getRange(`${colLetter}${currentRow}`).values = [[netProceeds]];
             } else {
               fcfSheet.getRange(`${colLetter}${currentRow}`).values = [[0]];
             }
@@ -1690,24 +1685,30 @@ Provide the COMPLETE Free Cash Flow model with exact Excel formulas for every ce
           // Use the equity contribution as the initial investment (negative)
           const equityContribution = modelData.dealValue * ((100 - (modelData.dealLTV || 70)) / 100);
           
-          // Create a hidden row above for the IRR cash flow series
+          // Create a helper row for the IRR cash flow series
           const irrCashFlowRow = currentRow + 1;
-          fcfSheet.getRange(`A${irrCashFlowRow}`).values = [['IRR Cash Flow Series (Hidden)']];
-          fcfSheet.getRange(`A${irrCashFlowRow}`).format.font.size = 8;
-          fcfSheet.getRange(`A${irrCashFlowRow}`).format.font.color = '#999999';
+          fcfSheet.getRange(`A${irrCashFlowRow}`).values = [['IRR Cash Flow Series:']];
+          fcfSheet.getRange(`A${irrCashFlowRow}`).format.font.size = 10;
+          fcfSheet.getRange(`A${irrCashFlowRow}`).format.font.italic = true;
           
           // Period 0: Negative initial investment (equity contribution)
           fcfSheet.getRange(`B${irrCashFlowRow}`).values = [[-equityContribution]];
           
-          // Periods 1+: Reference the levered FCF values
+          // Periods 1+: Reference the levered FCF values plus disposal proceeds in final period
           for (let col = 2; col <= totalColumns; col++) {
             const colLetter = this.getColumnLetter(col);
-            fcfSheet.getRange(`${colLetter}${irrCashFlowRow}`).formulas = [[`=${colLetter}${fcfStructure.leveredFCF}`]];
+            if (col === totalColumns) {
+              // Final period: Levered FCF + Asset Disposal Proceeds
+              fcfSheet.getRange(`${colLetter}${irrCashFlowRow}`).formulas = [[`=${colLetter}${fcfStructure.leveredFCF}+${colLetter}${fcfStructure.assetDisposal}`]];
+            } else {
+              // Regular periods: Just the levered FCF
+              fcfSheet.getRange(`${colLetter}${irrCashFlowRow}`).formulas = [[`=${colLetter}${fcfStructure.leveredFCF}`]];
+            }
           }
           
           // IRR calculation using the cash flow series
           irrCashFlowRange = `B${irrCashFlowRow}:${this.getColumnLetter(totalColumns)}${irrCashFlowRow}`;
-          fcfSheet.getRange(`B${currentRow}`).formulas = [[`=IRR(${irrCashFlowRange})`]];
+          fcfSheet.getRange(`B${currentRow}`).formulas = [[`=IFERROR(IRR(${irrCashFlowRange}),"No Solution")`]];
           fcfSheet.getRange(`B${currentRow}`).format.numberFormat = [['0.00%']];
           
           currentRow++; // Skip the hidden cash flow row
@@ -1719,9 +1720,9 @@ Provide the COMPLETE Free Cash Flow model with exact Excel formulas for every ce
           fcfSheet.getRange(`A${currentRow}`).format.font.italic = true;
           
           // MOIC = Total Cash Returned / Initial Investment
-          // Reference the undiscounted NPV cell (which is 3 rows above) + initial investment / initial investment
-          const undiscountedNPVRow = currentRow - 3;
-          fcfSheet.getRange(`B${currentRow}`).formulas = [[`=(B${undiscountedNPVRow} + ${equityContribution}) / ${equityContribution}`]];
+          // Use the same cash flow range as IRR (excluding initial investment) and sum it
+          const cashFlowRangeWithoutInitial = `C${irrCashFlowRow}:${this.getColumnLetter(totalColumns)}${irrCashFlowRow}`;
+          fcfSheet.getRange(`B${currentRow}`).formulas = [[`=SUM(${cashFlowRangeWithoutInitial}) / ${equityContribution}`]];
           fcfSheet.getRange(`B${currentRow}`).format.numberFormat = [['0.00"x"']];
           
         } else {
