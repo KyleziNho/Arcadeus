@@ -3155,15 +3155,69 @@ Generate working Excel formulas using the provided data and structure.`;
       prompt += `\nNo capital investments requiring depreciation.`;
     }
 
-    prompt += `\n\n**FORMULA REQUIREMENTS:**
-1. ALL growth rates MUST reference Assumptions sheet cells
-2. NEVER hardcode growth rates in formulas
-3. Use exact cell references provided above
-4. Include depreciation calculations for all capital investments
-5. Apply period adjustments for depreciation (monthly/quarterly/yearly)
-6. Include proper currency formatting for ${modelData.currency}
+    prompt += `\n\n**REQUIRED P&L STRUCTURE:**
+You MUST create a P&L Statement with this EXACT structure:
 
-Return Excel formulas in JSON format.`;
+1. REVENUE section (use revenue items above)
+2. Total Revenue
+3. OPERATING EXPENSES section (use operating expense items above)
+4. Total Operating Expenses  
+5. EBITDA (Total Revenue - Total Operating Expenses)
+6. DEPRECIATION & AMORTIZATION section:`;
+
+    if (modelData.capitalExpenses && modelData.capitalExpenses.length > 0) {
+      modelData.capitalExpenses.forEach((item, index) => {
+        const valueRef = this.cellTracker.getCellReference(`capex_${index}`);
+        const depreciationRef = this.cellTracker.getCellReference(`capex_${index}_depreciation`);
+        
+        if (valueRef && depreciationRef) {
+          const depreciationCellRef = depreciationRef.includes('!') ? depreciationRef.split('!')[1] : depreciationRef;
+          
+          prompt += `\n   - "Depreciation - ${item.name}" line with formula: `;
+          
+          if (modelData.modelPeriods === 'monthly') {
+            prompt += `=-${valueRef}*Assumptions!${depreciationCellRef}/100/12`;
+          } else if (modelData.modelPeriods === 'quarterly') {
+            prompt += `=-${valueRef}*Assumptions!${depreciationCellRef}/100/4`;
+          } else {
+            prompt += `=-${valueRef}*Assumptions!${depreciationCellRef}/100`;
+          }
+        }
+      });
+    }
+
+    prompt += `
+7. Total Depreciation & Amortization (sum all depreciation lines)
+8. EBIT (EBITDA - Total Depreciation & Amortization)
+9. Interest Expense (if debt exists)
+10. EBT (EBIT - Interest Expense)  
+11. Tax Expense (EBT * tax rate, use 25% if not specified)
+12. Net Income (EBT - Tax Expense)
+
+**CRITICAL REQUIREMENTS:**
+- MUST create separate line for each depreciation item
+- MUST include "Total Depreciation & Amortization" line
+- ALL formulas must reference exact cells provided above
+- Use period-adjusted depreciation (monthly/quarterly/yearly)
+- Return complete P&L structure in JSON format with exact formulas
+
+**JSON FORMAT REQUIRED:**
+{
+  "plStructure": {
+    "revenueItems": [{"name": "...", "formulas": ["=cell1", "=cell2", ...]}],
+    "totalRevenue": {"formula": "=SUM(...)"},
+    "operatingExpenses": [{"name": "...", "formulas": ["=cell1", "=cell2", ...]}],
+    "totalOpEx": {"formula": "=SUM(...)"},
+    "ebitda": {"formula": "=TotalRevenue-TotalOpEx"},
+    "depreciationItems": [{"name": "Depreciation - ItemName", "formulas": ["=formula1", "=formula2", ...]}],
+    "totalDepreciation": {"formula": "=SUM(...)"},
+    "ebit": {"formula": "=EBITDA-TotalDepreciation"},
+    "interestExpense": {"formula": "=..."},
+    "ebt": {"formula": "=EBIT-InterestExpense"},
+    "taxExpense": {"formula": "=EBT*0.25"},
+    "netIncome": {"formula": "=EBT-TaxExpense"}
+  }
+}`;
 
     console.log('📋 Enhanced P&L Prompt:', prompt);
     return prompt;
@@ -3210,13 +3264,318 @@ Return Excel formulas in JSON format.`;
 
   // Create P&L sheet from AI response
   async createAIPLSheet(modelData, aiResponse) {
-    // For now, fall back to the template version
-    // TODO: Implement actual AI-based sheet creation
     console.log('📊 Creating P&L from AI response...');
     console.log('AI Response:', aiResponse);
     
-    // Use the existing createPLSheet for now
-    await this.createPLSheet(modelData);
+    try {
+      // Parse AI response to get P&L structure
+      let plStructure = null;
+      if (aiResponse && aiResponse.content) {
+        try {
+          // Try to extract JSON from AI response
+          const jsonMatch = aiResponse.content.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            plStructure = JSON.parse(jsonMatch[0]);
+          }
+        } catch (parseError) {
+          console.log('⚠️ Could not parse AI response as JSON:', parseError);
+        }
+      }
+      
+      if (plStructure && plStructure.plStructure) {
+        console.log('✅ Using AI-generated P&L structure');
+        await this.createPLSheetFromAI(modelData, plStructure.plStructure);
+      } else {
+        console.log('⚠️ Falling back to template P&L (no valid AI structure)');
+        await this.createEnhancedPLSheet(modelData);
+      }
+    } catch (error) {
+      console.error('❌ Error creating AI P&L sheet:', error);
+      console.log('⚠️ Falling back to template P&L');
+      await this.createEnhancedPLSheet(modelData);
+    }
+  }
+
+  // Create P&L sheet with enhanced depreciation handling
+  async createEnhancedPLSheet(modelData) {
+    return Excel.run(async (context) => {
+      console.log('📈 Creating enhanced P&L Statement with depreciation...');
+      
+      const sheets = context.workbook.worksheets;
+      
+      // Delete existing P&L sheet if it exists
+      try {
+        const existingSheet = sheets.getItemOrNullObject('P&L Statement');
+        existingSheet.load('name');
+        await context.sync();
+        
+        if (!existingSheet.isNullObject) {
+          console.log('🗑️ Deleting existing P&L sheet');
+          existingSheet.delete();
+          await context.sync();
+        }
+      } catch (e) {
+        // Sheet doesn't exist, continue
+      }
+
+      // Create new P&L sheet
+      const plSheet = sheets.add('P&L Statement');
+      await context.sync();
+
+      // Calculate periods
+      const periods = this.calculatePeriods(modelData.projectStartDate, modelData.projectEndDate, modelData.modelPeriods);
+      const periodColumns = periods;
+
+      let currentRow = 1;
+
+      // TITLE
+      plSheet.getRange('A1').values = [['Profit & Loss Statement']];
+      plSheet.getRange('A1').format.font.bold = true;
+      plSheet.getRange('A1').format.font.size = 16;
+      plSheet.getRange('A1').format.fill.color = '#1f4e79';
+      plSheet.getRange('A1').format.font.color = 'white';
+      currentRow = 3;
+
+      // TIME PERIOD HEADERS
+      const headers = [''];
+      const startDate = new Date(modelData.projectStartDate);
+      for (let i = 0; i < periodColumns; i++) {
+        headers.push(this.formatPeriodHeader(startDate, i, modelData.modelPeriods));
+      }
+
+      const headerRange = plSheet.getRange(`A${currentRow}:${this.getColumnLetter(periodColumns)}${currentRow}`);
+      headerRange.values = [headers];
+      headerRange.format.font.bold = true;
+      headerRange.format.fill.color = '#d9d9d9';
+      currentRow++;
+
+      // REVENUE SECTION
+      plSheet.getRange(`A${currentRow}`).values = [['REVENUE']];
+      plSheet.getRange(`A${currentRow}`).format.font.bold = true;
+      plSheet.getRange(`A${currentRow}`).format.fill.color = '#e8f5e8';
+      currentRow++;
+
+      // Add revenue items with growth
+      if (modelData.revenueItems && modelData.revenueItems.length > 0) {
+        modelData.revenueItems.forEach((item, index) => {
+          plSheet.getRange(`A${currentRow}`).values = [[item.name]];
+          
+          const valueRef = this.cellTracker.getCellReference(`revenue_${index}`);
+          const growthRateRef = this.cellTracker.getCellReference(`revenue_${index}_growth_rate`);
+          
+          for (let col = 1; col <= periodColumns; col++) {
+            const colLetter = this.getColumnLetter(col);
+            if (col === 1) {
+              // First period: base value
+              plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${valueRef}`]];
+            } else {
+              // Subsequent periods: apply growth
+              if (growthRateRef) {
+                const prevColLetter = this.getColumnLetter(col - 1);
+                if (modelData.modelPeriods === 'monthly') {
+                  plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${prevColLetter}${currentRow}*(1+${growthRateRef}/12/100)`]];
+                } else if (modelData.modelPeriods === 'quarterly') {
+                  plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${prevColLetter}${currentRow}*(1+${growthRateRef}/4/100)`]];
+                } else {
+                  plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${prevColLetter}${currentRow}*(1+${growthRateRef}/100)`]];
+                }
+              } else {
+                const prevColLetter = this.getColumnLetter(col - 1);
+                plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${prevColLetter}${currentRow}`]];
+              }
+            }
+          }
+          currentRow++;
+        });
+      }
+
+      // Total Revenue
+      plSheet.getRange(`A${currentRow}`).values = [['Total Revenue']];
+      plSheet.getRange(`A${currentRow}`).format.font.bold = true;
+      const totalRevenueRow = currentRow;
+      for (let col = 1; col <= periodColumns; col++) {
+        const colLetter = this.getColumnLetter(col);
+        const revenueStartRow = totalRevenueRow - modelData.revenueItems.length;
+        const revenueEndRow = totalRevenueRow - 1;
+        plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=SUM(${colLetter}${revenueStartRow + 1}:${colLetter}${revenueEndRow})`]];
+      }
+      currentRow += 2;
+
+      // OPERATING EXPENSES SECTION
+      plSheet.getRange(`A${currentRow}`).values = [['OPERATING EXPENSES']];
+      plSheet.getRange(`A${currentRow}`).format.font.bold = true;
+      plSheet.getRange(`A${currentRow}`).format.fill.color = '#ffe6e6';
+      currentRow++;
+
+      // Add operating expense items
+      if (modelData.operatingExpenses && modelData.operatingExpenses.length > 0) {
+        modelData.operatingExpenses.forEach((item, index) => {
+          plSheet.getRange(`A${currentRow}`).values = [[item.name]];
+          
+          const valueRef = this.cellTracker.getCellReference(`opex_${index}`);
+          const growthRateRef = this.cellTracker.getCellReference(`opex_${index}_growth_rate`);
+          
+          for (let col = 1; col <= periodColumns; col++) {
+            const colLetter = this.getColumnLetter(col);
+            if (col === 1) {
+              plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=-${valueRef}`]];
+            } else {
+              if (growthRateRef) {
+                const prevColLetter = this.getColumnLetter(col - 1);
+                if (modelData.modelPeriods === 'monthly') {
+                  plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${prevColLetter}${currentRow}*(1+${growthRateRef}/12/100)`]];
+                } else if (modelData.modelPeriods === 'quarterly') {
+                  plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${prevColLetter}${currentRow}*(1+${growthRateRef}/4/100)`]];
+                } else {
+                  plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${prevColLetter}${currentRow}*(1+${growthRateRef}/100)`]];
+                }
+              } else {
+                const prevColLetter = this.getColumnLetter(col - 1);
+                plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${prevColLetter}${currentRow}`]];
+              }
+            }
+          }
+          currentRow++;
+        });
+      }
+
+      // Total Operating Expenses
+      plSheet.getRange(`A${currentRow}`).values = [['Total Operating Expenses']];
+      plSheet.getRange(`A${currentRow}`).format.font.bold = true;
+      const totalOpExRow = currentRow;
+      for (let col = 1; col <= periodColumns; col++) {
+        const colLetter = this.getColumnLetter(col);
+        const opexStartRow = totalOpExRow - modelData.operatingExpenses.length;
+        const opexEndRow = totalOpExRow - 1;
+        plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=SUM(${colLetter}${opexStartRow + 1}:${colLetter}${opexEndRow})`]];
+      }
+      currentRow++;
+
+      // EBITDA
+      plSheet.getRange(`A${currentRow}`).values = [['EBITDA']];
+      plSheet.getRange(`A${currentRow}`).format.font.bold = true;
+      plSheet.getRange(`A${currentRow}`).format.fill.color = '#fff2cc';
+      const ebitdaRow = currentRow;
+      for (let col = 1; col <= periodColumns; col++) {
+        const colLetter = this.getColumnLetter(col);
+        plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${colLetter}${totalRevenueRow}+${colLetter}${totalOpExRow}`]];
+      }
+      currentRow += 2;
+
+      // DEPRECIATION & AMORTIZATION SECTION
+      plSheet.getRange(`A${currentRow}`).values = [['DEPRECIATION & AMORTIZATION']];
+      plSheet.getRange(`A${currentRow}`).format.font.bold = true;
+      plSheet.getRange(`A${currentRow}`).format.fill.color = '#f2f2f2';
+      currentRow++;
+
+      const depreciationStartRow = currentRow;
+      // Add depreciation items
+      if (modelData.capitalExpenses && modelData.capitalExpenses.length > 0) {
+        modelData.capitalExpenses.forEach((item, index) => {
+          plSheet.getRange(`A${currentRow}`).values = [[`Depreciation - ${item.name}`]];
+          
+          const valueRef = this.cellTracker.getCellReference(`capex_${index}`);
+          const depreciationRef = this.cellTracker.getCellReference(`capex_${index}_depreciation`);
+          
+          if (valueRef && depreciationRef) {
+            for (let col = 1; col <= periodColumns; col++) {
+              const colLetter = this.getColumnLetter(col);
+              if (modelData.modelPeriods === 'monthly') {
+                plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=-${valueRef}*${depreciationRef}/100/12`]];
+              } else if (modelData.modelPeriods === 'quarterly') {
+                plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=-${valueRef}*${depreciationRef}/100/4`]];
+              } else {
+                plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=-${valueRef}*${depreciationRef}/100`]];
+              }
+            }
+          }
+          currentRow++;
+        });
+      }
+
+      // Total Depreciation & Amortization
+      plSheet.getRange(`A${currentRow}`).values = [['Total Depreciation & Amortization']];
+      plSheet.getRange(`A${currentRow}`).format.font.bold = true;
+      const totalDepreciationRow = currentRow;
+      if (modelData.capitalExpenses && modelData.capitalExpenses.length > 0) {
+        for (let col = 1; col <= periodColumns; col++) {
+          const colLetter = this.getColumnLetter(col);
+          const depreciationEndRow = currentRow - 1;
+          plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=SUM(${colLetter}${depreciationStartRow}:${colLetter}${depreciationEndRow})`]];
+        }
+      } else {
+        for (let col = 1; col <= periodColumns; col++) {
+          const colLetter = this.getColumnLetter(col);
+          plSheet.getRange(`${colLetter}${currentRow}`).values = [[0]];
+        }
+      }
+      currentRow++;
+
+      // EBIT
+      plSheet.getRange(`A${currentRow}`).values = [['EBIT']];
+      plSheet.getRange(`A${currentRow}`).format.font.bold = true;
+      plSheet.getRange(`A${currentRow}`).format.fill.color = '#e8f5e8';
+      const ebitRow = currentRow;
+      for (let col = 1; col <= periodColumns; col++) {
+        const colLetter = this.getColumnLetter(col);
+        plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${colLetter}${ebitdaRow}+${colLetter}${totalDepreciationRow}`]];
+      }
+      currentRow++;
+
+      // Interest Expense (if debt exists)
+      let interestExpenseRow = null;
+      if (modelData.dealLTV && parseFloat(modelData.dealLTV) > 0) {
+        plSheet.getRange(`A${currentRow}`).values = [['Interest Expense']];
+        interestExpenseRow = currentRow;
+        // Simplified interest calculation for now
+        for (let col = 1; col <= periodColumns; col++) {
+          const colLetter = this.getColumnLetter(col);
+          plSheet.getRange(`${colLetter}${currentRow}`).values = [[0]]; // Placeholder
+        }
+        currentRow++;
+      }
+
+      // EBT
+      plSheet.getRange(`A${currentRow}`).values = [['EBT (Earnings Before Tax)']];
+      plSheet.getRange(`A${currentRow}`).format.font.bold = true;
+      const ebtRow = currentRow;
+      for (let col = 1; col <= periodColumns; col++) {
+        const colLetter = this.getColumnLetter(col);
+        if (interestExpenseRow) {
+          plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${colLetter}${ebitRow}-${colLetter}${interestExpenseRow}`]];
+        } else {
+          plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${colLetter}${ebitRow}`]];
+        }
+      }
+      currentRow++;
+
+      // Tax Expense (25% default)
+      plSheet.getRange(`A${currentRow}`).values = [['Tax Expense (25%)']];
+      const taxExpenseRow = currentRow;
+      for (let col = 1; col <= periodColumns; col++) {
+        const colLetter = this.getColumnLetter(col);
+        plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${colLetter}${ebtRow}*0.25`]];
+      }
+      currentRow++;
+
+      // Net Income
+      plSheet.getRange(`A${currentRow}`).values = [['Net Income']];
+      plSheet.getRange(`A${currentRow}`).format.font.bold = true;
+      plSheet.getRange(`A${currentRow}`).format.fill.color = '#c5e0b4';
+      plSheet.getRange(`A${currentRow}`).format.borders.getItem('EdgeTop').style = 'Double';
+      plSheet.getRange(`A${currentRow}`).format.borders.getItem('EdgeTop').weight = 'Thick';
+      for (let col = 1; col <= periodColumns; col++) {
+        const colLetter = this.getColumnLetter(col);
+        plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${colLetter}${ebtRow}-${colLetter}${taxExpenseRow}`]];
+        plSheet.getRange(`${colLetter}${currentRow}`).format.borders.getItem('EdgeTop').style = 'Double';
+        plSheet.getRange(`${colLetter}${currentRow}`).format.borders.getItem('EdgeTop').weight = 'Thick';
+      }
+
+      // Auto-resize columns
+      plSheet.getUsedRange().format.autofitColumns();
+      
+      console.log('✅ Enhanced P&L Statement with depreciation created successfully!');
+    });
   }
 
   // REMOVED: Old complex AI sheet creation - replaced with simple version above
