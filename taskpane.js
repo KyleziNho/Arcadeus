@@ -195,6 +195,13 @@ class MAModelingAddin {
     // IRR & MOIC are now calculated automatically in FCF sheet
     // No separate button needed
     
+    // Auto-fill Test Data button
+    const autoFillTestDataBtn = document.getElementById('autoFillTestDataBtn');
+    if (autoFillTestDataBtn) {
+      autoFillTestDataBtn.addEventListener('click', () => this.autoFillTestData());
+      console.log('Auto-fill test data button listener added');
+    }
+    
     // Validate Model button (if exists)
     const validateModelBtn = document.getElementById('validateModelBtn');
     if (validateModelBtn) {
@@ -651,6 +658,136 @@ class MAModelingAddin {
         if (this.uiController) {
           this.uiController.showMessage('Error during validation: ' + error.message, 'error');
         }
+      }
+    }
+  }
+
+  autoFillTestData() {
+    console.log('🎲 Auto-filling test data...');
+    
+    try {
+      // Helper function to generate random numbers within a range
+      const randomBetween = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+      const randomDecimal = (min, max, decimals = 1) => 
+        parseFloat((Math.random() * (max - min) + min).toFixed(decimals));
+      
+      // Helper function to get future date
+      const getFutureDate = (monthsFromNow) => {
+        const date = new Date();
+        date.setMonth(date.getMonth() + monthsFromNow);
+        return date.toISOString().split('T')[0];
+      };
+      
+      // Company names for random selection
+      const companyNames = [
+        'TechCorp Solutions', 'InnovateCo Ltd', 'DataDrive Systems', 'CloudTech Enterprises',
+        'FinTech Innovations', 'MedTech Partners', 'GreenEnergy Co', 'RetailMax Group',
+        'LogisticsPro Inc', 'ManufacturingPlus'
+      ];
+      
+      // 1. HIGH-LEVEL PARAMETERS
+      document.getElementById('currency').value = ['USD', 'EUR', 'GBP'][randomBetween(0, 2)];
+      document.getElementById('projectStartDate').value = getFutureDate(1);
+      document.getElementById('projectEndDate').value = getFutureDate(randomBetween(25, 61)); // 2-5 years
+      document.getElementById('modelPeriods').value = ['monthly', 'quarterly'][randomBetween(0, 1)];
+      
+      // 2. DEAL ASSUMPTIONS
+      const dealValue = randomBetween(50000000, 500000000); // $50M - $500M
+      document.getElementById('dealName').value = companyNames[randomBetween(0, companyNames.length - 1)] + ' Acquisition';
+      document.getElementById('dealValue').value = dealValue;
+      document.getElementById('transactionFee').value = randomDecimal(1.5, 3.5);
+      document.getElementById('dealLTV').value = randomBetween(60, 80);
+      
+      // 3. EXIT ASSUMPTIONS
+      document.getElementById('disposalCost').value = randomDecimal(1.5, 3.5);
+      document.getElementById('terminalCapRate').value = randomDecimal(6.5, 12.0);
+      document.getElementById('discountRate').value = randomDecimal(8.0, 15.0);
+      
+      // Clear existing items first
+      if (this.formHandler) {
+        this.formHandler.clearAndResetAllItems();
+      }
+      
+      // 4. REVENUE ITEMS (2-4 items)
+      const revenueCount = randomBetween(2, 4);
+      const revenueNames = ['Product Sales', 'Service Revenue', 'Subscription Fees', 'Licensing Income', 'Consulting Revenue'];
+      
+      for (let i = 0; i < revenueCount; i++) {
+        if (this.formHandler) {
+          this.formHandler.addRevenueItem();
+          
+          // Add small delay to ensure DOM elements are created
+          setTimeout(() => {
+            const nameField = document.getElementById(`revenueName_${i + 1}`);
+            const valueField = document.getElementById(`revenueValue_${i + 1}`);
+            const growthField = document.getElementById(`revenueGrowthRate_${i + 1}`);
+            
+            if (nameField) nameField.value = revenueNames[i % revenueNames.length];
+            if (valueField) valueField.value = randomBetween(5000000, 50000000);
+            if (growthField) growthField.value = randomDecimal(3.0, 15.0);
+          }, 100 * (i + 1));
+        }
+      }
+      
+      // 5. OPERATING EXPENSES (3-5 items)
+      const opexCount = randomBetween(3, 5);
+      const opexNames = ['Staff Costs', 'Marketing & Sales', 'Technology & IT', 'Office & Admin', 'Professional Services'];
+      
+      for (let i = 0; i < opexCount; i++) {
+        if (this.formHandler) {
+          this.formHandler.addOperatingExpense();
+          
+          setTimeout(() => {
+            const nameField = document.getElementById(`opExName_${i + 1}`);
+            const valueField = document.getElementById(`opExValue_${i + 1}`);
+            const growthField = document.getElementById(`opExGrowthRate_${i + 1}`);
+            
+            if (nameField) nameField.value = opexNames[i % opexNames.length];
+            if (valueField) valueField.value = randomBetween(1000000, 15000000);
+            if (growthField) growthField.value = randomDecimal(2.0, 8.0);
+          }, 100 * (i + 1));
+        }
+      }
+      
+      // 6. CAPITAL INVESTMENTS (1-3 items)
+      const capexCount = randomBetween(1, 3);
+      const capexNames = ['Equipment Purchase', 'Technology Infrastructure', 'Office Setup', 'Manufacturing Assets'];
+      
+      for (let i = 0; i < capexCount; i++) {
+        if (this.formHandler) {
+          this.formHandler.addCapitalExpense();
+          
+          setTimeout(() => {
+            const nameField = document.getElementById(`capExName_${i + 1}`);
+            const valueField = document.getElementById(`capExValue_${i + 1}`);
+            const depreciationField = document.getElementById(`capExDepreciation_${i + 1}`);
+            const disposalField = document.getElementById(`capExDisposal_${i + 1}`);
+            
+            if (nameField) nameField.value = capexNames[i % capexNames.length];
+            if (valueField) valueField.value = randomBetween(500000, 10000000);
+            if (depreciationField) depreciationField.value = randomDecimal(5.0, 25.0);
+            if (disposalField) disposalField.value = randomDecimal(1.0, 5.0);
+          }, 100 * (i + 1));
+        }
+      }
+      
+      // Trigger calculations after a delay to ensure all fields are populated
+      setTimeout(() => {
+        if (this.formHandler) {
+          this.formHandler.triggerCalculations();
+        }
+        
+        if (this.uiController) {
+          this.uiController.showMessage('✅ Test data auto-filled successfully! All fields populated with realistic M&A numbers.', 'success');
+        }
+        
+        console.log('✅ Test data auto-fill completed');
+      }, 1000);
+      
+    } catch (error) {
+      console.error('❌ Error auto-filling test data:', error);
+      if (this.uiController) {
+        this.uiController.showMessage('Error auto-filling test data: ' + error.message, 'error');
       }
     }
   }
