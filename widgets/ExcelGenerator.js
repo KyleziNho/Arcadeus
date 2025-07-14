@@ -2023,10 +2023,10 @@ Provide the COMPLETE Free Cash Flow model with exact Excel formulas for every ce
               interestFormula = `=-${debtCellRef}*${rateCellRef}/100/365`;
               break;
             case 'monthly':
-              interestFormula = `=-${debtCellRef}*${rateCellRef}/100/12`;
+              interestFormula = `=-${debtCellRef}*${rateCellRef}/12`;
               break;
             case 'quarterly':
-              interestFormula = `=-${debtCellRef}*${rateCellRef}/100/4`;
+              interestFormula = `=-${debtCellRef}*${rateCellRef}/4`;
               break;
             case 'yearly':
             default:
@@ -3092,11 +3092,11 @@ Generate working Excel formulas using the provided data and structure.`;
         if (growthRateRef && item.growthType === 'annual') {
           const cellRef = growthRateRef.includes('!') ? growthRateRef.split('!')[1] : growthRateRef;
           if (modelData.modelPeriods === 'quarterly') {
-            prompt += `=PreviousCell*(1+Assumptions!${cellRef}/100/4)`;
+            prompt += `=PreviousCell*(1+Assumptions!${cellRef}/4)`;
           } else if (modelData.modelPeriods === 'monthly') {
-            prompt += `=PreviousCell*(1+Assumptions!${cellRef}/100/12)`;
+            prompt += `=PreviousCell*(1+Assumptions!${cellRef}/12)`;
           } else if (modelData.modelPeriods === 'yearly') {
-            prompt += `=PreviousCell*(1+Assumptions!${cellRef}/100)`;
+            prompt += `=PreviousCell*(1+Assumptions!${cellRef})`;
           }
           prompt += `\n   - Growth Rate Location: Assumptions!${cellRef}`;
         } else {
@@ -3120,11 +3120,11 @@ Generate working Excel formulas using the provided data and structure.`;
         if (growthRateRef && item.growthType === 'annual') {
           const cellRef = growthRateRef.includes('!') ? growthRateRef.split('!')[1] : growthRateRef;
           if (modelData.modelPeriods === 'quarterly') {
-            prompt += `=PreviousCell*(1+Assumptions!${cellRef}/100/4)`;
+            prompt += `=PreviousCell*(1+Assumptions!${cellRef}/4)`;
           } else if (modelData.modelPeriods === 'monthly') {
-            prompt += `=PreviousCell*(1+Assumptions!${cellRef}/100/12)`;
+            prompt += `=PreviousCell*(1+Assumptions!${cellRef}/12)`;
           } else if (modelData.modelPeriods === 'yearly') {
-            prompt += `=PreviousCell*(1+Assumptions!${cellRef}/100)`;
+            prompt += `=PreviousCell*(1+Assumptions!${cellRef})`;
           }
           prompt += `\n   - Growth Rate Location: Assumptions!${cellRef}`;
         } else {
@@ -3144,7 +3144,7 @@ Generate working Excel formulas using the provided data and structure.`;
           const depreciationCellRef = depreciationRef.includes('!') ? depreciationRef.split('!')[1] : depreciationRef;
           
           prompt += `\n${index + 1}. Depreciation - ${item.name}:
-   - Annual Depreciation: =${valueRef}*Assumptions!${depreciationCellRef}/100
+   - Annual Depreciation: =${valueRef}*Assumptions!${depreciationCellRef}
    - Period Adjustment: `;
           
           if (modelData.modelPeriods === 'monthly') {
@@ -3192,9 +3192,9 @@ You MUST create a P&L Statement with this EXACT structure:
           prompt += `\n   - "Depreciation - ${item.name}" line with formula: `;
           
           if (modelData.modelPeriods === 'monthly') {
-            prompt += `=${valueRef}*Assumptions!${depreciationCellRef}/100/12`;
+            prompt += `=${valueRef}*Assumptions!${depreciationCellRef}/12`;
           } else if (modelData.modelPeriods === 'quarterly') {
-            prompt += `=${valueRef}*Assumptions!${depreciationCellRef}/100/4`;
+            prompt += `=${valueRef}*Assumptions!${depreciationCellRef}/4`;
           } else {
             prompt += `=${valueRef}*Assumptions!${depreciationCellRef}/100`;
           }
@@ -3394,9 +3394,9 @@ You MUST create a P&L Statement with this EXACT structure:
               if (growthRateRef) {
                 const prevColLetter = this.getColumnLetter(col - 1);
                 if (modelData.modelPeriods === 'monthly') {
-                  plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${prevColLetter}${currentRow}*(1+${growthRateRef}/100/12)`]];
+                  plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${prevColLetter}${currentRow}*(1+${growthRateRef}/12)`]];
                 } else if (modelData.modelPeriods === 'quarterly') {
-                  plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${prevColLetter}${currentRow}*(1+${growthRateRef}/100/4)`]];
+                  plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${prevColLetter}${currentRow}*(1+${growthRateRef}/4)`]];
                 } else {
                   plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${prevColLetter}${currentRow}*(1+${growthRateRef}/100)`]];
                 }
@@ -3449,9 +3449,9 @@ You MUST create a P&L Statement with this EXACT structure:
               if (growthRateRef) {
                 const prevColLetter = this.getColumnLetter(col - 1);
                 if (modelData.modelPeriods === 'monthly') {
-                  plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${prevColLetter}${currentRow}*(1+${growthRateRef}/100/12)`]];
+                  plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${prevColLetter}${currentRow}*(1+${growthRateRef}/12)`]];
                 } else if (modelData.modelPeriods === 'quarterly') {
-                  plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${prevColLetter}${currentRow}*(1+${growthRateRef}/100/4)`]];
+                  plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${prevColLetter}${currentRow}*(1+${growthRateRef}/4)`]];
                 } else {
                   plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${prevColLetter}${currentRow}*(1+${growthRateRef}/100)`]];
                 }
@@ -3548,9 +3548,9 @@ You MUST create a P&L Statement with this EXACT structure:
               } else {
                 // Operating periods: Calculate depreciation
                 if (modelData.modelPeriods === 'monthly') {
-                  plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${valueRef}*${depreciationRef}/100/12`]];
+                  plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${valueRef}*${depreciationRef}/12`]];
                 } else if (modelData.modelPeriods === 'quarterly') {
-                  plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${valueRef}*${depreciationRef}/100/4`]];
+                  plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${valueRef}*${depreciationRef}/4`]];
                 } else {
                   plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${valueRef}*${depreciationRef}/100`]];
                 }
