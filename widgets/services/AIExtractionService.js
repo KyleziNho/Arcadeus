@@ -446,7 +446,7 @@ Format each as: name, current value, growth type, growth rate.`;
 
 Look for:
 - Operating expenses (staff, rent, marketing, etc.)
-- Capital expenditures
+- Initial investments
 - Cost inflation rates
 - Expense projections
 

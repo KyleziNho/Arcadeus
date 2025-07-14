@@ -60,7 +60,7 @@ class CostItemsExtractor {
    * Use AI service to extract cost items
    */
   async extractWithAI(files) {
-    const prompt = `Extract operating expenses and capital expenditures from these financial documents.
+    const prompt = `Extract operating expenses and initial investments from these financial documents.
 
 Focus on identifying:
 
@@ -73,7 +73,7 @@ Focus on identifying:
    - Travel and entertainment
    - General administrative expenses
 
-2. CAPITAL EXPENDITURES (CapEx):
+2. INITIAL INVESTMENTS (CapEx):
    - Equipment purchases
    - Technology investments
    - Property improvements
@@ -284,8 +284,8 @@ Return ONLY this structure with actual values found or null:
     
     // CapEx patterns
     const capExPatterns = [
-      // Capital expenditure on [item]: $X
-      /capital\\s+expenditure\\s+on\\s+([A-Za-z\\s&]+):\\s*(?:\\$|USD)?([0-9,]+(?:\\.[0-9]+)?)\\s*(million|billion|m|b|k|thousand)?/gi,
+      // Initial investment on [item]: $X
+      /initial\\s+investment\\s+on\\s+([A-Za-z\\s&]+):\\s*(?:\\$|USD)?([0-9,]+(?:\\.[0-9]+)?)\\s*(million|billion|m|b|k|thousand)?/gi,
       
       // CapEx: [item] $X
       /capex\\s*:?\\s*([A-Za-z\\s&]+)\\s+(?:\\$|USD)?([0-9,]+(?:\\.[0-9]+)?)\\s*(million|billion|m|b|k|thousand)?/gi,

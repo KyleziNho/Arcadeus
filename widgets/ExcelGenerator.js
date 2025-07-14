@@ -282,34 +282,38 @@ class ExcelGenerator {
       currentRow += 2; // Add space
     }
     
-    // CAPITAL EXPENSES SECTION
+    // INITIAL CAPITAL SECTION
     if (data.capitalExpenses && data.capitalExpenses.length > 0) {
       sectionRows['capitalExpenses'] = currentRow;
-      sheet.getRange(`A${currentRow}`).values = [['CAPITAL EXPENSES']];
+      sheet.getRange(`A${currentRow}`).values = [['INITIAL CAPITAL']];
       sheet.getRange(`A${currentRow}`).format.font.bold = true;
       currentRow += 1;
       
       // Add column headers
       sheet.getRange(`A${currentRow}`).values = [['Name']];
-      sheet.getRange(`B${currentRow}`).values = [['Base Value']];
-      sheet.getRange(`C${currentRow}`).values = [['Growth Rate']];
-      sheet.getRange(`A${currentRow}:C${currentRow}`).format.font.bold = true;
+      sheet.getRange(`B${currentRow}`).values = [['Initial Value']];
+      sheet.getRange(`C${currentRow}`).values = [['Depreciation/Amortization (%)']];
+      sheet.getRange(`D${currentRow}`).values = [['Disposal Cost (%)']];
+      sheet.getRange(`A${currentRow}:D${currentRow}`).format.font.bold = true;
       currentRow += 1;
       
       const capexStartRow = currentRow;
       data.capitalExpenses.forEach((item, index) => {
-        const itemName = item.name || `CapEx Item ${index + 1}`;
-        const growthRate = item.growthRate || 0;
+        const itemName = item.name || `Initial Capital ${index + 1}`;
+        const depreciation = item.depreciation || 0;
+        const disposalCost = item.disposalCost || 0;
         sheet.getRange(`A${currentRow}`).values = [[itemName]];
         sheet.getRange(`B${currentRow}`).values = [[item.value || 0]];
-        sheet.getRange(`C${currentRow}`).values = [[`${growthRate}%`]];
+        sheet.getRange(`C${currentRow}`).values = [[`${depreciation}%`]];
+        sheet.getRange(`D${currentRow}`).values = [[`${disposalCost}%`]];
         this.cellTracker.recordCell(`capex_${index}`, 'Assumptions', `B${currentRow}`);
         this.cellTracker.recordCell(`capex_${index}_name`, 'Assumptions', `A${currentRow}`);
-        this.cellTracker.recordCell(`capex_${index}_growth_rate`, 'Assumptions', `C${currentRow}`);
+        this.cellTracker.recordCell(`capex_${index}_depreciation`, 'Assumptions', `C${currentRow}`);
+        this.cellTracker.recordCell(`capex_${index}_disposal`, 'Assumptions', `D${currentRow}`);
         currentRow++;
       });
       
-      // Record the range of capital expenses for future reference
+      // Record the range of initial capital for future reference
       this.cellTracker.recordCell('capex_range', 'Assumptions', `B${capexStartRow}:B${currentRow - 1}`);
       this.cellTracker.recordCell('capex_count', 'Assumptions', data.capitalExpenses.length.toString());
       
@@ -1182,7 +1186,7 @@ Create a complete Free Cash Flow Statement that uses ONLY Excel formulas referen
 - Less: Tax adjustments if needed
 
 **2. INVESTING CASH FLOW:**
-- Capital Expenditures: Use CapEx from assumptions
+- Initial Investments: Use CapEx from assumptions
 - Asset sales/disposals (if applicable)
 
 **3. FINANCING CASH FLOW:**
@@ -1294,7 +1298,7 @@ Provide the COMPLETE Free Cash Flow model with exact Excel formulas for every ce
     }
     output += '\n';
     
-    output += `**CAPITAL EXPENDITURE ASSUMPTIONS:**\n`;
+    output += `**INITIAL INVESTMENT ASSUMPTIONS:**\n`;
     if (modelData.capitalExpenses && modelData.capitalExpenses.length > 0) {
       modelData.capitalExpenses.forEach((item, index) => {
         output += `- ${item.name}: ${this.cellTracker.getCellReference(`capex_${index}`)}\n`;
@@ -1304,7 +1308,7 @@ Provide the COMPLETE Free Cash Flow model with exact Excel formulas for every ce
         }
       });
     } else {
-      output += `- No capital expenditure items specified\n`;
+      output += `- No initial investment items specified\n`;
     }
     output += '\n';
     
@@ -1367,7 +1371,7 @@ Provide the COMPLETE Free Cash Flow model with exact Excel formulas for every ce
         output += `${item.name}: ${this.cellTracker.getCellReference(`capex_${index}`)}\n`;
       });
     } else {
-      output = 'No capital expenditures specified.';
+      output = 'No initial investments specified.';
     }
     return output;
   }
@@ -1498,14 +1502,14 @@ Provide the COMPLETE Free Cash Flow model with exact Excel formulas for every ce
         }
         currentRow += 2;
         
-        // CAPITAL EXPENDITURES SECTION
-        fcfSheet.getRange(`A${currentRow}`).values = [['CAPITAL EXPENDITURES']];
+        // INITIAL INVESTMENTS SECTION
+        fcfSheet.getRange(`A${currentRow}`).values = [['INITIAL INVESTMENTS']];
         fcfSheet.getRange(`A${currentRow}`).format.font.bold = true;
         fcfSheet.getRange(`A${currentRow}`).format.fill.color = '#f2f2f2';
         currentRow++;
         
-        // Capital Expenditures from assumptions
-        fcfSheet.getRange(`A${currentRow}`).values = [['Less: Capital Expenditures']];
+        // Initial Investments from assumptions
+        fcfSheet.getRange(`A${currentRow}`).values = [['Less: Initial Investments']];
         fcfStructure.capex = currentRow;
         if (assumptionStructure && assumptionStructure.assumptions.capitalExpenses && assumptionStructure.assumptions.capitalExpenses.length > 0) {
           // Use actual capital expense references from assumptions
@@ -1630,75 +1634,12 @@ Provide the COMPLETE Free Cash Flow model with exact Excel formulas for every ce
         }
         currentRow++;
         
-        // IRR Calculation using Excel's built-in IRR function
+        // Simple IRR placeholder without cash flow analysis section
         fcfSheet.getRange(`A${currentRow}`).values = [['Internal Rate of Return (IRR)']];
         fcfSheet.getRange(`A${currentRow}`).format.font.bold = true;
         fcfSheet.getRange(`A${currentRow}`).format.font.italic = true;
-        
-        // Calculate initial equity investment (negative cash flow at time 0)
-        let equityInvestment = modelData.equityContribution;
-        if (!equityInvestment || equityInvestment === 0) {
-          const dealLTV = modelData.dealLTV || 70;
-          equityInvestment = modelData.dealValue * (100 - dealLTV) / 100;
-        }
-        
-        // Create a dedicated cash flow range for IRR calculation
-        currentRow += 2;
-        fcfSheet.getRange(`A${currentRow}`).values = [['CASH FLOW ANALYSIS']];
-        fcfSheet.getRange(`A${currentRow}`).format.font.bold = true;
-        fcfSheet.getRange(`A${currentRow}`).format.fill.color = '#fff2cc';
-        currentRow++;
-        
-        // Create cash flow table with proper headers
-        fcfSheet.getRange(`A${currentRow}`).values = [['Period']];
-        fcfSheet.getRange(`B${currentRow}`).values = [['Cash Flow']];
-        fcfSheet.getRange(`A${currentRow}:B${currentRow}`).format.font.bold = true;
-        currentRow++;
-        
-        const cashFlowStartRow = currentRow;
-        
-        // Period 0: Initial equity investment (negative)
-        fcfSheet.getRange(`A${currentRow}`).values = [['Initial Investment']];
-        fcfSheet.getRange(`B${currentRow}`).values = [[-Math.abs(equityInvestment)]];
-        currentRow++;
-        
-        // Periods 1 to N-1: Levered FCF
-        for (let period = 1; period < periodColumns; period++) {
-          fcfSheet.getRange(`A${currentRow}`).values = [[`Period ${period}`]];
-          const colLetter = this.getColumnLetter(period);
-          fcfSheet.getRange(`B${currentRow}`).formulas = [[`=${colLetter}${fcfStructure.leveredFCF}`]];
-          currentRow++;
-        }
-        
-        // Final period: Levered FCF + Exit Value
-        fcfSheet.getRange(`A${currentRow}`).values = [[`Period ${periodColumns} + Exit`]];
-        const lastCol = this.getColumnLetter(periodColumns);
-        let exitFormula;
-        if (assumptionStructure && assumptionStructure.assumptions.terminalCapRate) {
-          const capRateRef = assumptionStructure.assumptions.terminalCapRate.cellRef;
-          exitFormula = `=${lastCol}${fcfStructure.leveredFCF}+(${lastCol}${fcfStructure.leveredFCF}/(Assumptions!${capRateRef}/100))`;
-        } else {
-          exitFormula = `=${lastCol}${fcfStructure.leveredFCF}+(${lastCol}${fcfStructure.leveredFCF}/0.085)`;
-        }
-        fcfSheet.getRange(`B${currentRow}`).formulas = [[exitFormula]];
-        currentRow += 2;
-        
-        // Calculate IRR using the cash flow range
-        fcfSheet.getRange(`A${currentRow}`).values = [['Internal Rate of Return (IRR)']];
-        fcfSheet.getRange(`A${currentRow}`).format.font.bold = true;
-        const cashFlowRange = `B${cashFlowStartRow}:B${currentRow - 2}`;
-        fcfSheet.getRange(`B${currentRow}`).formulas = [[`=IRR(${cashFlowRange})`]];
-        fcfSheet.getRange(`B${currentRow}`).format.numberFormat = [['0.00%']];
-        currentRow++;
-        
-        // Calculate MOIC (Multiple on Invested Capital)
-        fcfSheet.getRange(`A${currentRow}`).values = [['Multiple on Invested Capital (MOIC)']];
-        fcfSheet.getRange(`A${currentRow}`).format.font.bold = true;
-        // MOIC = Total Cash Inflows / Initial Investment
-        const totalInflowsFormula = `=SUM(B${cashFlowStartRow + 1}:B${currentRow - 2})`;
-        const initialInvestmentCell = `B${cashFlowStartRow}`;
-        fcfSheet.getRange(`B${currentRow}`).formulas = [[`=${totalInflowsFormula}/ABS(${initialInvestmentCell})`]];
-        fcfSheet.getRange(`B${currentRow}`).format.numberFormat = [['0.00"x"']];
+        fcfSheet.getRange(`B${currentRow}`).values = [['Manual calculation required']];
+        fcfSheet.getRange(`B${currentRow}`).format.font.italic = true;
         
       } else {
         // Fallback if P&L structure not found
@@ -2485,12 +2426,12 @@ Create a comprehensive Free Cash Flow statement with the following structure:
    - Change in Working Capital (2% of Total Revenue change)
    - Calculate as: Current Period Revenue * 2% - Previous Period Revenue * 2%
 
-3. **CAPITAL EXPENDITURES:**
+3. **INITIAL INVESTMENTS:**
    - Reference capital expense items from Assumptions if any exist
    - Apply growth rates if specified
 
 4. **UNLEVERED FREE CASH FLOW:**
-   - = NOPAT - Change in Working Capital - Capital Expenditures
+   - = NOPAT - Change in Working Capital - Initial Investments
 
 5. **FINANCING CASH FLOWS:**
    - Interest Payments: Reference from P&L Interest Expense line
