@@ -11,14 +11,23 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="taskpane.css">
     <!-- Widget Scripts -->
-    <script src="widgets/ExcelGenerator.js"></script>
+    <script src="widgets/ExcelGenerator.js?v=2"></script>
     <script>
         // Verify ExcelGenerator loaded
-        console.log('ExcelGenerator loaded:', typeof ExcelGenerator !== 'undefined');
-        if (typeof ExcelGenerator === 'undefined') {
-            console.error('❌ ExcelGenerator failed to load from widgets/ExcelGenerator.js');
+        console.log('🔧 Checking ExcelGenerator availability...');
+        console.log('window.ExcelGenerator:', typeof window.ExcelGenerator);
+        console.log('ExcelGenerator:', typeof ExcelGenerator);
+        
+        if (typeof window.ExcelGenerator === 'undefined') {
+            console.error('❌ window.ExcelGenerator is undefined');
         } else {
-            console.log('✅ ExcelGenerator class available');
+            console.log('✅ window.ExcelGenerator is available');
+        }
+        
+        if (typeof ExcelGenerator === 'undefined') {
+            console.error('❌ ExcelGenerator global is undefined');
+        } else {
+            console.log('✅ ExcelGenerator global is available');
         }
     </script>
     <script src="widgets/FormHandler.js"></script>

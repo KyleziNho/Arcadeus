@@ -87,9 +87,9 @@ class MAModelingAddin {
     });
     
     // Initialize ExcelGenerator
-    if (typeof ExcelGenerator !== 'undefined') {
+    if (typeof window.ExcelGenerator !== 'undefined') {
       try {
-        this.excelGenerator = new ExcelGenerator();
+        this.excelGenerator = new window.ExcelGenerator();
         window.excelGenerator = this.excelGenerator;
         console.log('✅ ExcelGenerator initialized successfully');
       } catch (error) {
@@ -98,6 +98,10 @@ class MAModelingAddin {
       }
     } else {
       console.error('❌ ExcelGenerator class not found. Check if ExcelGenerator.js is loaded.');
+      console.log('Available classes:', {
+        ExcelGenerator: typeof ExcelGenerator,
+        windowExcelGenerator: typeof window.ExcelGenerator
+      });
       this.excelGenerator = null;
     }
     

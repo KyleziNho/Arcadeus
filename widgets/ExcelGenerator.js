@@ -3692,7 +3692,6 @@ You MUST create a P&L Statement with this EXACT structure:
       
       // Period headers
       capExSheet.getRange('A' + currentRow).values = [['Period']];
-      const startDate = new Date(modelData.projectStartDate);
       for (let i = 0; i <= periods; i++) {
         const colLetter = this.getColumnLetter(i + 2);
         if (i === 0) {
