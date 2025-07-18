@@ -656,11 +656,15 @@ Please provide the complete P&L structure with exact cell addresses and formulas
       const assumptionStructure = await this.readAssumptionSheetStructure();
       console.log('📊 Assumption Structure discovered:', assumptionStructure);
       
-      // Step 3: Generate comprehensive FCF AI prompt with ACTUAL cell references
-      const fcfPrompt = this.generateRealFCFPrompt(modelData, plStructure, assumptionStructure);
+      // Step 3: Generate CapEx sheet with totals for each period
+      const capExStructure = await this.generateCapExSheet(modelData);
+      console.log('📊 CapEx Structure generated:', capExStructure);
       
-      // Step 4: Create professional FCF sheet using discovered cell references
-      await this.createAIFCFSheet(modelData, fcfPrompt, plStructure, assumptionStructure);
+      // Step 4: Generate comprehensive FCF AI prompt with ACTUAL cell references
+      const fcfPrompt = this.generateRealFCFPrompt(modelData, plStructure, assumptionStructure, capExStructure);
+      
+      // Step 5: Create professional FCF sheet using discovered cell references
+      await this.createAIFCFSheet(modelData, fcfPrompt, plStructure, assumptionStructure, capExStructure);
       
       console.log('📋 REAL FCF AI Prompt for OpenAI:');
       console.log('='.repeat(100));
@@ -2466,7 +2470,7 @@ Provide the COMPLETE Free Cash Flow model with exact Excel formulas for every ce
   }
 
   // Generate comprehensive FCF prompt using REAL cell references from P&L and Assumptions
-  generateRealFCFPrompt(modelData, plStructure, assumptionStructure) {
+  generateRealFCFPrompt(modelData, plStructure, assumptionStructure, capExStructure) {
     console.log('🤖 Generating REAL FCF AI prompt with discovered cell references...');
     
     const periods = this.calculatePeriods(modelData.projectStartDate, modelData.projectEndDate, modelData.modelPeriods);
@@ -2501,32 +2505,34 @@ Create a comprehensive Free Cash Flow statement with the following structure:
 - Columns B through ${this.getColumnLetter(maxPeriods)}: Period data (${maxPeriods} periods total)
 - Period Headers: ${periodHeaders.join(', ')}
 
-**FCF CALCULATION METHODOLOGY:**
+**FCF CALCULATION METHODOLOGY - REAL ESTATE MODEL:**
 
-1. **OPERATING CASH FLOW SECTION:**
-   - NOI: Reference the exact NOI row from P&L
-   - Real estate model: No tax calculations required
+You MUST create a Free Cash Flow Statement with this EXACT structure:
 
-2. **WORKING CAPITAL ADJUSTMENTS:**
-   - Change in Working Capital (2% of Total Revenue change)
-   - Calculate as: Current Period Revenue * 2% - Previous Period Revenue * 2%
+**UNLEVERED CASH FLOWS:**
+1. **Period** - Column headers for all periods
+2. **Purchase price** - Deal Value in Period 0 only (negative)
+3. **Transaction costs** - Transaction fees in Period 0 only (negative)
+4. **EBITDA** - Reference NOI from P&L (all operating periods)
+5. **CapEx** - Reference Total CapEx from CapEx sheet (all periods)
+6. **Sale Price** - Terminal value in final period only (positive)
+7. **Disposal Costs** - Disposal costs in final period only (negative)
+8. **Unlevered Cashflows** - Sum of all above items per period
 
-3. **INITIAL INVESTMENTS:**
-   - Reference capital expense items from Assumptions if any exist
-   - Apply growth rates if specified
+**LEVERED CASH FLOWS:**
+9. **Debt drawn** - Debt amount in Period 0 only (positive)
+10. **Debt upfront costs** - Loan issuance fees in Period 0 only (negative)
+11. **Interest Expense** - Interest payments (all debt periods)
+12. **Debt repaid (Interest-only-loan)** - Principal repayment in final period only (negative)
+13. **Levered Cashflows** - Unlevered Cashflows + Debt flows per period
 
-4. **UNLEVERED FREE CASH FLOW:**
-   - = NOPAT - Change in Working Capital - Initial Investments
+**EQUITY FLOWS:**
+14. **Equity contributed** - Equity investment in Period 0 only (negative)
+15. **Equity distributions** - Levered Cashflows (all periods)
 
-5. **FINANCING CASH FLOWS:**
-   - Interest Payments: Reference from P&L Interest Expense line
-   - Principal Repayments (if applicable)
-
-6. **LEVERED FREE CASH FLOW:**
-   - = Unlevered FCF - Interest Payments - Principal Repayments
-
-7. **CUMULATIVE METRICS:**
-   - Cumulative FCF
+**RETURNS:**
+16. **Unlevered IRR** - XIRR calculation on Unlevered Cashflows
+17. **MOIC** - Multiple of Invested Capital calculation
    - Undiscounted NPV (simple sum of FCF)
    - Discounted NPV using WACC from Assumptions
    - IRR calculation including initial investment
@@ -2588,6 +2594,14 @@ If any critical P&L references are missing, clearly state what assumptions you'r
 
     output += `\n**REFERENCE FORMAT:** Use 'P&L Statement'!B[row]:[column][row] for ranges\n`;
     output += `**EXAMPLE:** 'P&L Statement'!B${plStructure.lineItems.netIncome?.row || '15'}:${this.getColumnLetter(maxPeriods)}${plStructure.lineItems.netIncome?.row || '15'} for Net Income across all periods\n\n`;
+
+    // Add CapEx sheet structure
+    if (capExStructure && capExStructure.totalRow) {
+      output += `**CAPEX SHEET STRUCTURE:**\n`;
+      output += `✅ CapEx Sheet created with Total CapEx row\n`;
+      output += `- Total CapEx: Row ${capExStructure.totalRow}, Range B${capExStructure.totalRow}:${this.getColumnLetter(maxPeriods + 1)}${capExStructure.totalRow}\n`;
+      output += `- **REFERENCE FORMAT:** Use 'CapEx'!B${capExStructure.totalRow}:${this.getColumnLetter(maxPeriods + 1)}${capExStructure.totalRow} for Total CapEx across all periods\n\n`;
+    }
 
     return output;
   }
@@ -3570,6 +3584,373 @@ You MUST create a P&L Statement with this EXACT structure:
       plSheet.getUsedRange().format.autofitColumns();
       
       console.log('✅ Enhanced P&L Statement with depreciation created successfully!');
+    });
+  }
+
+  // Generate CapEx sheet with totals for each period
+  async generateCapExSheet(modelData) {
+    return Excel.run(async (context) => {
+      console.log('📊 Creating CapEx Summary Sheet...');
+      
+      const sheets = context.workbook.worksheets;
+      
+      // Delete existing CapEx sheet if it exists
+      try {
+        const existingSheet = sheets.getItemOrNullObject('CapEx');
+        existingSheet.load('name');
+        await context.sync();
+        
+        if (!existingSheet.isNullObject) {
+          console.log('🗑️ Deleting existing CapEx sheet');
+          existingSheet.delete();
+          await context.sync();
+        }
+      } catch (e) {
+        // Sheet doesn't exist, continue
+      }
+      
+      // Create new CapEx sheet
+      const capExSheet = sheets.add('CapEx');
+      capExSheet.position = 2; // After P&L
+      capExSheet.activate();
+      
+      // Calculate periods
+      const startDate = new Date(modelData.projectStartDate);
+      const endDate = new Date(modelData.projectEndDate);
+      const periods = this.calculatePeriods(startDate, endDate, modelData.modelPeriods);
+      const totalColumns = periods.length + 1; // +1 for Period 0
+      
+      // Add headers
+      capExSheet.getRange('A1').values = [['CapEx Summary Sheet']];
+      capExSheet.getRange('A1').format.font.bold = true;
+      capExSheet.getRange('A1').format.font.size = 16;
+      
+      let currentRow = 3;
+      
+      // Period headers
+      capExSheet.getRange('A' + currentRow).values = [['Period']];
+      for (let i = 0; i <= periods.length; i++) {
+        const colLetter = this.getColumnLetter(i + 2);
+        if (i === 0) {
+          capExSheet.getRange(colLetter + currentRow).values = [['Period 0']];
+        } else {
+          const periodHeader = this.formatPeriodHeader(periods[i - 1], modelData.modelPeriods);
+          capExSheet.getRange(colLetter + currentRow).values = [[periodHeader]];
+        }
+      }
+      capExSheet.getRange(`A${currentRow}:${this.getColumnLetter(totalColumns + 1)}${currentRow}`).format.font.bold = true;
+      currentRow++;
+      
+      // Individual CapEx items
+      const capExStructure = { items: [], totalRow: null };
+      
+      if (modelData.capEx && modelData.capEx.length > 0) {
+        modelData.capEx.forEach((item, index) => {
+          capExSheet.getRange(`A${currentRow}`).values = [[item.name || `CapEx ${index + 1}`]];
+          
+          const valueRef = this.cellTracker.getCellReference(`capex_${index}`);
+          const growthRateRef = this.cellTracker.getCellReference(`capex_${index}_growth_rate`);
+          
+          capExStructure.items.push({
+            name: item.name,
+            row: currentRow,
+            valueRef: valueRef,
+            growthRateRef: growthRateRef
+          });
+          
+          if (valueRef && growthRateRef) {
+            for (let col = 0; col <= periods.length; col++) {
+              const colLetter = this.getColumnLetter(col + 2);
+              if (col === 0) {
+                // Period 0: No CapEx
+                capExSheet.getRange(`${colLetter}${currentRow}`).values = [[0]];
+              } else {
+                // Operating periods: Apply growth
+                const baseValue = `-${valueRef}`;
+                if (modelData.modelPeriods === 'monthly') {
+                  capExSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${baseValue}*(1+${growthRateRef}/100)^((${col}-1)/12)`]];
+                } else if (modelData.modelPeriods === 'quarterly') {
+                  capExSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${baseValue}*(1+${growthRateRef}/100)^((${col}-1)/4)`]];
+                } else {
+                  capExSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${baseValue}*(1+${growthRateRef}/100)^(${col}-1)`]];
+                }
+              }
+            }
+          }
+          currentRow++;
+        });
+        
+        // Total CapEx row
+        capExSheet.getRange(`A${currentRow}`).values = [['Total CapEx']];
+        capExSheet.getRange(`A${currentRow}`).format.font.bold = true;
+        capExStructure.totalRow = currentRow;
+        
+        for (let col = 0; col <= periods.length; col++) {
+          const colLetter = this.getColumnLetter(col + 2);
+          const startRow = currentRow - modelData.capEx.length;
+          const endRow = currentRow - 1;
+          capExSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=SUM(${colLetter}${startRow}:${colLetter}${endRow})`]];
+        }
+      } else {
+        // No CapEx items
+        capExSheet.getRange(`A${currentRow}`).values = [['No CapEx Items']];
+        capExStructure.totalRow = currentRow;
+        
+        for (let col = 0; col <= periods.length; col++) {
+          const colLetter = this.getColumnLetter(col + 2);
+          capExSheet.getRange(`${colLetter}${currentRow}`).values = [[0]];
+        }
+      }
+      
+      // Format numbers
+      const dataRange = capExSheet.getRange(`B4:${this.getColumnLetter(totalColumns + 1)}${currentRow}`);
+      dataRange.numberFormat = [['#,##0_);[Red](#,##0);"-"']];
+      
+      // Auto-resize columns
+      capExSheet.getUsedRange().format.autofitColumns();
+      
+      console.log('✅ CapEx Summary Sheet created successfully!');
+      return capExStructure;
+    });
+  }
+
+  // Create FCF sheet with the new structure
+  async createAIFCFSheet(modelData, fcfPrompt, plStructure, assumptionStructure, capExStructure) {
+    return Excel.run(async (context) => {
+      console.log('💰 Creating Free Cash Flow Sheet...');
+      
+      const sheets = context.workbook.worksheets;
+      
+      // Delete existing FCF sheet if it exists
+      try {
+        const existingSheet = sheets.getItemOrNullObject('FCF');
+        existingSheet.load('name');
+        await context.sync();
+        
+        if (!existingSheet.isNullObject) {
+          console.log('🗑️ Deleting existing FCF sheet');
+          existingSheet.delete();
+          await context.sync();
+        }
+      } catch (e) {
+        // Sheet doesn't exist, continue
+      }
+      
+      // Create new FCF sheet
+      const fcfSheet = sheets.add('FCF');
+      fcfSheet.position = 3; // After CapEx
+      fcfSheet.activate();
+      
+      // Calculate periods
+      const startDate = new Date(modelData.projectStartDate);
+      const endDate = new Date(modelData.projectEndDate);
+      const periods = this.calculatePeriods(startDate, endDate, modelData.modelPeriods);
+      const totalColumns = periods.length + 1; // +1 for Period 0
+      
+      // Add headers
+      fcfSheet.getRange('A1').values = [['Free Cash Flow Statement']];
+      fcfSheet.getRange('A1').format.font.bold = true;
+      fcfSheet.getRange('A1').format.font.size = 16;
+      
+      let currentRow = 3;
+      
+      // Period headers
+      fcfSheet.getRange('A' + currentRow).values = [['Period']];
+      for (let i = 0; i <= periods.length; i++) {
+        const colLetter = this.getColumnLetter(i + 2);
+        if (i === 0) {
+          fcfSheet.getRange(colLetter + currentRow).values = [['Period 0']];
+        } else {
+          const periodHeader = this.formatPeriodHeader(periods[i - 1], modelData.modelPeriods);
+          fcfSheet.getRange(colLetter + currentRow).values = [[periodHeader]];
+        }
+      }
+      fcfSheet.getRange(`A${currentRow}:${this.getColumnLetter(totalColumns + 1)}${currentRow}`).format.font.bold = true;
+      currentRow++;
+      
+      // UNLEVERED CASH FLOWS
+      fcfSheet.getRange(`A${currentRow}`).values = [['UNLEVERED CASH FLOWS']];
+      fcfSheet.getRange(`A${currentRow}`).format.font.bold = true;
+      fcfSheet.getRange(`A${currentRow}`).format.fill.color = '#d9ead3';
+      currentRow++;
+      
+      // Purchase price (Period 0 only)
+      fcfSheet.getRange(`A${currentRow}`).values = [['Purchase price']];
+      fcfSheet.getRange('B' + currentRow).formulas = [[`=-Assumptions!${this.cellTracker.getCellReference('dealValue')?.split('!')[1] || 'B10'}`]];
+      for (let i = 1; i <= periods.length; i++) {
+        const colLetter = this.getColumnLetter(i + 2);
+        fcfSheet.getRange(colLetter + currentRow).values = [['']];
+      }
+      currentRow++;
+      
+      // Transaction costs (Period 0 only)
+      fcfSheet.getRange(`A${currentRow}`).values = [['Transaction costs']];
+      const dealValueRef = this.cellTracker.getCellReference('dealValue');
+      const transactionFeeRef = this.cellTracker.getCellReference('transactionFee');
+      if (dealValueRef && transactionFeeRef) {
+        fcfSheet.getRange('B' + currentRow).formulas = [[`=-${dealValueRef}*${transactionFeeRef}/100`]];
+      }
+      for (let i = 1; i <= periods.length; i++) {
+        const colLetter = this.getColumnLetter(i + 2);
+        fcfSheet.getRange(colLetter + currentRow).values = [['']];
+      }
+      currentRow++;
+      
+      // EBITDA (NOI from P&L)
+      fcfSheet.getRange(`A${currentRow}`).values = [['EBITDA']];
+      fcfSheet.getRange('B' + currentRow).values = [[0]]; // Period 0
+      if (plStructure.lineItems.noi) {
+        for (let i = 1; i <= periods.length; i++) {
+          const colLetter = this.getColumnLetter(i + 2);
+          const plCol = this.getColumnLetter(i + 1);
+          fcfSheet.getRange(colLetter + currentRow).formulas = [[`='P&L Statement'!${plCol}${plStructure.lineItems.noi.row}`]];
+        }
+      }
+      currentRow++;
+      
+      // CapEx (from CapEx sheet)
+      fcfSheet.getRange(`A${currentRow}`).values = [['CapEx']];
+      if (capExStructure && capExStructure.totalRow) {
+        for (let i = 0; i <= periods.length; i++) {
+          const colLetter = this.getColumnLetter(i + 2);
+          const capExCol = this.getColumnLetter(i + 2);
+          fcfSheet.getRange(colLetter + currentRow).formulas = [[`='CapEx'!${capExCol}${capExStructure.totalRow}`]];
+        }
+      }
+      currentRow++;
+      
+      // Sale Price (final period only)
+      fcfSheet.getRange(`A${currentRow}`).values = [['Sale Price']];
+      const finalPeriodCol = this.getColumnLetter(periods.length + 1);
+      if (plStructure.lineItems.noi) {
+        // Terminal value = Final NOI / Terminal Cap Rate
+        const terminalCapRateRef = this.cellTracker.getCellReference('terminalCapRate');
+        if (terminalCapRateRef) {
+          fcfSheet.getRange(finalPeriodCol + currentRow).formulas = [[`='P&L Statement'!${this.getColumnLetter(periods.length)}${plStructure.lineItems.noi.row}/${terminalCapRateRef}*100`]];
+        }
+      }
+      currentRow++;
+      
+      // Disposal Costs (final period only)
+      fcfSheet.getRange(`A${currentRow}`).values = [['Disposal Costs']];
+      const disposalCostRef = this.cellTracker.getCellReference('disposalCost');
+      if (disposalCostRef) {
+        fcfSheet.getRange(finalPeriodCol + currentRow).formulas = [[`=-${finalPeriodCol}${currentRow - 1}*${disposalCostRef}/100`]];
+      }
+      currentRow++;
+      
+      // Unlevered Cashflows (sum of all above)
+      fcfSheet.getRange(`A${currentRow}`).values = [['Unlevered Cashflows']];
+      fcfSheet.getRange(`A${currentRow}`).format.font.bold = true;
+      fcfSheet.getRange(`A${currentRow}`).format.fill.color = '#fff2cc';
+      const unlevereCashflowsRow = currentRow;
+      for (let i = 0; i <= periods.length; i++) {
+        const colLetter = this.getColumnLetter(i + 2);
+        fcfSheet.getRange(colLetter + currentRow).formulas = [[`=SUM(${colLetter}${currentRow - 6}:${colLetter}${currentRow - 1})`]];
+      }
+      currentRow += 2;
+      
+      // LEVERED CASH FLOWS
+      fcfSheet.getRange(`A${currentRow}`).values = [['LEVERED CASH FLOWS']];
+      fcfSheet.getRange(`A${currentRow}`).format.font.bold = true;
+      fcfSheet.getRange(`A${currentRow}`).format.fill.color = '#cfe2f3';
+      currentRow++;
+      
+      // Debt drawn (Period 0 only)
+      fcfSheet.getRange(`A${currentRow}`).values = [['Debt drawn']];
+      const debtFinancingRef = this.cellTracker.getCellReference('debtFinancing');
+      if (debtFinancingRef) {
+        fcfSheet.getRange('B' + currentRow).formulas = [[`=${debtFinancingRef}`]];
+      }
+      currentRow++;
+      
+      // Debt upfront costs (Period 0 only)
+      fcfSheet.getRange(`A${currentRow}`).values = [['Debt upfront costs']];
+      const loanIssuanceFeesRef = this.cellTracker.getCellReference('loanIssuanceFees');
+      if (debtFinancingRef && loanIssuanceFeesRef) {
+        fcfSheet.getRange('B' + currentRow).formulas = [[`=-${debtFinancingRef}*${loanIssuanceFeesRef}/100`]];
+      }
+      currentRow++;
+      
+      // Interest Expense (all debt periods)
+      fcfSheet.getRange(`A${currentRow}`).values = [['Interest Expense']];
+      fcfSheet.getRange('B' + currentRow).values = [[0]]; // Period 0
+      if (plStructure.lineItems.interestExpense) {
+        for (let i = 1; i <= periods.length; i++) {
+          const colLetter = this.getColumnLetter(i + 2);
+          const plCol = this.getColumnLetter(i + 1);
+          fcfSheet.getRange(colLetter + currentRow).formulas = [[`=-'P&L Statement'!${plCol}${plStructure.lineItems.interestExpense.row}`]];
+        }
+      }
+      currentRow++;
+      
+      // Debt repaid (final period only)
+      fcfSheet.getRange(`A${currentRow}`).values = [['Debt repaid (Interest-only-loan)']];
+      if (debtFinancingRef) {
+        fcfSheet.getRange(finalPeriodCol + currentRow).formulas = [[`=-${debtFinancingRef}`]];
+      }
+      currentRow++;
+      
+      // Levered Cashflows
+      fcfSheet.getRange(`A${currentRow}`).values = [['Levered Cashflows']];
+      fcfSheet.getRange(`A${currentRow}`).format.font.bold = true;
+      fcfSheet.getRange(`A${currentRow}`).format.fill.color = '#fff2cc';
+      const leveredCashflowsRow = currentRow;
+      for (let i = 0; i <= periods.length; i++) {
+        const colLetter = this.getColumnLetter(i + 2);
+        fcfSheet.getRange(colLetter + currentRow).formulas = [[`=${colLetter}${unlevereCashflowsRow}+SUM(${colLetter}${currentRow - 4}:${colLetter}${currentRow - 1})`]];
+      }
+      currentRow += 2;
+      
+      // EQUITY FLOWS
+      fcfSheet.getRange(`A${currentRow}`).values = [['EQUITY FLOWS']];
+      fcfSheet.getRange(`A${currentRow}`).format.font.bold = true;
+      fcfSheet.getRange(`A${currentRow}`).format.fill.color = '#fce5cd';
+      currentRow++;
+      
+      // Equity contributed (Period 0 only)
+      fcfSheet.getRange(`A${currentRow}`).values = [['Equity contributed']];
+      const equityContributionRef = this.cellTracker.getCellReference('equityContribution');
+      if (equityContributionRef) {
+        fcfSheet.getRange('B' + currentRow).formulas = [[`=-${equityContributionRef}`]];
+      }
+      currentRow++;
+      
+      // Equity distributions (Levered Cashflows)
+      fcfSheet.getRange(`A${currentRow}`).values = [['Equity distributions']];
+      for (let i = 0; i <= periods.length; i++) {
+        const colLetter = this.getColumnLetter(i + 2);
+        fcfSheet.getRange(colLetter + currentRow).formulas = [[`=${colLetter}${leveredCashflowsRow}`]];
+      }
+      currentRow += 2;
+      
+      // RETURNS
+      fcfSheet.getRange(`A${currentRow}`).values = [['RETURNS']];
+      fcfSheet.getRange(`A${currentRow}`).format.font.bold = true;
+      fcfSheet.getRange(`A${currentRow}`).format.fill.color = '#f4cccc';
+      currentRow++;
+      
+      // Unlevered IRR
+      fcfSheet.getRange(`A${currentRow}`).values = [['Unlevered IRR']];
+      fcfSheet.getRange(`A${currentRow}`).format.font.bold = true;
+      fcfSheet.getRange('B' + currentRow).formulas = [[`=XIRR(B${unlevereCashflowsRow}:${this.getColumnLetter(periods.length + 1)}${unlevereCashflowsRow},B3:${this.getColumnLetter(periods.length + 1)}3)`]];
+      fcfSheet.getRange('B' + currentRow).numberFormat = [['0.00%']];
+      currentRow++;
+      
+      // MOIC
+      fcfSheet.getRange(`A${currentRow}`).values = [['MOIC']];
+      fcfSheet.getRange(`A${currentRow}`).format.font.bold = true;
+      fcfSheet.getRange('B' + currentRow).formulas = [[`=SUM(C${unlevereCashflowsRow}:${this.getColumnLetter(periods.length + 1)}${unlevereCashflowsRow})/ABS(B${unlevereCashflowsRow})`]];
+      fcfSheet.getRange('B' + currentRow).numberFormat = [['0.0"x"']];
+      
+      // Format all numbers
+      const dataRange = fcfSheet.getRange(`B4:${this.getColumnLetter(totalColumns + 1)}${currentRow}`);
+      dataRange.numberFormat = [['#,##0_);[Red](#,##0);"-"']];
+      
+      // Auto-resize columns
+      fcfSheet.getUsedRange().format.autofitColumns();
+      
+      console.log('✅ Free Cash Flow Sheet created successfully!');
     });
   }
 
