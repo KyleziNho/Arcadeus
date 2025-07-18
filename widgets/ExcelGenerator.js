@@ -289,27 +289,23 @@ class ExcelGenerator {
       sheet.getRange(`A${currentRow}`).format.font.bold = true;
       currentRow += 1;
       
-      // Add column headers
+      // Add column headers (Real estate model: No depreciation)
       sheet.getRange(`A${currentRow}`).values = [['Investment Name']];
       sheet.getRange(`B${currentRow}`).values = [['Investment Value']];
-      sheet.getRange(`C${currentRow}`).values = [['Depreciation/Amortization (%)']];
-      sheet.getRange(`D${currentRow}`).values = [['Disposal Cost (%)']];
-      sheet.getRange(`A${currentRow}:D${currentRow}`).format.font.bold = true;
+      sheet.getRange(`C${currentRow}`).values = [['Disposal Cost (%)']];
+      sheet.getRange(`A${currentRow}:C${currentRow}`).format.font.bold = true;
       currentRow += 1;
       
       const capexStartRow = currentRow;
       data.capitalExpenses.forEach((item, index) => {
         const itemName = item.name || `Capital Investment ${index + 1}`;
-        const depreciation = item.depreciation || 0;
         const disposalCost = item.disposalCost || 0;
         sheet.getRange(`A${currentRow}`).values = [[itemName]];
         sheet.getRange(`B${currentRow}`).values = [[item.value || 0]];
-        sheet.getRange(`C${currentRow}`).values = [[`${depreciation}%`]];
-        sheet.getRange(`D${currentRow}`).values = [[`${disposalCost}%`]];
+        sheet.getRange(`C${currentRow}`).values = [[`${disposalCost}%`]];
         this.cellTracker.recordCell(`capex_${index}`, 'Assumptions', `B${currentRow}`);
         this.cellTracker.recordCell(`capex_${index}_name`, 'Assumptions', `A${currentRow}`);
-        this.cellTracker.recordCell(`capex_${index}_depreciation`, 'Assumptions', `C${currentRow}`);
-        this.cellTracker.recordCell(`capex_${index}_disposal`, 'Assumptions', `D${currentRow}`);
+        this.cellTracker.recordCell(`capex_${index}_disposal`, 'Assumptions', `C${currentRow}`);
         currentRow++;
       });
       
@@ -505,8 +501,8 @@ ${periodHeaders.join(', ')}
    - Apply the same growth logic as revenue
    - Include a 'Total Operating Expenses' row
 
-4. **EBITDA Calculation:**
-   - EBITDA = Total Revenue + Total Operating Expenses (expenses are negative)
+4. **NOI Calculation:**
+   - NOI = Total Revenue + Total Operating Expenses (expenses are negative)
 
 5. **Capital Expenses (if any):**
    - List each capital expense item (as negative values)
@@ -522,7 +518,7 @@ ${periodHeaders.join(', ')}
      * Yearly: Debt * Interest_Rate / 100
 
 7. **Net Income:**
-   - Net Income = EBITDA - CapEx - Interest Expense
+   - Net Income = NOI - CapEx - Interest Expense
 
 8. **FORMAT REQUIREMENTS:**
    - Use exact Excel formula syntax
@@ -907,8 +903,8 @@ Required format:
       const totalOpexRow = currentRow;
       currentRow += 2;
       
-      // EBITDA
-      plSheet.getRange(`A${currentRow}`).values = [['EBITDA']];
+      // NOI
+      plSheet.getRange(`A${currentRow}`).values = [['NOI']];
       plSheet.getRange(`A${currentRow}`).format.font.bold = true;
       plSheet.getRange(`A${currentRow}`).format.fill.color = '#98FB98';
       
@@ -1220,7 +1216,7 @@ Provide the complete Excel structure:
 - Terminal value and valuation in final periods
 
 **EXAMPLE FORMULA STYLE:**
-Row 15: EBITDA from P&L
+Row 15: NOI from P&L
 - B15: ='P&L Statement'!B12
 - C15: ='P&L Statement'!C12
 - D15: ='P&L Statement'!D12
@@ -1351,7 +1347,7 @@ Provide the COMPLETE Free Cash Flow model with exact Excel formulas for every ce
     output += `- TOTAL OPERATING EXPENSES: ${this.plCellTracker.getCellReference('total_opex')}\n\n`;
     
     output += `**KEY METRICS:**\n`;
-    output += `- EBITDA: ${this.plCellTracker.getCellReference('ebitda')}\n`;
+    output += `- NOI: ${this.plCellTracker.getCellReference('noi')}\n`;
     output += `- INTEREST EXPENSE: ${this.plCellTracker.getCellReference('interest_expense')}\n`;
     output += `- NET INCOME: ${this.plCellTracker.getCellReference('net_income')}\n\n`;
     
@@ -1445,36 +1441,29 @@ Provide the COMPLETE Free Cash Flow model with exact Excel formulas for every ce
         // Track FCF line item positions for later reference
         const fcfStructure = {};
         
-        // EBITDA (from actual P&L)
-        fcfSheet.getRange(`A${currentRow}`).values = [['EBITDA']];
-        fcfStructure.ebitda = currentRow;
-        if (plStructure.lineItems.ebitda) {
-          const ebitdaRow = plStructure.lineItems.ebitda.row;
+        // NOI (from actual P&L)
+        fcfSheet.getRange(`A${currentRow}`).values = [['NOI']];
+        fcfStructure.noi = currentRow;
+        if (plStructure.lineItems.noi) {
+          const noiRow = plStructure.lineItems.noi.row;
           for (let col = 1; col <= totalColumns; col++) {
             const colLetter = this.getColumnLetter(col);
             const plCol = this.getColumnLetter(col === 1 ? 2 : col + 1); // Period 0 references P&L column B, others offset by 1
-            fcfSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`='P&L Statement'!${plCol}${ebitdaRow}`]];
+            fcfSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`='P&L Statement'!${plCol}${noiRow}`]];
           }
         }
         currentRow++;
         
-        // Tax (25% of EBITDA)
-        fcfSheet.getRange(`A${currentRow}`).values = [['Less: Tax (25%)']];
-        fcfStructure.tax = currentRow;
-        for (let col = 1; col <= periodColumns; col++) {
-          const colLetter = this.getColumnLetter(col);
-          fcfSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=-${colLetter}${fcfStructure.ebitda}*0.25`]];
-        }
-        currentRow++;
+        // Real estate model: No tax calculations required
         
-        // NOPAT
-        fcfSheet.getRange(`A${currentRow}`).values = [['NOPAT (Net Operating Profit After Tax)']];
+        // NOI (No tax calculations for real estate)
+        fcfSheet.getRange(`A${currentRow}`).values = [['NOI (Net Operating Income)']];
         fcfSheet.getRange(`A${currentRow}`).format.font.bold = true;
         fcfSheet.getRange(`A${currentRow}`).format.fill.color = '#daeef3';
         fcfStructure.nopat = currentRow;
         for (let col = 1; col <= periodColumns; col++) {
           const colLetter = this.getColumnLetter(col);
-          fcfSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${colLetter}${fcfStructure.ebitda}+${colLetter}${fcfStructure.tax}`]];
+          fcfSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${colLetter}${fcfStructure.noi}`]];
         }
         currentRow += 2;
         
@@ -1954,7 +1943,7 @@ Provide the COMPLETE Free Cash Flow model with exact Excel formulas for every ce
         currentRow += 2;
       }
       
-      // Store total revenue row for EBITDA calculation
+      // Store total revenue row for NOI calculation
       const totalRevenueRow = revenueCount > 0 ? currentRow - 2 : 0;
       
       // OPERATING EXPENSES SECTION
@@ -2020,15 +2009,15 @@ Provide the COMPLETE Free Cash Flow model with exact Excel formulas for every ce
         currentRow += 2;
       }
       
-      // Store total opex row for EBITDA calculation
+      // Store total opex row for NOI calculation
       const totalOpexRow = opexCount > 0 ? currentRow - 2 : 0;
       
-      // EBITDA CALCULATION
-      plSheet.getRange(`A${currentRow}`).values = [['EBITDA']];
+      // NOI CALCULATION
+      plSheet.getRange(`A${currentRow}`).values = [['NOI']];
       plSheet.getRange(`A${currentRow}`).format.font.bold = true;
       plSheet.getRange(`A${currentRow}`).format.fill.color = '#98FB98';
       
-      // EBITDA formulas for each period
+      // NOI formulas for each period
       for (let col = 1; col <= periodColumns; col++) {
         const colLetter = this.getColumnLetter(col);
         let ebitdaFormula = '0';
@@ -2099,7 +2088,7 @@ Provide the COMPLETE Free Cash Flow model with exact Excel formulas for every ce
       plSheet.getRange(`A${currentRow}`).format.font.bold = true;
       plSheet.getRange(`A${currentRow}`).format.fill.color = '#FFD700';
       
-      // Find EBITDA row (it's 2 rows up from current, or 4 if we have debt)
+      // Find NOI row (it's 2 rows up from current, or 4 if we have debt)
       const ebitdaRowForNetIncome = hasDebt ? currentRow - 4 : currentRow - 2;
       
       // Net Income formulas for each period
@@ -2327,8 +2316,8 @@ Provide the COMPLETE Free Cash Flow model with exact Excel formulas for every ce
               if (lowerValue.includes('revenue') && lowerValue.includes('total')) {
                 structure.lineItems.totalRevenue = { row: row + 1, startCol: 'B', cellRef: `B${row + 1}` };
               }
-              if (lowerValue.includes('ebitda') || (lowerValue.includes('ebit') && lowerValue.includes('da'))) {
-                structure.lineItems.ebitda = { row: row + 1, startCol: 'B', cellRef: `B${row + 1}` };
+              if (lowerValue.includes('noi') || lowerValue.includes('net operating income') || lowerValue.includes('ebitda') || (lowerValue.includes('ebit') && lowerValue.includes('da'))) {
+                structure.lineItems.noi = { row: row + 1, startCol: 'B', cellRef: `B${row + 1}` };
               }
               if (lowerValue.includes('net income') || lowerValue.includes('net profit')) {
                 structure.lineItems.netIncome = { row: row + 1, startCol: 'B', cellRef: `B${row + 1}` };
@@ -2515,9 +2504,8 @@ Create a comprehensive Free Cash Flow statement with the following structure:
 **FCF CALCULATION METHODOLOGY:**
 
 1. **OPERATING CASH FLOW SECTION:**
-   - EBITDA: Reference the exact EBITDA row from P&L
-   - Less: Tax (25% of EBITDA)
-   - = NOPAT (Net Operating Profit After Tax)
+   - NOI: Reference the exact NOI row from P&L
+   - Real estate model: No tax calculations required
 
 2. **WORKING CAPITAL ADJUSTMENTS:**
    - Change in Working Capital (2% of Total Revenue change)
@@ -2582,8 +2570,8 @@ If any critical P&L references are missing, clearly state what assumptions you'r
       output += `- Total Operating Expenses: Row ${plStructure.lineItems.totalOpEx.row}, Range B${plStructure.lineItems.totalOpEx.row}:${this.getColumnLetter(maxPeriods)}${plStructure.lineItems.totalOpEx.row}\n`;
     }
     
-    if (plStructure.lineItems.ebitda) {
-      output += `- EBITDA: Row ${plStructure.lineItems.ebitda.row}, Range B${plStructure.lineItems.ebitda.row}:${this.getColumnLetter(maxPeriods)}${plStructure.lineItems.ebitda.row}\n`;
+    if (plStructure.lineItems.noi) {
+      output += `- NOI: Row ${plStructure.lineItems.noi.row}, Range B${plStructure.lineItems.noi.row}:${this.getColumnLetter(maxPeriods)}${plStructure.lineItems.noi.row}\n`;
     }
     
     if (plStructure.lineItems.interestExpense) {
@@ -2841,8 +2829,8 @@ If any critical P&L references are missing, clearly state what assumptions you'r
             
             if (cellValue.includes('total revenue')) {
               plData.revenue = row.slice(1);
-            } else if (cellValue.includes('ebitda')) {
-              plData.ebitda = row.slice(1);
+            } else if (cellValue.includes('noi') || cellValue.includes('net operating income') || cellValue.includes('ebitda')) {
+              plData.noi = row.slice(1);
             } else if (cellValue.includes('net income')) {
               plData.netIncome = row.slice(1);
             }
@@ -3186,35 +3174,7 @@ Generate working Excel formulas using the provided data and structure.`;
       });
     }
 
-    // Add depreciation/amortization from initial capital investments
-    prompt += `\n\n**DEPRECIATION & AMORTIZATION:**\n`;
-    if (modelData.capitalExpenses && modelData.capitalExpenses.length > 0) {
-      modelData.capitalExpenses.forEach((item, index) => {
-        const valueRef = this.cellTracker.getCellReference(`capex_${index}`);
-        const depreciationRef = this.cellTracker.getCellReference(`capex_${index}_depreciation`);
-        
-        if (valueRef && depreciationRef) {
-          const depreciationCellRef = depreciationRef.includes('!') ? depreciationRef.split('!')[1] : depreciationRef;
-          
-          prompt += `\n${index + 1}. Depreciation - ${item.name}:
-   - Annual Depreciation: =${valueRef}*Assumptions!${depreciationCellRef}
-   - Period Adjustment: `;
-          
-          if (modelData.modelPeriods === 'monthly') {
-            prompt += `=AnnualDepreciation/12`;
-          } else if (modelData.modelPeriods === 'quarterly') {
-            prompt += `=AnnualDepreciation/4`;
-          } else {
-            prompt += `=AnnualDepreciation`;
-          }
-          
-          prompt += `\n   - Asset Value: ${valueRef}
-   - Depreciation Rate: Assumptions!${depreciationCellRef}`;
-        }
-      });
-    } else {
-      prompt += `\nNo capital investments requiring depreciation.`;
-    }
+    // Real estate model: No depreciation calculations required
 
     prompt += `\n\n**REQUIRED P&L STRUCTURE WITH PERIOD 0:**
 You MUST create a P&L Statement with this EXACT structure:
@@ -3229,45 +3189,13 @@ You MUST create a P&L Statement with this EXACT structure:
 2. Total Revenue  
 3. OPERATING EXPENSES section (Period 0 = 0, then operating periods with growth)
 4. Total Operating Expenses  
-5. EBITDA (Total Revenue - Total Operating Expenses)
-6. DEPRECIATION & AMORTIZATION section:
-   - Initial Capital Investments (Period 0 only - show total investment cost)
-   - Individual depreciation lines (Period 1+ only)`;
-
-    if (modelData.capitalExpenses && modelData.capitalExpenses.length > 0) {
-      modelData.capitalExpenses.forEach((item, index) => {
-        const valueRef = this.cellTracker.getCellReference(`capex_${index}`);
-        const depreciationRef = this.cellTracker.getCellReference(`capex_${index}_depreciation`);
-        
-        if (valueRef && depreciationRef) {
-          const depreciationCellRef = depreciationRef.includes('!') ? depreciationRef.split('!')[1] : depreciationRef;
-          
-          prompt += `\n   - "Depreciation - ${item.name}" line with formula: `;
-          
-          if (modelData.modelPeriods === 'monthly') {
-            prompt += `=${valueRef}*Assumptions!${depreciationCellRef}/12`;
-          } else if (modelData.modelPeriods === 'quarterly') {
-            prompt += `=${valueRef}*Assumptions!${depreciationCellRef}/4`;
-          } else {
-            prompt += `=${valueRef}*Assumptions!${depreciationCellRef}/100`;
-          }
-        }
-      });
-    }
-
-    prompt += `
-7. Total Depreciation & Amortization (sum all depreciation lines)
-8. EBIT (EBITDA - Total Depreciation & Amortization)
-9. Interest Expense (if debt exists)
-10. EBT (EBIT - Interest Expense)  
-11. Tax Expense (EBT * tax rate, use 25% if not specified)
-12. Net Income (EBT - Tax Expense)
+5. NOI (Total Revenue - Total Operating Expenses)
+6. Interest Expense (if debt exists)
+7. Net Income (NOI - Interest Expense)
 
 **CRITICAL REQUIREMENTS:**
-- MUST create separate line for each depreciation item
-- MUST include "Total Depreciation & Amortization" line
+- Real estate model: No depreciation or tax calculations required
 - ALL formulas must reference exact cells provided above
-- Use period-adjusted depreciation (monthly/quarterly/yearly)
 - Return complete P&L structure in JSON format with exact formulas
 
 **JSON FORMAT REQUIRED:**
@@ -3277,14 +3205,9 @@ You MUST create a P&L Statement with this EXACT structure:
     "totalRevenue": {"formula": "=SUM(...)"},
     "operatingExpenses": [{"name": "...", "formulas": ["=cell1", "=cell2", ...]}],
     "totalOpEx": {"formula": "=SUM(...)"},
-    "ebitda": {"formula": "=TotalRevenue-TotalOpEx"},
-    "depreciationItems": [{"name": "Depreciation - ItemName", "formulas": ["=formula1", "=formula2", ...]}],
-    "totalDepreciation": {"formula": "=SUM(...)"},
-    "ebit": {"formula": "=EBITDA-TotalDepreciation"},
+    "noi": {"formula": "=TotalRevenue-TotalOpEx"},
     "interestExpense": {"formula": "=..."},
-    "ebt": {"formula": "=EBIT-InterestExpense"},
-    "taxExpense": {"formula": "=EBT*0.25"},
-    "netIncome": {"formula": "=EBT-TaxExpense"}
+    "netIncome": {"formula": "=NOI-InterestExpense"}
   }
 }`;
 
@@ -3530,8 +3453,8 @@ You MUST create a P&L Statement with this EXACT structure:
       }
       currentRow++;
 
-      // EBITDA
-      plSheet.getRange(`A${currentRow}`).values = [['EBITDA']];
+      // NOI
+      plSheet.getRange(`A${currentRow}`).values = [['NOI']];
       plSheet.getRange(`A${currentRow}`).format.font.bold = true;
       plSheet.getRange(`A${currentRow}`).format.fill.color = '#fff2cc';
       const ebitdaRow = currentRow;
@@ -3584,64 +3507,8 @@ You MUST create a P&L Statement with this EXACT structure:
       }
       currentRow++;
       
-      // Add depreciation items (ongoing depreciation in operating periods)
-      if (modelData.capitalExpenses && modelData.capitalExpenses.length > 0) {
-        modelData.capitalExpenses.forEach((item, index) => {
-          plSheet.getRange(`A${currentRow}`).values = [[`Depreciation - ${item.name}`]];
-          
-          const valueRef = this.cellTracker.getCellReference(`capex_${index}`);
-          const depreciationRef = this.cellTracker.getCellReference(`capex_${index}_depreciation`);
-          
-          if (valueRef && depreciationRef) {
-            for (let col = 1; col <= totalColumns; col++) {
-              const colLetter = this.getColumnLetter(col);
-              if (col === 1) {
-                // Period 0: No depreciation yet
-                plSheet.getRange(`${colLetter}${currentRow}`).values = [[0]];
-              } else {
-                // Operating periods: Calculate depreciation
-                if (modelData.modelPeriods === 'monthly') {
-                  plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${valueRef}*${depreciationRef}/12`]];
-                } else if (modelData.modelPeriods === 'quarterly') {
-                  plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${valueRef}*${depreciationRef}/4`]];
-                } else {
-                  plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${valueRef}*${depreciationRef}/100`]];
-                }
-              }
-            }
-          }
-          currentRow++;
-        });
-      }
-
-      // Total Depreciation & Amortization
-      plSheet.getRange(`A${currentRow}`).values = [['Total Depreciation & Amortization']];
-      plSheet.getRange(`A${currentRow}`).format.font.bold = true;
-      const totalDepreciationRow = currentRow;
-      if (modelData.capitalExpenses && modelData.capitalExpenses.length > 0) {
-        for (let col = 1; col <= totalColumns; col++) {
-          const colLetter = this.getColumnLetter(col);
-          const depreciationEndRow = currentRow - 1;
-          plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=SUM(${colLetter}${depreciationStartRow}:${colLetter}${depreciationEndRow})`]];
-        }
-      } else {
-        for (let col = 1; col <= totalColumns; col++) {
-          const colLetter = this.getColumnLetter(col);
-          plSheet.getRange(`${colLetter}${currentRow}`).values = [[0]];
-        }
-      }
-      currentRow++;
-
-      // EBIT
-      plSheet.getRange(`A${currentRow}`).values = [['EBIT']];
-      plSheet.getRange(`A${currentRow}`).format.font.bold = true;
-      plSheet.getRange(`A${currentRow}`).format.fill.color = '#e8f5e8';
-      const ebitRow = currentRow;
-      for (let col = 1; col <= totalColumns; col++) {
-        const colLetter = this.getColumnLetter(col);
-        plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${colLetter}${ebitdaRow}+${colLetter}${totalDepreciationRow}`]];
-      }
-      currentRow++;
+      // Real estate model: No depreciation calculations required
+      // NOI is the final metric for real estate models
 
       // Interest Expense (if debt exists)
       let interestExpenseRow = null;
