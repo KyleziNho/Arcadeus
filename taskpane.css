@@ -92,6 +92,8 @@ body {
   background: var(--bg-primary);
   padding: 0;
   margin: 0;
+  overflow-y: auto;
+  height: auto;
 }
 
 /* Clean Apple-style Header */
@@ -382,10 +384,12 @@ body {
   background: var(--bg-secondary);
   border-radius: var(--radius-lg);
   margin: 0 var(--space-4) var(--space-3) var(--space-4);
-  overflow: hidden;
+  overflow: visible;
   transition: all var(--transition-normal);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
   border: 1px solid var(--border-primary);
+  min-height: auto;
+  height: auto;
 }
 
 /* Subtle section hover effect */
@@ -566,6 +570,9 @@ select {
   margin-bottom: var(--space-6);
   position: relative;
   transition: all var(--transition-fast);
+  min-height: auto;
+  height: auto;
+  overflow: visible;
 }
 
 .revenue-item:hover, .cost-item:hover {
@@ -860,11 +867,14 @@ select {
   padding-bottom: 0;
   opacity: 0;
   overflow: hidden;
+  visibility: hidden;
 }
 
 .section:not(.collapsed) .section-content {
-  max-height: 2000px;
+  max-height: 5000px; /* Large enough for any content */
   opacity: 1;
+  overflow: visible;
+  visibility: visible;
 }
 
 /* Apple-style section content */
@@ -872,6 +882,19 @@ select {
   padding: var(--space-5);
   background: transparent;
   transition: all var(--transition-normal);
+  min-height: auto;
+  height: auto;
+  overflow: visible;
+}
+
+/* Item containers should expand to fit content */
+.revenue-items-container, 
+.cost-items-container,
+.operatingExpensesContainer,
+.capExContainer {
+  min-height: auto;
+  height: auto;
+  overflow: visible;
 }
 
 /* Remove old minimize button styles */
