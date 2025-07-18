@@ -91,14 +91,15 @@ body {
   min-height: 100vh;
   background: var(--bg-primary);
   padding: 0;
+  margin: 0;
 }
 
-/* Modern Header */
+/* Clean Modern Header */
 .app-header {
   background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
   border-bottom: 1px solid var(--border-primary);
-  padding: var(--space-8) var(--space-6);
-  margin-bottom: var(--space-8);
+  padding: var(--space-6) var(--space-4);
+  margin-bottom: var(--space-6);
   position: relative;
 }
 
@@ -108,33 +109,46 @@ body {
   top: 0;
   left: 0;
   right: 0;
-  height: 4px;
+  height: 3px;
   background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
 }
 
-.brand-section {
-  text-align: center;
+.brand-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+}
+
+.logo-icon {
+  color: var(--accent-primary);
+  flex-shrink: 0;
+}
+
+.brand-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
 }
 
 .brand-name {
   font-family: 'Times New Roman', serif;
-  font-size: var(--font-size-3xl);
+  font-size: var(--font-size-2xl);
   font-weight: bold;
-  color: #000000;
+  color: var(--text-primary);
   letter-spacing: -0.025em;
-  margin: 0 0 var(--space-2) 0;
-  background: none;
-  -webkit-background-clip: unset;
-  -webkit-text-fill-color: unset;
-  background-clip: unset;
+  margin: 0;
+  line-height: 1.2;
 }
 
 .tagline {
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-xs);
   font-weight: 500;
   color: var(--text-tertiary);
   text-transform: uppercase;
   letter-spacing: 0.1em;
+  margin: 0;
 }
 
 /* Modern File Upload Section */
@@ -392,7 +406,7 @@ body {
 .section {
   background: var(--bg-secondary);
   border-radius: var(--radius-xl);
-  margin-bottom: var(--space-6);
+  margin: 0 var(--space-4) var(--space-4) var(--space-4);
   border: 1px solid var(--border-primary);
   overflow: hidden;
   transition: all var(--transition-normal);
@@ -674,10 +688,12 @@ select {
 
 /* Action Section */
 .action-section {
-  padding: var(--space-10) var(--space-8);
+  padding: var(--space-8) var(--space-6);
   background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
   border-top: 1px solid var(--border-primary);
-  margin-top: var(--space-12);
+  margin: var(--space-8) var(--space-4) 0 var(--space-4);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
 }
 
 .button-group-horizontal {
@@ -848,43 +864,7 @@ select {
   }
 }
 
-/* Modern Header Styles */
-.logo-container {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-}
-
-.logo-icon {
-  color: var(--accent-primary);
-  flex-shrink: 0;
-}
-
-.logo-icon svg {
-  width: 32px;
-  height: 32px;
-}
-
-.brand-info {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-}
-
-.brand-name {
-  font-size: var(--font-size-2xl);
-  font-weight: 700;
-  color: var(--text-primary);
-  margin: 0;
-  line-height: 1.2;
-}
-
-.tagline {
-  font-size: var(--font-size-sm);
-  color: var(--text-secondary);
-  font-weight: 500;
-  margin: 0;
-}
+/* Clean up duplicate styles - removed */
 
 /* Modern Section Headers */
 .section-header {
