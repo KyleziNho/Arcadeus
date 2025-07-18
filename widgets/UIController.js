@@ -72,67 +72,45 @@ class UIController {
     }, 100);
   }
 
-  initializeSection(minimizeBtn, section, sectionName) {
-    if (minimizeBtn && section) {
-      minimizeBtn.addEventListener('click', (e) => {
+  initializeSection(headerElement, section, sectionName) {
+    if (headerElement && section) {
+      headerElement.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
-        console.log(`${sectionName} minimize button clicked`);
-        this.toggleSection(section, minimizeBtn);
+        console.log(`${sectionName} header clicked`);
+        this.toggleSection(section, headerElement);
       });
       
       console.log(`✅ ${sectionName} collapsible section initialized successfully`);
-      
-      // Add click-to-expand functionality for collapsed section
-      this.addClickToExpandListener(section, minimizeBtn);
     } else {
       console.error(`❌ Could not find ${sectionName} collapsible section elements`);
     }
   }
 
-  addClickToExpandListener(section, minimizeBtn) {
-    if (!section || !minimizeBtn) return;
-    
-    const header = section.querySelector('h3');
-    if (header) {
-      header.addEventListener('click', (e) => {
-        // Only expand if section is collapsed
-        if (section.classList.contains('collapsed')) {
-          e.preventDefault();
-          e.stopPropagation();
-          console.log('Expanding collapsed section via header click');
-          this.toggleSection(section, minimizeBtn);
-        }
-      });
-      
-      // Add visual feedback for clickable header when collapsed
-      header.style.cursor = 'pointer';
-    }
-  }
 
-  toggleSection(section, minimizeBtn) {
-    if (!section || !minimizeBtn) {
-      console.error('Missing section or minimize button for toggle');
+  toggleSection(section, headerElement) {
+    if (!section || !headerElement) {
+      console.error('Missing section or header element for toggle');
       return;
     }
     
     const isCurrentlyCollapsed = section.classList.contains('collapsed');
     const sectionContent = section.querySelector('.section-content');
-    const minimizeIcon = minimizeBtn.querySelector('.minimize-icon');
+    const chevronIcon = headerElement.querySelector('.chevron-icon');
     
     console.log('Toggling section:', {
       sectionId: section.id,
       currentlyCollapsed: isCurrentlyCollapsed,
       hasContent: !!sectionContent,
-      hasIcon: !!minimizeIcon
+      hasChevron: !!chevronIcon
     });
     
     if (isCurrentlyCollapsed) {
       // Expand section
       section.classList.remove('collapsed');
-      if (minimizeIcon) minimizeIcon.textContent = '−';
       
       if (sectionContent) {
+        sectionContent.style.display = 'block';
         sectionContent.style.maxHeight = '600px';
         sectionContent.style.opacity = '1';
         sectionContent.style.paddingTop = 'var(--space-6)';
@@ -144,9 +122,9 @@ class UIController {
     } else {
       // Collapse section
       section.classList.add('collapsed');
-      if (minimizeIcon) minimizeIcon.textContent = '+';
       
       if (sectionContent) {
+        sectionContent.style.display = 'none';
         sectionContent.style.maxHeight = '0';
         sectionContent.style.opacity = '0';
         sectionContent.style.paddingTop = '0';

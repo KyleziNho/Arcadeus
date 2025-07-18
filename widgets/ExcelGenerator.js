@@ -3522,6 +3522,8 @@ You MUST create a P&L Statement with this EXACT structure:
         }
       }
       currentRow++;
+        });
+      }
       
       // Real estate model: No depreciation calculations required
       // NOI is the final metric for real estate models

@@ -60,69 +60,39 @@
         <div class="app-header">
             <div class="brand-section">
                 <div class="logo-container">
+                    <div class="logo-icon">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+                            <path d="m2 17 10 5 10-5"></path>
+                            <path d="m2 12 10 5 10-5"></path>
+                        </svg>
+                    </div>
                     <div class="brand-info">
                         <h1 class="brand-name">Arcadeus</h1>
-                        <span class="tagline">M&A Intelligence Suite</span>
+                        <span class="tagline">Real Estate Intelligence Suite</span>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="file-upload-header">
-            <div class="upload-zone" id="mainUploadZone">
-                <div class="upload-content">
-                    <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-15"></path>
-                        <path d="M7 10l5-5 5 5"></path>
-                        <line x1="12" y1="15" x2="12" y2="3"></line>
-                    </svg>
-                    <h2>Drop your files here</h2>
-                    <p>Upload target company reports or spreadsheets to auto-fill data</p>
-                    <div class="upload-specs">
-                        <span>Up to 4 files</span>
-                        <span>10MB total</span>
-                        <span>CSV, PDF, PNG formats</span>
-                    </div>
-                    <button class="browse-files-btn" id="browseFilesBtn">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                            <polyline points="14,2 14,8 20,8"></polyline>
-                        </svg>
-                        Browse Files
-                    </button>
-                </div>
-            </div>
-            <input type="file" id="mainFileInput" multiple accept=".pdf,.csv,.png,.jpg,.jpeg" style="display: none;">
-            
-            <div class="uploaded-files-display" id="uploadedFilesDisplay" style="display: none;">
-                <h3>Uploaded Files</h3>
-                <div class="files-grid" id="filesGrid"></div>
-                <div class="autofill-section">
-                    <!-- AutoFill buttons disabled - manual input only -->
-                    <div style="display: none;">
-                        <button class="autofill-btn" id="autoFillBtn" disabled>Auto Fill Disabled</button>
-                        <button class="autofill-btn" id="testAutoFillBtn" disabled>Test Data Disabled</button>
-                    </div>
-                    <small class="autofill-help">AutoFill disabled - Please enter data manually in the sections below</small>
-                </div>
-            </div>
-        </div>
 
         <div class="section collapsible-section" id="highLevelParametersSection">
-            <button class="minimize-btn" id="minimizeHighLevel" aria-label="Minimize High-Level Parameters">
-                <span class="minimize-icon">−</span>
-            </button>
-            <h3>
-                <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M12 2L12 22"></path>
-                    <path d="M2 12L22 12"></path>
-                    <circle cx="12" cy="7" r="2"></circle>
-                    <circle cx="12" cy="17" r="2"></circle>
-                    <circle cx="7" cy="12" r="2"></circle>
-                    <circle cx="17" cy="12" r="2"></circle>
+            <div class="section-header" id="minimizeHighLevel">
+                <div class="section-title">
+                    <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2L12 22"></path>
+                        <path d="M2 12L22 12"></path>
+                        <circle cx="12" cy="7" r="2"></circle>
+                        <circle cx="12" cy="17" r="2"></circle>
+                        <circle cx="7" cy="12" r="2"></circle>
+                        <circle cx="17" cy="12" r="2"></circle>
+                    </svg>
+                    <h3>High-Level Parameters</h3>
+                </div>
+                <svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="6,9 12,15 18,9"></polyline>
                 </svg>
-                High-Level Parameters
-            </h3>
+            </div>
             <div class="section-content" id="highLevelContent">
                 <div class="form-group">
                     <label>Currency</label>
@@ -169,17 +139,19 @@
         </div>
 
         <div class="section collapsible-section" id="dealAssumptionsSection">
-            <button class="minimize-btn" id="minimizeAssumptions" aria-label="Minimize Deal Assumptions">
-                <span class="minimize-icon">−</span>
-            </button>
-            <h3>
-                <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
-                    <path d="m2 17 10 5 10-5"></path>
-                    <path d="m2 12 10 5 10-5"></path>
+            <div class="section-header" id="minimizeAssumptions">
+                <div class="section-title">
+                    <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+                        <path d="m2 17 10 5 10-5"></path>
+                        <path d="m2 12 10 5 10-5"></path>
+                    </svg>
+                    <h3>Deal Assumptions</h3>
+                </div>
+                <svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="6,9 12,15 18,9"></polyline>
                 </svg>
-                Deal Assumptions
-            </h3>
+            </div>
             <div class="section-content" id="assumptionsContent">
             <div class="form-group">
                 <label>Deal Name</label>
@@ -215,16 +187,18 @@
         </div>
 
         <div class="section collapsible-section" id="revenueItemsSection">
-            <button class="minimize-btn" id="minimizeRevenue" aria-label="Minimize Revenue Items">
-                <span class="minimize-icon">−</span>
-            </button>
-            <h3>
-                <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="12" y1="1" x2="12" y2="23"></line>
-                    <path d="m17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+            <div class="section-header" id="minimizeRevenue">
+                <div class="section-title">
+                    <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="1" x2="12" y2="23"></line>
+                        <path d="m17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                    </svg>
+                    <h3>Revenue Items</h3>
+                </div>
+                <svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="6,9 12,15 18,9"></polyline>
                 </svg>
-                Revenue Items
-            </h3>
+            </div>
             <div class="section-content" id="revenueContent">
                 <div class="revenue-items-container" id="revenueItemsContainer">
                     <!-- Revenue items will be dynamically added here -->
@@ -243,16 +217,18 @@
         </div>
 
         <div class="section collapsible-section" id="operatingExpensesSection">
-            <button class="minimize-btn" id="minimizeOpEx" aria-label="Minimize Operating Expenses">
-                <span class="minimize-icon">−</span>
-            </button>
-            <h3>
-                <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M3 3v18h18"></path>
-                    <path d="m19 9-5 5-4-4-3 3"></path>
+            <div class="section-header" id="minimizeOpEx">
+                <div class="section-title">
+                    <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 3v18h18"></path>
+                        <path d="m19 9-5 5-4-4-3 3"></path>
+                    </svg>
+                    <h3>Operating Expenses</h3>
+                </div>
+                <svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="6,9 12,15 18,9"></polyline>
                 </svg>
-                Operating Expenses
-            </h3>
+            </div>
             <div class="section-content" id="opExContent">
                 <div class="cost-items-container" id="operatingExpensesContainer">
                     <!-- Operating expenses will be dynamically added here -->
@@ -271,20 +247,22 @@
         </div>
 
         <div class="section collapsible-section" id="capExSection">
-            <button class="minimize-btn" id="minimizeCapEx" aria-label="Minimize CapEx">
-                <span class="minimize-icon">−</span>
-            </button>
-            <h3>
-                <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
-                    <polyline points="7.5,4.21 12,6.81 16.5,4.21"></polyline>
-                    <polyline points="7.5,19.79 7.5,14.6 3,12"></polyline>
-                    <polyline points="21,12 16.5,14.6 16.5,19.79"></polyline>
-                    <polyline points="3.27,6.96 12,12.01 20.73,6.96"></polyline>
-                    <line x1="12" y1="22.08" x2="12" y2="12"></line>
+            <div class="section-header" id="minimizeCapEx">
+                <div class="section-title">
+                    <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                        <polyline points="7.5,4.21 12,6.81 16.5,4.21"></polyline>
+                        <polyline points="7.5,19.79 7.5,14.6 3,12"></polyline>
+                        <polyline points="21,12 16.5,14.6 16.5,19.79"></polyline>
+                        <polyline points="3.27,6.96 12,12.01 20.73,6.96"></polyline>
+                        <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                    </svg>
+                    <h3>Capital Expenditures (CapEx)</h3>
+                </div>
+                <svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="6,9 12,15 18,9"></polyline>
                 </svg>
-                Capital Expenditures (CapEx)
-            </h3>
+            </div>
             <div class="section-content" id="capExContent">
                 <p style="margin-bottom: 15px; color: #666; font-size: 14px;">
                     Ongoing capital expenditures for property improvements, maintenance, and upgrades
@@ -306,17 +284,19 @@
         </div>
 
         <div class="section collapsible-section" id="exitAssumptionsSection">
-            <button class="minimize-btn" id="minimizeExit" aria-label="Minimize Exit Assumptions">
-                <span class="minimize-icon">−</span>
-            </button>
-            <h3>
-                <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                    <polyline points="16,17 21,12 16,7"></polyline>
-                    <line x1="21" y1="12" x2="9" y2="12"></line>
+            <div class="section-header" id="minimizeExit">
+                <div class="section-title">
+                    <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                        <polyline points="16,17 21,12 16,7"></polyline>
+                        <line x1="21" y1="12" x2="9" y2="12"></line>
+                    </svg>
+                    <h3>Exit Assumptions</h3>
+                </div>
+                <svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="6,9 12,15 18,9"></polyline>
                 </svg>
-                Exit Assumptions
-            </h3>
+            </div>
             <div class="section-content" id="exitContent">
                 <div class="form-group">
                     <label>Disposal Cost (%)</label>
@@ -339,17 +319,19 @@
         </div>
 
         <div class="section collapsible-section" id="debtModelSection">
-            <button class="minimize-btn" id="minimizeDebtModel" aria-label="Minimize Debt Model">
-                <span class="minimize-icon">−</span>
-            </button>
-            <h3>
-                <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="1" y="3" width="15" height="13"></rect>
-                    <path d="m16 8 2 0 0 8-2 0"></path>
-                    <path d="m21 9-3 0 0 6 3 0"></path>
+            <div class="section-header" id="minimizeDebtModel">
+                <div class="section-title">
+                    <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="1" y="3" width="15" height="13"></rect>
+                        <path d="m16 8 2 0 0 8-2 0"></path>
+                        <path d="m21 9-3 0 0 6 3 0"></path>
+                    </svg>
+                    <h3>Debt Model</h3>
+                </div>
+                <svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="6,9 12,15 18,9"></polyline>
                 </svg>
-                Debt Model
-            </h3>
+            </div>
             <div class="section-content" id="debtModelContent">
                 
                 <!-- Debt Configuration -->
