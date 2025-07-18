@@ -800,7 +800,7 @@ class AutoFillIntegrator {
     if (data.capitalExpenses?.value && Array.isArray(data.capitalExpenses.value)) {
       console.log('🏗️ Applying capital expenses:', data.capitalExpenses.value);
       
-      const container = document.getElementById('capitalExpensesContainer');
+      const container = document.getElementById('capExContainer');
       if (container) {
         container.innerHTML = '';
       }

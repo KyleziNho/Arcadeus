@@ -40,7 +40,7 @@ class UIController {
       
       // Capital Expenses section
       const minimizeCapExBtn = document.getElementById('minimizeCapEx');
-      const capitalExpensesSection = document.getElementById('capitalExpensesSection');
+      const capExSection = document.getElementById('capExSection');
       
       // Exit Assumptions section
       const minimizeExitBtn = document.getElementById('minimizeExit');
@@ -55,7 +55,7 @@ class UIController {
         assumptions: !!minimizeAssumptionsBtn && !!dealAssumptionsSection,
         revenue: !!minimizeRevenueBtn && !!revenueItemsSection,
         opEx: !!minimizeOpExBtn && !!operatingExpensesSection,
-        capEx: !!minimizeCapExBtn && !!capitalExpensesSection,
+        capEx: !!minimizeCapExBtn && !!capExSection,
         exit: !!minimizeExitBtn && !!exitAssumptionsSection,
         debt: !!minimizeDebtBtn && !!debtModelSection
       });
@@ -65,7 +65,7 @@ class UIController {
       this.initializeSection(minimizeAssumptionsBtn, dealAssumptionsSection, 'Deal Assumptions');
       this.initializeSection(minimizeRevenueBtn, revenueItemsSection, 'Revenue Items');
       this.initializeSection(minimizeOpExBtn, operatingExpensesSection, 'Operating Expenses');
-      this.initializeSection(minimizeCapExBtn, capitalExpensesSection, 'Capital Expenses');
+      this.initializeSection(minimizeCapExBtn, capExSection, 'Capital Expenses');
       this.initializeSection(minimizeExitBtn, exitAssumptionsSection, 'Exit Assumptions');
       this.initializeSection(minimizeDebtBtn, debtModelSection, 'Debt Model');
       
@@ -236,7 +236,7 @@ class UIController {
       this.updateSectionIndicator('assumptionsIndicator', 'dealAssumptionsSection', this.checkDealAssumptionsCompletion());
       this.updateSectionIndicator('revenueIndicator', 'revenueItemsSection', this.checkRevenueItemsCompletion());
       this.updateSectionIndicator('opExIndicator', 'operatingExpensesSection', this.checkOperatingExpensesCompletion());
-      this.updateSectionIndicator('capExIndicator', 'capitalExpensesSection', this.checkCapitalExpensesCompletion());
+      this.updateSectionIndicator('capExIndicator', 'capExSection', this.checkCapitalExpensesCompletion());
       this.updateSectionIndicator('exitIndicator', 'exitAssumptionsSection', this.checkExitAssumptionsCompletion());
       this.updateSectionIndicator('debtIndicator', 'debtModelSection', this.checkDebtModelCompletion());
       
@@ -348,7 +348,7 @@ class UIController {
   }
 
   checkCapitalExpensesCompletion() {
-    const capExContainer = document.getElementById('capitalExpensesContainer');
+    const capExContainer = document.getElementById('capExContainer');
     if (!capExContainer) return 'incomplete';
     
     const capExItems = capExContainer.querySelectorAll('.cost-item');

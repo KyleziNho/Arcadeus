@@ -234,7 +234,7 @@ class DataManager {
     console.log('Populating capital expenses:', items);
     
     // Clear existing items
-    const container = document.getElementById('capitalExpensesContainer');
+    const container = document.getElementById('capExContainer');
     if (container) {
       container.innerHTML = '';
     }
@@ -312,7 +312,7 @@ class DataManager {
 
   collectCapitalExpensesDirectly() {
     const items = [];
-    const container = document.getElementById('capitalExpensesContainer');
+    const container = document.getElementById('capExContainer');
     if (!container) return items;
     
     const expenseItems = container.querySelectorAll('.cost-item');
