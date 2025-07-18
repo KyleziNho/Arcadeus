@@ -111,34 +111,19 @@ body {
   gap: var(--space-3);
 }
 
-.logo-icon {
+.logo-mark {
   color: var(--accent-primary);
   flex-shrink: 0;
 }
 
-.brand-text {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-1);
-}
-
-.brand-name {
+.brand-title {
   font-family: 'Times New Roman', serif;
-  font-size: var(--font-size-2xl);
+  font-size: var(--font-size-3xl);
   font-weight: bold;
   color: var(--text-primary);
   letter-spacing: -0.025em;
   margin: 0;
-  line-height: 1.2;
-}
-
-.tagline {
-  font-size: var(--font-size-sm);
-  font-weight: 400;
-  color: var(--text-secondary);
-  letter-spacing: 0.02em;
-  margin: 0;
+  line-height: 1;
 }
 
 /* Modern File Upload Section */
@@ -832,7 +817,7 @@ select {
 
 /* h3 styles integrated into section-title */
 .section-label {
-  font-size: var(--font-size-lg);
+  font-size: var(--font-size-xl);
   font-weight: 600;
   color: var(--text-primary);
   margin: 0;
@@ -900,9 +885,9 @@ select {
     padding: var(--space-3) var(--space-4);
   }
   
-  /* h3 responsive styles removed */
+  /* Keep section labels readable on mobile */
   .section-label {
-    font-size: var(--font-size-base);
+    font-size: var(--font-size-lg);
   }
   
   .section-icon, .chevron-icon {
@@ -915,8 +900,13 @@ select {
     height: 28px;
   }
   
-  .brand-name {
-    font-size: var(--font-size-xl);
+  .brand-title {
+    font-size: var(--font-size-2xl);
+  }
+  
+  .logo-mark {
+    width: 28px;
+    height: 28px;
   }
 }
 
