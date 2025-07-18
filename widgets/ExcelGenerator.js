@@ -659,11 +659,15 @@ Please provide the complete P&L structure with exact cell addresses and formulas
       console.log('📊 Assumption Structure discovered:', assumptionStructure);
       
       // Step 3: Read the existing CapEx sheet structure
+      console.log('🔍 About to read CapEx sheet structure...');
       const capExStructure = await this.readCapExSheetStructure() || { totalRow: null, sheet: null };
       console.log('📊 CapEx Structure discovered:', capExStructure);
+      console.log('🔍 capExStructure type:', typeof capExStructure);
       
       // Step 4: Generate comprehensive FCF AI prompt with ACTUAL cell references
+      console.log('🔍 About to generate FCF prompt...');
       const fcfPrompt = this.generateRealFCFPrompt(modelData, plStructure, assumptionStructure, capExStructure);
+      console.log('🔍 FCF prompt generated successfully');
       
       // Step 5: Create professional FCF sheet using discovered cell references
       await this.createAIFCFSheet(modelData, fcfPrompt, plStructure, assumptionStructure, capExStructure);
@@ -1158,7 +1162,9 @@ Required format:
   
   // Generate FCF prompt with REAL cell references from actual sheets
   // DUPLICATE METHOD REMOVED - See line 2476 for the correct implementation
-  generateRealFCFPrompt_REMOVED(modelData, plStructure, assumptionStructure) {
+  generateRealFCFPrompt_REMOVED_DISABLED(modelData, plStructure, assumptionStructure) {
+    throw new Error('This method has been disabled. Use the method at line 2476 instead.');
+    return 'DISABLED METHOD';
     console.log('🤖 Generating FCF AI prompt...');
     
     // Calculate periods
@@ -1382,7 +1388,9 @@ Provide the COMPLETE Free Cash Flow model with exact Excel formulas for every ce
   
   // Create professional FCF sheet using REAL cell references from discovered P&L structure
   // DUPLICATE METHOD REMOVED - See line 3738 for the correct implementation
-  async createAIFCFSheet_REMOVED(modelData, aiPrompt, plStructure, assumptionStructure) {
+  async createAIFCFSheet_REMOVED_DISABLED(modelData, aiPrompt, plStructure, assumptionStructure) {
+    throw new Error('This method has been disabled. Use the method at line 3738 instead.');
+    return { success: false, error: 'DISABLED METHOD' };
     return Excel.run(async (context) => {
       console.log('💰 Creating professional Free Cash Flow sheet...');
       
@@ -2477,6 +2485,8 @@ Provide the COMPLETE Free Cash Flow model with exact Excel formulas for every ce
   // Generate comprehensive FCF prompt using REAL cell references from P&L and Assumptions
   generateRealFCFPrompt(modelData, plStructure, assumptionStructure, capExStructure) {
     console.log('🤖 Generating REAL FCF AI prompt with discovered cell references...');
+    console.log('🔍 capExStructure parameter:', capExStructure);
+    console.log('🔍 capExStructure type:', typeof capExStructure);
     
     const periods = this.calculatePeriods(modelData.projectStartDate, modelData.projectEndDate, modelData.modelPeriods);
     const maxPeriods = Math.min(periods, 36);
