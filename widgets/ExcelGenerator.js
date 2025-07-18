@@ -1381,7 +1381,8 @@ Provide the COMPLETE Free Cash Flow model with exact Excel formulas for every ce
   }
   
   // Create professional FCF sheet using REAL cell references from discovered P&L structure
-  async createAIFCFSheet(modelData, aiPrompt, plStructure, assumptionStructure) {
+  // DUPLICATE METHOD REMOVED - See line 3738 for the correct implementation
+  async createAIFCFSheet_REMOVED(modelData, aiPrompt, plStructure, assumptionStructure) {
     return Excel.run(async (context) => {
       console.log('💰 Creating professional Free Cash Flow sheet...');
       
