@@ -282,36 +282,36 @@ class ExcelGenerator {
       currentRow += 2; // Add space
     }
     
-    // POST-ACQUISITION CAPITAL INVESTMENTS SECTION
-    if (data.capitalExpenses && data.capitalExpenses.length > 0) {
-      sectionRows['capitalExpenses'] = currentRow;
-      sheet.getRange(`A${currentRow}`).values = [['POST-ACQUISITION CAPITAL INVESTMENTS']];
+    // CAPEX SECTION
+    if (data.capEx && data.capEx.length > 0) {
+      sectionRows['capEx'] = currentRow;
+      sheet.getRange(`A${currentRow}`).values = [['CAPITAL EXPENDITURES (CAPEX)']];
       sheet.getRange(`A${currentRow}`).format.font.bold = true;
       currentRow += 1;
       
-      // Add column headers (Real estate model: No depreciation)
-      sheet.getRange(`A${currentRow}`).values = [['Investment Name']];
-      sheet.getRange(`B${currentRow}`).values = [['Investment Value']];
-      sheet.getRange(`C${currentRow}`).values = [['Disposal Cost (%)']];
+      // Add column headers
+      sheet.getRange(`A${currentRow}`).values = [['CapEx Name']];
+      sheet.getRange(`B${currentRow}`).values = [['Annual Value']];
+      sheet.getRange(`C${currentRow}`).values = [['Growth Rate (%)']];
       sheet.getRange(`A${currentRow}:C${currentRow}`).format.font.bold = true;
       currentRow += 1;
       
       const capexStartRow = currentRow;
-      data.capitalExpenses.forEach((item, index) => {
-        const itemName = item.name || `Capital Investment ${index + 1}`;
-        const disposalCost = item.disposalCost || 0;
+      data.capEx.forEach((item, index) => {
+        const itemName = item.name || `CapEx ${index + 1}`;
+        const growthRate = item.growthRate || 0;
         sheet.getRange(`A${currentRow}`).values = [[itemName]];
         sheet.getRange(`B${currentRow}`).values = [[item.value || 0]];
-        sheet.getRange(`C${currentRow}`).values = [[`${disposalCost}%`]];
+        sheet.getRange(`C${currentRow}`).values = [[`${growthRate}%`]];
         this.cellTracker.recordCell(`capex_${index}`, 'Assumptions', `B${currentRow}`);
         this.cellTracker.recordCell(`capex_${index}_name`, 'Assumptions', `A${currentRow}`);
-        this.cellTracker.recordCell(`capex_${index}_disposal`, 'Assumptions', `C${currentRow}`);
+        this.cellTracker.recordCell(`capex_${index}_growth_rate`, 'Assumptions', `C${currentRow}`);
         currentRow++;
       });
       
-      // Record the range of capital investments for future reference
+      // Record the range of CapEx for future reference
       this.cellTracker.recordCell('capex_range', 'Assumptions', `B${capexStartRow}:B${currentRow - 1}`);
-      this.cellTracker.recordCell('capex_count', 'Assumptions', data.capitalExpenses.length.toString());
+      this.cellTracker.recordCell('capex_count', 'Assumptions', data.capEx.length.toString());
       
       currentRow += 2; // Add space
     }
@@ -3464,16 +3464,18 @@ You MUST create a P&L Statement with this EXACT structure:
       }
       currentRow += 2;
 
-      // DEPRECIATION & AMORTIZATION SECTION
-      plSheet.getRange(`A${currentRow}`).values = [['DEPRECIATION & AMORTIZATION']];
-      plSheet.getRange(`A${currentRow}`).format.font.bold = true;
-      plSheet.getRange(`A${currentRow}`).format.fill.color = '#f2f2f2';
-      currentRow++;
+      // CAPEX SECTION
+      if (modelData.capEx && modelData.capEx.length > 0) {
+        plSheet.getRange(`A${currentRow}`).values = [['CAPITAL EXPENDITURES']];
+        plSheet.getRange(`A${currentRow}`).format.font.bold = true;
+        plSheet.getRange(`A${currentRow}`).format.fill.color = '#f2f2f2';
+        currentRow++;
 
-      const depreciationStartRow = currentRow;
+        const capexStartRow = currentRow;
       
-      // Add initial capital investment line (Period 0 only)
-      plSheet.getRange(`A${currentRow}`).values = [['Initial Capital Investments']];
+        // Add individual CapEx items
+        modelData.capEx.forEach((item, index) => {
+          plSheet.getRange(`A${currentRow}`).values = [[item.name || `CapEx ${index + 1}`]];
       plSheet.getRange(`A${currentRow}`).format.font.bold = true;
       plSheet.getRange(`A${currentRow}`).format.fill.color = '#ffeaa7';
       for (let col = 1; col <= totalColumns; col++) {

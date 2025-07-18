@@ -751,22 +751,20 @@ class MAModelingAddin {
       
       // 6. CAPITAL INVESTMENTS (1-3 items)
       const capexCount = randomBetween(1, 3);
-      const capexNames = ['Equipment Purchase', 'Technology Infrastructure', 'Office Setup', 'Manufacturing Assets'];
+      const capexNames = ['Property Improvements', 'HVAC Upgrades', 'Landscaping', 'Building Maintenance'];
       
       for (let i = 0; i < capexCount; i++) {
         if (this.formHandler) {
-          this.formHandler.addCapitalExpense();
+          this.formHandler.addCapEx();
           
           setTimeout(() => {
             const nameField = document.getElementById(`capExName_${i + 1}`);
             const valueField = document.getElementById(`capExValue_${i + 1}`);
-            const depreciationField = document.getElementById(`capExDepreciation_${i + 1}`);
-            const disposalField = document.getElementById(`capExDisposal_${i + 1}`);
+            const growthRateField = document.getElementById(`capExGrowthRate_${i + 1}`);
             
             if (nameField) nameField.value = capexNames[i % capexNames.length];
-            if (valueField) valueField.value = randomBetween(500000, 10000000);
-            if (depreciationField) depreciationField.value = randomDecimal(5.0, 25.0);
-            if (disposalField) disposalField.value = randomDecimal(1.0, 5.0);
+            if (valueField) valueField.value = randomBetween(50000, 500000);
+            if (growthRateField) growthRateField.value = randomDecimal(2.0, 5.0);
           }, 100 * (i + 1));
         }
       }

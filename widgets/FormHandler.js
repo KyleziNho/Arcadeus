@@ -115,7 +115,7 @@ class FormHandler {
       operatingExpenses: this.collectOperatingExpenses(),
       
       // Capital Expenses
-      capitalExpenses: this.collectCapitalExpenses(),
+      capEx: this.collectCapEx(),
       
       // Exit Assumptions
       disposalCost: parseFloat(document.getElementById('disposalCost')?.value) || 2.5,
@@ -212,9 +212,9 @@ class FormHandler {
     return items;
   }
 
-  collectCapitalExpenses() {
+  collectCapEx() {
     const items = [];
-    const capExContainer = document.getElementById('capitalExpensesContainer');
+    const capExContainer = document.getElementById('capExContainer');
     if (!capExContainer) return items;
     
     const costContainers = capExContainer.querySelectorAll('.cost-item');
@@ -230,15 +230,14 @@ class FormHandler {
       // Use specific IDs instead of generic selectors
       const nameInput = document.getElementById(`capExName_${itemNumber}`);
       const valueInput = document.getElementById(`capExValue_${itemNumber}`);
+      const growthRateInput = document.getElementById(`capExGrowthRate_${itemNumber}`);
       
       if (nameInput && valueInput && nameInput.value && valueInput.value) {
-        const depreciationInput = document.getElementById(`capExDepreciation_${itemNumber}`);
-        const disposalInput = document.getElementById(`capExDisposal_${itemNumber}`);
         const item = {
-          name: nameInput.value || `Capital Investment ${itemNumber}`,
+          name: nameInput.value || `CapEx ${itemNumber}`,
           value: parseFloat(valueInput.value) || 0,
-          depreciation: depreciationInput ? (parseFloat(depreciationInput.value) || 0) : 0,
-          disposalCost: disposalInput ? (parseFloat(disposalInput.value) || 0) : 0
+          growthRate: parseFloat(growthRateInput?.value) || 0,
+          type: 'capex'
         };
 
         items.push(item);
@@ -384,14 +383,14 @@ class FormHandler {
 
   initializeCostItems() {
     const addOpExBtn = document.getElementById('addOperatingExpense');
-    const addCapExBtn = document.getElementById('addCapitalExpense');
+    const addCapExBtn = document.getElementById('addCapExItem');
     
     if (addOpExBtn) {
       addOpExBtn.addEventListener('click', () => this.addOperatingExpense());
     }
     
     if (addCapExBtn) {
-      addCapExBtn.addEventListener('click', () => this.addCapitalExpense());
+      addCapExBtn.addEventListener('click', () => this.addCapEx());
     }
   }
 
@@ -510,8 +509,8 @@ class FormHandler {
     container.insertAdjacentHTML('beforeend', itemHTML);
   }
 
-  addCapitalExpense() {
-    const container = document.getElementById('capitalExpensesContainer');
+  addCapEx() {
+    const container = document.getElementById('capExContainer');
     if (!container) return;
 
     const itemCount = container.children.length + 1;
@@ -520,30 +519,24 @@ class FormHandler {
     const itemHTML = `
       <div class="cost-item" id="capExItem_${itemCount}">
         <div class="cost-item-header">
-          <span class="cost-item-title">Capital Investment ${itemCount}</span>
+          <span class="cost-item-title">CapEx ${itemCount}</span>
         </div>
         <button class="remove-cost-item" onclick="this.parentElement.remove()">Remove</button>
         
         <div class="form-group">
-          <label for="capExName_${itemCount}">Investment Name</label>
-          <input type="text" id="capExName_${itemCount}" placeholder="e.g., Equipment Purchase" />
+          <label for="capExName_${itemCount}">CapEx Name</label>
+          <input type="text" id="capExName_${itemCount}" placeholder="e.g., Property Improvements" />
         </div>
         
         <div class="form-group">
-          <label for="capExValue_${itemCount}">Investment Value</label>
-          <input type="number" id="capExValue_${itemCount}" placeholder="25000" step="1000" />
+          <label for="capExValue_${itemCount}">Annual Value</label>
+          <input type="number" id="capExValue_${itemCount}" placeholder="50000" step="1000" />
         </div>
         
         <div class="form-group">
-          <label for="capExDepreciation_${itemCount}">Depreciation/Amortization (%)</label>
-          <input type="number" id="capExDepreciation_${itemCount}" placeholder="e.g., 10" step="0.1" />
-          <small class="help-text">Annual depreciation rate (e.g., 10 for 10% per year)</small>
-        </div>
-        
-        <div class="form-group">
-          <label for="capExDisposal_${itemCount}">Disposal Cost (%)</label>
-          <input type="number" id="capExDisposal_${itemCount}" placeholder="e.g., 2.5" step="0.1" />
-          <small class="help-text">Cost of disposing/selling the asset as percentage of value</small>
+          <label for="capExGrowthRate_${itemCount}">Linear Growth Rate (%)</label>
+          <input type="number" id="capExGrowthRate_${itemCount}" placeholder="e.g., 3" step="0.1" />
+          <small class="help-text">Annual growth rate (e.g., 3 for 3% growth)</small>
         </div>
       </div>
     `;
