@@ -3350,6 +3350,7 @@ You MUST create a P&L Statement with this EXACT structure:
       // Calculate periods
       const periods = this.calculatePeriods(modelData.projectStartDate, modelData.projectEndDate, modelData.modelPeriods);
       const periodColumns = periods;
+      const totalColumns = periodColumns + 1; // +1 for Initial Investment period
 
       let currentRow = 1;
 
@@ -3368,7 +3369,6 @@ You MUST create a P&L Statement with this EXACT structure:
       for (let i = 0; i < periodColumns; i++) {
         headers.push(this.formatPeriodHeader(startDate, i, modelData.modelPeriods));
       }
-      const totalColumns = periodColumns + 1; // +1 for Initial Investment period
 
       const headerRange = plSheet.getRange(`A${currentRow}:${this.getColumnLetter(totalColumns)}${currentRow}`);
       headerRange.values = [headers];
@@ -3681,7 +3681,7 @@ You MUST create a P&L Statement with this EXACT structure:
       const startDate = new Date(modelData.projectStartDate);
       const endDate = new Date(modelData.projectEndDate);
       const periods = this.calculatePeriods(startDate, endDate, modelData.modelPeriods);
-      const totalColumns = periods.length + 1; // +1 for Period 0
+      const totalColumns = periods + 1; // +1 for Period 0
       
       // Add headers
       capExSheet.getRange('A1').values = [['CapEx Summary Sheet']];
@@ -3692,12 +3692,13 @@ You MUST create a P&L Statement with this EXACT structure:
       
       // Period headers
       capExSheet.getRange('A' + currentRow).values = [['Period']];
-      for (let i = 0; i <= periods.length; i++) {
+      const startDate = new Date(modelData.projectStartDate);
+      for (let i = 0; i <= periods; i++) {
         const colLetter = this.getColumnLetter(i + 2);
         if (i === 0) {
           capExSheet.getRange(colLetter + currentRow).values = [['Period 0']];
         } else {
-          const periodHeader = this.formatPeriodHeader(periods[i - 1], modelData.modelPeriods);
+          const periodHeader = this.formatPeriodHeader(startDate, i - 1, modelData.modelPeriods);
           capExSheet.getRange(colLetter + currentRow).values = [[periodHeader]];
         }
       }
@@ -3722,7 +3723,7 @@ You MUST create a P&L Statement with this EXACT structure:
           });
           
           if (valueRef && growthRateRef) {
-            for (let col = 0; col <= periods.length; col++) {
+            for (let col = 0; col <= periods; col++) {
               const colLetter = this.getColumnLetter(col + 2);
               if (col === 0) {
                 // Period 0: No CapEx
@@ -3748,7 +3749,7 @@ You MUST create a P&L Statement with this EXACT structure:
         capExSheet.getRange(`A${currentRow}`).format.font.bold = true;
         capExStructure.totalRow = currentRow;
         
-        for (let col = 0; col <= periods.length; col++) {
+        for (let col = 0; col <= periods; col++) {
           const colLetter = this.getColumnLetter(col + 2);
           const startRow = currentRow - modelData.capEx.length;
           const endRow = currentRow - 1;
@@ -3759,7 +3760,7 @@ You MUST create a P&L Statement with this EXACT structure:
         capExSheet.getRange(`A${currentRow}`).values = [['No CapEx Items']];
         capExStructure.totalRow = currentRow;
         
-        for (let col = 0; col <= periods.length; col++) {
+        for (let col = 0; col <= periods; col++) {
           const colLetter = this.getColumnLetter(col + 2);
           capExSheet.getRange(`${colLetter}${currentRow}`).values = [[0]];
         }
