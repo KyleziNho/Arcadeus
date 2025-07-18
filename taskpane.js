@@ -185,6 +185,13 @@ class MAModelingAddin {
       console.log('Generate P&L button listener added');
     }
     
+    // Generate CapEx button
+    const generateCapExBtn = document.getElementById('generateCapExBtn');
+    if (generateCapExBtn) {
+      generateCapExBtn.addEventListener('click', () => this.generateCapExSheet());
+      console.log('Generate CapEx button listener added');
+    }
+    
     // Generate FCF button
     const generateFCFBtn = document.getElementById('generateFCFBtn');
     if (generateFCFBtn) {
@@ -415,14 +422,14 @@ class MAModelingAddin {
         if (result.success) {
           console.log('P&L generated successfully');
           
-          // Show the FCF generation button
-          const generateFCFBtn = document.getElementById('generateFCFBtn');
-          if (generateFCFBtn) {
-            generateFCFBtn.style.display = 'inline-flex';
+          // Show the CapEx generation button
+          const generateCapExBtn = document.getElementById('generateCapExBtn');
+          if (generateCapExBtn) {
+            generateCapExBtn.style.display = 'inline-flex';
           }
           
           if (this.uiController) {
-            this.uiController.showMessage('P&L Statement created! You can now generate the Free Cash Flow.', 'success');
+            this.uiController.showMessage('P&L Statement created! You can now generate the CapEx Summary.', 'success');
           } else {
             console.log('P&L Statement created successfully!');
             if (this.uiController) {
@@ -465,6 +472,48 @@ class MAModelingAddin {
     }
   }
   
+  async generateCapExSheet() {
+    console.log('Starting CapEx sheet generation...');
+    
+    try {
+      // Collect model data
+      let modelData = {};
+      if (this.formHandler) {
+        modelData = this.formHandler.collectAllModelData();
+        console.log('Model data for CapEx:', modelData);
+      }
+      
+      // Generate CapEx sheet
+      if (this.excelGenerator) {
+        const result = await this.excelGenerator.generateCapExSheet(modelData);
+        
+        if (result && result.success !== false) {
+          console.log('CapEx sheet generated successfully');
+          
+          // Show the FCF generation button
+          const generateFCFBtn = document.getElementById('generateFCFBtn');
+          if (generateFCFBtn) {
+            generateFCFBtn.style.display = 'inline-flex';
+          }
+          
+          if (this.uiController) {
+            this.uiController.showMessage('CapEx Summary created! You can now generate the Free Cash Flow.', 'success');
+          }
+        } else {
+          console.error('CapEx generation failed');
+          if (this.uiController) {
+            this.uiController.showMessage('Error generating CapEx sheet', 'error');
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error in generateCapExSheet:', error);
+      if (this.uiController) {
+        this.uiController.showMessage('Unexpected error: ' + error.message, 'error');
+      }
+    }
+  }
+
   async generateFCFWithAI() {
     console.log('Starting FCF generation...');
     

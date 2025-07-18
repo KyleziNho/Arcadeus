@@ -658,9 +658,9 @@ Please provide the complete P&L structure with exact cell addresses and formulas
       const assumptionStructure = await this.readAssumptionSheetStructure();
       console.log('📊 Assumption Structure discovered:', assumptionStructure);
       
-      // Step 3: Generate CapEx sheet with totals for each period
-      const capExStructure = await this.generateCapExSheet(modelData);
-      console.log('📊 CapEx Structure generated:', capExStructure);
+      // Step 3: Read the existing CapEx sheet structure
+      const capExStructure = await this.readCapExSheetStructure();
+      console.log('📊 CapEx Structure discovered:', capExStructure);
       
       // Step 4: Generate comprehensive FCF AI prompt with ACTUAL cell references
       const fcfPrompt = this.generateRealFCFPrompt(modelData, plStructure, assumptionStructure, capExStructure);
@@ -2500,6 +2500,9 @@ ${this.formatPLStructureForPrompt(plStructure, maxPeriods)}
 **ACTUAL ASSUMPTIONS SHEET REFERENCES:**
 ${this.formatAssumptionStructureForPrompt(assumptionStructure)}
 
+**ACTUAL CAPEX SHEET STRUCTURE:**
+${this.formatCapExStructureForPrompt(capExStructure, maxPeriods)}
+
 **REQUIRED FCF SHEET STRUCTURE:**
 
 Create a comprehensive Free Cash Flow statement with the following structure:
@@ -2516,7 +2519,7 @@ You MUST create a Free Cash Flow Statement with this EXACT structure:
 2. **Purchase price** - Deal Value in Period 0 only (negative)
 3. **Transaction costs** - Transaction fees in Period 0 only (negative)
 4. **EBITDA** - Reference NOI from P&L (all operating periods)
-5. **CapEx** - Reference Total CapEx from CapEx sheet (all periods)
+5. **CapEx** - Reference Total CapEx from CapEx sheet using ='CapEx'!C${capExStructure.totalRow || 'X'} format (all periods, negative values)
 6. **Sale Price** - Terminal value in final period only (positive)
 7. **Disposal Costs** - Disposal costs in final period only (negative)
 8. **Unlevered Cashflows** - Sum of all above items per period
@@ -2609,6 +2612,20 @@ If any critical P&L references are missing, clearly state what assumptions you'r
   }
 
   // Format Assumptions structure for AI prompt  
+  formatCapExStructureForPrompt(capExStructure, maxPeriods) {
+    if (!capExStructure || !capExStructure.totalRow) {
+      return 'No CapEx sheet found - use zero values for all periods';
+    }
+    
+    let output = `CapEx sheet 'CapEx' exists with:\n`;
+    output += `- Total CapEx row: ${capExStructure.totalRow}\n`;
+    output += `- Reference format: ='CapEx'!C${capExStructure.totalRow} (for period 1)\n`;
+    output += `- Use columns C through ${this.getColumnLetter(maxPeriods + 2)} for all periods\n`;
+    output += `- IMPORTANT: CapEx should be NEGATIVE in FCF (cash outflow)\n`;
+    
+    return output;
+  }
+
   formatAssumptionStructureForPrompt(assumptionStructure) {
     if (!assumptionStructure.sheetExists) {
       return `❌ Assumptions Sheet not found or unreadable. Error: ${assumptionStructure.error || 'Unknown error'}`;
@@ -3588,6 +3605,48 @@ You MUST create a P&L Statement with this EXACT structure:
       plSheet.getUsedRange().format.autofitColumns();
       
       console.log('✅ Enhanced P&L Statement with depreciation created successfully!');
+    });
+  }
+
+  // Read existing CapEx sheet structure
+  async readCapExSheetStructure() {
+    return Excel.run(async (context) => {
+      try {
+        const sheets = context.workbook.worksheets;
+        const capExSheet = sheets.getItemOrNullObject('CapEx');
+        capExSheet.load('name');
+        await context.sync();
+        
+        if (capExSheet.isNullObject) {
+          console.log('⚠️ No CapEx sheet found');
+          return { totalRow: null, sheet: null };
+        }
+        
+        // Find the total row by looking for "Total CapEx" text
+        const usedRange = capExSheet.getUsedRange();
+        usedRange.load('values');
+        await context.sync();
+        
+        const values = usedRange.values;
+        let totalRow = null;
+        
+        for (let row = 0; row < values.length; row++) {
+          for (let col = 0; col < values[row].length; col++) {
+            if (values[row][col] === 'Total CapEx') {
+              totalRow = row + 1; // Excel is 1-indexed
+              break;
+            }
+          }
+          if (totalRow) break;
+        }
+        
+        console.log('📊 CapEx sheet structure discovered:', { totalRow, sheet: 'CapEx' });
+        return { totalRow, sheet: 'CapEx' };
+        
+      } catch (error) {
+        console.error('❌ Error reading CapEx sheet structure:', error);
+        return { totalRow: null, sheet: null };
+      }
     });
   }
 
