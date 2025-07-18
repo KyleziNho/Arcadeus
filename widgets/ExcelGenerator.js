@@ -759,6 +759,7 @@ Required format:
       // Calculate periods and prepare headers
       const periods = this.calculatePeriods(modelData.projectStartDate, modelData.projectEndDate, modelData.modelPeriods);
       const periodColumns = periods; // Use full calculated periods
+      const totalColumns = periodColumns; // For loops that need total columns
       
       let currentRow = 1;
       
@@ -1156,7 +1157,8 @@ Required format:
   }
   
   // Generate FCF prompt with REAL cell references from actual sheets
-  generateRealFCFPrompt(modelData, plStructure, assumptionStructure) {
+  // DUPLICATE METHOD REMOVED - See line 2476 for the correct implementation
+  generateRealFCFPrompt_REMOVED(modelData, plStructure, assumptionStructure) {
     console.log('🤖 Generating FCF AI prompt...');
     
     // Calculate periods
@@ -3497,52 +3499,7 @@ You MUST create a P&L Statement with this EXACT structure:
       }
       currentRow += 2;
 
-      // CAPEX SECTION
-      if (modelData.capEx && modelData.capEx.length > 0) {
-        plSheet.getRange(`A${currentRow}`).values = [['CAPITAL EXPENDITURES']];
-        plSheet.getRange(`A${currentRow}`).format.font.bold = true;
-        plSheet.getRange(`A${currentRow}`).format.fill.color = '#f2f2f2';
-        currentRow++;
-
-        const capexStartRow = currentRow;
-      
-        // Add individual CapEx items
-        modelData.capEx.forEach((item, index) => {
-          plSheet.getRange(`A${currentRow}`).values = [[item.name || `CapEx ${index + 1}`]];
-      plSheet.getRange(`A${currentRow}`).format.font.bold = true;
-      plSheet.getRange(`A${currentRow}`).format.fill.color = '#ffeaa7';
-      for (let col = 1; col <= totalColumns; col++) {
-        const colLetter = this.getColumnLetter(col);
-        if (col === 1) {
-          // Period 0: Show total initial capital investments
-          if (modelData.capitalExpenses && modelData.capitalExpenses.length > 0) {
-            let totalCapExFormula = '';
-            modelData.capitalExpenses.forEach((item, index) => {
-              const valueRef = this.cellTracker.getCellReference(`capex_${index}`);
-              if (valueRef) {
-                if (index === 0) {
-                  totalCapExFormula = `-${valueRef}`;
-                } else {
-                  totalCapExFormula += `-${valueRef}`;
-                }
-              }
-            });
-            if (totalCapExFormula) {
-              plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[totalCapExFormula]];
-            } else {
-              plSheet.getRange(`${colLetter}${currentRow}`).values = [[0]];
-            }
-          } else {
-            plSheet.getRange(`${colLetter}${currentRow}`).values = [[0]];
-          }
-        } else {
-          // Operating periods: No initial investments
-          plSheet.getRange(`${colLetter}${currentRow}`).values = [[0]];
-        }
-      }
-      currentRow++;
-        });
-      }
+      // CAPEX SECTION REMOVED - CapEx is now handled in separate sheet, not in P&L
       
       // Real estate model: No depreciation calculations required
       // NOI is the final metric for real estate models
