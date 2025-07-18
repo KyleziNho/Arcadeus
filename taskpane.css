@@ -404,19 +404,13 @@ body {
 
 /* Modern Collapsible Sections */
 .section {
-  background: var(--bg-secondary);
-  border-radius: var(--radius-xl);
+  background: transparent;
   margin: 0 var(--space-4) var(--space-4) var(--space-4);
-  border: 1px solid var(--border-primary);
   overflow: hidden;
   transition: all var(--transition-normal);
-  box-shadow: var(--shadow-sm);
 }
 
-.section:hover {
-  border-color: var(--border-secondary);
-  box-shadow: var(--shadow-md);
-}
+/* Section hover removed - interactions handled by section-header */
 
 /* Old section h3 styles removed - using new section-header structure */
 
@@ -883,10 +877,10 @@ select {
 .section-content {
   padding: var(--space-6);
   background: var(--bg-secondary);
+  margin-top: 0;
+  border-radius: var(--radius-lg);
   border: 1px solid var(--border-primary);
-  border-top: none;
-  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
-  margin-bottom: var(--space-6);
+  box-shadow: var(--shadow-sm);
 }
 
 /* Remove old minimize button styles */
