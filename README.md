@@ -1,6 +1,6 @@
 # MA PE Modeler Excel Add-in
 
-This repository contains the built static files for the MA PE Modeler Excel add-in.
+This repository contains the built static files for the Arcadeus Excel add-in.
 
 ## Files
 

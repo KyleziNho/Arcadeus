@@ -2,9 +2,9 @@
 <OfficeApp xmlns="http://schemas.microsoft.com/office/appforoffice/1.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="TaskPaneApp">
   <Id>b24892eb-f900-5bb7-9c67-8f4b23e28e9d</Id>
   <Version>1.0.0.0</Version>
-  <ProviderName>MA PE Modeler</ProviderName>
+  <ProviderName>Arcadeus</ProviderName>
   <DefaultLocale>en-US</DefaultLocale>
-  <DisplayName DefaultValue="MA PE Modeler"/>
+  <DisplayName DefaultValue="Arcadeus"/>
   <Description DefaultValue="Professional MA and PE deal modeling"/>
   <IconUrl DefaultValue="https://guavaexcel.netlify.app/assets/icon-16.png"/>
   <HighResolutionIconUrl DefaultValue="https://guavaexcel.netlify.app/assets/icon-16.png"/>

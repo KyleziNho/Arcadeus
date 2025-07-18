@@ -108,30 +108,10 @@ class UIController {
     if (isCurrentlyCollapsed) {
       // Expand section
       section.classList.remove('collapsed');
-      
-      if (sectionContent) {
-        sectionContent.style.display = 'block';
-        sectionContent.style.maxHeight = '600px';
-        sectionContent.style.opacity = '1';
-        sectionContent.style.paddingTop = 'var(--space-6)';
-        sectionContent.style.paddingBottom = 'var(--space-6)';
-        sectionContent.style.pointerEvents = 'auto';
-      }
-      
       console.log('Section expanded');
     } else {
       // Collapse section
       section.classList.add('collapsed');
-      
-      if (sectionContent) {
-        sectionContent.style.display = 'none';
-        sectionContent.style.maxHeight = '0';
-        sectionContent.style.opacity = '0';
-        sectionContent.style.paddingTop = '0';
-        sectionContent.style.paddingBottom = '0';
-        sectionContent.style.pointerEvents = 'none';
-      }
-      
       console.log('Section collapsed');
     }
     
