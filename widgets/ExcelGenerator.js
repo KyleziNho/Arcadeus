@@ -659,7 +659,7 @@ Please provide the complete P&L structure with exact cell addresses and formulas
       console.log('📊 Assumption Structure discovered:', assumptionStructure);
       
       // Step 3: Read the existing CapEx sheet structure
-      const capExStructure = await this.readCapExSheetStructure();
+      const capExStructure = await this.readCapExSheetStructure() || { totalRow: null, sheet: null };
       console.log('📊 CapEx Structure discovered:', capExStructure);
       
       // Step 4: Generate comprehensive FCF AI prompt with ACTUAL cell references
@@ -2522,7 +2522,7 @@ You MUST create a Free Cash Flow Statement with this EXACT structure:
 2. **Purchase price** - Deal Value in Period 0 only (negative)
 3. **Transaction costs** - Transaction fees in Period 0 only (negative)
 4. **EBITDA** - Reference NOI from P&L (all operating periods)
-5. **CapEx** - Reference Total CapEx from CapEx sheet using ='CapEx'!C${capExStructure.totalRow || 'X'} format (all periods, negative values)
+5. **CapEx** - Reference Total CapEx from CapEx sheet using ='CapEx'!C${capExStructure?.totalRow || 'X'} format (all periods, negative values)
 6. **Sale Price** - Terminal value in final period only (positive)
 7. **Disposal Costs** - Disposal costs in final period only (negative)
 8. **Unlevered Cashflows** - Sum of all above items per period
@@ -2607,8 +2607,8 @@ If any critical P&L references are missing, clearly state what assumptions you'r
     if (capExStructure && capExStructure.totalRow) {
       output += `**CAPEX SHEET STRUCTURE:**\n`;
       output += `✅ CapEx Sheet created with Total CapEx row\n`;
-      output += `- Total CapEx: Row ${capExStructure.totalRow}, Range B${capExStructure.totalRow}:${this.getColumnLetter(maxPeriods + 1)}${capExStructure.totalRow}\n`;
-      output += `- **REFERENCE FORMAT:** Use 'CapEx'!B${capExStructure.totalRow}:${this.getColumnLetter(maxPeriods + 1)}${capExStructure.totalRow} for Total CapEx across all periods\n\n`;
+      output += `- Total CapEx: Row ${capExStructure?.totalRow}, Range B${capExStructure?.totalRow}:${this.getColumnLetter(maxPeriods + 1)}${capExStructure?.totalRow}\n`;
+      output += `- **REFERENCE FORMAT:** Use 'CapEx'!B${capExStructure?.totalRow}:${this.getColumnLetter(maxPeriods + 1)}${capExStructure?.totalRow} for Total CapEx across all periods\n\n`;
     }
 
     return output;
@@ -2621,8 +2621,8 @@ If any critical P&L references are missing, clearly state what assumptions you'r
     }
     
     let output = `CapEx sheet 'CapEx' exists with:\n`;
-    output += `- Total CapEx row: ${capExStructure.totalRow}\n`;
-    output += `- Reference format: ='CapEx'!C${capExStructure.totalRow} (for period 1)\n`;
+    output += `- Total CapEx row: ${capExStructure?.totalRow}\n`;
+    output += `- Reference format: ='CapEx'!C${capExStructure?.totalRow} (for period 1)\n`;
     output += `- Use columns C through ${this.getColumnLetter(maxPeriods + 2)} for all periods\n`;
     output += `- IMPORTANT: CapEx should be NEGATIVE in FCF (cash outflow)\n`;
     
@@ -3835,7 +3835,7 @@ You MUST create a P&L Statement with this EXACT structure:
         for (let i = 0; i <= periods.length; i++) {
           const colLetter = this.getColumnLetter(i + 2);
           const capExCol = this.getColumnLetter(i + 2);
-          fcfSheet.getRange(colLetter + currentRow).formulas = [[`='CapEx'!${capExCol}${capExStructure.totalRow}`]];
+          fcfSheet.getRange(colLetter + currentRow).formulas = [[`='CapEx'!${capExCol}${capExStructure?.totalRow}`]];
         }
       }
       currentRow++;
