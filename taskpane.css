@@ -418,32 +418,7 @@ body {
   box-shadow: var(--shadow-md);
 }
 
-.section h3 {
-  background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--bg-quaternary) 100%);
-  padding: var(--space-6) var(--space-8);
-  margin: 0;
-  font-size: var(--font-size-lg);
-  font-weight: 600;
-  color: var(--text-primary);
-  border-bottom: 1px solid var(--border-primary);
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-  position: relative;
-  user-select: none;
-}
-
-/* Add pointer cursor specifically for collapsible sections */
-.collapsible-section h3 {
-  cursor: pointer;
-}
-
-.section h3:hover {
-  background: linear-gradient(135deg, var(--bg-quaternary) 0%, var(--bg-accent) 100%);
-  color: var(--accent-primary);
-}
+/* Old section h3 styles removed - using new section-header structure */
 
 .section-icon {
   width: 24px;
@@ -454,39 +429,7 @@ body {
   transition: all var(--transition-fast);
 }
 
-.section h3:hover .section-icon {
-  transform: scale(1.1);
-}
-
-/* Modern Collapsible Animation with Chevron */
-.collapsible-section h3::after {
-  content: '';
-  width: 24px;
-  height: 24px;
-  margin-left: auto;
-  position: relative;
-  transition: all var(--transition-normal);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.collapsible-section h3::before {
-  content: '';
-  position: absolute;
-  right: var(--space-8);
-  top: 50%;
-  width: 12px;
-  height: 12px;
-  border-right: 2px solid var(--accent-primary);
-  border-bottom: 2px solid var(--accent-primary);
-  transform: translateY(-70%) rotate(45deg);
-  transition: all var(--transition-normal);
-}
-
-.collapsible-section.collapsed h3::before {
-  transform: translateY(-30%) rotate(-45deg);
-}
+/* Removed duplicate chevron CSS - using section-header structure */
 
 .section-content {
   padding: var(--space-8);
@@ -973,11 +916,6 @@ select {
   
   .brand-name {
     font-size: var(--font-size-xl);
-  }
-}
-  
-  .section h3 {
-    font-size: var(--font-size-base);
   }
 }
 

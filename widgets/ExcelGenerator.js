@@ -324,12 +324,14 @@ class ExcelGenerator {
     
     // Disposal Cost
     sheet.getRange(`A${currentRow}`).values = [['Disposal Cost (%)']];
+    console.log('🔍 Disposal Cost value from form:', data.disposalCost);
     sheet.getRange(`B${currentRow}`).values = [[data.disposalCost || 2.5]];
     this.cellTracker.recordCell('disposalCost', 'Assumptions', `B${currentRow}`);
     currentRow++;
     
     // Terminal Cap Rate
     sheet.getRange(`A${currentRow}`).values = [['Terminal Cap Rate (%)']];
+    console.log('🔍 Terminal Cap Rate value from form:', data.terminalCapRate);
     sheet.getRange(`B${currentRow}`).values = [[data.terminalCapRate || 8.5]];
     this.cellTracker.recordCell('terminalCapRate', 'Assumptions', `B${currentRow}`);
     currentRow++;
@@ -3290,7 +3292,7 @@ You MUST create a P&L Statement with this EXACT structure:
       
       if (plStructure && plStructure.plStructure) {
         console.log('✅ Using AI-generated P&L structure');
-        await this.createPLSheetFromAI(modelData, plStructure.plStructure);
+        await this.createPLSheet(modelData);
       } else {
         console.log('⚠️ Falling back to template P&L (no valid AI structure)');
         await this.createEnhancedPLSheet(modelData);
@@ -3548,9 +3550,9 @@ You MUST create a P&L Statement with this EXACT structure:
       for (let col = 1; col <= totalColumns; col++) {
         const colLetter = this.getColumnLetter(col);
         if (interestExpenseRow) {
-          plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${colLetter}${ebitRow}-${colLetter}${interestExpenseRow}`]];
+          plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${colLetter}${ebitdaRow}-${colLetter}${interestExpenseRow}`]];
         } else {
-          plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${colLetter}${ebitRow}`]];
+          plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${colLetter}${ebitdaRow}`]];
         }
       }
       currentRow++;
