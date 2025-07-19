@@ -926,9 +926,9 @@ Required format:
       // Track NOI for FCF calculations
       this.plCellTracker.recordCell('noi', 'P&L Statement', `B${ebitdaRow}:${this.getColumnLetter(totalColumns)}${ebitdaRow}`);
       
-      // Format numbers with red brackets for negatives and dash for empty cells
+      // Format numbers with standard negative format (no parentheses for Excel compatibility)
       const dataRange = plSheet.getRange(`B5:${this.getColumnLetter(periodColumns)}${ebitdaRow}`);
-      const numberFormat = '#,##0_);[Red](#,##0);"-"'; // Positive, negative (red brackets), zero as dash
+      const numberFormat = '#,##0;[Red]-#,##0;"-"'; // Positive, negative with minus sign, zero as dash
       dataRange.numberFormat = [[numberFormat]];
       
       // Auto-fit columns
@@ -1712,7 +1712,7 @@ Provide the COMPLETE Free Cash Flow model with exact Excel formulas for every ce
       
       // Format all numbers without currency symbols, with red brackets for negatives
       const dataRange = fcfSheet.getRange(`B5:${this.getColumnLetter(periodColumns)}${currentRow}`);
-      const numberFormat = '#,##0_);[Red](#,##0);"-"'; // Positive, negative (red brackets), zero as dash
+      const numberFormat = '#,##0;[Red]-#,##0;"-"'; // Positive, negative with minus sign, zero as dash
       dataRange.numberFormat = [[numberFormat]];
       
       // Auto-fit columns
@@ -2018,7 +2018,7 @@ Provide the COMPLETE Free Cash Flow model with exact Excel formulas for every ce
       
       // Format numbers for all data columns
       const dataRange = plSheet.getRange(`B5:${this.getColumnLetter(periodColumns)}${currentRow-2}`);
-      dataRange.numberFormat = [['#,##0_);[Red](#,##0);"-"']];
+      dataRange.numberFormat = [['#,##0;[Red]-#,##0;"-"']];
       
       // Auto-resize columns
       plSheet.getRange(`A:${this.getColumnLetter(periodColumns)}`).format.autofitColumns();
@@ -2117,6 +2117,30 @@ Provide the COMPLETE Free Cash Flow model with exact Excel formulas for every ce
         date.setMonth(date.getMonth() + periodIndex);
         return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
     }
+  }
+  
+  // Generate actual Excel date for XIRR calculations
+  formatPeriodDate(startDate, periodIndex, periodType) {
+    const date = new Date(startDate);
+    
+    switch (periodType) {
+      case 'daily':
+        date.setDate(date.getDate() + periodIndex);
+        break;
+      case 'monthly':
+        date.setMonth(date.getMonth() + periodIndex);
+        break;
+      case 'quarterly':
+        date.setMonth(date.getMonth() + (periodIndex * 3));
+        break;
+      case 'yearly':
+        date.setFullYear(date.getFullYear() + periodIndex);
+        break;
+      default:
+        date.setMonth(date.getMonth() + periodIndex);
+    }
+    
+    return date; // Return actual Date object for Excel
   }
   
   // Adjust growth rate for period type  
@@ -3000,12 +3024,12 @@ Generate working Excel formulas using the provided data and structure.`;
       // Deal summary
       sheet.getRange(`A${row}`).values = [['Deal Value:']];
       sheet.getRange(`B${row}`).values = [[modelData.dealValue]];
-      sheet.getRange(`B${row}`).format.numberFormat = [['#,##0_);[Red](#,##0)']];
+      sheet.getRange(`B${row}`).format.numberFormat = [['#,##0;[Red]-#,##0']];
       row++;
       
       sheet.getRange(`A${row}`).values = [['Equity Investment:']];
       sheet.getRange(`B${row}`).values = [[equityContribution]];
-      sheet.getRange(`B${row}`).format.numberFormat = [['#,##0_);[Red](#,##0)']];
+      sheet.getRange(`B${row}`).format.numberFormat = [['#,##0;[Red]-#,##0']];
       row += 2;
       
       // AI-generated calculations
@@ -3408,7 +3432,7 @@ You MUST create a P&L Statement with this EXACT structure:
 
       // Format all data cells with red brackets for negatives and dash for empty cells
       const dataRange = plSheet.getRange(`B5:${this.getColumnLetter(totalColumns)}${currentRow}`);
-      const numberFormat = '#,##0_);[Red](#,##0);"-"'; // Positive, negative (red brackets), zero as dash
+      const numberFormat = '#,##0;[Red]-#,##0;"-"'; // Positive, negative with minus sign, zero as dash
       dataRange.numberFormat = [[numberFormat]];
       
       // Auto-resize columns
@@ -3577,7 +3601,7 @@ You MUST create a P&L Statement with this EXACT structure:
       
       // Format numbers
       const dataRange = capExSheet.getRange(`B4:${this.getColumnLetter(totalColumns + 1)}${currentRow}`);
-      dataRange.numberFormat = [['#,##0_);[Red](#,##0);"-"']];
+      dataRange.numberFormat = [['#,##0;[Red]-#,##0;"-"']];
       
       // Auto-resize columns
       capExSheet.getUsedRange().format.autofitColumns();
@@ -3639,6 +3663,24 @@ You MUST create a P&L Statement with this EXACT structure:
         }
       }
       fcfSheet.getRange(`A${currentRow}:${this.getColumnLetter(totalColumns)}${currentRow}`).format.font.bold = true;
+      currentRow++;
+      
+      // Date row for XIRR calculations (hidden row with actual dates)
+      fcfSheet.getRange('A' + currentRow).values = [['Dates (for IRR)']];
+      for (let i = 0; i <= periods; i++) {
+        const colLetter = this.getColumnLetter(i + 2);
+        if (i === 0) {
+          // Period 0: Use project start date
+          fcfSheet.getRange(colLetter + currentRow).values = [[startDate]];
+        } else {
+          const periodDate = this.formatPeriodDate(startDate, i - 1, modelData.modelPeriods);
+          fcfSheet.getRange(colLetter + currentRow).values = [[periodDate]];
+        }
+      }
+      // Format as dates and hide the row
+      fcfSheet.getRange(`B${currentRow}:${this.getColumnLetter(totalColumns)}${currentRow}`).numberFormat = [['mm/dd/yyyy']];
+      fcfSheet.getRange(`${currentRow}:${currentRow}`).format.rowHidden = true;
+      const dateRowForIRR = currentRow; // Store for IRR formula reference
       currentRow++;
       
       // UNLEVERED CASH FLOWS
@@ -3822,7 +3864,7 @@ You MUST create a P&L Statement with this EXACT structure:
       // Unlevered IRR
       fcfSheet.getRange(`A${currentRow}`).values = [['Unlevered IRR']];
       fcfSheet.getRange(`A${currentRow}`).format.font.bold = true;
-      fcfSheet.getRange('B' + currentRow).formulas = [[`=XIRR(B${unlevereCashflowsRow}:${this.getColumnLetter(totalColumns)}${unlevereCashflowsRow},B3:${this.getColumnLetter(totalColumns)}3)`]];
+      fcfSheet.getRange('B' + currentRow).formulas = [[`=XIRR(B${unlevereCashflowsRow}:${this.getColumnLetter(totalColumns)}${unlevereCashflowsRow},B${dateRowForIRR}:${this.getColumnLetter(totalColumns)}${dateRowForIRR})`]];
       fcfSheet.getRange('B' + currentRow).numberFormat = [['0.00%']];
       currentRow++;
       
@@ -3832,9 +3874,9 @@ You MUST create a P&L Statement with this EXACT structure:
       fcfSheet.getRange('B' + currentRow).formulas = [[`=SUM(C${unlevereCashflowsRow}:${this.getColumnLetter(totalColumns)}${unlevereCashflowsRow})/ABS(B${unlevereCashflowsRow})`]];
       fcfSheet.getRange('B' + currentRow).numberFormat = [['0.0"x"']];
       
-      // Format all numbers
+      // Format all numbers with standard negative format (no parentheses for XIRR compatibility)
       const dataRange = fcfSheet.getRange(`B4:${this.getColumnLetter(totalColumns)}${currentRow}`);
-      dataRange.numberFormat = [['#,##0_);[Red](#,##0);"-"']];
+      dataRange.numberFormat = [['#,##0;[Red]-#,##0;"-"']];
       
       // Auto-resize columns
       fcfSheet.getUsedRange().format.autofitColumns();
