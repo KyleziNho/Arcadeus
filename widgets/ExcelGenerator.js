@@ -3633,7 +3633,7 @@ You MUST create a P&L Statement with this EXACT structure:
         if (i === 0) {
           fcfSheet.getRange(colLetter + currentRow).values = [['Period 0']];
         } else {
-          const periodHeader = this.formatPeriodHeader(periods[i - 1], modelData.modelPeriods);
+          const periodHeader = this.formatPeriodHeader(startDate, i - 1, modelData.modelPeriods);
           fcfSheet.getRange(colLetter + currentRow).values = [[periodHeader]];
         }
       }
@@ -3821,14 +3821,14 @@ You MUST create a P&L Statement with this EXACT structure:
       // Unlevered IRR
       fcfSheet.getRange(`A${currentRow}`).values = [['Unlevered IRR']];
       fcfSheet.getRange(`A${currentRow}`).format.font.bold = true;
-      fcfSheet.getRange('B' + currentRow).formulas = [[`=XIRR(B${unlevereCashflowsRow}:${this.getColumnLetter(periods + 1)}${unlevereCashflowsRow},B3:${this.getColumnLetter(periods + 1)}3)`]];
+      fcfSheet.getRange('B' + currentRow).formulas = [[`=XIRR(B${unlevereCashflowsRow}:${this.getColumnLetter(periods + 2)}${unlevereCashflowsRow},B3:${this.getColumnLetter(periods + 2)}3)`]];
       fcfSheet.getRange('B' + currentRow).numberFormat = [['0.00%']];
       currentRow++;
       
       // MOIC
       fcfSheet.getRange(`A${currentRow}`).values = [['MOIC']];
       fcfSheet.getRange(`A${currentRow}`).format.font.bold = true;
-      fcfSheet.getRange('B' + currentRow).formulas = [[`=SUM(C${unlevereCashflowsRow}:${this.getColumnLetter(periods + 1)}${unlevereCashflowsRow})/ABS(B${unlevereCashflowsRow})`]];
+      fcfSheet.getRange('B' + currentRow).formulas = [[`=SUM(C${unlevereCashflowsRow}:${this.getColumnLetter(periods + 2)}${unlevereCashflowsRow})/ABS(B${unlevereCashflowsRow})`]];
       fcfSheet.getRange('B' + currentRow).numberFormat = [['0.0"x"']];
       
       // Format all numbers
