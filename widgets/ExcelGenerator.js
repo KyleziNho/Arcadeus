@@ -2617,13 +2617,7 @@ If any critical P&L references are missing, clearly state what assumptions you'r
     output += `\n**REFERENCE FORMAT:** Use 'P&L Statement'!B[row]:[column][row] for ranges\n`;
     output += `**EXAMPLE:** 'P&L Statement'!B${plStructure.lineItems.netIncome?.row || '15'}:${this.getColumnLetter(maxPeriods)}${plStructure.lineItems.netIncome?.row || '15'} for Net Income across all periods\n\n`;
 
-    // Add CapEx sheet structure
-    if (capExStructure && capExStructure.totalRow) {
-      output += `**CAPEX SHEET STRUCTURE:**\n`;
-      output += `✅ CapEx Sheet created with Total CapEx row\n`;
-      output += `- Total CapEx: Row ${capExStructure?.totalRow}, Range B${capExStructure?.totalRow}:${this.getColumnLetter(maxPeriods + 1)}${capExStructure?.totalRow}\n`;
-      output += `- **REFERENCE FORMAT:** Use 'CapEx'!B${capExStructure?.totalRow}:${this.getColumnLetter(maxPeriods + 1)}${capExStructure?.totalRow} for Total CapEx across all periods\n\n`;
-    }
+    // CAPEX STRUCTURE REMOVED - This belongs in formatCapExStructureForPrompt, not here
 
     return output;
   }
