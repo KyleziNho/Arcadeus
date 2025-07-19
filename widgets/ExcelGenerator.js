@@ -2108,7 +2108,8 @@ Provide the COMPLETE Free Cash Flow model with exact Excel formulas for every ce
         return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
       case 'quarterly':
         date.setMonth(date.getMonth() + (periodIndex * 3));
-        return `Q${(periodIndex % 4) + 1} ${date.getFullYear()}`;
+        const quarter = Math.floor((date.getMonth() / 3)) + 1;
+        return `Q${quarter} ${date.getFullYear()}`;
       case 'yearly':
         date.setFullYear(date.getFullYear() + periodIndex);
         return date.getFullYear().toString();
@@ -3637,7 +3638,7 @@ You MUST create a P&L Statement with this EXACT structure:
           fcfSheet.getRange(colLetter + currentRow).values = [[periodHeader]];
         }
       }
-      fcfSheet.getRange(`A${currentRow}:${this.getColumnLetter(totalColumns + 1)}${currentRow}`).format.font.bold = true;
+      fcfSheet.getRange(`A${currentRow}:${this.getColumnLetter(totalColumns)}${currentRow}`).format.font.bold = true;
       currentRow++;
       
       // UNLEVERED CASH FLOWS
@@ -3821,18 +3822,18 @@ You MUST create a P&L Statement with this EXACT structure:
       // Unlevered IRR
       fcfSheet.getRange(`A${currentRow}`).values = [['Unlevered IRR']];
       fcfSheet.getRange(`A${currentRow}`).format.font.bold = true;
-      fcfSheet.getRange('B' + currentRow).formulas = [[`=XIRR(B${unlevereCashflowsRow}:${this.getColumnLetter(periods + 2)}${unlevereCashflowsRow},B3:${this.getColumnLetter(periods + 2)}3)`]];
+      fcfSheet.getRange('B' + currentRow).formulas = [[`=XIRR(B${unlevereCashflowsRow}:${this.getColumnLetter(totalColumns)}${unlevereCashflowsRow},B3:${this.getColumnLetter(totalColumns)}3)`]];
       fcfSheet.getRange('B' + currentRow).numberFormat = [['0.00%']];
       currentRow++;
       
       // MOIC
       fcfSheet.getRange(`A${currentRow}`).values = [['MOIC']];
       fcfSheet.getRange(`A${currentRow}`).format.font.bold = true;
-      fcfSheet.getRange('B' + currentRow).formulas = [[`=SUM(C${unlevereCashflowsRow}:${this.getColumnLetter(periods + 2)}${unlevereCashflowsRow})/ABS(B${unlevereCashflowsRow})`]];
+      fcfSheet.getRange('B' + currentRow).formulas = [[`=SUM(C${unlevereCashflowsRow}:${this.getColumnLetter(totalColumns)}${unlevereCashflowsRow})/ABS(B${unlevereCashflowsRow})`]];
       fcfSheet.getRange('B' + currentRow).numberFormat = [['0.0"x"']];
       
       // Format all numbers
-      const dataRange = fcfSheet.getRange(`B4:${this.getColumnLetter(totalColumns + 1)}${currentRow}`);
+      const dataRange = fcfSheet.getRange(`B4:${this.getColumnLetter(totalColumns)}${currentRow}`);
       dataRange.numberFormat = [['#,##0_);[Red](#,##0);"-"']];
       
       // Auto-resize columns
