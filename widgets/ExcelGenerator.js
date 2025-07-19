@@ -1515,12 +1515,28 @@ Provide the COMPLETE Free Cash Flow model with exact Excel formulas for every ce
         // Interest Payments - calculated separately in FCF (not from P&L)
         fcfSheet.getRange(`A${currentRow}`).values = [['Less: Interest Payments']];
         fcfStructure.interestPayments = currentRow;
-        if (plStructure.lineItems.interestExpense) {
-          const interestRow = plStructure.lineItems.interestExpense.row;
+        // Calculate interest payments directly in FCF (since removed from P&L)
+        const hasDebt = modelData.dealLTV && parseFloat(modelData.dealLTV) > 0;
+        if (hasDebt) {
+          const debtRef = this.cellTracker.getCellReference('debtFinancing');
+          let rateRef;
+          
+          if (modelData.interestRateType === 'floating') {
+            rateRef = this.cellTracker.getCellReference('totalInterestRate');
+          } else {
+            rateRef = this.cellTracker.getCellReference('fixedRate');
+          }
+          
           for (let col = 1; col <= totalColumns; col++) {
             const colLetter = this.getColumnLetter(col);
-            const plCol = this.getColumnLetter(col === 1 ? 2 : col + 1); // Period 0 references P&L column B, others offset by 1
-            fcfSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`='P&L Statement'!${plCol}${interestRow}`]];
+            let interestFormula = '0';
+            
+            if (debtRef && rateRef) {
+              const periodAdjustment = this.getPeriodAdjustment(modelData.modelPeriods);
+              interestFormula = `=-${debtRef}*${rateRef}${periodAdjustment}/100`;
+            }
+            
+            fcfSheet.getRange(`${colLetter}${currentRow}`).formulas = [[interestFormula]];
           }
         } else {
           // No interest expense found
@@ -3732,10 +3748,26 @@ You MUST create a P&L Statement with this EXACT structure:
       fcfSheet.getRange(`A${currentRow}`).values = [['Interest Payments']];
       fcfSheet.getRange('B' + currentRow).values = [[0]]; // Period 0
       if (modelData.dealLTV && parseFloat(modelData.dealLTV) > 0) {
+        // Calculate interest payments directly since removed from P&L
+        const debtRef = this.cellTracker.getCellReference('debtFinancing');
+        let rateRef;
+        
+        if (modelData.interestRateType === 'floating') {
+          rateRef = this.cellTracker.getCellReference('totalInterestRate');
+        } else {
+          rateRef = this.cellTracker.getCellReference('fixedRate');
+        }
+        
         for (let i = 1; i <= periods; i++) {
           const colLetter = this.getColumnLetter(i + 2);
-          const plCol = this.getColumnLetter(i + 1);
-          fcfSheet.getRange(colLetter + currentRow).formulas = [[`=-'P&L Statement'!${plCol}${plStructure.lineItems.interestExpense.row}`]];
+          let interestFormula = '0';
+          
+          if (debtRef && rateRef) {
+            const periodAdjustment = this.getPeriodAdjustment(modelData.modelPeriods);
+            interestFormula = `=-${debtRef}*${rateRef}${periodAdjustment}/100`;
+          }
+          
+          fcfSheet.getRange(colLetter + currentRow).formulas = [[interestFormula]];
         }
       }
       currentRow++;
