@@ -2488,6 +2488,10 @@ Provide the COMPLETE Free Cash Flow model with exact Excel formulas for every ce
     console.log('🔍 capExStructure parameter:', capExStructure);
     console.log('🔍 capExStructure type:', typeof capExStructure);
     
+    // Ensure capExStructure is properly defined for template literals
+    const safeCapExStructure = capExStructure || { totalRow: null, sheet: null };
+    console.log('🔍 safeCapExStructure:', safeCapExStructure);
+    
     const periods = this.calculatePeriods(modelData.projectStartDate, modelData.projectEndDate, modelData.modelPeriods);
     const maxPeriods = Math.min(periods, 36);
     
@@ -2511,10 +2515,10 @@ Provide the COMPLETE Free Cash Flow model with exact Excel formulas for every ce
 ${this.formatPLStructureForPrompt(plStructure, maxPeriods)}
 
 **ACTUAL ASSUMPTIONS SHEET REFERENCES:**
-${this.formatAssumptionStructureForPrompt(assumptionStructure)}
+${this.formatAssumptionStructureForPrompt(assumptionStructure, safeCapExStructure, maxPeriods)}
 
 **ACTUAL CAPEX SHEET STRUCTURE:**
-${this.formatCapExStructureForPrompt(capExStructure, maxPeriods)}
+${this.formatCapExStructureForPrompt(safeCapExStructure, maxPeriods)}
 
 **REQUIRED FCF SHEET STRUCTURE:**
 
@@ -2532,7 +2536,7 @@ You MUST create a Free Cash Flow Statement with this EXACT structure:
 2. **Purchase price** - Deal Value in Period 0 only (negative)
 3. **Transaction costs** - Transaction fees in Period 0 only (negative)
 4. **EBITDA** - Reference NOI from P&L (all operating periods)
-5. **CapEx** - Reference Total CapEx from CapEx sheet using ='CapEx'!C${capExStructure?.totalRow || 'X'} format (all periods, negative values)
+5. **CapEx** - Reference Total CapEx from CapEx sheet using ='CapEx'!C${safeCapExStructure?.totalRow || 'X'} format (all periods, negative values)
 6. **Sale Price** - Terminal value in final period only (positive)
 7. **Disposal Costs** - Disposal costs in final period only (negative)
 8. **Unlevered Cashflows** - Sum of all above items per period
@@ -2639,7 +2643,7 @@ If any critical P&L references are missing, clearly state what assumptions you'r
     return output;
   }
 
-  formatAssumptionStructureForPrompt(assumptionStructure) {
+  formatAssumptionStructureForPrompt(assumptionStructure, capExStructure, maxPeriods) {
     if (!assumptionStructure.sheetExists) {
       return `❌ Assumptions Sheet not found or unreadable. Error: ${assumptionStructure.error || 'Unknown error'}`;
     }
