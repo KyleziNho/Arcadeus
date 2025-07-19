@@ -3774,7 +3774,7 @@ You MUST create a P&L Statement with this EXACT structure:
       const startDate = new Date(modelData.projectStartDate);
       const endDate = new Date(modelData.projectEndDate);
       const periods = this.calculatePeriods(startDate, endDate, modelData.modelPeriods);
-      const totalColumns = periods.length + 1; // +1 for Period 0
+      const totalColumns = periods + 1; // +1 for Period 0 (periods is a number, not array)
       
       // Add headers
       fcfSheet.getRange('A1').values = [['Free Cash Flow Statement']];
@@ -3785,7 +3785,7 @@ You MUST create a P&L Statement with this EXACT structure:
       
       // Period headers
       fcfSheet.getRange('A' + currentRow).values = [['Period']];
-      for (let i = 0; i <= periods.length; i++) {
+      for (let i = 0; i <= periods; i++) {
         const colLetter = this.getColumnLetter(i + 2);
         if (i === 0) {
           fcfSheet.getRange(colLetter + currentRow).values = [['Period 0']];
@@ -3806,7 +3806,7 @@ You MUST create a P&L Statement with this EXACT structure:
       // Purchase price (Period 0 only)
       fcfSheet.getRange(`A${currentRow}`).values = [['Purchase price']];
       fcfSheet.getRange('B' + currentRow).formulas = [[`=-Assumptions!${this.cellTracker.getCellReference('dealValue')?.split('!')[1] || 'B10'}`]];
-      for (let i = 1; i <= periods.length; i++) {
+      for (let i = 1; i <= periods; i++) {
         const colLetter = this.getColumnLetter(i + 2);
         fcfSheet.getRange(colLetter + currentRow).values = [['']];
       }
@@ -3819,7 +3819,7 @@ You MUST create a P&L Statement with this EXACT structure:
       if (dealValueRef && transactionFeeRef) {
         fcfSheet.getRange('B' + currentRow).formulas = [[`=-${dealValueRef}*${transactionFeeRef}/100`]];
       }
-      for (let i = 1; i <= periods.length; i++) {
+      for (let i = 1; i <= periods; i++) {
         const colLetter = this.getColumnLetter(i + 2);
         fcfSheet.getRange(colLetter + currentRow).values = [['']];
       }
@@ -3829,7 +3829,7 @@ You MUST create a P&L Statement with this EXACT structure:
       fcfSheet.getRange(`A${currentRow}`).values = [['EBITDA']];
       fcfSheet.getRange('B' + currentRow).values = [[0]]; // Period 0
       if (plStructure.lineItems.noi) {
-        for (let i = 1; i <= periods.length; i++) {
+        for (let i = 1; i <= periods; i++) {
           const colLetter = this.getColumnLetter(i + 2);
           const plCol = this.getColumnLetter(i + 1);
           fcfSheet.getRange(colLetter + currentRow).formulas = [[`='P&L Statement'!${plCol}${plStructure.lineItems.noi.row}`]];
@@ -3840,7 +3840,7 @@ You MUST create a P&L Statement with this EXACT structure:
       // CapEx (from CapEx sheet)
       fcfSheet.getRange(`A${currentRow}`).values = [['CapEx']];
       if (capExStructure && capExStructure.totalRow) {
-        for (let i = 0; i <= periods.length; i++) {
+        for (let i = 0; i <= periods; i++) {
           const colLetter = this.getColumnLetter(i + 2);
           const capExCol = this.getColumnLetter(i + 2);
           fcfSheet.getRange(colLetter + currentRow).formulas = [[`='CapEx'!${capExCol}${capExStructure?.totalRow}`]];
@@ -3850,12 +3850,12 @@ You MUST create a P&L Statement with this EXACT structure:
       
       // Sale Price (final period only)
       fcfSheet.getRange(`A${currentRow}`).values = [['Sale Price']];
-      const finalPeriodCol = this.getColumnLetter(periods.length + 1);
+      const finalPeriodCol = this.getColumnLetter(periods + 1);
       if (plStructure.lineItems.noi) {
         // Terminal value = Final NOI / Terminal Cap Rate
         const terminalCapRateRef = this.cellTracker.getCellReference('terminalCapRate');
         if (terminalCapRateRef) {
-          fcfSheet.getRange(finalPeriodCol + currentRow).formulas = [[`='P&L Statement'!${this.getColumnLetter(periods.length)}${plStructure.lineItems.noi.row}/${terminalCapRateRef}*100`]];
+          fcfSheet.getRange(finalPeriodCol + currentRow).formulas = [[`='P&L Statement'!${this.getColumnLetter(periods)}${plStructure.lineItems.noi.row}/${terminalCapRateRef}*100`]];
         }
       }
       currentRow++;
@@ -3873,7 +3873,7 @@ You MUST create a P&L Statement with this EXACT structure:
       fcfSheet.getRange(`A${currentRow}`).format.font.bold = true;
       fcfSheet.getRange(`A${currentRow}`).format.fill.color = '#fff2cc';
       const unlevereCashflowsRow = currentRow;
-      for (let i = 0; i <= periods.length; i++) {
+      for (let i = 0; i <= periods; i++) {
         const colLetter = this.getColumnLetter(i + 2);
         fcfSheet.getRange(colLetter + currentRow).formulas = [[`=SUM(${colLetter}${currentRow - 6}:${colLetter}${currentRow - 1})`]];
       }
@@ -3905,7 +3905,7 @@ You MUST create a P&L Statement with this EXACT structure:
       fcfSheet.getRange(`A${currentRow}`).values = [['Interest Expense']];
       fcfSheet.getRange('B' + currentRow).values = [[0]]; // Period 0
       if (plStructure.lineItems.interestExpense) {
-        for (let i = 1; i <= periods.length; i++) {
+        for (let i = 1; i <= periods; i++) {
           const colLetter = this.getColumnLetter(i + 2);
           const plCol = this.getColumnLetter(i + 1);
           fcfSheet.getRange(colLetter + currentRow).formulas = [[`=-'P&L Statement'!${plCol}${plStructure.lineItems.interestExpense.row}`]];
@@ -3925,7 +3925,7 @@ You MUST create a P&L Statement with this EXACT structure:
       fcfSheet.getRange(`A${currentRow}`).format.font.bold = true;
       fcfSheet.getRange(`A${currentRow}`).format.fill.color = '#fff2cc';
       const leveredCashflowsRow = currentRow;
-      for (let i = 0; i <= periods.length; i++) {
+      for (let i = 0; i <= periods; i++) {
         const colLetter = this.getColumnLetter(i + 2);
         fcfSheet.getRange(colLetter + currentRow).formulas = [[`=${colLetter}${unlevereCashflowsRow}+SUM(${colLetter}${currentRow - 4}:${colLetter}${currentRow - 1})`]];
       }
@@ -3947,7 +3947,7 @@ You MUST create a P&L Statement with this EXACT structure:
       
       // Equity distributions (Levered Cashflows)
       fcfSheet.getRange(`A${currentRow}`).values = [['Equity distributions']];
-      for (let i = 0; i <= periods.length; i++) {
+      for (let i = 0; i <= periods; i++) {
         const colLetter = this.getColumnLetter(i + 2);
         fcfSheet.getRange(colLetter + currentRow).formulas = [[`=${colLetter}${leveredCashflowsRow}`]];
       }
@@ -3962,14 +3962,14 @@ You MUST create a P&L Statement with this EXACT structure:
       // Unlevered IRR
       fcfSheet.getRange(`A${currentRow}`).values = [['Unlevered IRR']];
       fcfSheet.getRange(`A${currentRow}`).format.font.bold = true;
-      fcfSheet.getRange('B' + currentRow).formulas = [[`=XIRR(B${unlevereCashflowsRow}:${this.getColumnLetter(periods.length + 1)}${unlevereCashflowsRow},B3:${this.getColumnLetter(periods.length + 1)}3)`]];
+      fcfSheet.getRange('B' + currentRow).formulas = [[`=XIRR(B${unlevereCashflowsRow}:${this.getColumnLetter(periods + 1)}${unlevereCashflowsRow},B3:${this.getColumnLetter(periods + 1)}3)`]];
       fcfSheet.getRange('B' + currentRow).numberFormat = [['0.00%']];
       currentRow++;
       
       // MOIC
       fcfSheet.getRange(`A${currentRow}`).values = [['MOIC']];
       fcfSheet.getRange(`A${currentRow}`).format.font.bold = true;
-      fcfSheet.getRange('B' + currentRow).formulas = [[`=SUM(C${unlevereCashflowsRow}:${this.getColumnLetter(periods.length + 1)}${unlevereCashflowsRow})/ABS(B${unlevereCashflowsRow})`]];
+      fcfSheet.getRange('B' + currentRow).formulas = [[`=SUM(C${unlevereCashflowsRow}:${this.getColumnLetter(periods + 1)}${unlevereCashflowsRow})/ABS(B${unlevereCashflowsRow})`]];
       fcfSheet.getRange('B' + currentRow).numberFormat = [['0.0"x"']];
       
       // Format all numbers
