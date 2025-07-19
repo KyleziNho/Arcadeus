@@ -511,16 +511,10 @@ ${periodHeaders.join(', ')}
    - Apply growth formulas
    - Include 'Total CapEx' row
 
-6. **Interest Expense (if debt exists):**
-   - Calculate based on debt financing amount and interest rate
-   - Adjust for period type:
-     * Daily: Debt * Interest_Rate / 365 / 100
-     * Monthly: Debt * Interest_Rate / 12 / 100
-     * Quarterly: Debt * Interest_Rate / 4 / 100
-     * Yearly: Debt * Interest_Rate / 100
-
-7. **Net Income:**
-   - Net Income = NOI - CapEx - Interest Expense
+6. **REAL ESTATE MODEL - P&L ENDS AT NOI:**
+   - For real estate investments, P&L statement ends at Net Operating Income (NOI)
+   - NO interest expense, tax expense, or net income calculations
+   - NOI is the key metric for real estate financial analysis
 
 8. **FORMAT REQUIREMENTS:**
    - Use exact Excel formula syntax
@@ -927,63 +921,13 @@ Required format:
       const ebitdaRow = currentRow;
       currentRow += 2;
       
-      // INTEREST EXPENSE (if debt exists)
-      const hasDebt = modelData.dealLTV && parseFloat(modelData.dealLTV) > 0;
-      let interestRow = 0;
+      // Real estate model: NOI is the final metric - no interest, tax, or net income calculations needed
       
-      if (hasDebt) {
-        plSheet.getRange(`A${currentRow}`).values = [['Interest Expense']];
-        plSheet.getRange(`A${currentRow}`).format.font.bold = true;
-        
-        const debtRef = this.cellTracker.getCellReference('debtFinancing');
-        let rateRef;
-        
-        if (modelData.interestRateType === 'floating') {
-          rateRef = this.cellTracker.getCellReference('totalInterestRate');
-        } else {
-          rateRef = this.cellTracker.getCellReference('fixedRate');
-        }
-        
-        for (let col = 1; col <= periodColumns; col++) {
-          const colLetter = this.getColumnLetter(col);
-          const periodAdjustment = this.getPeriodAdjustment(modelData.modelPeriods);
-          
-          if (debtRef && rateRef) {
-            plSheet.getRange(`${colLetter}${currentRow}`).formulas = 
-              [[`=-${debtRef}*${rateRef}${periodAdjustment}/100`]];
-          } else {
-            // Fallback calculation
-            const debtAmount = modelData.dealValue * (modelData.dealLTV / 100);
-            const rate = modelData.fixedRate || 5.5;
-            const periodRate = this.calculatePeriodRate(rate, modelData.modelPeriods);
-            plSheet.getRange(`${colLetter}${currentRow}`).values = [[-debtAmount * periodRate / 100]];
-          }
-        }
-        interestRow = currentRow;
-        currentRow += 2;
-      }
-      
-      // NET INCOME
-      plSheet.getRange(`A${currentRow}`).values = [['Net Income']];
-      plSheet.getRange(`A${currentRow}`).format.font.bold = true;
-      plSheet.getRange(`A${currentRow}`).format.fill.color = '#FFD700';
-      
-      for (let col = 1; col <= periodColumns; col++) {
-        const colLetter = this.getColumnLetter(col);
-        if (hasDebt && interestRow > 0) {
-          plSheet.getRange(`${colLetter}${currentRow}`).formulas = 
-            [[`=${colLetter}${ebitdaRow}+${colLetter}${interestRow}`]];
-        } else {
-          plSheet.getRange(`${colLetter}${currentRow}`).formulas = 
-            [[`=${colLetter}${ebitdaRow}`]];
-        }
-      }
-      
-      // Track Net Income row
-      this.plCellTracker.recordCell('net_income', 'P&L Statement', `B${currentRow}:${this.getColumnLetter(periodColumns)}${currentRow}`);
+      // Track NOI for FCF calculations
+      this.plCellTracker.recordCell('noi', 'P&L Statement', `B${ebitdaRow}:${this.getColumnLetter(totalColumns)}${ebitdaRow}`);
       
       // Format numbers with red brackets for negatives and dash for empty cells
-      const dataRange = plSheet.getRange(`B5:${this.getColumnLetter(periodColumns)}${currentRow}`);
+      const dataRange = plSheet.getRange(`B5:${this.getColumnLetter(periodColumns)}${ebitdaRow}`);
       const numberFormat = '#,##0_);[Red](#,##0);"-"'; // Positive, negative (red brackets), zero as dash
       dataRange.numberFormat = [[numberFormat]];
       
@@ -1190,7 +1134,7 @@ ${this.formatDetailedPLReferences()}
 Create a complete Free Cash Flow Statement that uses ONLY Excel formulas referencing the above cell locations. Build a comprehensive FCF model with the following sections:
 
 **1. OPERATING CASH FLOW:**
-- Start with Net Income from P&L: ${this.plCellTracker.getCellReference('net_income')}
+- Start with NOI from P&L: ${this.plCellTracker.getCellReference('noi')}
 - Add back: Depreciation & Amortization (create reasonable assumption)
 - Less: Working Capital Changes (typical 2-5% of revenue change)
 - Less: Tax adjustments if needed
@@ -1568,7 +1512,7 @@ Provide the COMPLETE Free Cash Flow model with exact Excel formulas for every ce
         fcfSheet.getRange(`A${currentRow}`).format.fill.color = '#ffc7ce';
         currentRow++;
         
-        // Interest Payments using REAL Interest Expense reference
+        // Interest Payments - calculated separately in FCF (not from P&L)
         fcfSheet.getRange(`A${currentRow}`).values = [['Less: Interest Payments']];
         fcfStructure.interestPayments = currentRow;
         if (plStructure.lineItems.interestExpense) {
@@ -2051,77 +1995,13 @@ Provide the COMPLETE Free Cash Flow model with exact Excel formulas for every ce
       }
       currentRow += 2;
       
-      // DEBT SERVICE SECTION (if applicable)
-      const hasDebt = modelData.dealLTV && parseFloat(modelData.dealLTV) > 0;
-      if (hasDebt) {
-        plSheet.getRange(`A${currentRow}`).values = [['Interest Expense']];
-        plSheet.getRange(`A${currentRow}`).format.font.bold = true;
-        
-        // Get debt financing and interest rate references
-        const debtRef = this.cellTracker.getCellReference('debtFinancing');
-        let interestRateRef;
-        
-        if (modelData.interestRateType === 'floating') {
-          interestRateRef = this.cellTracker.getCellReference('totalInterestRate');
-        } else {
-          interestRateRef = this.cellTracker.getCellReference('fixedRate');
-        }
-        
-        // Interest expense for each period
-        for (let col = 1; col <= periodColumns; col++) {
-          const colLetter = this.getColumnLetter(col);
-          let interestFormula = '';
-          
-          // Adjust interest rate based on period type
-          // Fix debt and interest rate references
-          const debtCellRef = debtRef ? `Assumptions!${debtRef.split('!')[1]}` : 'Assumptions!B8';
-          const rateCellRef = interestRateRef ? `Assumptions!${interestRateRef.split('!')[1]}` : 'Assumptions!B15';
-          
-          switch (modelData.modelPeriods) {
-            case 'daily':
-              interestFormula = `=-${debtCellRef}*${rateCellRef}/100/365`;
-              break;
-            case 'monthly':
-              interestFormula = `=-${debtCellRef}*${rateCellRef}/12`;
-              break;
-            case 'quarterly':
-              interestFormula = `=-${debtCellRef}*${rateCellRef}/4`;
-              break;
-            case 'yearly':
-            default:
-              interestFormula = `=-${debtCellRef}*${rateCellRef}/100`;
-          }
-          
-          plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[interestFormula]];
-        }
-        currentRow += 2;
-      }
+      // Real estate model: P&L ends at NOI - no debt service, interest expense, or net income calculations
       
-      // Store interest expense row for Net Income calculation
-      const interestExpenseRow = hasDebt ? currentRow - 2 : 0;
-      
-      // NET INCOME
-      plSheet.getRange(`A${currentRow}`).values = [['Net Income']];
-      plSheet.getRange(`A${currentRow}`).format.font.bold = true;
-      plSheet.getRange(`A${currentRow}`).format.fill.color = '#FFD700';
-      
-      // Find NOI row (it's 2 rows up from current, or 4 if we have debt)
-      const ebitdaRowForNetIncome = hasDebt ? currentRow - 4 : currentRow - 2;
-      
-      // Net Income formulas for each period
-      for (let col = 1; col <= periodColumns; col++) {
-        const colLetter = this.getColumnLetter(col);
-        if (hasDebt && interestExpenseRow > 0) {
-          plSheet.getRange(`${colLetter}${currentRow}`).formulas = 
-            [[`=${colLetter}${ebitdaRowForNetIncome}+${colLetter}${interestExpenseRow}`]];
-        } else {
-          plSheet.getRange(`${colLetter}${currentRow}`).formulas = 
-            [[`=${colLetter}${ebitdaRowForNetIncome}`]];
-        }
-      }
+      // Track NOI for FCF calculations
+      this.plCellTracker.recordCell('noi', 'P&L Statement', `B${currentRow-2}:${this.getColumnLetter(periodColumns)}${currentRow-2}`);
       
       // Format numbers for all data columns
-      const dataRange = plSheet.getRange(`B5:${this.getColumnLetter(periodColumns)}${currentRow}`);
+      const dataRange = plSheet.getRange(`B5:${this.getColumnLetter(periodColumns)}${currentRow-2}`);
       dataRange.numberFormat = [['#,##0_);[Red](#,##0);"-"']];
       
       // Auto-resize columns
@@ -2544,7 +2424,7 @@ You MUST create a Free Cash Flow Statement with this EXACT structure:
 **LEVERED CASH FLOWS:**
 9. **Debt drawn** - Debt amount in Period 0 only (positive)
 10. **Debt upfront costs** - Loan issuance fees in Period 0 only (negative)
-11. **Interest Expense** - Interest payments (all debt periods)
+11. **Interest Payments** - Interest payments calculated in FCF (all debt periods)
 12. **Debt repaid (Interest-only-loan)** - Principal repayment in final period only (negative)
 13. **Levered Cashflows** - Unlevered Cashflows + Debt flows per period
 
@@ -2564,12 +2444,12 @@ You MUST create a Free Cash Flow Statement with this EXACT structure:
 1. **Use EXACT cell references** from the discovered P&L and Assumptions structures above
 2. **Reference format**: Use 'P&L Statement'!B15 or 'Assumptions'!B23 format  
 3. **Handle missing data**: If a P&L line item is not found, use conservative estimates
-4. **Most Important**: ALWAYS reference the Net Income line from P&L as the starting point for FCF calculations
+4. **Most Important**: ALWAYS reference the NOI line from P&L as the starting point for FCF calculations
 5. **Period consistency**: Ensure all ${maxPeriods} periods are calculated
 6. **Formula accuracy**: All formulas must be valid Excel syntax
 
-**NET INCOME PRIORITY:**
-The most critical value to extract from the P&L is the Net Income for each period, located at: ${plStructure.lineItems?.netIncome?.cellRef || 'Not Found - Please locate manually'}
+**NOI PRIORITY:**
+The most critical value to extract from the P&L is the NOI (Net Operating Income) for each period, located at: ${plStructure.lineItems?.noi?.cellRef || 'Not Found - Please locate manually'}
 
 **EXPECTED OUTPUT:**
 Provide complete Excel range setup with exact cell addresses and formulas for all ${maxPeriods} periods. Include proper formatting instructions and ensure all calculations reference the actual discovered cell locations.
@@ -2602,8 +2482,8 @@ If any critical P&L references are missing, clearly state what assumptions you'r
       output += `- NOI: Row ${plStructure.lineItems.noi.row}, Range B${plStructure.lineItems.noi.row}:${this.getColumnLetter(maxPeriods)}${plStructure.lineItems.noi.row}\n`;
     }
     
-    if (plStructure.lineItems.interestExpense) {
-      output += `- Interest Expense: Row ${plStructure.lineItems.interestExpense.row}, Range B${plStructure.lineItems.interestExpense.row}:${this.getColumnLetter(maxPeriods)}${plStructure.lineItems.interestExpense.row}\n`;
+    if (plStructure.lineItems.noi) {
+      output += `- NOI (Net Operating Income): Row ${plStructure.lineItems.noi.row}, Range B${plStructure.lineItems.noi.row}:${this.getColumnLetter(maxPeriods)}${plStructure.lineItems.noi.row}\n`;
     }
     
     if (plStructure.lineItems.netIncome) {
@@ -2615,7 +2495,7 @@ If any critical P&L references are missing, clearly state what assumptions you'r
     }
 
     output += `\n**REFERENCE FORMAT:** Use 'P&L Statement'!B[row]:[column][row] for ranges\n`;
-    output += `**EXAMPLE:** 'P&L Statement'!B${plStructure.lineItems.netIncome?.row || '15'}:${this.getColumnLetter(maxPeriods)}${plStructure.lineItems.netIncome?.row || '15'} for Net Income across all periods\n\n`;
+    output += `**EXAMPLE:** 'P&L Statement'!B${plStructure.lineItems.noi?.row || '15'}:${this.getColumnLetter(maxPeriods)}${plStructure.lineItems.noi?.row || '15'} for NOI across all periods\n\n`;
 
     // CAPEX STRUCTURE REMOVED - This belongs in formatCapExStructureForPrompt, not here
 
@@ -3848,10 +3728,10 @@ You MUST create a P&L Statement with this EXACT structure:
       }
       currentRow++;
       
-      // Interest Expense (all debt periods)
-      fcfSheet.getRange(`A${currentRow}`).values = [['Interest Expense']];
+      // Interest Payments (all debt periods) - calculated separately from P&L
+      fcfSheet.getRange(`A${currentRow}`).values = [['Interest Payments']];
       fcfSheet.getRange('B' + currentRow).values = [[0]]; // Period 0
-      if (plStructure.lineItems.interestExpense) {
+      if (modelData.dealLTV && parseFloat(modelData.dealLTV) > 0) {
         for (let i = 1; i <= periods; i++) {
           const colLetter = this.getColumnLetter(i + 2);
           const plCol = this.getColumnLetter(i + 1);
