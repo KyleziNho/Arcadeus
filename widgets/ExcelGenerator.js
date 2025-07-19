@@ -3234,8 +3234,6 @@ You MUST create a P&L Statement with this EXACT structure:
 3. OPERATING EXPENSES section (Period 0 = 0, then operating periods with growth)
 4. Total Operating Expenses  
 5. NOI (Total Revenue - Total Operating Expenses)
-6. Interest Expense (if debt exists)
-7. Net Income (NOI - Interest Expense)
 
 **CRITICAL REQUIREMENTS:**
 - Real estate model: No depreciation or tax calculations required
@@ -3249,9 +3247,7 @@ You MUST create a P&L Statement with this EXACT structure:
     "totalRevenue": {"formula": "=SUM(...)"},
     "operatingExpenses": [{"name": "...", "formulas": ["=cell1", "=cell2", ...]}],
     "totalOpEx": {"formula": "=SUM(...)"},
-    "noi": {"formula": "=TotalRevenue-TotalOpEx"},
-    "interestExpense": {"formula": "=..."},
-    "netIncome": {"formula": "=NOI-InterestExpense"}
+    "noi": {"formula": "=TotalRevenue-TotalOpEx"}
   }
 }`;
 
@@ -3508,59 +3504,10 @@ You MUST create a P&L Statement with this EXACT structure:
       }
       currentRow += 2;
 
-      // CAPEX SECTION REMOVED - CapEx is now handled in separate sheet, not in P&L
+      // Real estate model: NOI is the final metric - no interest, tax, or net income calculations needed
       
-      // Real estate model: No depreciation calculations required
-      // NOI is the final metric for real estate models
-
-      // Interest Expense (if debt exists)
-      let interestExpenseRow = null;
-      if (modelData.dealLTV && parseFloat(modelData.dealLTV) > 0) {
-        plSheet.getRange(`A${currentRow}`).values = [['Interest Expense']];
-        interestExpenseRow = currentRow;
-        // Simplified interest calculation for now
-        for (let col = 1; col <= totalColumns; col++) {
-          const colLetter = this.getColumnLetter(col);
-          plSheet.getRange(`${colLetter}${currentRow}`).values = [[0]]; // Placeholder
-        }
-        currentRow++;
-      }
-
-      // EBT
-      plSheet.getRange(`A${currentRow}`).values = [['EBT (Earnings Before Tax)']];
-      plSheet.getRange(`A${currentRow}`).format.font.bold = true;
-      const ebtRow = currentRow;
-      for (let col = 1; col <= totalColumns; col++) {
-        const colLetter = this.getColumnLetter(col);
-        if (interestExpenseRow) {
-          plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${colLetter}${ebitdaRow}-${colLetter}${interestExpenseRow}`]];
-        } else {
-          plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${colLetter}${ebitdaRow}`]];
-        }
-      }
-      currentRow++;
-
-      // Tax Expense (25% default)
-      plSheet.getRange(`A${currentRow}`).values = [['Tax Expense (25%)']];
-      const taxExpenseRow = currentRow;
-      for (let col = 1; col <= totalColumns; col++) {
-        const colLetter = this.getColumnLetter(col);
-        plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${colLetter}${ebtRow}*0.25`]];
-      }
-      currentRow++;
-
-      // Net Income
-      plSheet.getRange(`A${currentRow}`).values = [['Net Income']];
-      plSheet.getRange(`A${currentRow}`).format.font.bold = true;
-      plSheet.getRange(`A${currentRow}`).format.fill.color = '#c5e0b4';
-      plSheet.getRange(`A${currentRow}`).format.borders.getItem('EdgeTop').style = 'Double';
-      plSheet.getRange(`A${currentRow}`).format.borders.getItem('EdgeTop').weight = 'Thick';
-      for (let col = 1; col <= totalColumns; col++) {
-        const colLetter = this.getColumnLetter(col);
-        plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${colLetter}${ebtRow}-${colLetter}${taxExpenseRow}`]];
-        plSheet.getRange(`${colLetter}${currentRow}`).format.borders.getItem('EdgeTop').style = 'Double';
-        plSheet.getRange(`${colLetter}${currentRow}`).format.borders.getItem('EdgeTop').weight = 'Thick';
-      }
+      // Track NOI for FCF calculations
+      this.plCellTracker.recordCell('noi', 'P&L Statement', `B${ebitdaRow}:${this.getColumnLetter(totalColumns)}${ebitdaRow}`);
 
       // Format all data cells with red brackets for negatives and dash for empty cells
       const dataRange = plSheet.getRange(`B5:${this.getColumnLetter(totalColumns)}${currentRow}`);
@@ -3825,8 +3772,8 @@ You MUST create a P&L Statement with this EXACT structure:
       }
       currentRow++;
       
-      // EBITDA (NOI from P&L)
-      fcfSheet.getRange(`A${currentRow}`).values = [['EBITDA']];
+      // NOI from P&L
+      fcfSheet.getRange(`A${currentRow}`).values = [['NOI']];
       fcfSheet.getRange('B' + currentRow).values = [[0]]; // Period 0
       if (plStructure.lineItems.noi) {
         for (let i = 1; i <= periods; i++) {
