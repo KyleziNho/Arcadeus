@@ -544,6 +544,26 @@ Please provide the complete P&L structure with exact cell addresses and formulas
     return output;
   }
   
+  // Format detailed operating expenses (alias for formatDetailedOpexItems)
+  formatDetailedOperatingExpenses(modelData) {
+    if (!modelData.operatingExpenses || modelData.operatingExpenses.length === 0) {
+      return 'No operating expense items specified.';
+    }
+    
+    let output = '';
+    modelData.operatingExpenses.forEach((item, index) => {
+      const nameRef = this.cellTracker.getCellReference(`opex_${index}_name`);
+      const valueRef = this.cellTracker.getCellReference(`opex_${index}`);
+      const growthRateRef = this.cellTracker.getCellReference(`opex_${index}_growth_rate`);
+      
+      output += `\n- ${item.name || `OpEx Item ${index + 1}`}:\n`;
+      output += `  * Base Value Cell: ${valueRef}\n`;
+      output += `  * Growth Rate: ${item.growthRate || 0}% (Cell: ${growthRateRef})\n`;
+      output += `  * Growth Type: Linear (annual)\n`;
+    });
+    return output;
+  }
+  
   // Format detailed capital expense items
   formatDetailedCapexItems(modelData) {
     if (!modelData.capitalExpenses || modelData.capitalExpenses.length === 0) {
