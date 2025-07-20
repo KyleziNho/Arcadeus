@@ -3884,11 +3884,11 @@ You MUST create a P&L Statement with this EXACT structure:
       fcfSheet.getRange('B' + currentRow).numberFormat = [['0.00%']];
       currentRow++;
       
-      // FIXED: MOIC with correct ranges  
+      // FIXED: MOIC with correct ranges (using LEVERED/EQUITY cashflows)  
       fcfSheet.getRange(`A${currentRow}`).values = [['MOIC']];
       fcfSheet.getRange(`A${currentRow}`).format.font.bold = true;
-      // MOIC: Sum of all cash flows (excluding initial investment) / Initial investment
-      fcfSheet.getRange('B' + currentRow).formulas = [[`=SUM(C${unlevereCashflowsRow}:${finalCol}${unlevereCashflowsRow})/ABS(B${unlevereCashflowsRow})`]];
+      // MOIC: Sum of levered cash inflows / Initial equity investment
+      fcfSheet.getRange('B' + currentRow).formulas = [[`=SUM(C${leveredCashflowsRow}:${finalCol}${leveredCashflowsRow})/ABS(B${leveredCashflowsRow})`]];
       fcfSheet.getRange('B' + currentRow).numberFormat = [['0.0"x"']];
       
       // Format all numbers with standard negative format (no parentheses for XIRR compatibility)
