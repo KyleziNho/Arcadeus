@@ -3873,14 +3873,16 @@ You MUST create a P&L Statement with this EXACT structure:
       fcfSheet.getRange(`A${currentRow}`).format.font.bold = true;
       // Use proper column range: B to final period column
       const finalCol = this.getColumnLetter(periods + 1);
-      fcfSheet.getRange('B' + currentRow).formulas = [[`=IRR(B${unlevereCashflowsRow}:${finalCol}${unlevereCashflowsRow})`]];
+      // Add 50% starting guess for high IRR calculations
+      fcfSheet.getRange('B' + currentRow).formulas = [[`=IFERROR(IRR(B${unlevereCashflowsRow}:${finalCol}${unlevereCashflowsRow},0.5),"No Solution")`]];
       fcfSheet.getRange('B' + currentRow).numberFormat = [['0.00%']];
       currentRow++;
       
       // FIXED: Levered IRR with regular IRR function (no dates needed)
       fcfSheet.getRange(`A${currentRow}`).values = [['Levered IRR ']];
       fcfSheet.getRange(`A${currentRow}`).format.font.bold = true;
-      fcfSheet.getRange('B' + currentRow).formulas = [[`=IRR(B${leveredCashflowsRow}:${finalCol}${leveredCashflowsRow})`]];
+      // Add 100% starting guess for very high IRR calculations
+      fcfSheet.getRange('B' + currentRow).formulas = [[`=IFERROR(IRR(B${leveredCashflowsRow}:${finalCol}${leveredCashflowsRow},1.0),"No Solution")`]];
       fcfSheet.getRange('B' + currentRow).numberFormat = [['0.00%']];
       currentRow++;
       
@@ -3891,8 +3893,9 @@ You MUST create a P&L Statement with this EXACT structure:
       fcfSheet.getRange('B' + currentRow).formulas = [[`=SUM(C${leveredCashflowsRow}:${finalCol}${leveredCashflowsRow})/ABS(B${leveredCashflowsRow})`]];
       fcfSheet.getRange('B' + currentRow).numberFormat = [['0.0"x"']];
       
-      // Format all numbers with standard negative format (no parentheses for XIRR compatibility)
-      const dataRange = fcfSheet.getRange(`B5:${finalCol}${currentRow}`);
+      // Format all numbers with standard negative format (excluding IRR/MOIC rows)
+      // Stop formatting before the RETURNS section to preserve percentage formatting
+      const dataRange = fcfSheet.getRange(`B5:${finalCol}${currentRow - 4}`); // Exclude RETURNS, IRR, and MOIC rows
       dataRange.numberFormat = [['#,##0;[Red]-#,##0;"-"']];
       
       // Auto-resize columns
