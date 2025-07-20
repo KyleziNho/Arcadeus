@@ -356,42 +356,15 @@ class ExcelGenerator {
     if (hasDebt) {
       // Loan Issuance Fees
       sheet.getRange(`A${currentRow}`).values = [['Loan Issuance Fees (%)']];
-      sheet.getRange(`B${currentRow}`).values = [[data.loanIssuanceFees || 1.5]];
+      sheet.getRange(`B${currentRow}`).values = [[data.debtSettings?.loanIssuanceFees || 1.5]];
       this.cellTracker.recordCell('loanIssuanceFees', 'Assumptions', `B${currentRow}`);
       currentRow++;
       
-      // Interest Rate Type
-      sheet.getRange(`A${currentRow}`).values = [['Interest Rate Type']];
-      sheet.getRange(`B${currentRow}`).values = [[data.interestRateType || 'fixed']];
-      this.cellTracker.recordCell('interestRateType', 'Assumptions', `B${currentRow}`);
+      // Fixed Interest Rate (simplified - no more floating rate)
+      sheet.getRange(`A${currentRow}`).values = [['Fixed Interest Rate (%)']];
+      sheet.getRange(`B${currentRow}`).values = [[data.debtSettings?.fixedRate || 5.5]];
+      this.cellTracker.recordCell('fixedRate', 'Assumptions', `B${currentRow}`);
       currentRow++;
-      
-      // Interest Rate Details
-      if (data.interestRateType === 'floating') {
-        // Base Rate
-        sheet.getRange(`A${currentRow}`).values = [['Base Interest Rate (%)']];
-        sheet.getRange(`B${currentRow}`).values = [[data.baseRate || 3.9]];
-        this.cellTracker.recordCell('baseRate', 'Assumptions', `B${currentRow}`);
-        currentRow++;
-        
-        // Credit Margin
-        sheet.getRange(`A${currentRow}`).values = [['Credit Margin (%)']];
-        sheet.getRange(`B${currentRow}`).values = [[data.creditMargin || 2.0]];
-        this.cellTracker.recordCell('creditMargin', 'Assumptions', `B${currentRow}`);
-        currentRow++;
-        
-        // Total Floating Rate
-        sheet.getRange(`A${currentRow}`).values = [['Total Interest Rate (%)']];
-        sheet.getRange(`B${currentRow}`).formulas = [[`=B${currentRow-2}+B${currentRow-1}`]];
-        this.cellTracker.recordCell('totalInterestRate', 'Assumptions', `B${currentRow}`);
-        currentRow++;
-      } else {
-        // Fixed Rate
-        sheet.getRange(`A${currentRow}`).values = [['Fixed Interest Rate (%)']];
-        sheet.getRange(`B${currentRow}`).values = [[data.fixedRate || 5.5]];
-        this.cellTracker.recordCell('fixedRate', 'Assumptions', `B${currentRow}`);
-        currentRow++;
-      }
     } else {
       sheet.getRange(`A${currentRow}`).values = [['No Debt Financing (LTV = 0)']];
       sheet.getRange(`A${currentRow}`).format.font.italic = true;
@@ -600,15 +573,7 @@ Please provide the complete P&L structure with exact cell addresses and formulas
     }
     
     let output = `\n- Loan Issuance Fees: ${this.cellTracker.getCellReference('loanIssuanceFees')}\n`;
-    output += `- Interest Rate Type: ${modelData.interestRateType || 'fixed'}\n`;
-    
-    if (modelData.interestRateType === 'floating') {
-      output += `- Base Rate: ${this.cellTracker.getCellReference('baseRate')}\n`;
-      output += `- Credit Margin: ${this.cellTracker.getCellReference('creditMargin')}\n`;
-      output += `- Total Interest Rate: ${this.cellTracker.getCellReference('totalInterestRate')}\n`;
-    } else {
-      output += `- Fixed Interest Rate: ${this.cellTracker.getCellReference('fixedRate')}\n`;
-    }
+    output += `- Fixed Interest Rate: ${this.cellTracker.getCellReference('fixedRate')}\n`;
     
     return output;
   }
@@ -1210,14 +1175,7 @@ Provide the COMPLETE Free Cash Flow model with exact Excel formulas for every ce
     output += `**DEBT MODEL:**\n`;
     const hasDebt = modelData.dealLTV && parseFloat(modelData.dealLTV) > 0;
     if (hasDebt) {
-      output += `- Interest Rate Type: ${this.cellTracker.getCellReference('interestRateType')}\n`;
-      if (modelData.interestRateType === 'floating') {
-        output += `- Base Rate (%): ${this.cellTracker.getCellReference('baseRate')}\n`;
-        output += `- Credit Margin (%): ${this.cellTracker.getCellReference('creditMargin')}\n`;
-        output += `- Total Interest Rate (%): ${this.cellTracker.getCellReference('totalInterestRate')}\n`;
-      } else {
-        output += `- Fixed Interest Rate (%): ${this.cellTracker.getCellReference('fixedRate')}\n`;
-      }
+      output += `- Fixed Interest Rate (%): ${this.cellTracker.getCellReference('fixedRate')}\n`;
       output += `- Loan Issuance Fees (%): ${this.cellTracker.getCellReference('loanIssuanceFees')}\n`;
     } else {
       output += `- No debt financing (LTV = 0%)\n`;
@@ -1521,11 +1479,7 @@ Provide the COMPLETE Free Cash Flow model with exact Excel formulas for every ce
           const debtRef = this.cellTracker.getCellReference('debtFinancing');
           let rateRef;
           
-          if (modelData.interestRateType === 'floating') {
-            rateRef = this.cellTracker.getCellReference('totalInterestRate');
-          } else {
-            rateRef = this.cellTracker.getCellReference('fixedRate');
-          }
+          rateRef = this.cellTracker.getCellReference('fixedRate');
           
           for (let col = 1; col <= totalColumns; col++) {
             const colLetter = this.getColumnLetter(col);
@@ -1790,16 +1744,8 @@ Provide the COMPLETE Free Cash Flow model with exact Excel formulas for every ce
     const hasDebt = modelData.dealLTV && parseFloat(modelData.dealLTV) > 0;
     if (!hasDebt) return 'No debt financing (LTV = 0)';
     
-    let debtInfo = `- Loan Issuance Fees: ${modelData.loanIssuanceFees || 1.5}% (Cell: ${this.cellTracker.getCellReference('loanIssuanceFees')})\n`;
-    debtInfo += `- Interest Rate Type: ${modelData.interestRateType || 'fixed'} (Cell: ${this.cellTracker.getCellReference('interestRateType')})\n`;
-    
-    if (modelData.interestRateType === 'floating') {
-      debtInfo += `- Base Rate: ${modelData.baseRate || 3.9}% (Cell: ${this.cellTracker.getCellReference('baseRate')})\n`;
-      debtInfo += `- Credit Margin: ${modelData.creditMargin || 2.0}% (Cell: ${this.cellTracker.getCellReference('creditMargin')})\n`;
-      debtInfo += `- Total Rate: Formula in (Cell: ${this.cellTracker.getCellReference('totalInterestRate')})`;
-    } else {
-      debtInfo += `- Fixed Rate: ${modelData.fixedRate || 5.5}% (Cell: ${this.cellTracker.getCellReference('fixedRate')})`;
-    }
+    let debtInfo = `- Loan Issuance Fees: ${modelData.debtSettings?.loanIssuanceFees || 1.5}% (Cell: ${this.cellTracker.getCellReference('loanIssuanceFees')})\n`;
+    debtInfo += `- Fixed Rate: ${modelData.debtSettings?.fixedRate || 5.5}% (Cell: ${this.cellTracker.getCellReference('fixedRate')})`;
     
     return debtInfo;
   }
@@ -3561,7 +3507,7 @@ You MUST create a P&L Statement with this EXACT structure:
           
           if (valueRef && growthRateRef) {
             for (let col = 0; col <= periods; col++) {
-              const colLetter = this.getColumnLetter(col + 2);
+              const colLetter = this.getColumnLetter(col + 1); // Changed from col + 2 to col + 1 to start at column B (Period 0)
               if (col === 0) {
                 // Period 0: No CapEx
                 capExSheet.getRange(`${colLetter}${currentRow}`).values = [[0]];
@@ -3587,7 +3533,7 @@ You MUST create a P&L Statement with this EXACT structure:
         capExStructure.totalRow = currentRow;
         
         for (let col = 0; col <= periods; col++) {
-          const colLetter = this.getColumnLetter(col + 2);
+          const colLetter = this.getColumnLetter(col + 1); // Changed from col + 2 to col + 1 to align with data
           const startRow = currentRow - modelData.capEx.length;
           const endRow = currentRow - 1;
           capExSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=SUM(${colLetter}${startRow}:${colLetter}${endRow})`]];
@@ -3598,7 +3544,7 @@ You MUST create a P&L Statement with this EXACT structure:
         capExStructure.totalRow = currentRow;
         
         for (let col = 0; col <= periods; col++) {
-          const colLetter = this.getColumnLetter(col + 2);
+          const colLetter = this.getColumnLetter(col + 1); // Changed from col + 2 to col + 1 to align with headers
           capExSheet.getRange(`${colLetter}${currentRow}`).values = [[0]];
         }
       }
@@ -3802,11 +3748,7 @@ You MUST create a P&L Statement with this EXACT structure:
         const debtRef = this.cellTracker.getCellReference('debtFinancing');
         let rateRef;
         
-        if (modelData.interestRateType === 'floating') {
-          rateRef = this.cellTracker.getCellReference('totalInterestRate');
-        } else {
-          rateRef = this.cellTracker.getCellReference('fixedRate');
-        }
+        rateRef = this.cellTracker.getCellReference('fixedRate');
         
         for (let i = 1; i <= periods; i++) {
           const colLetter = this.getColumnLetter(i + 1);

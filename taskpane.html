@@ -11,7 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="taskpane.css">
     <!-- Widget Scripts -->
-    <script src="widgets/ExcelGenerator.js?v=18"></script>
+    <script src="widgets/ExcelGenerator.js?v=19"></script>
     <script>
         // Verify ExcelGenerator loaded
         console.log('🔧 Checking ExcelGenerator availability...');
@@ -354,37 +354,9 @@
                             <small class="help-text">Fees for arranging and issuing the debt financing</small>
                         </div>
                         <div class="form-group">
-                            <label>Interest Rate Type</label>
-                            <div class="radio-group">
-                                <label class="radio-option">
-                                    <input type="radio" name="rateType" value="fixed" id="rateTypeFixed" checked>
-                                    <span class="radio-custom"></span>
-                                    Fixed Rate
-                                </label>
-                                <label class="radio-option">
-                                    <input type="radio" name="rateType" value="floating" id="rateTypeFloating">
-                                    <span class="radio-custom"></span>
-                                    Floating Rate (Base + Margin)
-                                </label>
-                            </div>
-                        </div>
-
-                        <div class="rate-inputs">
-                            <div class="form-group" id="fixedRateGroup">
-                                <label>Fixed Interest Rate (%)</label>
-                                <input type="number" id="fixedRate" placeholder="e.g., 5.5" step="0.1" value="5.5">
-                            </div>
-
-                            <div class="form-group" id="baseRateGroup" style="display: none;">
-                                <label>Base Interest Rate - US Fed (%)</label>
-                                <input type="number" id="baseRate" placeholder="e.g., 3.9" step="0.1" value="3.9">
-                            </div>
-
-                            <div class="form-group" id="marginGroup" style="display: none;">
-                                <label>Credit Margin (%)</label>
-                                <input type="number" id="creditMargin" placeholder="e.g., 2.0" step="0.1" value="2.0">
-                                <small class="rate-note">Industry standard is typically 2% - 3% for most deals</small>
-                            </div>
+                            <label>Fixed Interest Rate (%)</label>
+                            <input type="number" id="fixedRate" placeholder="e.g., 5.5" step="0.1" value="5.5">
+                            <small class="help-text">Annual interest rate for the debt financing</small>
                         </div>
 
                     </div>

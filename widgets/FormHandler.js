@@ -250,19 +250,13 @@ class FormHandler {
 
   collectDebtSettings() {
     const loanIssuanceFees = document.getElementById('loanIssuanceFees')?.value || '1.5';
-    const rateType = document.querySelector('input[name="rateType"]:checked')?.value || 'fixed';
+    const fixedRate = document.getElementById('fixedRate')?.value || '5.5';
     
     const settings = {
       loanIssuanceFees: parseFloat(loanIssuanceFees),
-      rateType: rateType
+      fixedRate: parseFloat(fixedRate),
+      rateType: 'fixed' // Always fixed rate now
     };
-
-    if (rateType === 'fixed') {
-      settings.fixedRate = parseFloat(document.getElementById('fixedRate')?.value) || 5.5;
-    } else {
-      settings.baseRate = parseFloat(document.getElementById('baseRate')?.value) || 3.9;
-      settings.creditMargin = parseFloat(document.getElementById('creditMargin')?.value) || 2.0;
-    }
 
     return settings;
   }
@@ -399,31 +393,9 @@ class FormHandler {
   }
 
   initializeDebtModel() {
-    // Rate type radio button handlers
-    const rateTypeFixed = document.getElementById('rateTypeFixed');
-    const rateTypeFloating = document.getElementById('rateTypeFloating');
-
-    const updateRateInputs = () => {
-      const fixedRateGroup = document.getElementById('fixedRateGroup');
-      const baseRateGroup = document.getElementById('baseRateGroup');
-      const marginGroup = document.getElementById('marginGroup');
-
-      if (rateTypeFixed && rateTypeFixed.checked) {
-        if (fixedRateGroup) fixedRateGroup.style.display = 'block';
-        if (baseRateGroup) baseRateGroup.style.display = 'none';
-        if (marginGroup) marginGroup.style.display = 'none';
-      } else if (rateTypeFloating && rateTypeFloating.checked) {
-        if (fixedRateGroup) fixedRateGroup.style.display = 'none';
-        if (baseRateGroup) baseRateGroup.style.display = 'block';
-        if (marginGroup) marginGroup.style.display = 'block';
-      }
-    };
-
-    if (rateTypeFixed) rateTypeFixed.addEventListener('change', updateRateInputs);
-    if (rateTypeFloating) rateTypeFloating.addEventListener('change', updateRateInputs);
-
-    // Initial call
-    updateRateInputs();
+    // Simplified debt model - no complex rate type handling needed
+    // All debt will use fixed rate only
+    console.log('Debt model initialized with fixed rate only');
   }
 
   updateDebtEligibility(ltv) {
