@@ -3651,10 +3651,11 @@ You MUST create a P&L Statement with this EXACT structure:
       
       let currentRow = 3;
       
-      // Period headers
+      // FIXED: Proper column structure starting at column B
+      // Period headers with proper alignment
       fcfSheet.getRange('A' + currentRow).values = [['Period']];
       for (let i = 0; i <= periods; i++) {
-        const colLetter = this.getColumnLetter(i + 2);
+        const colLetter = this.getColumnLetter(i + 2); // Start at column B (i+2 where i=0 gives column B)
         if (i === 0) {
           fcfSheet.getRange(colLetter + currentRow).values = [['Period 0']];
         } else {
@@ -3662,24 +3663,23 @@ You MUST create a P&L Statement with this EXACT structure:
           fcfSheet.getRange(colLetter + currentRow).values = [[periodHeader]];
         }
       }
-      fcfSheet.getRange(`A${currentRow}:${this.getColumnLetter(totalColumns)}${currentRow}`).format.font.bold = true;
+      fcfSheet.getRange(`A${currentRow}:${this.getColumnLetter(periods + 2)}${currentRow}`).format.font.bold = true;
       currentRow++;
       
-      // Date row for XIRR calculations (hidden row with actual dates)
-      fcfSheet.getRange('A' + currentRow).values = [['Dates (for IRR)']];
+      // FIXED: Date row with actual Excel dates for XIRR
+      fcfSheet.getRange('A' + currentRow).values = [['Date Values']];
       for (let i = 0; i <= periods; i++) {
         const colLetter = this.getColumnLetter(i + 2);
         if (i === 0) {
-          // Period 0: Use project start date
+          // Period 0: Use project start date  
           fcfSheet.getRange(colLetter + currentRow).values = [[startDate]];
         } else {
           const periodDate = this.formatPeriodDate(startDate, i - 1, modelData.modelPeriods);
           fcfSheet.getRange(colLetter + currentRow).values = [[periodDate]];
         }
       }
-      // Format as dates and hide the row
-      fcfSheet.getRange(`B${currentRow}:${this.getColumnLetter(totalColumns)}${currentRow}`).numberFormat = [['mm/dd/yyyy']];
-      fcfSheet.getRange(`${currentRow}:${currentRow}`).format.rowHidden = true;
+      // Format entire date row as dates
+      fcfSheet.getRange(`B${currentRow}:${this.getColumnLetter(periods + 2)}${currentRow}`).numberFormat = [['mm/dd/yyyy']];
       const dateRowForIRR = currentRow; // Store for IRR formula reference
       currentRow++;
       
@@ -3736,7 +3736,7 @@ You MUST create a P&L Statement with this EXACT structure:
       
       // Sale Price (final period only)
       fcfSheet.getRange(`A${currentRow}`).values = [['Sale Price']];
-      const finalPeriodCol = this.getColumnLetter(periods + 1);
+      const finalPeriodCol = this.getColumnLetter(periods + 2); // FIXED: Correct final period column
       if (plStructure.lineItems.noi) {
         // Terminal value = Final NOI / Terminal Cap Rate
         const terminalCapRateRef = this.cellTracker.getCellReference('terminalCapRate');
@@ -3861,21 +3861,24 @@ You MUST create a P&L Statement with this EXACT structure:
       fcfSheet.getRange(`A${currentRow}`).format.fill.color = '#f4cccc';
       currentRow++;
       
-      // Unlevered IRR
+      // FIXED: Unlevered IRR with correct ranges
       fcfSheet.getRange(`A${currentRow}`).values = [['Unlevered IRR']];
       fcfSheet.getRange(`A${currentRow}`).format.font.bold = true;
-      fcfSheet.getRange('B' + currentRow).formulas = [[`=XIRR(B${unlevereCashflowsRow}:${this.getColumnLetter(totalColumns)}${unlevereCashflowsRow},B${dateRowForIRR}:${this.getColumnLetter(totalColumns)}${dateRowForIRR})`]];
+      // Use proper column range: B to final period column
+      const finalCol = this.getColumnLetter(periods + 2);
+      fcfSheet.getRange('B' + currentRow).formulas = [[`=XIRR(B${unlevereCashflowsRow}:${finalCol}${unlevereCashflowsRow},B${dateRowForIRR}:${finalCol}${dateRowForIRR})`]];
       fcfSheet.getRange('B' + currentRow).numberFormat = [['0.00%']];
       currentRow++;
       
-      // MOIC
+      // FIXED: MOIC with correct ranges  
       fcfSheet.getRange(`A${currentRow}`).values = [['MOIC']];
       fcfSheet.getRange(`A${currentRow}`).format.font.bold = true;
-      fcfSheet.getRange('B' + currentRow).formulas = [[`=SUM(C${unlevereCashflowsRow}:${this.getColumnLetter(totalColumns)}${unlevereCashflowsRow})/ABS(B${unlevereCashflowsRow})`]];
+      // MOIC: Sum of all cash flows (excluding initial investment) / Initial investment
+      fcfSheet.getRange('B' + currentRow).formulas = [[`=SUM(C${unlevereCashflowsRow}:${finalCol}${unlevereCashflowsRow})/ABS(B${unlevereCashflowsRow})`]];
       fcfSheet.getRange('B' + currentRow).numberFormat = [['0.0"x"']];
       
       // Format all numbers with standard negative format (no parentheses for XIRR compatibility)
-      const dataRange = fcfSheet.getRange(`B4:${this.getColumnLetter(totalColumns)}${currentRow}`);
+      const dataRange = fcfSheet.getRange(`B5:${finalCol}${currentRow}`);
       dataRange.numberFormat = [['#,##0;[Red]-#,##0;"-"']];
       
       // Auto-resize columns
