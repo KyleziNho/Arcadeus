@@ -3868,12 +3868,19 @@ You MUST create a P&L Statement with this EXACT structure:
       fcfSheet.getRange(`A${currentRow}`).format.fill.color = '#f4cccc';
       currentRow++;
       
-      // FIXED: Unlevered IRR with correct ranges
+      // FIXED: Unlevered IRR with regular IRR function (no dates needed)
       fcfSheet.getRange(`A${currentRow}`).values = [['Unlevered IRR']];
       fcfSheet.getRange(`A${currentRow}`).format.font.bold = true;
       // Use proper column range: B to final period column
       const finalCol = this.getColumnLetter(periods + 1);
-      fcfSheet.getRange('B' + currentRow).formulas = [[`=XIRR(B${unlevereCashflowsRow}:${finalCol}${unlevereCashflowsRow},B${dateRowForIRR}:${finalCol}${dateRowForIRR})`]];
+      fcfSheet.getRange('B' + currentRow).formulas = [[`=IRR(B${unlevereCashflowsRow}:${finalCol}${unlevereCashflowsRow})`]];
+      fcfSheet.getRange('B' + currentRow).numberFormat = [['0.00%']];
+      currentRow++;
+      
+      // FIXED: Levered IRR with regular IRR function (no dates needed)
+      fcfSheet.getRange(`A${currentRow}`).values = [['Levered IRR ']];
+      fcfSheet.getRange(`A${currentRow}`).format.font.bold = true;
+      fcfSheet.getRange('B' + currentRow).formulas = [[`=IRR(B${leveredCashflowsRow}:${finalCol}${leveredCashflowsRow})`]];
       fcfSheet.getRange('B' + currentRow).numberFormat = [['0.00%']];
       currentRow++;
       
