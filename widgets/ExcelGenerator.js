@@ -3068,11 +3068,11 @@ Generate working Excel formulas using the provided data and structure.`;
         if (growthRateRef && item.growthType === 'annual') {
           const cellRef = growthRateRef.includes('!') ? growthRateRef.split('!')[1] : growthRateRef;
           if (modelData.modelPeriods === 'quarterly') {
-            prompt += `=PreviousCell*(1+Assumptions!${cellRef}/100/4)`;
+            prompt += `=PreviousCell*(1+Assumptions!${cellRef}/4)`;
           } else if (modelData.modelPeriods === 'monthly') {
-            prompt += `=PreviousCell*(1+Assumptions!${cellRef}/100/12)`;
+            prompt += `=PreviousCell*(1+Assumptions!${cellRef}/12)`;
           } else if (modelData.modelPeriods === 'yearly') {
-            prompt += `=PreviousCell*(1+Assumptions!${cellRef}/100)`;
+            prompt += `=PreviousCell*(1+Assumptions!${cellRef})`;
           }
           prompt += `\n   - Growth Rate Location: Assumptions!${cellRef}`;
         } else {
@@ -3096,11 +3096,11 @@ Generate working Excel formulas using the provided data and structure.`;
         if (growthRateRef && item.growthType === 'annual') {
           const cellRef = growthRateRef.includes('!') ? growthRateRef.split('!')[1] : growthRateRef;
           if (modelData.modelPeriods === 'quarterly') {
-            prompt += `=PreviousCell*(1+Assumptions!${cellRef}/100/4)`;
+            prompt += `=PreviousCell*(1+Assumptions!${cellRef}/4)`;
           } else if (modelData.modelPeriods === 'monthly') {
-            prompt += `=PreviousCell*(1+Assumptions!${cellRef}/100/12)`;
+            prompt += `=PreviousCell*(1+Assumptions!${cellRef}/12)`;
           } else if (modelData.modelPeriods === 'yearly') {
-            prompt += `=PreviousCell*(1+Assumptions!${cellRef}/100)`;
+            prompt += `=PreviousCell*(1+Assumptions!${cellRef})`;
           }
           prompt += `\n   - Growth Rate Location: Assumptions!${cellRef}`;
         } else {
@@ -3301,11 +3301,11 @@ You MUST create a P&L Statement with this EXACT structure:
               if (growthRateRef) {
                 const prevColLetter = this.getColumnLetter(col - 1);
                 if (modelData.modelPeriods === 'monthly') {
-                  plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${prevColLetter}${currentRow}*(1+${growthRateRef}/100/12)`]];
+                  plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${prevColLetter}${currentRow}*(1+${growthRateRef}/12)`]];
                 } else if (modelData.modelPeriods === 'quarterly') {
-                  plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${prevColLetter}${currentRow}*(1+${growthRateRef}/100/4)`]];
+                  plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${prevColLetter}${currentRow}*(1+${growthRateRef}/4)`]];
                 } else {
-                  plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${prevColLetter}${currentRow}*(1+${growthRateRef}/100)`]];
+                  plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${prevColLetter}${currentRow}*(1+${growthRateRef})`]];
                 }
               } else {
                 const prevColLetter = this.getColumnLetter(col - 1);
@@ -3356,11 +3356,11 @@ You MUST create a P&L Statement with this EXACT structure:
               if (growthRateRef) {
                 const prevColLetter = this.getColumnLetter(col - 1);
                 if (modelData.modelPeriods === 'monthly') {
-                  plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${prevColLetter}${currentRow}*(1+${growthRateRef}/100/12)`]];
+                  plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${prevColLetter}${currentRow}*(1+${growthRateRef}/12)`]];
                 } else if (modelData.modelPeriods === 'quarterly') {
-                  plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${prevColLetter}${currentRow}*(1+${growthRateRef}/100/4)`]];
+                  plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${prevColLetter}${currentRow}*(1+${growthRateRef}/4)`]];
                 } else {
-                  plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${prevColLetter}${currentRow}*(1+${growthRateRef}/100)`]];
+                  plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${prevColLetter}${currentRow}*(1+${growthRateRef})`]];
                 }
               } else {
                 const prevColLetter = this.getColumnLetter(col - 1);
@@ -3535,11 +3535,11 @@ You MUST create a P&L Statement with this EXACT structure:
                 // Operating periods: Apply growth
                 const baseValue = `-${valueRef}`;
                 if (modelData.modelPeriods === 'monthly') {
-                  capExSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${baseValue}*(1+${growthRateRef}/100)^((${col}-1)/12)`]];
+                  capExSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${baseValue}*(1+${growthRateRef})^((${col}-1)/12)`]];
                 } else if (modelData.modelPeriods === 'quarterly') {
-                  capExSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${baseValue}*(1+${growthRateRef}/100)^((${col}-1)/4)`]];
+                  capExSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${baseValue}*(1+${growthRateRef})^((${col}-1)/4)`]];
                 } else {
-                  capExSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${baseValue}*(1+${growthRateRef}/100)^(${col}-1)`]];
+                  capExSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${baseValue}*(1+${growthRateRef})^(${col}-1)`]];
                 }
               }
             }
@@ -3723,7 +3723,7 @@ You MUST create a P&L Statement with this EXACT structure:
       fcfSheet.getRange(`A${currentRow}`).values = [['Disposal Costs']];
       const disposalCostRef = this.cellTracker.getCellReference('disposalCost');
       if (disposalCostRef) {
-        fcfSheet.getRange(finalPeriodCol + currentRow).formulas = [[`=-${finalPeriodCol}${currentRow - 1}*${disposalCostRef}/100`]];
+        fcfSheet.getRange(finalPeriodCol + currentRow).formulas = [[`=${finalPeriodCol}${currentRow - 1}*${disposalCostRef}/100`]];
       }
       currentRow++;
       
@@ -3836,7 +3836,7 @@ You MUST create a P&L Statement with this EXACT structure:
       // Use proper column range: B to final period column
       const finalCol = this.getColumnLetter(periods + 1);
       // Add 50% starting guess for high IRR calculations
-      fcfSheet.getRange('B' + currentRow).formulas = [[`=IFERROR(IRR(B${unlevereCashflowsRow}:${finalCol}${unlevereCashflowsRow},0.5),"No Solution")`]];
+      fcfSheet.getRange('B' + currentRow).formulas = [[`=IFERROR(IRR(B${unlevereCashflowsRow}:${finalCol}${unlevereCashflowsRow}),"No Solution")`]];
       fcfSheet.getRange('B' + currentRow).numberFormat = [['0.00%']];
       currentRow++;
       
@@ -3844,7 +3844,7 @@ You MUST create a P&L Statement with this EXACT structure:
       fcfSheet.getRange(`A${currentRow}`).values = [['Levered IRR ']];
       fcfSheet.getRange(`A${currentRow}`).format.font.bold = true;
       // Add 100% starting guess for very high IRR calculations
-      fcfSheet.getRange('B' + currentRow).formulas = [[`=IFERROR(IRR(B${leveredCashflowsRow}:${finalCol}${leveredCashflowsRow},1.0),"No Solution")`]];
+      fcfSheet.getRange('B' + currentRow).formulas = [[`=IFERROR(IRR(B${leveredCashflowsRow}:${finalCol}${leveredCashflowsRow}),"No Solution")`]];
       fcfSheet.getRange('B' + currentRow).numberFormat = [['0.00%']];
       currentRow++;
       
