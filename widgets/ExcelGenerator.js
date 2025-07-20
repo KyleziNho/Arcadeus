@@ -2140,7 +2140,11 @@ Provide the COMPLETE Free Cash Flow model with exact Excel formulas for every ce
         date.setMonth(date.getMonth() + periodIndex);
     }
     
-    return date; // Return actual Date object for Excel
+    // Convert to Excel serial date (days since 1/1/1900)
+    const excelEpoch = new Date(1900, 0, 1);
+    const msPerDay = 24 * 60 * 60 * 1000;
+    const excelDate = Math.floor((date - excelEpoch) / msPerDay) + 2; // +2 for Excel's leap year bug
+    return excelDate; // Return Excel serial date number
   }
   
   // Adjust growth rate for period type  
@@ -3527,7 +3531,7 @@ You MUST create a P&L Statement with this EXACT structure:
       // Period headers
       capExSheet.getRange('A' + currentRow).values = [['Period']];
       for (let i = 0; i <= periods; i++) {
-        const colLetter = this.getColumnLetter(i + 2);
+        const colLetter = this.getColumnLetter(i + 1);
         if (i === 0) {
           capExSheet.getRange(colLetter + currentRow).values = [['Period 0']];
         } else {
@@ -3655,7 +3659,7 @@ You MUST create a P&L Statement with this EXACT structure:
       // Period headers with proper alignment
       fcfSheet.getRange('A' + currentRow).values = [['Period']];
       for (let i = 0; i <= periods; i++) {
-        const colLetter = this.getColumnLetter(i + 2); // Start at column B (i+2 where i=0 gives column B)
+        const colLetter = this.getColumnLetter(i + 1); // Start at column B (i+1 where i=0 gives column B)
         if (i === 0) {
           fcfSheet.getRange(colLetter + currentRow).values = [['Period 0']];
         } else {
@@ -3663,23 +3667,26 @@ You MUST create a P&L Statement with this EXACT structure:
           fcfSheet.getRange(colLetter + currentRow).values = [[periodHeader]];
         }
       }
-      fcfSheet.getRange(`A${currentRow}:${this.getColumnLetter(periods + 2)}${currentRow}`).format.font.bold = true;
+      fcfSheet.getRange(`A${currentRow}:${this.getColumnLetter(periods + 1)}${currentRow}`).format.font.bold = true;
       currentRow++;
       
       // FIXED: Date row with actual Excel dates for XIRR
       fcfSheet.getRange('A' + currentRow).values = [['Date Values']];
       for (let i = 0; i <= periods; i++) {
-        const colLetter = this.getColumnLetter(i + 2);
+        const colLetter = this.getColumnLetter(i + 1);
         if (i === 0) {
-          // Period 0: Use project start date  
-          fcfSheet.getRange(colLetter + currentRow).values = [[startDate]];
+          // Period 0: Use project start date converted to Excel format
+          const excelEpoch = new Date(1900, 0, 1);
+          const msPerDay = 24 * 60 * 60 * 1000;
+          const excelStartDate = Math.floor((startDate - excelEpoch) / msPerDay) + 2;
+          fcfSheet.getRange(colLetter + currentRow).values = [[excelStartDate]];
         } else {
           const periodDate = this.formatPeriodDate(startDate, i - 1, modelData.modelPeriods);
           fcfSheet.getRange(colLetter + currentRow).values = [[periodDate]];
         }
       }
       // Format entire date row as dates
-      fcfSheet.getRange(`B${currentRow}:${this.getColumnLetter(periods + 2)}${currentRow}`).numberFormat = [['mm/dd/yyyy']];
+      fcfSheet.getRange(`B${currentRow}:${this.getColumnLetter(periods + 1)}${currentRow}`).numberFormat = [['mm/dd/yyyy']];
       const dateRowForIRR = currentRow; // Store for IRR formula reference
       currentRow++;
       
@@ -3693,7 +3700,7 @@ You MUST create a P&L Statement with this EXACT structure:
       fcfSheet.getRange(`A${currentRow}`).values = [['Purchase price']];
       fcfSheet.getRange('B' + currentRow).formulas = [[`=-Assumptions!${this.cellTracker.getCellReference('dealValue')?.split('!')[1] || 'B10'}`]];
       for (let i = 1; i <= periods; i++) {
-        const colLetter = this.getColumnLetter(i + 2);
+        const colLetter = this.getColumnLetter(i + 1);
         fcfSheet.getRange(colLetter + currentRow).values = [['']];
       }
       currentRow++;
@@ -3706,7 +3713,7 @@ You MUST create a P&L Statement with this EXACT structure:
         fcfSheet.getRange('B' + currentRow).formulas = [[`=-${dealValueRef}*${transactionFeeRef}/100`]];
       }
       for (let i = 1; i <= periods; i++) {
-        const colLetter = this.getColumnLetter(i + 2);
+        const colLetter = this.getColumnLetter(i + 1);
         fcfSheet.getRange(colLetter + currentRow).values = [['']];
       }
       currentRow++;
@@ -3716,7 +3723,7 @@ You MUST create a P&L Statement with this EXACT structure:
       fcfSheet.getRange('B' + currentRow).values = [[0]]; // Period 0
       if (plStructure.lineItems.noi) {
         for (let i = 1; i <= periods; i++) {
-          const colLetter = this.getColumnLetter(i + 2);
+          const colLetter = this.getColumnLetter(i + 1);
           const plCol = this.getColumnLetter(i + 1);
           fcfSheet.getRange(colLetter + currentRow).formulas = [[`='P&L Statement'!${plCol}${plStructure.lineItems.noi.row}`]];
         }
@@ -3727,8 +3734,8 @@ You MUST create a P&L Statement with this EXACT structure:
       fcfSheet.getRange(`A${currentRow}`).values = [['CapEx']];
       if (capExStructure && capExStructure.totalRow) {
         for (let i = 0; i <= periods; i++) {
-          const colLetter = this.getColumnLetter(i + 2);
-          const capExCol = this.getColumnLetter(i + 2);
+          const colLetter = this.getColumnLetter(i + 1);
+          const capExCol = this.getColumnLetter(i + 1);
           fcfSheet.getRange(colLetter + currentRow).formulas = [[`='CapEx'!${capExCol}${capExStructure?.totalRow}`]];
         }
       }
@@ -3736,7 +3743,7 @@ You MUST create a P&L Statement with this EXACT structure:
       
       // Sale Price (final period only)
       fcfSheet.getRange(`A${currentRow}`).values = [['Sale Price']];
-      const finalPeriodCol = this.getColumnLetter(periods + 2); // FIXED: Correct final period column
+      const finalPeriodCol = this.getColumnLetter(periods + 1); // FIXED: Correct final period column
       if (plStructure.lineItems.noi) {
         // Terminal value = Final NOI / Terminal Cap Rate
         const terminalCapRateRef = this.cellTracker.getCellReference('terminalCapRate');
@@ -3760,7 +3767,7 @@ You MUST create a P&L Statement with this EXACT structure:
       fcfSheet.getRange(`A${currentRow}`).format.fill.color = '#fff2cc';
       const unlevereCashflowsRow = currentRow;
       for (let i = 0; i <= periods; i++) {
-        const colLetter = this.getColumnLetter(i + 2);
+        const colLetter = this.getColumnLetter(i + 1);
         fcfSheet.getRange(colLetter + currentRow).formulas = [[`=SUM(${colLetter}${currentRow - 6}:${colLetter}${currentRow - 1})`]];
       }
       currentRow += 2;
@@ -3802,7 +3809,7 @@ You MUST create a P&L Statement with this EXACT structure:
         }
         
         for (let i = 1; i <= periods; i++) {
-          const colLetter = this.getColumnLetter(i + 2);
+          const colLetter = this.getColumnLetter(i + 1);
           let interestFormula = '0';
           
           if (debtRef && rateRef) {
@@ -3828,7 +3835,7 @@ You MUST create a P&L Statement with this EXACT structure:
       fcfSheet.getRange(`A${currentRow}`).format.fill.color = '#fff2cc';
       const leveredCashflowsRow = currentRow;
       for (let i = 0; i <= periods; i++) {
-        const colLetter = this.getColumnLetter(i + 2);
+        const colLetter = this.getColumnLetter(i + 1);
         fcfSheet.getRange(colLetter + currentRow).formulas = [[`=${colLetter}${unlevereCashflowsRow}+SUM(${colLetter}${currentRow - 4}:${colLetter}${currentRow - 1})`]];
       }
       currentRow += 2;
@@ -3850,7 +3857,7 @@ You MUST create a P&L Statement with this EXACT structure:
       // Equity distributions (Levered Cashflows)
       fcfSheet.getRange(`A${currentRow}`).values = [['Equity distributions']];
       for (let i = 0; i <= periods; i++) {
-        const colLetter = this.getColumnLetter(i + 2);
+        const colLetter = this.getColumnLetter(i + 1);
         fcfSheet.getRange(colLetter + currentRow).formulas = [[`=${colLetter}${leveredCashflowsRow}`]];
       }
       currentRow += 2;
@@ -3865,7 +3872,7 @@ You MUST create a P&L Statement with this EXACT structure:
       fcfSheet.getRange(`A${currentRow}`).values = [['Unlevered IRR']];
       fcfSheet.getRange(`A${currentRow}`).format.font.bold = true;
       // Use proper column range: B to final period column
-      const finalCol = this.getColumnLetter(periods + 2);
+      const finalCol = this.getColumnLetter(periods + 1);
       fcfSheet.getRange('B' + currentRow).formulas = [[`=XIRR(B${unlevereCashflowsRow}:${finalCol}${unlevereCashflowsRow},B${dateRowForIRR}:${finalCol}${dateRowForIRR})`]];
       fcfSheet.getRange('B' + currentRow).numberFormat = [['0.00%']];
       currentRow++;
