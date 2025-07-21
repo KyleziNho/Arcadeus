@@ -488,8 +488,34 @@ class FormHandler {
     if (!startDate || !endDate) return;
     
     const totalPeriods = this.calculatePeriods(startDate, endDate, modelPeriods);
-    const defaultStart = startPeriod || 1;
-    const defaultEnd = endPeriod || Math.min(6, totalPeriods); // Default 6 periods
+    
+    // Calculate smart defaults based on existing ranges
+    let defaultStart, defaultEnd;
+    
+    if (startPeriod && endPeriod) {
+      // Explicit values provided (used for initial range)
+      defaultStart = startPeriod;
+      defaultEnd = endPeriod;
+    } else {
+      // Auto-calculate based on existing ranges
+      const lastEndPeriod = this.getLastRangeEndPeriod();
+      
+      if (lastEndPeriod === null) {
+        // First range - use default
+        defaultStart = 1;
+        defaultEnd = Math.min(6, totalPeriods);
+      } else {
+        // Start where the last range ended + 1 (ensuring continuity)
+        defaultStart = lastEndPeriod + 1;
+        defaultEnd = Math.min(defaultStart + 5, totalPeriods); // Default 6 periods or remaining
+        
+        // Ensure we don't exceed total periods
+        if (defaultStart > totalPeriods) {
+          alert('All periods are already covered by existing rate ranges.');
+          return;
+        }
+      }
+    }
     
     const rangeHTML = `
       <div class="rate-range-item" id="rateRange_${rangeCount}">
@@ -574,10 +600,109 @@ class FormHandler {
       const finalEnd = parseInt(endSlider.value);
       
       display.textContent = this.formatPeriodRange(startDate, finalStart, finalEnd, modelPeriods);
+      
+      // Update display color based on potential conflicts
+      this.validateRangeOverlaps(rangeId);
     };
     
-    if (startSlider) startSlider.addEventListener('input', updateDisplay);
-    if (endSlider) endSlider.addEventListener('input', updateDisplay);
+    const validateAndUpdate = (changedSlider) => {
+      updateDisplay();
+      
+      // Auto-update subsequent ranges when this range's end period changes
+      if (changedSlider === 'end') {
+        this.updateSubsequentRanges(rangeId, parseInt(endSlider.value));
+      }
+    };
+    
+    if (startSlider) startSlider.addEventListener('input', () => validateAndUpdate('start'));
+    if (endSlider) endSlider.addEventListener('input', () => validateAndUpdate('end'));
+  }
+  
+  updateSubsequentRanges(currentRangeId, newEndPeriod) {
+    const container = document.getElementById('floatingRateSchedule');
+    if (!container) return;
+    
+    const allRanges = Array.from(container.querySelectorAll('.rate-range-item'));
+    const currentRangeIndex = allRanges.findIndex(range => range.id === `rateRange_${currentRangeId}`);
+    
+    // Update the next range (if it exists) to start after the current range ends
+    if (currentRangeIndex !== -1 && currentRangeIndex < allRanges.length - 1) {
+      const nextRange = allRanges[currentRangeIndex + 1];
+      const nextStartSlider = nextRange.querySelector('input[data-type="start"]');
+      const nextEndSlider = nextRange.querySelector('input[data-type="end"]');
+      
+      if (nextStartSlider && nextEndSlider) {
+        const newStartPeriod = newEndPeriod + 1;
+        const currentEndValue = parseInt(nextEndSlider.value);
+        
+        // Only update if the new start would be different and valid
+        if (parseInt(nextStartSlider.value) !== newStartPeriod && newStartPeriod <= currentEndValue) {
+          nextStartSlider.value = newStartPeriod;
+          
+          // Trigger the display update for the next range
+          const nextRangeId = nextRange.id.split('_')[1];
+          const nextDisplay = nextRange.querySelector('.period-display');
+          const startDate = document.getElementById('projectStartDate')?.value;
+          const modelPeriods = document.getElementById('modelPeriods')?.value || 'monthly';
+          
+          if (nextDisplay && startDate) {
+            nextDisplay.textContent = this.formatPeriodRange(
+              new Date(startDate), 
+              newStartPeriod, 
+              parseInt(nextEndSlider.value), 
+              modelPeriods
+            );
+          }
+          
+          // Validate overlaps for the updated range
+          this.validateRangeOverlaps(parseInt(nextRangeId));
+        }
+      }
+    }
+  }
+
+  validateRangeOverlaps(currentRangeId) {
+    const container = document.getElementById('floatingRateSchedule');
+    if (!container) return;
+    
+    const allRanges = container.querySelectorAll('.rate-range-item');
+    const currentRange = document.getElementById(`rateRange_${currentRangeId}`);
+    
+    if (!currentRange) return;
+    
+    const currentStart = parseInt(currentRange.querySelector('input[data-type="start"]').value);
+    const currentEnd = parseInt(currentRange.querySelector('input[data-type="end"]').value);
+    const currentDisplay = currentRange.querySelector('.period-display');
+    
+    let hasOverlap = false;
+    
+    allRanges.forEach(range => {
+      if (range === currentRange) return; // Skip self
+      
+      const startSlider = range.querySelector('input[data-type="start"]');
+      const endSlider = range.querySelector('input[data-type="end"]');
+      
+      if (startSlider && endSlider) {
+        const start = parseInt(startSlider.value);
+        const end = parseInt(endSlider.value);
+        
+        // Check for overlap
+        if ((currentStart <= end && currentEnd >= start)) {
+          hasOverlap = true;
+        }
+      }
+    });
+    
+    // Update visual feedback
+    if (hasOverlap) {
+      currentDisplay.style.backgroundColor = '#fecaca'; // Light red
+      currentDisplay.style.color = '#dc2626'; // Dark red
+      currentRange.style.borderColor = '#dc2626';
+    } else {
+      currentDisplay.style.backgroundColor = 'var(--accent-primary-light)';
+      currentDisplay.style.color = 'var(--accent-primary)';
+      currentRange.style.borderColor = 'var(--border-primary)';
+    }
   }
   
   formatPeriodRange(startDate, startPeriod, endPeriod, periodType) {
@@ -589,6 +714,26 @@ class FormHandler {
     } else {
       return `${startLabel} → ${endLabel}`;
     }
+  }
+
+  getLastRangeEndPeriod() {
+    const container = document.getElementById('floatingRateSchedule');
+    if (!container) return null;
+    
+    const existingRanges = container.querySelectorAll('.rate-range-item');
+    let maxEndPeriod = null;
+    
+    existingRanges.forEach(range => {
+      const endSlider = range.querySelector('input[data-type="end"]');
+      if (endSlider) {
+        const endPeriod = parseInt(endSlider.value);
+        if (maxEndPeriod === null || endPeriod > maxEndPeriod) {
+          maxEndPeriod = endPeriod;
+        }
+      }
+    });
+    
+    return maxEndPeriod;
   }
   
   getPeriodLabel(startDate, periodIndex, periodType) {
