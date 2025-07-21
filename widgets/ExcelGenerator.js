@@ -3857,10 +3857,10 @@ You MUST create a P&L Statement with this EXACT structure:
     });
   }
 
-  // Generate simplified Debt Model sheet
+  // Generate simplified Debt Model sheet (Fixed Rate Only)
   async generateDebtModelSheet(modelData) {
     return Excel.run(async (context) => {
-      console.log('🏦 Creating simple Debt Model sheet...');
+      console.log('🏦 Creating simple Debt Model sheet (fixed rate only)...');
       
       const sheets = context.workbook.worksheets;
       
@@ -3884,7 +3884,6 @@ You MUST create a P&L Statement with this EXACT structure:
       
       // Check if debt financing is enabled
       const hasDebt = modelData.dealLTV && parseFloat(modelData.dealLTV) > 0;
-      const isFloatingRate = modelData.debtSettings?.rateType === 'floating';
       
       if (!hasDebt) {
         debtSheet.getRange('A1').values = [['No debt financing (LTV = 0%)']];
@@ -3893,7 +3892,7 @@ You MUST create a P&L Statement with this EXACT structure:
       }
       
       // Simple title
-      debtSheet.getRange('A1').values = [['Debt Model - Interest Rates']];
+      debtSheet.getRange('A1').values = [['Debt Model - Fixed Interest Rate']];
       debtSheet.getRange('A1').format.font.bold = true;
       
       // Calculate periods
@@ -3909,39 +3908,19 @@ You MUST create a P&L Statement with this EXACT structure:
         debtSheet.getRange(colLetter + '3').values = [[periodHeader]];
       }
       
-      // Set up interest rate row (row 4)
+      // Set up interest rate row (row 4) - Fixed rate only
       debtSheet.getRange('A4').values = [['Interest Rate (%)']];
       debtSheet.getRange('A4').format.font.bold = true;
       debtSheet.getRange('B4').values = [[0]]; // Period 0 has no interest
       
-      // Apply interest rates based on configuration
-      if (isFloatingRate && modelData.debtSettings?.floatingRateRanges) {
-        console.log('🔄 Using floating rate ranges:', modelData.debtSettings.floatingRateRanges);
-        
-        for (let i = 1; i <= periods; i++) {
-          const colLetter = this.getColumnLetter(i + 2); // Start from column C
-          
-          // Find the rate range that includes this period
-          const applicableRange = modelData.debtSettings.floatingRateRanges.find(range => 
-            i >= range.startPeriod && i <= range.endPeriod
-          );
-          const rate = applicableRange ? (applicableRange.rate / 100) : 0.055;
-          
-          debtSheet.getRange(colLetter + '4').values = [[rate]];
-          debtSheet.getRange(colLetter + '4').numberFormat = [['0.0%']];
-          
-          console.log(`📊 Period ${i}: Rate ${(rate * 100).toFixed(1)}%`);
-        }
-      } else {
-        console.log('📊 Using fixed rate:', modelData.debtSettings?.fixedRate || 5.5);
-        
-        const fixedRate = (modelData.debtSettings?.fixedRate || 5.5) / 100;
-        
-        for (let i = 1; i <= periods; i++) {
-          const colLetter = this.getColumnLetter(i + 2); // Start from column C
-          debtSheet.getRange(colLetter + '4').values = [[fixedRate]];
-          debtSheet.getRange(colLetter + '4').numberFormat = [['0.0%']];
-        }
+      console.log('📊 Using fixed rate:', modelData.debtSettings?.fixedRate || 5.5);
+      
+      const fixedRate = (modelData.debtSettings?.fixedRate || 5.5) / 100;
+      
+      for (let i = 1; i <= periods; i++) {
+        const colLetter = this.getColumnLetter(i + 2); // Start from column C
+        debtSheet.getRange(colLetter + '4').values = [[fixedRate]];
+        debtSheet.getRange(colLetter + '4').numberFormat = [['0.0%']];
       }
       
       await context.sync();
@@ -3949,8 +3928,8 @@ You MUST create a P&L Statement with this EXACT structure:
       // Store for FCF reference
       this.debtModelInterestRow = 4;
       
-      console.log('✅ Simple Debt Model sheet created successfully!');
-      return { success: true, message: 'Simplified Debt Model sheet created successfully' };
+      console.log('✅ Fixed rate debt model sheet created successfully!');
+      return { success: true, message: 'Fixed rate debt model sheet created successfully' };
     });
   }
 
