@@ -342,34 +342,7 @@ class ExcelGenerator {
     this.cellTracker.recordCell('discountRate', 'Assumptions', `B${currentRow}`);
     currentRow++;
     
-    currentRow += 2; // Add space
-    
-    // DEBT MODEL SECTION
-    sectionRows['debtModel'] = currentRow;
-    sheet.getRange(`A${currentRow}`).values = [['DEBT MODEL']];
-    sheet.getRange(`A${currentRow}`).format.font.bold = true;
-    currentRow += 2;
-    
-    // Check if debt financing is enabled (LTV > 0)
-    const hasDebt = data.dealLTV && parseFloat(data.dealLTV) > 0;
-    
-    if (hasDebt) {
-      // Loan Issuance Fees
-      sheet.getRange(`A${currentRow}`).values = [['Loan Issuance Fees (%)']];
-      sheet.getRange(`B${currentRow}`).values = [[data.debtSettings?.loanIssuanceFees || 1.5]];
-      this.cellTracker.recordCell('loanIssuanceFees', 'Assumptions', `B${currentRow}`);
-      currentRow++;
-      
-      // Fixed Interest Rate (simplified - no more floating rate)
-      sheet.getRange(`A${currentRow}`).values = [['Fixed Interest Rate (%)']];
-      sheet.getRange(`B${currentRow}`).values = [[data.debtSettings?.fixedRate || 5.5]];
-      this.cellTracker.recordCell('fixedRate', 'Assumptions', `B${currentRow}`);
-      currentRow++;
-    } else {
-      sheet.getRange(`A${currentRow}`).values = [['No Debt Financing (LTV = 0)']];
-      sheet.getRange(`A${currentRow}`).format.font.italic = true;
-      currentRow++;
-    }
+    // Debt model moved to separate sheet
     
     // Auto-resize columns
     sheet.getRange('A:B').format.autofitColumns();
@@ -801,7 +774,7 @@ Required format:
                 // Extract just the cell reference (e.g., "B24" from "Assumptions!B24")
                 const cellRef = growthRateRef.includes('!') ? growthRateRef.split('!')[1] : growthRateRef;
                 plSheet.getRange(`${colLetter}${currentRow}`).formulas = 
-                  [[`=${prevCol}${currentRow}*(1+Assumptions!${cellRef}${periodAdjustment}/100)`]];
+                  [[`=${prevCol}${currentRow}*(1+Assumptions!${cellRef}${periodAdjustment})`]];
               } else {
                 // No growth rate in assumptions - use flat growth
                 console.log(`No growth rate reference found for revenue ${index}`);
@@ -865,7 +838,7 @@ Required format:
                 // Extract just the cell reference (e.g., "B24" from "Assumptions!B24")
                 const cellRef = growthRateRef.includes('!') ? growthRateRef.split('!')[1] : growthRateRef;
                 plSheet.getRange(`${colLetter}${currentRow}`).formulas = 
-                  [[`=${prevCol}${currentRow}*(1+Assumptions!${cellRef}${periodAdjustment}/100)`]];
+                  [[`=${prevCol}${currentRow}*(1+Assumptions!${cellRef}${periodAdjustment})`]];
               } else {
                 // No growth rate in assumptions - use flat growth
                 console.log(`No growth rate reference found for opex ${index}`);
@@ -1860,7 +1833,7 @@ Provide the COMPLETE Free Cash Flow model with exact Excel formulas for every ce
                 
                 if (growthType === 'annual' && growthRate) {
                   const periodRate = this.adjustGrowthRateForPeriod(growthRate, modelData.modelPeriods);
-                  growthFormula = `=${prevCol}${currentRow}*(1+${periodRate}/100)`;
+                  growthFormula = `=${prevCol}${currentRow}*(1+${periodRate})`;
                 } else {
                   growthFormula = `=${prevCol}${currentRow}`;
                 }
@@ -1926,7 +1899,7 @@ Provide the COMPLETE Free Cash Flow model with exact Excel formulas for every ce
                 
                 if (growthType === 'annual' && growthRate) {
                   const periodRate = this.adjustGrowthRateForPeriod(growthRate, modelData.modelPeriods);
-                  growthFormula = `=${prevCol}${currentRow}*(1+${periodRate}/100)`;
+                  growthFormula = `=${prevCol}${currentRow}*(1+${periodRate})`;
                 } else {
                   growthFormula = `=${prevCol}${currentRow}`;
                 }
@@ -2183,7 +2156,7 @@ Provide the COMPLETE Free Cash Flow model with exact Excel formulas for every ce
     
     // Create growth formula
     if (growthRateRef) {
-      return `=${prevCellRef}*(1+${growthRateRef}${periodAdjustment}/100)`;
+      return `=${prevCellRef}*(1+${growthRateRef}${periodAdjustment})`;
     } else {
       return `=${prevCellRef}`;
     }
@@ -3754,32 +3727,31 @@ You MUST create a P&L Statement with this EXACT structure:
       
       // Debt upfront costs (Period 0 only)
       fcfSheet.getRange(`A${currentRow}`).values = [['Debt upfront costs']];
-      const loanIssuanceFeesRef = this.cellTracker.getCellReference('loanIssuanceFees');
-      if (debtFinancingRef && loanIssuanceFeesRef) {
-        fcfSheet.getRange('B' + currentRow).formulas = [[`=-${debtFinancingRef}*${loanIssuanceFeesRef}/100`]];
+      if (debtFinancingRef) {
+        // Reference loan issuance fees from Debt Model sheet
+        fcfSheet.getRange('B' + currentRow).formulas = [[`=-${debtFinancingRef}*'Debt Model'!B5/100`]];
       }
       currentRow++;
       
-      // Interest Payments (all debt periods) - calculated separately from P&L
+      // Interest Payments (reference from Debt Model sheet)
       fcfSheet.getRange(`A${currentRow}`).values = [['Interest Payments']];
-      fcfSheet.getRange('B' + currentRow).values = [[0]]; // Period 0
       if (modelData.dealLTV && parseFloat(modelData.dealLTV) > 0) {
-        // Calculate interest payments directly since removed from P&L
-        const debtRef = this.cellTracker.getCellReference('debtFinancing');
-        let rateRef;
-        
-        rateRef = this.cellTracker.getCellReference('fixedRate');
-        
-        for (let i = 1; i <= periods; i++) {
+        // Reference interest payments directly from Debt Model sheet
+        for (let i = 0; i <= periods; i++) {
           const colLetter = this.getColumnLetter(i + 1);
-          let interestFormula = '0';
-          
-          if (debtRef && rateRef) {
-            const periodAdjustment = this.getPeriodAdjustment(modelData.modelPeriods);
-            interestFormula = `=-${debtRef}*${rateRef}${periodAdjustment}/100`;
+          if (i === 0) {
+            fcfSheet.getRange(colLetter + currentRow).values = [[0]]; // Period 0
+          } else {
+            // Reference the interest payment row from Debt Model sheet
+            // This will be dynamically determined or use a standard row
+            fcfSheet.getRange(colLetter + currentRow).formulas = [[`='Debt Model'!${colLetter}${this.debtModelInterestRow || 12}`]];
           }
-          
-          fcfSheet.getRange(colLetter + currentRow).formulas = [[interestFormula]];
+        }
+      } else {
+        // No debt - all zeros
+        for (let i = 0; i <= periods; i++) {
+          const colLetter = this.getColumnLetter(i + 1);
+          fcfSheet.getRange(colLetter + currentRow).values = [[0]];
         }
       }
       currentRow++;
@@ -3864,6 +3836,214 @@ You MUST create a P&L Statement with this EXACT structure:
       fcfSheet.getUsedRange().format.autofitColumns();
       
       console.log('✅ Free Cash Flow Sheet created successfully!');
+    });
+  }
+
+  // Generate comprehensive Debt Model sheet
+  async generateDebtModelSheet(modelData) {
+    return Excel.run(async (context) => {
+      console.log('🏦 Creating Debt Model sheet...');
+      
+      const sheets = context.workbook.worksheets;
+      
+      // Delete existing Debt Model sheet if it exists
+      try {
+        const existingSheet = sheets.getItemOrNullObject('Debt Model');
+        existingSheet.load('name');
+        await context.sync();
+        
+        if (!existingSheet.isNullObject) {
+          console.log('🗑️ Deleting existing Debt Model sheet');
+          existingSheet.delete();
+          await context.sync();
+        }
+      } catch (e) {
+        // Sheet doesn't exist, continue
+      }
+      
+      // Create new Debt Model sheet
+      const debtSheet = sheets.add('Debt Model');
+      debtSheet.position = 4; // After CapEx
+      debtSheet.activate();
+      
+      // Calculate periods
+      const periods = this.calculatePeriods(modelData.projectStartDate, modelData.projectEndDate, modelData.modelPeriods);
+      const totalColumns = periods + 1; // +1 for Period 0
+      
+      // Headers
+      debtSheet.getRange('A1').values = [['Debt Model']];
+      debtSheet.getRange('A1').format.font.bold = true;
+      debtSheet.getRange('A1').format.font.size = 16;
+      debtSheet.getRange('A1').format.fill.color = '#1f4e79';
+      debtSheet.getRange('A1').format.font.color = 'white';
+      
+      let currentRow = 3;
+      
+      // Period headers
+      debtSheet.getRange('A' + currentRow).values = [['Period']];
+      for (let i = 0; i <= periods; i++) {
+        const colLetter = this.getColumnLetter(i + 1);
+        if (i === 0) {
+          debtSheet.getRange(colLetter + currentRow).values = [['Period 0']];
+        } else {
+          const periodHeader = this.formatPeriodHeader(new Date(modelData.projectStartDate), i - 1, modelData.modelPeriods);
+          debtSheet.getRange(colLetter + currentRow).values = [[periodHeader]];
+        }
+      }
+      debtSheet.getRange(`A${currentRow}:${this.getColumnLetter(periods + 1)}${currentRow}`).format.font.bold = true;
+      currentRow++;
+      
+      // Check if debt financing is enabled
+      const hasDebt = modelData.dealLTV && parseFloat(modelData.dealLTV) > 0;
+      const isFloatingRate = modelData.debtSettings?.rateType === 'floating';
+      
+      if (!hasDebt) {
+        debtSheet.getRange(`A${currentRow}`).values = [['No debt financing (LTV = 0%)']];
+        debtSheet.getRange(`A${currentRow}`).format.font.italic = true;
+        return { success: true, message: 'Debt Model sheet created (no debt)' };
+      }
+      
+      // DEBT ASSUMPTIONS SECTION
+      debtSheet.getRange(`A${currentRow}`).values = [['DEBT ASSUMPTIONS']];
+      debtSheet.getRange(`A${currentRow}`).format.font.bold = true;
+      debtSheet.getRange(`A${currentRow}`).format.fill.color = '#d9ead3';
+      currentRow++;
+      
+      // Loan Issuance Fees
+      debtSheet.getRange(`A${currentRow}`).values = [['Loan Issuance Fees (%)']];
+      debtSheet.getRange('B' + currentRow).values = [[modelData.debtSettings?.loanIssuanceFees || 1.5]];
+      this.cellTracker.recordCell('loanIssuanceFees', 'Debt Model', `B${currentRow}`);
+      currentRow++;
+      
+      // Interest Rate Type
+      debtSheet.getRange(`A${currentRow}`).values = [['Interest Rate Type']];
+      debtSheet.getRange('B' + currentRow).values = [[isFloatingRate ? 'Floating' : 'Fixed']];
+      currentRow++;
+      
+      // INTEREST RATE SCHEDULE
+      currentRow++;
+      debtSheet.getRange(`A${currentRow}`).values = [['INTEREST RATE SCHEDULE']];
+      debtSheet.getRange(`A${currentRow}`).format.font.bold = true;
+      debtSheet.getRange(`A${currentRow}`).format.fill.color = '#fce5cd';
+      currentRow++;
+      
+      if (isFloatingRate && modelData.debtSettings?.floatingRates) {
+        // Floating rate schedule
+        debtSheet.getRange(`A${currentRow}`).values = [['Interest Rate (%)']];
+        
+        for (let i = 0; i <= periods; i++) {
+          const colLetter = this.getColumnLetter(i + 1);
+          
+          if (i === 0) {
+            debtSheet.getRange(colLetter + currentRow).values = [[0]]; // No interest in Period 0
+          } else {
+            // Find the rate for this period
+            const rateData = modelData.debtSettings.floatingRates.find(r => r.period === i - 1);
+            const rate = rateData ? rateData.rate : (modelData.debtSettings.floatingRates[0]?.rate || 5.5);
+            debtSheet.getRange(colLetter + currentRow).values = [[rate]];
+            this.cellTracker.recordCell(`floatingRate_${i - 1}`, 'Debt Model', `${colLetter}${currentRow}`);
+          }
+        }
+      } else {
+        // Fixed rate schedule
+        debtSheet.getRange(`A${currentRow}`).values = [['Interest Rate (%)']];
+        const fixedRate = modelData.debtSettings?.fixedRate || 5.5;
+        
+        for (let i = 0; i <= periods; i++) {
+          const colLetter = this.getColumnLetter(i + 1);
+          
+          if (i === 0) {
+            debtSheet.getRange(colLetter + currentRow).values = [[0]]; // No interest in Period 0
+          } else {
+            debtSheet.getRange(colLetter + currentRow).values = [[fixedRate]];
+          }
+        }
+        this.cellTracker.recordCell('fixedRate', 'Debt Model', `B${currentRow}`);
+      }
+      currentRow++;
+      
+      // DEBT BALANCE SCHEDULE
+      currentRow++;
+      debtSheet.getRange(`A${currentRow}`).values = [['DEBT BALANCE SCHEDULE']];
+      debtSheet.getRange(`A${currentRow}`).format.font.bold = true;
+      debtSheet.getRange(`A${currentRow}`).format.fill.color = '#d0e0e3';
+      currentRow++;
+      
+      // Beginning Balance
+      debtSheet.getRange(`A${currentRow}`).values = [['Beginning Balance']];
+      const debtAmount = modelData.dealValue * (modelData.dealLTV / 100);
+      
+      for (let i = 0; i <= periods; i++) {
+        const colLetter = this.getColumnLetter(i + 1);
+        
+        if (i === 0) {
+          debtSheet.getRange(colLetter + currentRow).values = [[debtAmount]]; // Initial debt
+        } else if (i === periods) {
+          debtSheet.getRange(colLetter + currentRow).values = [[0]]; // Paid off at end
+        } else {
+          debtSheet.getRange(colLetter + currentRow).values = [[debtAmount]]; // Interest-only loan
+        }
+      }
+      const beginningBalanceRow = currentRow;
+      currentRow++;
+      
+      // Interest Payment
+      debtSheet.getRange(`A${currentRow}`).values = [['Interest Payment']];
+      const interestRow = currentRow;
+      // Store for FCF reference
+      this.debtModelInterestRow = currentRow;
+      
+      for (let i = 0; i <= periods; i++) {
+        const colLetter = this.getColumnLetter(i + 1);
+        
+        if (i === 0) {
+          debtSheet.getRange(colLetter + currentRow).values = [[0]]; // No payment in Period 0
+        } else {
+          const balanceRef = `${colLetter}${beginningBalanceRow}`;
+          const rateRef = isFloatingRate ? 
+            `${colLetter}${currentRow - 3}` : // Reference to floating rate row
+            `B${currentRow - 3}`; // Reference to fixed rate
+          
+          const periodAdjustment = this.getPeriodAdjustment(modelData.modelPeriods);
+          debtSheet.getRange(colLetter + currentRow).formulas = 
+            [[`=-${balanceRef}*${rateRef}${periodAdjustment}`]];
+        }
+      }
+      currentRow++;
+      
+      // Principal Payment (only in final period)
+      debtSheet.getRange(`A${currentRow}`).values = [['Principal Payment']];
+      const finalCol = this.getColumnLetter(periods + 1);
+      debtSheet.getRange(finalCol + currentRow).values = [[-debtAmount]];
+      currentRow++;
+      
+      // Total Debt Service
+      debtSheet.getRange(`A${currentRow}`).values = [['Total Debt Service']];
+      for (let i = 0; i <= periods; i++) {
+        const colLetter = this.getColumnLetter(i + 1);
+        
+        if (i === 0) {
+          debtSheet.getRange(colLetter + currentRow).values = [[0]];
+        } else if (i === periods) {
+          // Final period: interest + principal
+          debtSheet.getRange(colLetter + currentRow).formulas = 
+            [[`=${colLetter}${interestRow}+${colLetter}${currentRow - 1}`]];
+        } else {
+          // Other periods: interest only
+          debtSheet.getRange(colLetter + currentRow).formulas = 
+            [[`=${colLetter}${interestRow}`]];
+        }
+      }
+      
+      // Format numbers
+      const dataRange = debtSheet.getRange(`B4:${this.getColumnLetter(totalColumns)}${currentRow}`);
+      dataRange.numberFormat = [['#,##0.00;[Red]-#,##0.00;"-"']];
+      
+      // Auto-resize columns
+      debtSheet.getUsedRange().format.autofitColumns();
+      
+      console.log('✅ Debt Model sheet created successfully!');
+      return { success: true, message: 'Debt Model sheet created successfully' };
     });
   }
 

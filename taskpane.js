@@ -196,6 +196,13 @@ class MAModelingAddin {
       console.log('Generate CapEx button listener added');
     }
     
+    // Generate Debt Model button
+    const generateDebtModelBtn = document.getElementById('generateDebtModelBtn');
+    if (generateDebtModelBtn) {
+      generateDebtModelBtn.addEventListener('click', () => this.generateDebtModelSheet());
+      console.log('Generate Debt Model button listener added');
+    }
+    
     // Generate FCF button
     const generateFCFBtn = document.getElementById('generateFCFBtn');
     if (generateFCFBtn) {
@@ -494,14 +501,14 @@ class MAModelingAddin {
         if (result && result.success !== false) {
           console.log('CapEx sheet generated successfully');
           
-          // Show the FCF generation button
-          const generateFCFBtn = document.getElementById('generateFCFBtn');
-          if (generateFCFBtn) {
-            generateFCFBtn.style.display = 'inline-flex';
+          // Show the Debt Model generation button
+          const generateDebtModelBtn = document.getElementById('generateDebtModelBtn');
+          if (generateDebtModelBtn) {
+            generateDebtModelBtn.style.display = 'inline-flex';
           }
           
           if (this.uiController) {
-            this.uiController.showMessage('CapEx Summary created! You can now generate the Free Cash Flow.', 'success');
+            this.uiController.showMessage('CapEx Summary created! You can now generate the Debt Model.', 'success');
           }
         } else {
           console.error('CapEx generation failed');
@@ -512,6 +519,53 @@ class MAModelingAddin {
       }
     } catch (error) {
       console.error('Error in generateCapExSheet:', error);
+      if (this.uiController) {
+        this.uiController.showMessage('Unexpected error: ' + error.message, 'error');
+      }
+    }
+  }
+
+  async generateDebtModelSheet() {
+    console.log('Starting Debt Model sheet generation...');
+    
+    try {
+      // Collect model data
+      let modelData = {};
+      if (this.formHandler) {
+        modelData = this.formHandler.collectAllModelData();
+        console.log('Model data for Debt Model:', modelData);
+      }
+      
+      // Generate Debt Model sheet
+      if (this.excelGenerator) {
+        const result = await this.excelGenerator.generateDebtModelSheet(modelData);
+        
+        if (result && result.success !== false) {
+          console.log('Debt Model sheet generated successfully');
+          
+          // Show the FCF generation button
+          const generateFCFBtn = document.getElementById('generateFCFBtn');
+          if (generateFCFBtn) {
+            generateFCFBtn.style.display = 'inline-flex';
+          }
+          
+          if (this.uiController) {
+            this.uiController.showMessage('Debt Model created! You can now generate the Free Cash Flow.', 'success');
+          }
+        } else {
+          console.error('Debt Model generation failed');
+          if (this.uiController) {
+            this.uiController.showMessage('Error generating Debt Model sheet', 'error');
+          }
+        }
+      } else {
+        console.error('ExcelGenerator not available');
+        if (this.uiController) {
+          this.uiController.showMessage('Excel generator not available. Please refresh the page.', 'error');
+        }
+      }
+    } catch (error) {
+      console.error('Error in generateDebtModelSheet:', error);
       if (this.uiController) {
         this.uiController.showMessage('Unexpected error: ' + error.message, 'error');
       }

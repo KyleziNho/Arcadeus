@@ -250,13 +250,37 @@ class FormHandler {
 
   collectDebtSettings() {
     const loanIssuanceFees = document.getElementById('loanIssuanceFees')?.value || '1.5';
-    const fixedRate = document.getElementById('fixedRate')?.value || '5.5';
+    const fixedRateOption = document.getElementById('fixedRateOption');
+    const isFixedRate = fixedRateOption?.checked || true;
     
     const settings = {
       loanIssuanceFees: parseFloat(loanIssuanceFees),
-      fixedRate: parseFloat(fixedRate),
-      rateType: 'fixed' // Always fixed rate now
+      rateType: isFixedRate ? 'fixed' : 'floating'
     };
+    
+    if (isFixedRate) {
+      settings.fixedRate = parseFloat(document.getElementById('fixedRate')?.value || '5.5');
+    } else {
+      // Collect floating rates
+      settings.floatingRates = [];
+      const floatingRateSchedule = document.getElementById('floatingRateSchedule');
+      
+      if (floatingRateSchedule) {
+        const ratePeriods = floatingRateSchedule.querySelectorAll('.rate-period-item');
+        ratePeriods.forEach((period, index) => {
+          const rateInput = period.querySelector(`input[id^="floatingRate_"]`);
+          const periodLabel = period.querySelector('.period-label')?.textContent;
+          
+          if (rateInput && rateInput.value) {
+            settings.floatingRates.push({
+              period: index,
+              label: periodLabel,
+              rate: parseFloat(rateInput.value)
+            });
+          }
+        });
+      }
+    }
 
     return settings;
   }
@@ -393,9 +417,108 @@ class FormHandler {
   }
 
   initializeDebtModel() {
-    // Simplified debt model - no complex rate type handling needed
-    // All debt will use fixed rate only
-    console.log('Debt model initialized with fixed rate only');
+    // Initialize debt model with both fixed and floating rate options
+    const fixedRateOption = document.getElementById('fixedRateOption');
+    const floatingRateOption = document.getElementById('floatingRateOption');
+    const fixedRateSection = document.getElementById('fixedRateSection');
+    const floatingRateSection = document.getElementById('floatingRateSection');
+    
+    if (fixedRateOption && floatingRateOption) {
+      fixedRateOption.addEventListener('change', () => {
+        if (fixedRateOption.checked) {
+          fixedRateSection.style.display = 'block';
+          floatingRateSection.style.display = 'none';
+        }
+      });
+      
+      floatingRateOption.addEventListener('change', () => {
+        if (floatingRateOption.checked) {
+          fixedRateSection.style.display = 'none';
+          floatingRateSection.style.display = 'block';
+          this.initializeFloatingRateSchedule();
+        }
+      });
+    }
+    
+    // Add rate period button
+    const addRatePeriodBtn = document.getElementById('addRatePeriod');
+    if (addRatePeriodBtn) {
+      addRatePeriodBtn.addEventListener('click', () => this.addRatePeriod());
+    }
+    
+    console.log('Debt model initialized with fixed and floating rate options');
+  }
+  
+  initializeFloatingRateSchedule() {
+    const container = document.getElementById('floatingRateSchedule');
+    if (!container) return;
+    
+    // Clear existing periods
+    container.innerHTML = '';
+    
+    // Get project details
+    const startDate = document.getElementById('projectStartDate')?.value;
+    const endDate = document.getElementById('projectEndDate')?.value;
+    const modelPeriods = document.getElementById('modelPeriods')?.value || 'monthly';
+    
+    if (!startDate || !endDate) {
+      container.innerHTML = '<small style="color: #666;">Please set project dates first</small>';
+      return;
+    }
+    
+    // Calculate periods and add initial rate periods
+    const periods = this.calculatePeriods(startDate, endDate, modelPeriods);
+    const periodsToShow = Math.min(periods, 5); // Start with first 5 periods
+    
+    for (let i = 0; i < periodsToShow; i++) {
+      this.addRatePeriod(i);
+    }
+  }
+  
+  addRatePeriod(periodIndex) {
+    const container = document.getElementById('floatingRateSchedule');
+    if (!container) return;
+    
+    const periodCount = container.children.length;
+    const index = periodIndex !== undefined ? periodIndex : periodCount;
+    
+    const startDate = document.getElementById('projectStartDate')?.value;
+    const modelPeriods = document.getElementById('modelPeriods')?.value || 'monthly';
+    
+    if (!startDate) return;
+    
+    const periodLabel = this.getPeriodLabel(new Date(startDate), index, modelPeriods);
+    
+    const periodHTML = `
+      <div class="rate-period-item" id="ratePeriod_${index}">
+        <span class="period-label">${periodLabel}</span>
+        <input type="number" id="floatingRate_${index}" placeholder="Rate %" step="0.1" value="${index === 0 ? '5.5' : ''}">
+        <button class="remove-period" onclick="this.parentElement.remove()">×</button>
+      </div>
+    `;
+    
+    container.insertAdjacentHTML('beforeend', periodHTML);
+  }
+  
+  getPeriodLabel(startDate, periodIndex, periodType) {
+    const date = new Date(startDate);
+    
+    switch (periodType) {
+      case 'daily':
+        date.setDate(date.getDate() + periodIndex);
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      case 'monthly':
+        date.setMonth(date.getMonth() + periodIndex);
+        return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+      case 'quarterly':
+        date.setMonth(date.getMonth() + (periodIndex * 3));
+        return `Q${(periodIndex % 4) + 1} ${date.getFullYear()}`;
+      case 'yearly':
+        date.setFullYear(date.getFullYear() + periodIndex);
+        return date.getFullYear().toString();
+      default:
+        return `Period ${periodIndex + 1}`;
+    }
   }
 
   updateDebtEligibility(ltv) {
