@@ -208,6 +208,14 @@ class ExcelGenerator {
     this.cellTracker.recordCell('debtFinancing', 'Assumptions', `B${currentRow}`);
     currentRow++;
     
+    // Loan Issuance Fees (if there's debt)
+    if (data.dealLTV && parseFloat(data.dealLTV) > 0) {
+      sheet.getRange(`A${currentRow}`).values = [['Loan Issuance Fees (%)']];
+      sheet.getRange(`B${currentRow}`).values = [[data.debtSettings?.loanIssuanceFees || 1.5]];
+      this.cellTracker.recordCell('loanIssuanceFees', 'Assumptions', `B${currentRow}`);
+      currentRow++;
+    }
+    
     currentRow += 2; // Add space
     
     // REVENUE ITEMS SECTION
@@ -3505,14 +3513,20 @@ You MUST create a P&L Statement with this EXACT structure:
                 // Period 0: No CapEx
                 capExSheet.getRange(`${colLetter}${currentRow}`).values = [[0]];
               } else {
-                // Operating periods: Apply growth
+                // Operating periods: Apply growth with proper period adjustment
                 const baseValue = `-${valueRef}`;
                 if (modelData.modelPeriods === 'monthly') {
-                  capExSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${baseValue}*(1+${growthRateRef})^((${col}-1)/12)`]];
+                  // For monthly periods, divide annual growth rate by 12
+                  capExSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${baseValue}*(1+${growthRateRef}/100)^((${col}-1)/12)`]];
                 } else if (modelData.modelPeriods === 'quarterly') {
-                  capExSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${baseValue}*(1+${growthRateRef})^((${col}-1)/4)`]];
+                  // For quarterly periods, divide annual growth rate by 4
+                  capExSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${baseValue}*(1+${growthRateRef}/100)^((${col}-1)/4)`]];
+                } else if (modelData.modelPeriods === 'daily') {
+                  // For daily periods, divide annual growth rate by 365
+                  capExSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${baseValue}*(1+${growthRateRef}/100)^((${col}-1)/365)`]];
                 } else {
-                  capExSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${baseValue}*(1+${growthRateRef})^(${col}-1)`]];
+                  // For yearly periods, use full annual growth rate
+                  capExSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${baseValue}*(1+${growthRateRef}/100)^(${col}-1)`]];
                 }
               }
             }
@@ -3727,24 +3741,28 @@ You MUST create a P&L Statement with this EXACT structure:
       
       // Debt upfront costs (Period 0 only)
       fcfSheet.getRange(`A${currentRow}`).values = [['Debt upfront costs']];
-      if (debtFinancingRef) {
-        // Reference loan issuance fees from Debt Model sheet
-        fcfSheet.getRange('B' + currentRow).formulas = [[`=-${debtFinancingRef}*'Debt Model'!B5/100`]];
+      const loanIssuanceFeesRef = this.cellTracker.getCellReference('loanIssuanceFees');
+      if (debtFinancingRef && loanIssuanceFeesRef) {
+        // Reference loan issuance fees from Assumptions sheet
+        fcfSheet.getRange('B' + currentRow).formulas = [[`=-${debtFinancingRef}*${loanIssuanceFeesRef}/100`]];
+      } else if (debtFinancingRef) {
+        // Fallback if loan issuance fees not found
+        fcfSheet.getRange('B' + currentRow).formulas = [[`=-${debtFinancingRef}*1.5/100`]];
       }
       currentRow++;
       
-      // Interest Payments (reference from Debt Model sheet)
+      // Interest Payments (calculated using Debt Model rates)
       fcfSheet.getRange(`A${currentRow}`).values = [['Interest Payments']];
-      if (modelData.dealLTV && parseFloat(modelData.dealLTV) > 0) {
-        // Reference interest payments directly from Debt Model sheet
+      if (modelData.dealLTV && parseFloat(modelData.dealLTV) > 0 && debtFinancingRef) {
+        // Calculate interest payments using debt amount and rates from Debt Model
         for (let i = 0; i <= periods; i++) {
           const colLetter = this.getColumnLetter(i + 1);
           if (i === 0) {
             fcfSheet.getRange(colLetter + currentRow).values = [[0]]; // Period 0
           } else {
-            // Reference the interest payment row from Debt Model sheet
-            // This will be dynamically determined or use a standard row
-            fcfSheet.getRange(colLetter + currentRow).formulas = [[`='Debt Model'!${colLetter}${this.debtModelInterestRow || 12}`]];
+            // Calculate interest: debt amount * interest rate from Debt Model * period adjustment
+            const periodAdjustment = this.getPeriodAdjustment(modelData.modelPeriods);
+            fcfSheet.getRange(colLetter + currentRow).formulas = [[`=-${debtFinancingRef}*'Debt Model'!${colLetter}4${periodAdjustment}`]];
           }
         }
       } else {
