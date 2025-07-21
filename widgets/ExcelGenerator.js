@@ -3844,124 +3844,148 @@ You MUST create a P&L Statement with this EXACT structure:
     return Excel.run(async (context) => {
       console.log('🏦 Creating simplified Debt Model sheet...');
       
-      const sheets = context.workbook.worksheets;
-      
-      // Delete existing Debt Model sheet if it exists
       try {
-        const existingSheet = sheets.getItemOrNullObject('Debt Model');
-        existingSheet.load('name');
+        const sheets = context.workbook.worksheets;
+        
+        // Delete existing Debt Model sheet if it exists
+        try {
+          const existingSheet = sheets.getItemOrNullObject('Debt Model');
+          existingSheet.load('name');
+          await context.sync();
+          
+          if (!existingSheet.isNullObject) {
+            console.log('🗑️ Deleting existing Debt Model sheet');
+            existingSheet.delete();
+            await context.sync();
+          }
+        } catch (e) {
+          console.log('ℹ️ No existing sheet to delete');
+        }
+        
+        // Create new Debt Model sheet
+        const debtSheet = sheets.add('Debt Model');
+        debtSheet.position = 4; // After CapEx
+        await context.sync();
+        debtSheet.activate();
+        
+        // Calculate periods
+        const periods = this.calculatePeriods(modelData.projectStartDate, modelData.projectEndDate, modelData.modelPeriods);
+        console.log('📊 Calculated periods:', periods);
+        
+        // Check if debt financing is enabled
+        const hasDebt = modelData.dealLTV && parseFloat(modelData.dealLTV) > 0;
+        const isFloatingRate = modelData.debtSettings?.rateType === 'floating';
+        
+        if (!hasDebt) {
+          debtSheet.getRange('A1').values = [['No debt financing (LTV = 0%)']];
+          debtSheet.getRange('A1').format.font.italic = true;
+          await context.sync();
+          return { success: true, message: 'Debt Model sheet created (no debt)' };
+        }
+        
+        // Headers
+        debtSheet.getRange('A1').values = [['Debt Model - Interest Rates']];
+        debtSheet.getRange('A1').format.font.bold = true;
+        debtSheet.getRange('A1').format.font.size = 16;
+        debtSheet.getRange('A1').format.fill.color = '#1f4e79';
+        debtSheet.getRange('A1').format.font.color = 'white';
         await context.sync();
         
-        if (!existingSheet.isNullObject) {
-          console.log('🗑️ Deleting existing Debt Model sheet');
-          existingSheet.delete();
-          await context.sync();
-        }
-      } catch (e) {
-        // Sheet doesn't exist, continue
-      }
-      
-      // Create new Debt Model sheet
-      const debtSheet = sheets.add('Debt Model');
-      debtSheet.position = 4; // After CapEx
-      debtSheet.activate();
-      
-      // Calculate periods
-      const periods = this.calculatePeriods(modelData.projectStartDate, modelData.projectEndDate, modelData.modelPeriods);
-      
-      // Check if debt financing is enabled
-      const hasDebt = modelData.dealLTV && parseFloat(modelData.dealLTV) > 0;
-      const isFloatingRate = modelData.debtSettings?.rateType === 'floating';
-      
-      if (!hasDebt) {
-        debtSheet.getRange('A1').values = [['No debt financing (LTV = 0%)']];
-        debtSheet.getRange('A1').format.font.italic = true;
-        return { success: true, message: 'Debt Model sheet created (no debt)' };
-      }
-      
-      // Headers
-      debtSheet.getRange('A1').values = [['Debt Model - Interest Rates']];
-      debtSheet.getRange('A1').format.font.bold = true;
-      debtSheet.getRange('A1').format.font.size = 16;
-      debtSheet.getRange('A1').format.fill.color = '#1f4e79';
-      debtSheet.getRange('A1').format.font.color = 'white';
-      
-      let currentRow = 3;
-      
-      // Period headers
-      debtSheet.getRange('A' + currentRow).values = [['Period']];
-      for (let i = 0; i <= periods; i++) {
-        const colLetter = this.getColumnLetter(i + 1);
-        if (i === 0) {
-          debtSheet.getRange(colLetter + currentRow).values = [['Period 0']];
-        } else {
-          const periodHeader = this.formatPeriodHeader(new Date(modelData.projectStartDate), i - 1, modelData.modelPeriods);
-          debtSheet.getRange(colLetter + currentRow).values = [[periodHeader]];
-        }
-      }
-      debtSheet.getRange(`A${currentRow}:${this.getColumnLetter(periods + 1)}${currentRow}`).format.font.bold = true;
-      currentRow++;
-      
-      // Interest Rate Row - using floating rates if configured
-      debtSheet.getRange(`A${currentRow}`).values = [['Interest Rate (%)']];
-      debtSheet.getRange(`A${currentRow}`).format.font.bold = true;
-      
-      // Prepare rate values array for batch operation
-      const rateValues = [];
-      
-      if (isFloatingRate && modelData.debtSettings?.floatingRateRanges) {
-        console.log('🔄 Using floating rate ranges:', modelData.debtSettings.floatingRateRanges);
+        let currentRow = 3;
         
-        // Build rate values array based on configured ranges
+        // Period headers row
+        const periodHeaders = ['Period'];
         for (let i = 0; i <= periods; i++) {
           if (i === 0) {
-            rateValues.push(0); // No interest in Period 0
+            periodHeaders.push('Period 0');
           } else {
-            // Find the rate range that includes this period
-            const applicableRange = modelData.debtSettings.floatingRateRanges.find(range => 
-              i >= range.startPeriod && i <= range.endPeriod
-            );
-            const rate = applicableRange ? (applicableRange.rate / 100) : 0.055; // Convert to decimal immediately
-            rateValues.push(rate);
-            
-            console.log(`📊 Period ${i}: Rate ${(rate * 100).toFixed(1)}% (Range: ${applicableRange ? `${applicableRange.startPeriod}-${applicableRange.endPeriod}` : 'default'})`);
-            
-            // Store cell reference for first occurrence of each rate
-            if (applicableRange && i === applicableRange.startPeriod) {
-              const colLetter = this.getColumnLetter(i + 1);
-              this.cellTracker.recordCell(`floatingRate_range_${applicableRange.startPeriod}_${applicableRange.endPeriod}`, 'Debt Model', `${colLetter}${currentRow}`);
+            const periodHeader = this.formatPeriodHeader(new Date(modelData.projectStartDate), i - 1, modelData.modelPeriods);
+            periodHeaders.push(periodHeader);
+          }
+        }
+        
+        // Set period headers in a single operation
+        const headerRange = debtSheet.getRange(`A${currentRow}:${this.getColumnLetter(periods + 2)}${currentRow}`);
+        headerRange.values = [periodHeaders];
+        headerRange.format.font.bold = true;
+        await context.sync();
+        
+        currentRow++;
+        
+        // Interest Rate Row
+        debtSheet.getRange(`A${currentRow}`).values = [['Interest Rate (%)']];
+        debtSheet.getRange(`A${currentRow}`).format.font.bold = true;
+        await context.sync();
+        
+        // Prepare rate values array
+        const rateValues = [];
+        
+        if (isFloatingRate && modelData.debtSettings?.floatingRateRanges) {
+          console.log('🔄 Using floating rate ranges:', modelData.debtSettings.floatingRateRanges);
+          
+          // Build rate values array based on configured ranges
+          for (let i = 0; i <= periods; i++) {
+            if (i === 0) {
+              rateValues.push(0); // No interest in Period 0
+            } else {
+              // Find the rate range that includes this period
+              const applicableRange = modelData.debtSettings.floatingRateRanges.find(range => 
+                i >= range.startPeriod && i <= range.endPeriod
+              );
+              const rate = applicableRange ? (applicableRange.rate / 100) : 0.055;
+              rateValues.push(rate);
+              
+              console.log(`📊 Period ${i}: Rate ${(rate * 100).toFixed(1)}% (Range: ${applicableRange ? `${applicableRange.startPeriod}-${applicableRange.endPeriod}` : 'default'})`);
+              
+              // Store cell reference for first occurrence of each rate
+              if (applicableRange && i === applicableRange.startPeriod) {
+                const colLetter = this.getColumnLetter(i + 1);
+                this.cellTracker.recordCell(`floatingRate_range_${applicableRange.startPeriod}_${applicableRange.endPeriod}`, 'Debt Model', `${colLetter}${currentRow}`);
+              }
             }
           }
-        }
-      } else {
-        console.log('📊 Using fixed rate:', modelData.debtSettings?.fixedRate || 5.5);
-        
-        // Fixed rate schedule
-        const fixedRate = (modelData.debtSettings?.fixedRate || 5.5) / 100; // Convert to decimal
-        
-        for (let i = 0; i <= periods; i++) {
-          if (i === 0) {
-            rateValues.push(0); // No interest in Period 0
-          } else {
-            rateValues.push(fixedRate);
+        } else {
+          console.log('📊 Using fixed rate:', modelData.debtSettings?.fixedRate || 5.5);
+          
+          // Fixed rate schedule
+          const fixedRate = (modelData.debtSettings?.fixedRate || 5.5) / 100;
+          
+          for (let i = 0; i <= periods; i++) {
+            if (i === 0) {
+              rateValues.push(0); // No interest in Period 0
+            } else {
+              rateValues.push(fixedRate);
+            }
           }
+          this.cellTracker.recordCell('fixedRate', 'Debt Model', `B${currentRow}`);
         }
-        this.cellTracker.recordCell('fixedRate', 'Debt Model', `B${currentRow}`);
+        
+        console.log('📊 Rate values array:', rateValues);
+        console.log('📊 Array length:', rateValues.length, 'Expected columns:', periods + 1);
+        
+        // Apply rate values one by one to avoid range mismatch
+        for (let i = 0; i < rateValues.length; i++) {
+          const colLetter = this.getColumnLetter(i + 2); // Start from column B (i+2)
+          debtSheet.getRange(colLetter + currentRow).values = [[rateValues[i]]];
+          debtSheet.getRange(colLetter + currentRow).numberFormat = [['0.0%']];
+        }
+        
+        await context.sync();
+        
+        // Store for FCF reference
+        this.debtModelInterestRow = currentRow;
+        
+        // Auto-resize columns
+        debtSheet.getUsedRange().format.autofitColumns();
+        await context.sync();
+        
+        console.log('✅ Simplified Debt Model sheet created successfully!');
+        return { success: true, message: 'Simplified Debt Model sheet created successfully' };
+        
+      } catch (error) {
+        console.error('❌ Error in generateDebtModelSheet:', error);
+        throw error;
       }
-      
-      // Apply all rate values in a single batch operation
-      const rateRange = debtSheet.getRange(`B${currentRow}:${this.getColumnLetter(periods + 1)}${currentRow}`);
-      rateRange.values = [rateValues];
-      rateRange.numberFormat = [['0.0%']];
-      
-      // Store for FCF reference
-      this.debtModelInterestRow = currentRow;
-      
-      // Auto-resize columns
-      debtSheet.getUsedRange().format.autofitColumns();
-      
-      console.log('✅ Simplified Debt Model sheet created successfully!');
-      return { success: true, message: 'Simplified Debt Model sheet created successfully' };
     });
   }
 
