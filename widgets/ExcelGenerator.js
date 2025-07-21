@@ -3906,27 +3906,29 @@ You MUST create a P&L Statement with this EXACT structure:
       debtSheet.getRange(`A${currentRow}`).values = [['Interest Rate (%)']];
       debtSheet.getRange(`A${currentRow}`).format.font.bold = true;
       
+      // Prepare rate values array for batch operation
+      const rateValues = [];
+      
       if (isFloatingRate && modelData.debtSettings?.floatingRateRanges) {
         console.log('🔄 Using floating rate ranges:', modelData.debtSettings.floatingRateRanges);
         
-        // Apply floating rate schedule based on configured ranges
+        // Build rate values array based on configured ranges
         for (let i = 0; i <= periods; i++) {
-          const colLetter = this.getColumnLetter(i + 1);
-          
           if (i === 0) {
-            debtSheet.getRange(colLetter + currentRow).values = [[0]]; // No interest in Period 0
+            rateValues.push(0); // No interest in Period 0
           } else {
             // Find the rate range that includes this period
             const applicableRange = modelData.debtSettings.floatingRateRanges.find(range => 
               i >= range.startPeriod && i <= range.endPeriod
             );
-            const rate = applicableRange ? applicableRange.rate : 5.5; // Default rate if no range found
-            debtSheet.getRange(colLetter + currentRow).values = [[rate]];
+            const rate = applicableRange ? (applicableRange.rate / 100) : 0.055; // Convert to decimal immediately
+            rateValues.push(rate);
             
-            console.log(`📊 Period ${i}: Rate ${rate}% (Range: ${applicableRange ? `${applicableRange.startPeriod}-${applicableRange.endPeriod}` : 'default'})`);
+            console.log(`📊 Period ${i}: Rate ${(rate * 100).toFixed(1)}% (Range: ${applicableRange ? `${applicableRange.startPeriod}-${applicableRange.endPeriod}` : 'default'})`);
             
             // Store cell reference for first occurrence of each rate
             if (applicableRange && i === applicableRange.startPeriod) {
+              const colLetter = this.getColumnLetter(i + 1);
               this.cellTracker.recordCell(`floatingRate_range_${applicableRange.startPeriod}_${applicableRange.endPeriod}`, 'Debt Model', `${colLetter}${currentRow}`);
             }
           }
@@ -3935,43 +3937,25 @@ You MUST create a P&L Statement with this EXACT structure:
         console.log('📊 Using fixed rate:', modelData.debtSettings?.fixedRate || 5.5);
         
         // Fixed rate schedule
-        const fixedRate = modelData.debtSettings?.fixedRate || 5.5;
+        const fixedRate = (modelData.debtSettings?.fixedRate || 5.5) / 100; // Convert to decimal
         
         for (let i = 0; i <= periods; i++) {
-          const colLetter = this.getColumnLetter(i + 1);
-          
           if (i === 0) {
-            debtSheet.getRange(colLetter + currentRow).values = [[0]]; // No interest in Period 0
+            rateValues.push(0); // No interest in Period 0
           } else {
-            debtSheet.getRange(colLetter + currentRow).values = [[fixedRate]];
+            rateValues.push(fixedRate);
           }
         }
         this.cellTracker.recordCell('fixedRate', 'Debt Model', `B${currentRow}`);
       }
       
-      // Store for FCF reference
-      this.debtModelInterestRow = currentRow;
-      
-      // Format the interest rate row with percentage format
+      // Apply all rate values in a single batch operation
       const rateRange = debtSheet.getRange(`B${currentRow}:${this.getColumnLetter(periods + 1)}${currentRow}`);
+      rateRange.values = [rateValues];
       rateRange.numberFormat = [['0.0%']];
       
-      // Convert percentages to decimal for Excel (divide by 100)
-      await context.sync(); // Ensure values are committed before reading
-      
-      for (let i = 1; i <= periods; i++) {
-        const colLetter = this.getColumnLetter(i + 1);
-        const cellRange = debtSheet.getRange(colLetter + currentRow);
-        cellRange.load('values');
-        await context.sync();
-        
-        const currentValue = cellRange.values[0][0];
-        if (currentValue > 0) {
-          cellRange.values = [[currentValue / 100]];
-        }
-      }
-      
-      await context.sync(); // Ensure final values are committed
+      // Store for FCF reference
+      this.debtModelInterestRow = currentRow;
       
       // Auto-resize columns
       debtSheet.getUsedRange().format.autofitColumns();
