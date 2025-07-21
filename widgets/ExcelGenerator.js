@@ -3517,16 +3517,16 @@ You MUST create a P&L Statement with this EXACT structure:
                 const baseValue = `-${valueRef}`;
                 if (modelData.modelPeriods === 'monthly') {
                   // For monthly periods, divide annual growth rate by 12
-                  capExSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${baseValue}*(1+${growthRateRef}/100)^((${col}-1)/12)`]];
+                  capExSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${baseValue}*(1+${growthRateRef})^((${col}-1)/12)`]];
                 } else if (modelData.modelPeriods === 'quarterly') {
                   // For quarterly periods, divide annual growth rate by 4
-                  capExSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${baseValue}*(1+${growthRateRef}/100)^((${col}-1)/4)`]];
+                  capExSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${baseValue}*(1+${growthRateRef})^((${col}-1)/4)`]];
                 } else if (modelData.modelPeriods === 'daily') {
                   // For daily periods, divide annual growth rate by 365
-                  capExSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${baseValue}*(1+${growthRateRef}/100)^((${col}-1)/365)`]];
+                  capExSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${baseValue}*(1+${growthRateRef})^((${col}-1)/365)`]];
                 } else {
                   // For yearly periods, use full annual growth rate
-                  capExSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${baseValue}*(1+${growthRateRef}/100)^(${col}-1)`]];
+                  capExSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${baseValue}*(1+${growthRateRef})^(${col}-1)`]];
                 }
               }
             }
