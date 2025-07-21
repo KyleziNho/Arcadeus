@@ -3927,8 +3927,8 @@ You MUST create a P&L Statement with this EXACT structure:
       debtSheet.getRange(`A${currentRow}`).format.fill.color = '#fce5cd';
       currentRow++;
       
-      if (isFloatingRate && modelData.debtSettings?.floatingRates) {
-        // Floating rate schedule
+      if (isFloatingRate && modelData.debtSettings?.floatingRateRanges) {
+        // Floating rate schedule based on ranges
         debtSheet.getRange(`A${currentRow}`).values = [['Interest Rate (%)']];
         
         for (let i = 0; i <= periods; i++) {
@@ -3937,11 +3937,17 @@ You MUST create a P&L Statement with this EXACT structure:
           if (i === 0) {
             debtSheet.getRange(colLetter + currentRow).values = [[0]]; // No interest in Period 0
           } else {
-            // Find the rate for this period
-            const rateData = modelData.debtSettings.floatingRates.find(r => r.period === i - 1);
-            const rate = rateData ? rateData.rate : (modelData.debtSettings.floatingRates[0]?.rate || 5.5);
+            // Find the rate range that includes this period
+            const applicableRange = modelData.debtSettings.floatingRateRanges.find(range => 
+              i >= range.startPeriod && i <= range.endPeriod
+            );
+            const rate = applicableRange ? applicableRange.rate : 5.5; // Default rate if no range found
             debtSheet.getRange(colLetter + currentRow).values = [[rate]];
-            this.cellTracker.recordCell(`floatingRate_${i - 1}`, 'Debt Model', `${colLetter}${currentRow}`);
+            
+            // Store cell reference for first occurrence of each rate
+            if (applicableRange && i === applicableRange.startPeriod) {
+              this.cellTracker.recordCell(`floatingRate_range_${applicableRange.startPeriod}_${applicableRange.endPeriod}`, 'Debt Model', `${colLetter}${currentRow}`);
+            }
           }
         }
       } else {

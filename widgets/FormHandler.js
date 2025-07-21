@@ -261,21 +261,24 @@ class FormHandler {
     if (isFixedRate) {
       settings.fixedRate = parseFloat(document.getElementById('fixedRate')?.value || '5.5');
     } else {
-      // Collect floating rates
-      settings.floatingRates = [];
+      // Collect floating rate ranges
+      settings.floatingRateRanges = [];
       const floatingRateSchedule = document.getElementById('floatingRateSchedule');
       
       if (floatingRateSchedule) {
-        const ratePeriods = floatingRateSchedule.querySelectorAll('.rate-period-item');
-        ratePeriods.forEach((period, index) => {
-          const rateInput = period.querySelector(`input[id^="floatingRate_"]`);
-          const periodLabel = period.querySelector('.period-label')?.textContent;
+        const rateRanges = floatingRateSchedule.querySelectorAll('.rate-range-item');
+        rateRanges.forEach((range, index) => {
+          const rateInput = range.querySelector(`input[id^="floatingRate_"]`);
+          const startSlider = range.querySelector(`input[id^="periodStart_"]`);
+          const endSlider = range.querySelector(`input[id^="periodEnd_"]`);
+          const displayText = range.querySelector('.period-display')?.textContent;
           
-          if (rateInput && rateInput.value) {
-            settings.floatingRates.push({
-              period: index,
-              label: periodLabel,
-              rate: parseFloat(rateInput.value)
+          if (rateInput && startSlider && endSlider && rateInput.value) {
+            settings.floatingRateRanges.push({
+              startPeriod: parseInt(startSlider.value),
+              endPeriod: parseInt(endSlider.value),
+              rate: parseFloat(rateInput.value),
+              displayText: displayText || `Range ${index + 1}`
             });
           }
         });
@@ -440,10 +443,10 @@ class FormHandler {
       });
     }
     
-    // Add rate period button
-    const addRatePeriodBtn = document.getElementById('addRatePeriod');
-    if (addRatePeriodBtn) {
-      addRatePeriodBtn.addEventListener('click', () => this.addRatePeriod());
+    // Add rate range button
+    const addRateRangeBtn = document.getElementById('addRateRange');
+    if (addRateRangeBtn) {
+      addRateRangeBtn.addEventListener('click', () => this.addRateRange());
     }
     
     console.log('Debt model initialized with fixed and floating rate options');
@@ -453,7 +456,7 @@ class FormHandler {
     const container = document.getElementById('floatingRateSchedule');
     if (!container) return;
     
-    // Clear existing periods
+    // Clear existing ranges
     container.innerHTML = '';
     
     // Get project details
@@ -466,38 +469,126 @@ class FormHandler {
       return;
     }
     
-    // Calculate periods and add initial rate periods
-    const periods = this.calculatePeriods(startDate, endDate, modelPeriods);
-    const periodsToShow = Math.min(periods, 5); // Start with first 5 periods
+    // Calculate total periods
+    const totalPeriods = this.calculatePeriods(startDate, endDate, modelPeriods);
     
-    for (let i = 0; i < periodsToShow; i++) {
-      this.addRatePeriod(i);
-    }
+    // Add initial rate range covering full period
+    this.addRateRange(1, Math.min(totalPeriods, 12)); // Default to first 12 periods or total
   }
   
-  addRatePeriod(periodIndex) {
+  addRateRange(startPeriod, endPeriod) {
     const container = document.getElementById('floatingRateSchedule');
     if (!container) return;
     
-    const periodCount = container.children.length;
-    const index = periodIndex !== undefined ? periodIndex : periodCount;
-    
+    const rangeCount = container.children.length + 1;
     const startDate = document.getElementById('projectStartDate')?.value;
+    const endDate = document.getElementById('projectEndDate')?.value;
     const modelPeriods = document.getElementById('modelPeriods')?.value || 'monthly';
     
-    if (!startDate) return;
+    if (!startDate || !endDate) return;
     
-    const periodLabel = this.getPeriodLabel(new Date(startDate), index, modelPeriods);
+    const totalPeriods = this.calculatePeriods(startDate, endDate, modelPeriods);
+    const defaultStart = startPeriod || 1;
+    const defaultEnd = endPeriod || Math.min(6, totalPeriods); // Default 6 periods
     
-    const periodHTML = `
-      <div class="rate-period-item" id="ratePeriod_${index}">
-        <span class="period-label">${periodLabel}</span>
-        <input type="number" id="floatingRate_${index}" placeholder="Rate %" step="0.1" value="${index === 0 ? '5.5' : ''}">
-        <button class="remove-period" onclick="this.parentElement.remove()">×</button>
+    const rangeHTML = `
+      <div class="rate-range-item" id="rateRange_${rangeCount}">
+        <div class="rate-range-header">
+          <span class="rate-range-title">Rate Range ${rangeCount}</span>
+          <button class="remove-range" onclick="this.parentElement.parentElement.remove()">×</button>
+        </div>
+        
+        <div class="rate-range-controls">
+          <div class="range-control">
+            <label>Period Range</label>
+            <div class="period-range-selector">
+              <div class="period-slider-container">
+                <input type="range" 
+                       class="period-slider" 
+                       id="periodStart_${rangeCount}"
+                       min="1" 
+                       max="${totalPeriods}" 
+                       value="${defaultStart}"
+                       data-range-id="${rangeCount}"
+                       data-type="start">
+                <input type="range" 
+                       class="period-slider" 
+                       id="periodEnd_${rangeCount}"
+                       min="1" 
+                       max="${totalPeriods}" 
+                       value="${defaultEnd}"
+                       data-range-id="${rangeCount}"
+                       data-type="end">
+                <div class="slider-labels">
+                  <span>Period 1</span>
+                  <span>Period ${totalPeriods}</span>
+                </div>
+              </div>
+              <div class="period-display" id="periodDisplay_${rangeCount}">
+                ${this.formatPeriodRange(new Date(startDate), defaultStart, defaultEnd, modelPeriods)}
+              </div>
+            </div>
+          </div>
+          
+          <div class="range-control">
+            <label>Interest Rate</label>
+            <div class="rate-input-container">
+              <input type="number" 
+                     id="floatingRate_${rangeCount}" 
+                     placeholder="5.5" 
+                     step="0.1" 
+                     value="5.5">
+              <span class="unit">%</span>
+            </div>
+          </div>
+        </div>
       </div>
     `;
     
-    container.insertAdjacentHTML('beforeend', periodHTML);
+    container.insertAdjacentHTML('beforeend', rangeHTML);
+    
+    // Add event listeners for sliders
+    this.setupRangeSliders(rangeCount, totalPeriods, new Date(startDate), modelPeriods);
+  }
+  
+  setupRangeSliders(rangeId, totalPeriods, startDate, modelPeriods) {
+    const startSlider = document.getElementById(`periodStart_${rangeId}`);
+    const endSlider = document.getElementById(`periodEnd_${rangeId}`);
+    const display = document.getElementById(`periodDisplay_${rangeId}`);
+    
+    const updateDisplay = () => {
+      const start = parseInt(startSlider.value);
+      const end = parseInt(endSlider.value);
+      
+      // Ensure end is always >= start
+      if (end < start) {
+        endSlider.value = start;
+      }
+      
+      // Ensure start is always <= end
+      if (start > end) {
+        startSlider.value = end;
+      }
+      
+      const finalStart = parseInt(startSlider.value);
+      const finalEnd = parseInt(endSlider.value);
+      
+      display.textContent = this.formatPeriodRange(startDate, finalStart, finalEnd, modelPeriods);
+    };
+    
+    if (startSlider) startSlider.addEventListener('input', updateDisplay);
+    if (endSlider) endSlider.addEventListener('input', updateDisplay);
+  }
+  
+  formatPeriodRange(startDate, startPeriod, endPeriod, periodType) {
+    const startLabel = this.getPeriodLabel(startDate, startPeriod - 1, periodType);
+    const endLabel = this.getPeriodLabel(startDate, endPeriod - 1, periodType);
+    
+    if (startPeriod === endPeriod) {
+      return `${startLabel}`;
+    } else {
+      return `${startLabel} → ${endLabel}`;
+    }
   }
   
   getPeriodLabel(startDate, periodIndex, periodType) {

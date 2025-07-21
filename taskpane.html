@@ -357,13 +357,15 @@
                         <div class="form-group">
                             <label>Interest Rate Type</label>
                             <div class="radio-group">
-                                <label class="radio-label">
+                                <label class="radio-option" data-option="fixed">
                                     <input type="radio" name="interestRateType" id="fixedRateOption" value="fixed" checked>
-                                    <span>Fixed Rate</span>
+                                    <span class="radio-custom"></span>
+                                    <span class="radio-text">Fixed Rate</span>
                                 </label>
-                                <label class="radio-label">
+                                <label class="radio-option" data-option="floating">
                                     <input type="radio" name="interestRateType" id="floatingRateOption" value="floating">
-                                    <span>Floating Rate</span>
+                                    <span class="radio-custom"></span>
+                                    <span class="radio-text">Floating Rate</span>
                                 </label>
                             </div>
                         </div>
@@ -379,17 +381,17 @@
                         <div id="floatingRateSection" style="display: none;">
                             <div class="form-group">
                                 <label>Floating Rate Schedule</label>
-                                <small class="help-text">Set interest rates for different periods</small>
-                                <div id="floatingRateSchedule" style="margin-top: 10px;">
-                                    <!-- Dynamic rate inputs will be added here -->
+                                <small class="help-text">Set interest rates for period ranges</small>
+                                <div id="floatingRateSchedule" style="margin-top: 15px;">
+                                    <!-- Dynamic rate range inputs will be added here -->
                                 </div>
-                                <button class="button button-secondary" id="addRatePeriod" style="margin-top: 10px;">
+                                <button class="button button-secondary" id="addRateRange" style="margin-top: 10px;">
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <circle cx="12" cy="12" r="10"></circle>
                                         <line x1="12" y1="8" x2="12" y2="16"></line>
                                         <line x1="8" y1="12" x2="16" y2="12"></line>
                                     </svg>
-                                    Add Rate Period
+                                    Add Rate Range
                                 </button>
                             </div>
                         </div>
