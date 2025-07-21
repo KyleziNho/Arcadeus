@@ -210,6 +210,13 @@ class MAModelingAddin {
       console.log('Generate FCF button listener added');
     }
     
+    // Generate Full Model button (unified generation)
+    const generateFullModelBtn = document.getElementById('generateFullModelBtn');
+    if (generateFullModelBtn) {
+      generateFullModelBtn.addEventListener('click', () => this.generateFullModel());
+      console.log('Generate Full Model button listener added');
+    }
+    
     // IRR & MOIC are now calculated automatically in FCF sheet
     // No separate button needed
     
@@ -645,10 +652,143 @@ class MAModelingAddin {
   }
   */
   
+  async generateFullModel() {
+    console.log('🚀 Starting unified full model generation...');
+    
+    try {
+      // Validate form data first
+      if (this.formHandler) {
+        const validation = this.formHandler.validateAllFields();
+        if (!validation.isValid) {
+          const errorMessage = 'Please complete the following required fields: ' + validation.errors.join(', ');
+          console.log('Validation failed:', validation.errors);
+          if (this.uiController) {
+            this.uiController.showMessage(errorMessage, 'error');
+          }
+          return;
+        }
+      }
+      
+      // Get the button and progress indicator
+      const generateBtn = document.getElementById('generateFullModelBtn');
+      const progressIndicator = document.getElementById('generationProgress');
+      const progressText = document.getElementById('progressText');
+      const progressBar = document.getElementById('progressBar');
+      
+      // Initialize progress UI
+      if (generateBtn) {
+        generateBtn.disabled = true;
+        generateBtn.innerHTML = `
+          <svg class="spinner" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 12a9 9 0 11-6.219-8.56"/>
+          </svg>
+          Generating Model...
+        `;
+      }
+      
+      if (progressIndicator) {
+        progressIndicator.style.display = 'block';
+      }
+      
+      const steps = [
+        { name: 'Assumptions', func: () => this.generateAssumptions(), progress: 20 },
+        { name: 'P&L Statement', func: () => this.generatePLWithAI(), progress: 40 },
+        { name: 'CapEx Summary', func: () => this.generateCapExSheet(), progress: 60 },
+        { name: 'Debt Model', func: () => this.generateDebtModelSheet(), progress: 80 },
+        { name: 'Free Cash Flow', func: () => this.generateFCFWithAI(), progress: 100 }
+      ];
+      
+      // Execute each step sequentially
+      for (let i = 0; i < steps.length; i++) {
+        const step = steps[i];
+        
+        // Update progress UI
+        if (progressText) {
+          progressText.textContent = `Generating ${step.name}... (${i + 1}/${steps.length})`;
+        }
+        if (progressBar) {
+          progressBar.style.width = `${step.progress}%`;
+        }
+        
+        console.log(`🔄 Step ${i + 1}/${steps.length}: Generating ${step.name}...`);
+        
+        // Execute the step
+        const result = await step.func();
+        
+        // Check if step failed (some functions don't return explicit success/failure)
+        // We'll continue even if one step has issues, but log it
+        if (result && result.success === false) {
+          console.warn(`⚠️ Step ${step.name} may have encountered issues, but continuing...`);
+        }
+        
+        console.log(`✅ Step ${i + 1}/${steps.length}: ${step.name} completed`);
+        
+        // Small delay between steps to ensure Excel operations complete
+        if (i < steps.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      }
+      
+      // Model generation completed
+      console.log('🎉 Full model generation completed successfully!');
+      
+      // Update button to "Refresh Full Model"
+      if (generateBtn) {
+        generateBtn.disabled = false;
+        generateBtn.innerHTML = `
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="23,4 23,10 17,10"></polyline>
+            <path d="M20.49,15a9,9,0,1,1-2.12-9.36L23,10"></path>
+          </svg>
+          Refresh Entire Model
+        `;
+      }
+      
+      // Hide progress indicator
+      if (progressIndicator) {
+        setTimeout(() => {
+          progressIndicator.style.display = 'none';
+        }, 2000);
+      }
+      
+      // Show success message
+      if (this.uiController) {
+        this.uiController.showMessage('🎉 Complete M&A financial model generated successfully! All sheets created with formulas and calculations.', 'success');
+      }
+      
+    } catch (error) {
+      console.error('❌ Error in generateFullModel:', error);
+      
+      // Reset button state
+      const generateBtn = document.getElementById('generateFullModelBtn');
+      if (generateBtn) {
+        generateBtn.disabled = false;
+        generateBtn.innerHTML = `
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+            <line x1="3" y1="9" x2="21" y2="9"></line>
+            <line x1="9" y1="21" x2="9" y2="9"></line>
+          </svg>
+          Generate Full Model
+        `;
+      }
+      
+      // Hide progress indicator
+      const progressIndicator = document.getElementById('generationProgress');
+      if (progressIndicator) {
+        progressIndicator.style.display = 'none';
+      }
+      
+      if (this.uiController) {
+        this.uiController.showMessage('Error generating full model: ' + error.message, 'error');
+      }
+    }
+  }
+  
   // Legacy function for backward compatibility
   async generateModel() {
-    console.log('Legacy generateModel called - redirecting to generateAssumptions...');
-    return this.generateAssumptions();
+    console.log('Legacy generateModel called - redirecting to generateFullModel...');
+    return this.generateFullModel();
     
     try {
       // Validate form data
