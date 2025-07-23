@@ -2435,8 +2435,7 @@ You MUST create a Free Cash Flow Statement with this EXACT structure:
 13. **Levered Cashflows** - Unlevered Cashflows + Debt flows per period
 
 **EQUITY FLOWS:**
-14. **Equity contributed** - Equity investment in Period 0 only (negative)
-15. **Equity distributions** - Levered Cashflows (all periods)
+14. **Equity distributions** - Levered Cashflows (all periods)
 
 **RETURNS:**
 16. **Unlevered IRR** - XIRR calculation on Unlevered Cashflows
@@ -3814,13 +3813,7 @@ You MUST create a P&L Statement with this EXACT structure:
       fcfSheet.getRange(`A${currentRow}`).format.fill.color = '#fce5cd';
       currentRow++;
       
-      // Equity contributed (Period 0 only)
-      fcfSheet.getRange(`A${currentRow}`).values = [['Equity contributed']];
-      const equityContributionRef = this.cellTracker.getCellReference('equityContribution');
-      if (equityContributionRef) {
-        fcfSheet.getRange('B' + currentRow).formulas = [[`=-${equityContributionRef}`]];
-      }
-      currentRow++;
+      // Removed: Equity contributed section - not necessary
       
       // Equity distributions (Levered Cashflows)
       fcfSheet.getRange(`A${currentRow}`).values = [['Equity distributions']];
