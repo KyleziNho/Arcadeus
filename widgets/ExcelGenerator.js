@@ -211,7 +211,8 @@ class ExcelGenerator {
     // Loan Issuance Fees (if there's debt)
     if (data.dealLTV && parseFloat(data.dealLTV) > 0) {
       sheet.getRange(`A${currentRow}`).values = [['Loan Issuance Fees (%)']];
-      sheet.getRange(`B${currentRow}`).values = [[data.debtSettings?.loanIssuanceFees || 1.5]];
+      sheet.getRange(`B${currentRow}`).values = [[(data.debtSettings?.loanIssuanceFees || 1.5) / 100]];
+      sheet.getRange(`B${currentRow}`).numberFormat = '0.00%';
       this.cellTracker.recordCell('loanIssuanceFees', 'Assumptions', `B${currentRow}`);
       currentRow++;
     }
@@ -333,20 +334,23 @@ class ExcelGenerator {
     // Disposal Cost
     sheet.getRange(`A${currentRow}`).values = [['Disposal Cost (%)']];
     console.log('🔍 Disposal Cost value from form:', data.disposalCost);
-    sheet.getRange(`B${currentRow}`).values = [[data.disposalCost || 2.5]];
+    sheet.getRange(`B${currentRow}`).values = [[(data.disposalCost || 2.5) / 100]];
+    sheet.getRange(`B${currentRow}`).numberFormat = '0.00%';
     this.cellTracker.recordCell('disposalCost', 'Assumptions', `B${currentRow}`);
     currentRow++;
     
     // Terminal Cap Rate
     sheet.getRange(`A${currentRow}`).values = [['Terminal Cap Rate (%)']];
     console.log('🔍 Terminal Cap Rate value from form:', data.terminalCapRate);
-    sheet.getRange(`B${currentRow}`).values = [[data.terminalCapRate || 8.5]];
+    sheet.getRange(`B${currentRow}`).values = [[(data.terminalCapRate || 8.5) / 100]];
+    sheet.getRange(`B${currentRow}`).numberFormat = '0.00%';
     this.cellTracker.recordCell('terminalCapRate', 'Assumptions', `B${currentRow}`);
     currentRow++;
     
     // Discount Rate (WACC)
     sheet.getRange(`A${currentRow}`).values = [['Discount Rate - WACC (%)']];
-    sheet.getRange(`B${currentRow}`).values = [[data.discountRate || 10.0]];
+    sheet.getRange(`B${currentRow}`).values = [[(data.discountRate || 10.0) / 100]];
+    sheet.getRange(`B${currentRow}`).numberFormat = '0.00%';
     this.cellTracker.recordCell('discountRate', 'Assumptions', `B${currentRow}`);
     currentRow++;
     
@@ -1368,8 +1372,15 @@ Provide the COMPLETE Free Cash Flow model with exact Excel formulas for every ce
           const noiRow = plStructure.lineItems.noi.row;
           for (let col = 1; col <= totalColumns; col++) {
             const colLetter = this.getColumnLetter(col);
-            const plCol = this.getColumnLetter(col === 1 ? 2 : col + 1); // Period 0 references P&L column B, others offset by 1
-            fcfSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`='P&L Statement'!${plCol}${noiRow}`]];
+            if (col === 1) {
+              // Period 0 in FCF has no NOI (it's the initial investment period)
+              fcfSheet.getRange(`${colLetter}${currentRow}`).values = [[0]];
+            } else {
+              // For operating periods, FCF column maps to P&L column minus 1
+              // FCF Period 1 (column 2) = P&L Period 1 (column 1)
+              const plCol = this.getColumnLetter(col - 1);
+              fcfSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`='P&L Statement'!${plCol}${noiRow}`]];
+            }
           }
         }
         currentRow++;
@@ -1478,17 +1489,20 @@ Provide the COMPLETE Free Cash Flow model with exact Excel formulas for every ce
         const hasDebt = modelData.dealLTV && parseFloat(modelData.dealLTV) > 0;
         if (hasDebt) {
           const debtRef = this.cellTracker.getCellReference('debtFinancing');
-          let rateRef;
-          
-          rateRef = this.cellTracker.getCellReference('fixedRate');
           
           for (let col = 1; col <= totalColumns; col++) {
             const colLetter = this.getColumnLetter(col);
             let interestFormula = '0';
             
-            if (debtRef && rateRef) {
+            if (col === 1) {
+              // Period 0 - no interest
+              interestFormula = '0';
+            } else if (debtRef) {
+              // For operating periods, reference debt model
+              // Debt Model: Period 1 is in column C (index 3), Period 2 in column D, etc.
+              const debtModelCol = this.getColumnLetter(col + 1);
               const periodAdjustment = this.getPeriodAdjustment(modelData.modelPeriods);
-              interestFormula = `=-${debtRef}*${rateRef}${periodAdjustment}/100`;
+              interestFormula = `=-${debtRef}*'Debt Model'!${debtModelCol}4${periodAdjustment}`;
             }
             
             fcfSheet.getRange(`${colLetter}${currentRow}`).formulas = [[interestFormula]];
@@ -1518,7 +1532,7 @@ Provide the COMPLETE Free Cash Flow model with exact Excel formulas for every ce
             
             if (dealValueRef && disposalCostRef) {
               // Net disposal proceeds = Deal Value * (1 - Disposal Cost %)
-              fcfSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${dealValueRef}*(1-${disposalCostRef}/100)`]];
+              fcfSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${dealValueRef}*(1-${disposalCostRef})`]];
             } else if (modelData.dealValue && modelData.disposalCost) {
               // Fallback: use direct values if cell references not available
               const netProceeds = modelData.dealValue * (1 - (modelData.disposalCost / 100));
@@ -1587,7 +1601,7 @@ Provide the COMPLETE Free Cash Flow model with exact Excel formulas for every ce
         fcfSheet.getRange(`A${currentRow}`).format.font.italic = true;
         if (assumptionStructure && assumptionStructure.assumptions.discountRate) {
           const waccCellRef = assumptionStructure.assumptions.discountRate.cellRef;
-          fcfSheet.getRange(`B${currentRow}`).formulas = [[`=NPV(Assumptions!${waccCellRef}/100,${undiscountedRange})`]];
+          fcfSheet.getRange(`B${currentRow}`).formulas = [[`=NPV(Assumptions!${waccCellRef},${undiscountedRange})`]];
         } else {
           // Fallback to 10% if WACC not found
           fcfSheet.getRange(`B${currentRow}`).formulas = [[`=NPV(0.1,${undiscountedRange})`]];
@@ -3676,8 +3690,8 @@ You MUST create a P&L Statement with this EXACT structure:
       fcfSheet.getRange('B' + currentRow).values = [[0]]; // Period 0
       if (plStructure.lineItems.noi) {
         for (let i = 1; i <= periods; i++) {
-          const colLetter = this.getColumnLetter(i + 1);
-          const plCol = this.getColumnLetter(i + 1);
+          const colLetter = this.getColumnLetter(i + 1); // FCF column (Period i is in column i+1)
+          const plCol = this.getColumnLetter(i); // P&L column (Period i is in column i)
           fcfSheet.getRange(colLetter + currentRow).formulas = [[`='P&L Statement'!${plCol}${plStructure.lineItems.noi.row}`]];
         }
       }
@@ -3687,9 +3701,15 @@ You MUST create a P&L Statement with this EXACT structure:
       fcfSheet.getRange(`A${currentRow}`).values = [['CapEx']];
       if (capExStructure && capExStructure.totalRow) {
         for (let i = 0; i <= periods; i++) {
-          const colLetter = this.getColumnLetter(i + 1);
-          const capExCol = this.getColumnLetter(i + 1);
-          fcfSheet.getRange(colLetter + currentRow).formulas = [[`='CapEx'!${capExCol}${capExStructure?.totalRow}`]];
+          const colLetter = this.getColumnLetter(i + 1); // FCF column
+          if (i === 0) {
+            // Period 0 - Initial CapEx investment
+            fcfSheet.getRange(colLetter + currentRow).formulas = [[`='CapEx'!B${capExStructure?.totalRow}`]];
+          } else {
+            // Operating periods - CapEx column in CapEx sheet matches period number
+            const capExCol = this.getColumnLetter(i);
+            fcfSheet.getRange(colLetter + currentRow).formulas = [[`='CapEx'!${capExCol}${capExStructure?.totalRow}`]];
+          }
         }
       }
       currentRow++;
@@ -3701,7 +3721,7 @@ You MUST create a P&L Statement with this EXACT structure:
         // Terminal value = Final NOI / Terminal Cap Rate
         const terminalCapRateRef = this.cellTracker.getCellReference('terminalCapRate');
         if (terminalCapRateRef) {
-          fcfSheet.getRange(finalPeriodCol + currentRow).formulas = [[`='P&L Statement'!${this.getColumnLetter(periods)}${plStructure.lineItems.noi.row}/${terminalCapRateRef}*100`]];
+          fcfSheet.getRange(finalPeriodCol + currentRow).formulas = [[`='P&L Statement'!${this.getColumnLetter(periods)}${plStructure.lineItems.noi.row}/${terminalCapRateRef}`]];
         }
       }
       currentRow++;
@@ -3710,7 +3730,7 @@ You MUST create a P&L Statement with this EXACT structure:
       fcfSheet.getRange(`A${currentRow}`).values = [['Disposal Costs']];
       const disposalCostRef = this.cellTracker.getCellReference('disposalCost');
       if (disposalCostRef) {
-        fcfSheet.getRange(finalPeriodCol + currentRow).formulas = [[`=${finalPeriodCol}${currentRow - 1}*${disposalCostRef}/100`]];
+        fcfSheet.getRange(finalPeriodCol + currentRow).formulas = [[`=${finalPeriodCol}${currentRow - 1}*${disposalCostRef}`]];
       }
       currentRow++;
       
@@ -3731,20 +3751,15 @@ You MUST create a P&L Statement with this EXACT structure:
       fcfSheet.getRange(`A${currentRow}`).format.fill.color = '#cfe2f3';
       currentRow++;
       
-      // Debt drawn (Period 0 only)
-      fcfSheet.getRange(`A${currentRow}`).values = [['Debt drawn']];
+      // Get debt financing reference for later use
       const debtFinancingRef = this.cellTracker.getCellReference('debtFinancing');
-      if (debtFinancingRef) {
-        fcfSheet.getRange('B' + currentRow).formulas = [[`=${debtFinancingRef}`]];
-      }
-      currentRow++;
       
       // Debt upfront costs (Period 0 only)
       fcfSheet.getRange(`A${currentRow}`).values = [['Debt upfront costs']];
       const loanIssuanceFeesRef = this.cellTracker.getCellReference('loanIssuanceFees');
       if (debtFinancingRef && loanIssuanceFeesRef) {
         // Reference loan issuance fees from Assumptions sheet
-        fcfSheet.getRange('B' + currentRow).formulas = [[`=-${debtFinancingRef}*${loanIssuanceFeesRef}/100`]];
+        fcfSheet.getRange('B' + currentRow).formulas = [[`=-${debtFinancingRef}*${loanIssuanceFeesRef}`]];
       } else if (debtFinancingRef) {
         // Fallback if loan issuance fees not found
         fcfSheet.getRange('B' + currentRow).formulas = [[`=-${debtFinancingRef}*1.5/100`]];
@@ -3756,13 +3771,14 @@ You MUST create a P&L Statement with this EXACT structure:
       if (modelData.dealLTV && parseFloat(modelData.dealLTV) > 0 && debtFinancingRef) {
         // Calculate interest payments using debt amount and rates from Debt Model
         for (let i = 0; i <= periods; i++) {
-          const colLetter = this.getColumnLetter(i + 1);
+          const colLetter = this.getColumnLetter(i + 1); // FCF column
           if (i === 0) {
-            fcfSheet.getRange(colLetter + currentRow).values = [[0]]; // Period 0
+            fcfSheet.getRange(colLetter + currentRow).values = [[0]]; // Period 0 - no interest
           } else {
-            // Calculate interest: debt amount * interest rate from Debt Model * period adjustment
+            // For operating periods, debt model columns start at C for Period 1
+            const debtModelCol = this.getColumnLetter(i + 2); // Debt Model: Period 1 is column C
             const periodAdjustment = this.getPeriodAdjustment(modelData.modelPeriods);
-            fcfSheet.getRange(colLetter + currentRow).formulas = [[`=-${debtFinancingRef}*'Debt Model'!${colLetter}4${periodAdjustment}`]];
+            fcfSheet.getRange(colLetter + currentRow).formulas = [[`=-${debtFinancingRef}*'Debt Model'!${debtModelCol}4${periodAdjustment}`]];
           }
         }
       } else {
