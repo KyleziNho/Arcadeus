@@ -1486,33 +1486,29 @@ Provide the COMPLETE Free Cash Flow model with exact Excel formulas for every ce
         fcfSheet.getRange(`A${currentRow}`).format.fill.color = '#ffc7ce';
         currentRow++;
         
-        // Interest Payments - calculated separately in FCF (not from P&L)
-        fcfSheet.getRange(`A${currentRow}`).values = [['Less: Interest Payments']];
+        // Debt Expense - referenced from Debt Model sheet
+        fcfSheet.getRange(`A${currentRow}`).values = [['Less: Debt Expense']];
         fcfStructure.interestPayments = currentRow;
-        // Calculate interest payments directly in FCF (since removed from P&L)
+        // Reference debt expense directly from Debt Model sheet row 6
         const hasDebt = modelData.dealLTV && parseFloat(modelData.dealLTV) > 0;
         if (hasDebt) {
-          const debtRef = this.cellTracker.getCellReference('debtFinancing');
-          
           for (let col = 1; col <= totalColumns; col++) {
             const colLetter = this.getColumnLetter(col);
-            let interestFormula = '0';
+            let debtExpenseFormula = '0';
             
             if (col === 1) {
-              // Period 0 - no interest
-              interestFormula = '0';
-            } else if (debtRef) {
-              // For operating periods, reference debt model
-              // Debt Model: Period 1 is in column C (index 3), Period 2 in column D, etc.
-              const debtModelCol = this.getColumnLetter(col + 1);
-              const periodAdjustment = this.getPeriodAdjustment(modelData.modelPeriods);
-              interestFormula = `=-${debtRef}*'Debt Model'!${debtModelCol}4${periodAdjustment}`;
+              // Period 0 - no debt expense
+              debtExpenseFormula = '0';
+            } else {
+              // Reference debt expense from Debt Model: Period 1 is in column C
+              const debtModelCol = this.getColumnLetter(col);
+              debtExpenseFormula = `=-'Debt Model'!${debtModelCol}6`;
             }
             
-            fcfSheet.getRange(`${colLetter}${currentRow}`).formulas = [[interestFormula]];
+            fcfSheet.getRange(`${colLetter}${currentRow}`).formulas = [[debtExpenseFormula]];
           }
         } else {
-          // No interest expense found
+          // No debt expense
           for (let col = 1; col <= totalColumns; col++) {
             const colLetter = this.getColumnLetter(col);
             fcfSheet.getRange(`${colLetter}${currentRow}`).values = [[0]];
@@ -3769,19 +3765,18 @@ You MUST create a P&L Statement with this EXACT structure:
       }
       currentRow++;
       
-      // Interest Payments (calculated using Debt Model rates)
-      fcfSheet.getRange(`A${currentRow}`).values = [['Interest Payments']];
-      if (modelData.dealLTV && parseFloat(modelData.dealLTV) > 0 && debtFinancingRef) {
-        // Calculate interest payments using debt amount and rates from Debt Model
+      // Debt Expense (referenced directly from Debt Model)
+      fcfSheet.getRange(`A${currentRow}`).values = [['Debt Expense']];
+      if (modelData.dealLTV && parseFloat(modelData.dealLTV) > 0) {
+        // Reference debt expense directly from the Debt Model sheet row 6
         for (let i = 0; i <= periods; i++) {
           const colLetter = this.getColumnLetter(i + 1); // FCF column
           if (i === 0) {
-            fcfSheet.getRange(colLetter + currentRow).values = [[0]]; // Period 0 - no interest
+            fcfSheet.getRange(colLetter + currentRow).values = [[0]]; // Period 0 - no debt expense
           } else {
-            // For operating periods, debt model columns start at C for Period 1
-            const debtModelCol = this.getColumnLetter(i + 2); // Debt Model: Period 1 is column C
-            const periodAdjustment = this.getPeriodAdjustment(modelData.modelPeriods);
-            fcfSheet.getRange(colLetter + currentRow).formulas = [[`=-${debtFinancingRef}*'Debt Model'!${debtModelCol}4${periodAdjustment}`]];
+            // Reference debt expense from Debt Model: Period 1 is column C (i + 1)
+            const debtModelCol = this.getColumnLetter(i + 1); 
+            fcfSheet.getRange(colLetter + currentRow).formulas = [[`=-'Debt Model'!${debtModelCol}6`]];
           }
         }
       } else {
@@ -3793,12 +3788,8 @@ You MUST create a P&L Statement with this EXACT structure:
       }
       currentRow++;
       
-      // Debt repaid (final period only)
-      fcfSheet.getRange(`A${currentRow}`).values = [['Debt repaid (Interest-only-loan)']];
-      if (debtFinancingRef) {
-        fcfSheet.getRange(finalPeriodCol + currentRow).formulas = [[`=-${debtFinancingRef}`]];
-      }
-      currentRow++;
+      // Note: Debt repaid is now included in the debt expense calculation above
+      // No separate debt repaid line needed
       
       // Levered Cashflows
       fcfSheet.getRange(`A${currentRow}`).values = [['Levered Cashflows']];
@@ -3916,36 +3907,79 @@ You MUST create a P&L Statement with this EXACT structure:
       debtSheet.getRange('B3').values = [['Period 0']];
       
       for (let i = 1; i <= periods; i++) {
-        const colLetter = this.getColumnLetter(i + 2); // Start from column C
+        const colLetter = this.getColumnLetter(i + 1); // Start from column C (i+1)
         const periodHeader = this.formatPeriodHeader(new Date(modelData.projectStartDate), i - 1, modelData.modelPeriods);
         debtSheet.getRange(colLetter + '3').values = [[periodHeader]];
       }
       
-      // Set up interest rate row (row 4) - Fixed rate only
-      debtSheet.getRange('A4').values = [['Interest Rate (%)']];
+      // Calculate debt amount
+      const dealValue = parseFloat(modelData.dealValue) || 0;
+      const ltvRatio = parseFloat(modelData.dealLTV) / 100 || 0.7;
+      const debtAmount = dealValue * ltvRatio;
+      
+      console.log('📊 Debt calculations:', { dealValue, ltvRatio, debtAmount });
+      
+      // Set up debt balance row (row 4)
+      debtSheet.getRange('A4').values = [['Outstanding Debt Balance']];
       debtSheet.getRange('A4').format.font.bold = true;
-      debtSheet.getRange('B4').values = [[0]]; // Period 0 has no interest
+      debtSheet.getRange('B4').values = [[debtAmount]]; // Initial debt in Period 0
+      
+      // Debt balance for all periods (constant for interest-only loan)
+      for (let i = 1; i <= periods; i++) {
+        const colLetter = this.getColumnLetter(i + 1);
+        if (i === periods) {
+          // Final period: debt is repaid
+          debtSheet.getRange(colLetter + '4').values = [[0]];
+        } else {
+          // Interest-only periods: debt balance remains the same
+          debtSheet.getRange(colLetter + '4').values = [[debtAmount]];
+        }
+      }
+      
+      // Set up interest rate row (row 5) - Fixed rate only
+      debtSheet.getRange('A5').values = [['Interest Rate (%)']];
+      debtSheet.getRange('A5').format.font.bold = true;
+      debtSheet.getRange('B5').values = [[0]]; // Period 0 has no interest
       
       console.log('📊 Using fixed rate:', modelData.debtSettings?.fixedRate || 5.5);
       
       const fixedRate = (modelData.debtSettings?.fixedRate || 5.5) / 100;
       
       for (let i = 1; i <= periods; i++) {
-        const colLetter = this.getColumnLetter(i + 2); // Start from column C
-        debtSheet.getRange(colLetter + '4').values = [[fixedRate]];
-        debtSheet.getRange(colLetter + '4').numberFormat = [['0.0%']];
+        const colLetter = this.getColumnLetter(i + 1);
+        debtSheet.getRange(colLetter + '5').values = [[fixedRate]];
+        debtSheet.getRange(colLetter + '5').numberFormat = [['0.0%']];
+      }
+      
+      // Set up debt expense row (row 6) - This is what goes to FCF
+      debtSheet.getRange('A6').values = [['Debt Expense per Period']];
+      debtSheet.getRange('A6').format.font.bold = true;
+      debtSheet.getRange('B6').values = [[0]]; // Period 0 has no expense
+      
+      // Calculate debt expense for each period
+      for (let i = 1; i <= periods; i++) {
+        const colLetter = this.getColumnLetter(i + 1);
+        const balanceCol = this.getColumnLetter(i); // Previous period's balance for interest calculation
+        
+        if (i === periods) {
+          // Final period: interest + principal repayment
+          debtSheet.getRange(colLetter + '6').formulas = [[`=${balanceCol}4*${colLetter}5+${balanceCol}4`]];
+        } else {
+          // Interest-only periods: just interest
+          debtSheet.getRange(colLetter + '6').formulas = [[`=${balanceCol}4*${colLetter}5`]];
+        }
       }
       
       await context.sync();
       
       // Format the data range with comma formatting
-      const debtDataRange = debtSheet.getRange(`B3:${this.getColumnLetter(periods + 2)}4`);
+      const debtDataRange = debtSheet.getRange(`B4:${this.getColumnLetter(periods + 1)}6`);
       debtDataRange.numberFormat = [['#,##0;[Red]-#,##0;"-"']];
       
       // Re-apply percentage formatting to interest rate row
       for (let i = 1; i <= periods; i++) {
-        const colLetter = this.getColumnLetter(i + 2);
-        debtSheet.getRange(colLetter + '4').numberFormat = [['0.0%']];
+        const colLetter = this.getColumnLetter(i + 1);
+        debtSheet.getRange(colLetter + '5').numberFormat = [['0.0%']];
       }
       
       // Auto-resize columns
@@ -3954,7 +3988,7 @@ You MUST create a P&L Statement with this EXACT structure:
       await context.sync();
       
       // Store for FCF reference
-      this.debtModelInterestRow = 4;
+      this.debtModelInterestRow = 6; // Updated to point to debt expense row
       
       console.log('✅ Fixed rate debt model sheet created successfully!');
       return { success: true, message: 'Fixed rate debt model sheet created successfully' };
