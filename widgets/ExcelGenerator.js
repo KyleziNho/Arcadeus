@@ -177,6 +177,7 @@ class ExcelGenerator {
     // Deal Value
     sheet.getRange(`A${currentRow}`).values = [['Deal Value']];
     sheet.getRange(`B${currentRow}`).values = [[data.dealValue || 0]];
+    sheet.getRange(`B${currentRow}`).numberFormat = '#,##0';
     this.cellTracker.recordCell('dealValue', 'Assumptions', `B${currentRow}`);
     currentRow++;
     
@@ -197,14 +198,14 @@ class ExcelGenerator {
     const dealValueCell = this.cellTracker.getCellReference('dealValue').split('!')[1];
     const ltvCell = this.cellTracker.getCellReference('dealLTV').split('!')[1];
     sheet.getRange(`B${currentRow}`).formulas = [[`=${dealValueCell}*(1-${ltvCell}/100)`]];
-    sheet.getRange(`B${currentRow}`).format.font.italic = true;
+    sheet.getRange(`B${currentRow}`).numberFormat = '#,##0';
     this.cellTracker.recordCell('equityContribution', 'Assumptions', `B${currentRow}`);
     currentRow++;
     
     // Debt Financing (Calculated)
     sheet.getRange(`A${currentRow}`).values = [['Debt Financing (Calculated)']];
     sheet.getRange(`B${currentRow}`).formulas = [[`=${dealValueCell}*${ltvCell}/100`]];
-    sheet.getRange(`B${currentRow}`).format.font.italic = true;
+    sheet.getRange(`B${currentRow}`).numberFormat = '#,##0';
     this.cellTracker.recordCell('debtFinancing', 'Assumptions', `B${currentRow}`);
     currentRow++;
     
@@ -243,6 +244,7 @@ class ExcelGenerator {
         const growthRate = item.growthRate || 0;
         sheet.getRange(`A${currentRow}`).values = [[itemName]];
         sheet.getRange(`B${currentRow}`).values = [[item.value || 0]];
+        sheet.getRange(`B${currentRow}`).numberFormat = '#,##0';
         sheet.getRange(`C${currentRow}`).values = [[`${growthRate}%`]];
         this.cellTracker.recordCell(`revenue_${index}`, 'Assumptions', `B${currentRow}`);
         this.cellTracker.recordCell(`revenue_${index}_name`, 'Assumptions', `A${currentRow}`);
@@ -277,6 +279,7 @@ class ExcelGenerator {
         const growthRate = item.growthRate || 0;
         sheet.getRange(`A${currentRow}`).values = [[itemName]];
         sheet.getRange(`B${currentRow}`).values = [[item.value || 0]];
+        sheet.getRange(`B${currentRow}`).numberFormat = '#,##0';
         sheet.getRange(`C${currentRow}`).values = [[`${growthRate}%`]];
         this.cellTracker.recordCell(`opex_${index}`, 'Assumptions', `B${currentRow}`);
         this.cellTracker.recordCell(`opex_${index}_name`, 'Assumptions', `A${currentRow}`);
@@ -311,6 +314,7 @@ class ExcelGenerator {
         const growthRate = item.growthRate || 0;
         sheet.getRange(`A${currentRow}`).values = [[itemName]];
         sheet.getRange(`B${currentRow}`).values = [[item.value || 0]];
+        sheet.getRange(`B${currentRow}`).numberFormat = '#,##0';
         sheet.getRange(`C${currentRow}`).values = [[`${growthRate}%`]];
         this.cellTracker.recordCell(`capex_${index}`, 'Assumptions', `B${currentRow}`);
         this.cellTracker.recordCell(`capex_${index}_name`, 'Assumptions', `A${currentRow}`);
@@ -3931,6 +3935,21 @@ You MUST create a P&L Statement with this EXACT structure:
         debtSheet.getRange(colLetter + '4').values = [[fixedRate]];
         debtSheet.getRange(colLetter + '4').numberFormat = [['0.0%']];
       }
+      
+      await context.sync();
+      
+      // Format the data range with comma formatting
+      const debtDataRange = debtSheet.getRange(`B3:${this.getColumnLetter(periods + 2)}4`);
+      debtDataRange.numberFormat = [['#,##0;[Red]-#,##0;"-"']];
+      
+      // Re-apply percentage formatting to interest rate row
+      for (let i = 1; i <= periods; i++) {
+        const colLetter = this.getColumnLetter(i + 2);
+        debtSheet.getRange(colLetter + '4').numberFormat = [['0.0%']];
+      }
+      
+      // Auto-resize columns
+      debtSheet.getUsedRange().format.autofitColumns();
       
       await context.sync();
       

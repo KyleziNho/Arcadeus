@@ -12,6 +12,7 @@ class FormHandler {
     this.initializeCostItems();
     this.initializeExitAssumptions();
     this.initializeDebtModel();
+    this.initializeNumberFormatting();
     
     // Clear any existing items with old growth rate structure
     this.clearAndResetAllItems();
@@ -102,7 +103,7 @@ class FormHandler {
       
       // Deal Assumptions
       dealName: document.getElementById('dealName')?.value || 'Sample Company Ltd.',
-      dealValue: parseFloat(document.getElementById('dealValue')?.value) || 0,
+      dealValue: parseFloat(this.removeCommas(document.getElementById('dealValue')?.value || '0')) || 0,
       transactionFee: parseFloat(document.getElementById('transactionFee')?.value) || 2.5,
       dealLTV: parseFloat(document.getElementById('dealLTV')?.value) || 70,
       equityContribution: document.getElementById('equityContribution')?.value || '',
@@ -166,7 +167,7 @@ class FormHandler {
         const growthRateInput = document.getElementById(`revenueGrowthRate_${itemNumber}`);
         const item = {
           name: nameInput.value || `Revenue Item ${itemNumber}`,
-          value: parseFloat(valueInput.value) || 0,
+          value: parseFloat(this.removeCommas(valueInput.value)) || 0,
           growthRate: growthRateInput ? (parseFloat(growthRateInput.value) || 0) : 0
         };
 
@@ -201,7 +202,7 @@ class FormHandler {
         const growthRateInput = document.getElementById(`opExGrowthRate_${itemNumber}`);
         const item = {
           name: nameInput.value || `Operating Expense ${itemNumber}`,
-          value: parseFloat(valueInput.value) || 0,
+          value: parseFloat(this.removeCommas(valueInput.value)) || 0,
           growthRate: growthRateInput ? (parseFloat(growthRateInput.value) || 0) : 0
         };
 
@@ -235,7 +236,7 @@ class FormHandler {
       if (nameInput && valueInput && nameInput.value && valueInput.value) {
         const item = {
           name: nameInput.value || `CapEx ${itemNumber}`,
-          value: parseFloat(valueInput.value) || 0,
+          value: parseFloat(this.removeCommas(valueInput.value)) || 0,
           growthRate: parseFloat(growthRateInput?.value) || 0,
           type: 'capex'
         };
@@ -252,16 +253,16 @@ class FormHandler {
     const loanIssuanceFees = document.getElementById('loanIssuanceFees')?.value || '1.5';
     
     const settings = {
-      loanIssuanceFees: parseFloat(loanIssuanceFees),
+      loanIssuanceFees: parseFloat(this.removeCommas(loanIssuanceFees)),
       rateType: 'fixed',
-      fixedRate: parseFloat(document.getElementById('fixedRate')?.value || '5.5')
+      fixedRate: parseFloat(this.removeCommas(document.getElementById('fixedRate')?.value || '5.5'))
     };
 
     return settings;
   }
 
   checkDebtEligibility() {
-    const dealLTV = parseFloat(document.getElementById('dealLTV')?.value) || 0;
+    const dealLTV = parseFloat(this.removeCommas(document.getElementById('dealLTV')?.value || '0')) || 0;
     return dealLTV > 0;
   }
 
@@ -349,8 +350,8 @@ class FormHandler {
 
     const updateCalculations = () => {
       if (dealValue && dealLTV && equityContribution && debtFinancing) {
-        const value = parseFloat(dealValue.value) || 0;
-        const ltv = parseFloat(dealLTV.value) || 0;
+        const value = parseFloat(this.removeCommas(dealValue.value)) || 0;
+        const ltv = parseFloat(this.removeCommas(dealLTV.value)) || 0;
         
         const debt = value * (ltv / 100);
         const equity = value - debt;
@@ -442,6 +443,12 @@ class FormHandler {
     `;
 
     container.insertAdjacentHTML('beforeend', itemHTML);
+    
+    // Set up number formatting for the newly added value input
+    const newValueInput = document.getElementById(`revenueValue_${itemCount}`);
+    if (newValueInput) {
+      this.setupNumberFormatting(newValueInput);
+    }
   }
 
   addOperatingExpense() {
@@ -477,6 +484,12 @@ class FormHandler {
     `;
 
     container.insertAdjacentHTML('beforeend', itemHTML);
+    
+    // Set up number formatting for the newly added value input
+    const newValueInput = document.getElementById(`opExValue_${itemCount}`);
+    if (newValueInput) {
+      this.setupNumberFormatting(newValueInput);
+    }
   }
 
   addCapEx() {
@@ -512,6 +525,12 @@ class FormHandler {
     `;
 
     container.insertAdjacentHTML('beforeend', itemHTML);
+    
+    // Set up number formatting for the newly added value input
+    const newValueInput = document.getElementById(`capExValue_${itemCount}`);
+    if (newValueInput) {
+      this.setupNumberFormatting(newValueInput);
+    }
   }
 
 
@@ -551,6 +570,74 @@ class FormHandler {
     if (dealLTV) {
       dealLTV.dispatchEvent(new Event('input', { bubbles: true }));
     }
+  }
+
+  // Number formatting methods
+  formatNumberWithCommas(num) {
+    if (num === null || num === undefined || num === '') return '';
+    return parseFloat(num).toLocaleString('en-US');
+  }
+
+  removeCommas(str) {
+    return str.replace(/,/g, '');
+  }
+
+  initializeNumberFormatting() {
+    // Fields that should have comma formatting for large numbers
+    const numberFields = [
+      'dealValue',
+      'equityContribution', 
+      'debtFinancing'
+    ];
+
+    numberFields.forEach(fieldId => {
+      const field = document.getElementById(fieldId);
+      if (field) {
+        this.setupNumberFormatting(field);
+      }
+    });
+
+    // Add formatting to dynamically created fields
+    document.addEventListener('DOMNodeInserted', (e) => {
+      if (e.target.nodeType === 1) { // Element node
+        const numberInputs = e.target.querySelectorAll ? e.target.querySelectorAll('input[type="number"]') : [];
+        numberInputs.forEach(input => {
+          if (input.id.includes('Value') || input.id.includes('value')) {
+            this.setupNumberFormatting(input);
+          }
+        });
+      }
+    });
+  }
+
+  setupNumberFormatting(field) {
+    if (field.hasAttribute('data-formatted')) return; // Already set up
+    field.setAttribute('data-formatted', 'true');
+
+    field.addEventListener('blur', (e) => {
+      const value = this.removeCommas(e.target.value);
+      if (value && !isNaN(value)) {
+        e.target.value = this.formatNumberWithCommas(value);
+      }
+    });
+
+    field.addEventListener('focus', (e) => {
+      const value = this.removeCommas(e.target.value);
+      if (value && !isNaN(value)) {
+        e.target.value = value;
+      }
+    });
+
+    field.addEventListener('input', (e) => {
+      // Remove any non-numeric characters except decimal point
+      let value = e.target.value.replace(/[^0-9.]/g, '');
+      // Ensure only one decimal point
+      const parts = value.split('.');
+      if (parts.length > 2) {
+        value = parts[0] + '.' + parts.slice(1).join('');
+      }
+      e.target.value = value;
+    });
   }
 
 }
