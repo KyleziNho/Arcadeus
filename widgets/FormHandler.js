@@ -570,6 +570,9 @@ class FormHandler {
     if (dealLTV) {
       dealLTV.dispatchEvent(new Event('input', { bubbles: true }));
     }
+
+    // Refresh number formatting for all value fields
+    this.refreshNumberFormatting();
   }
 
   // Number formatting methods
@@ -597,22 +600,54 @@ class FormHandler {
       }
     });
 
-    // Add formatting to dynamically created fields
-    document.addEventListener('DOMNodeInserted', (e) => {
-      if (e.target.nodeType === 1) { // Element node
-        const numberInputs = e.target.querySelectorAll ? e.target.querySelectorAll('input[type="number"]') : [];
-        numberInputs.forEach(input => {
-          if (input.id.includes('Value') || input.id.includes('value')) {
-            this.setupNumberFormatting(input);
+    // Also format any existing revenue/opex/capex value fields
+    this.formatAllExistingValueFields();
+
+    // Use MutationObserver for better performance (replaces deprecated DOMNodeInserted)
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        mutation.addedNodes.forEach((node) => {
+          if (node.nodeType === 1) { // Element node
+            // Check if the added node itself is a revenue/opex/capex item
+            if (node.classList && (node.classList.contains('revenue-item') || 
+                node.classList.contains('cost-item'))) {
+              const valueInputs = node.querySelectorAll('input[type="number"]');
+              valueInputs.forEach(input => {
+                if (input.id.includes('Value') || input.id.includes('value')) {
+                  this.setupNumberFormatting(input);
+                }
+              });
+            }
+            // Also check for any number inputs within the added node
+            const numberInputs = node.querySelectorAll ? node.querySelectorAll('input[type="number"]') : [];
+            numberInputs.forEach(input => {
+              if (input.id.includes('Value') || input.id.includes('value')) {
+                this.setupNumberFormatting(input);
+              }
+            });
           }
         });
-      }
+      });
+    });
+
+    // Start observing the document for added nodes
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
     });
   }
 
   setupNumberFormatting(field) {
     if (field.hasAttribute('data-formatted')) return; // Already set up
     field.setAttribute('data-formatted', 'true');
+
+    // Format existing value immediately if it exists
+    if (field.value && !isNaN(field.value) && field.value.trim() !== '') {
+      const existingValue = this.removeCommas(field.value);
+      if (existingValue && !isNaN(existingValue)) {
+        field.value = this.formatNumberWithCommas(existingValue);
+      }
+    }
 
     field.addEventListener('blur', (e) => {
       const value = this.removeCommas(e.target.value);
@@ -638,6 +673,21 @@ class FormHandler {
       }
       e.target.value = value;
     });
+  }
+
+  formatAllExistingValueFields() {
+    // Find all revenue, opex, and capex value fields
+    const valueFields = document.querySelectorAll('input[type="number"]');
+    valueFields.forEach(field => {
+      if (field.id.includes('Value') || field.id.includes('value')) {
+        this.setupNumberFormatting(field);
+      }
+    });
+  }
+
+  // Public method to refresh number formatting (can be called from outside)
+  refreshNumberFormatting() {
+    this.formatAllExistingValueFields();
   }
 
 }

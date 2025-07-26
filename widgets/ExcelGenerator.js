@@ -1501,7 +1501,7 @@ Provide the COMPLETE Free Cash Flow model with exact Excel formulas for every ce
               debtExpenseFormula = '0';
             } else {
               // Reference debt expense from Debt Model: Period 1 is in column C
-              const debtModelCol = this.getColumnLetter(col);
+              const debtModelCol = this.getColumnLetter(col + 1); // FCF col 1 -> Debt Model col C (col+1)
               debtExpenseFormula = `=-'Debt Model'!${debtModelCol}6`;
             }
             
@@ -1509,6 +1509,34 @@ Provide the COMPLETE Free Cash Flow model with exact Excel formulas for every ce
           }
         } else {
           // No debt expense
+          for (let col = 1; col <= totalColumns; col++) {
+            const colLetter = this.getColumnLetter(col);
+            fcfSheet.getRange(`${colLetter}${currentRow}`).values = [[0]];
+          }
+        }
+        currentRow++;
+        
+        // Loan proceeds (positive cash inflow in first period)
+        fcfSheet.getRange(`A${currentRow}`).values = [['Loan proceeds']];
+        fcfStructure.loanProceeds = currentRow;
+        if (hasDebt) {
+          const debtRef = this.cellTracker.getCellReference('debtFinancing');
+          for (let col = 1; col <= totalColumns; col++) {
+            const colLetter = this.getColumnLetter(col);
+            if (col === 2) { // First operating period (Period 1)
+              // Loan proceeds come in during first operating period
+              if (debtRef) {
+                fcfSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${debtRef}`]];
+              } else {
+                fcfSheet.getRange(`${colLetter}${currentRow}`).values = [[0]];
+              }
+            } else {
+              // All other periods - no loan proceeds
+              fcfSheet.getRange(`${colLetter}${currentRow}`).values = [[0]];
+            }
+          }
+        } else {
+          // No debt - all zeros
           for (let col = 1; col <= totalColumns; col++) {
             const colLetter = this.getColumnLetter(col);
             fcfSheet.getRange(`${colLetter}${currentRow}`).values = [[0]];
@@ -1556,7 +1584,8 @@ Provide the COMPLETE Free Cash Flow model with exact Excel formulas for every ce
         fcfStructure.leveredFCF = currentRow;
         for (let col = 1; col <= periodColumns; col++) {
           const colLetter = this.getColumnLetter(col);
-          fcfSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${colLetter}${fcfStructure.unleveredFCF}+${colLetter}${fcfStructure.interestPayments}+${colLetter}${fcfStructure.assetDisposal}`]];
+          // Include loan proceeds in levered cash flow calculation
+          fcfSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${colLetter}${fcfStructure.unleveredFCF}+${colLetter}${fcfStructure.interestPayments}+${colLetter}${fcfStructure.loanProceeds}+${colLetter}${fcfStructure.assetDisposal}`]];
           fcfSheet.getRange(`${colLetter}${currentRow}`).format.borders.getItem('EdgeTop').style = 'Double';
           fcfSheet.getRange(`${colLetter}${currentRow}`).format.borders.getItem('EdgeTop').weight = 'Thick';
         }
@@ -3523,23 +3552,23 @@ You MUST create a P&L Statement with this EXACT structure:
             for (let col = 0; col <= periods; col++) {
               const colLetter = this.getColumnLetter(col + 1); // Changed from col + 2 to col + 1 to start at column B (Period 0)
               if (col === 0) {
-                // Period 0: No CapEx
-                capExSheet.getRange(`${colLetter}${currentRow}`).values = [[0]];
+                // Period 0: Base CapEx value (negative cash flow)
+                capExSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=-${valueRef}`]];
               } else {
-                // Operating periods: Apply growth with proper period adjustment
-                const baseValue = `-${valueRef}`;
+                // Operating periods: Apply growth with period-over-period calculation (like revenue)
+                const prevColLetter = this.getColumnLetter(col); // Previous period column
                 if (modelData.modelPeriods === 'monthly') {
                   // For monthly periods, divide annual growth rate by 12
-                  capExSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${baseValue}*(1+${growthRateRef})^((${col}-1)/12)`]];
+                  capExSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${prevColLetter}${currentRow}*(1+${growthRateRef}/12)`]];
                 } else if (modelData.modelPeriods === 'quarterly') {
                   // For quarterly periods, divide annual growth rate by 4
-                  capExSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${baseValue}*(1+${growthRateRef})^((${col}-1)/4)`]];
+                  capExSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${prevColLetter}${currentRow}*(1+${growthRateRef}/4)`]];
                 } else if (modelData.modelPeriods === 'daily') {
                   // For daily periods, divide annual growth rate by 365
-                  capExSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${baseValue}*(1+${growthRateRef})^((${col}-1)/365)`]];
+                  capExSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${prevColLetter}${currentRow}*(1+${growthRateRef}/365)`]];
                 } else {
                   // For yearly periods, use full annual growth rate
-                  capExSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${baseValue}*(1+${growthRateRef})^(${col}-1)`]];
+                  capExSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${prevColLetter}${currentRow}*(1+${growthRateRef})`]];
                 }
               }
             }
@@ -3693,6 +3722,20 @@ You MUST create a P&L Statement with this EXACT structure:
           const plCol = this.getColumnLetter(i); // P&L column (Period i is in column i)
           fcfSheet.getRange(colLetter + currentRow).formulas = [[`='P&L Statement'!${plCol}${plStructure.lineItems.noi.row}`]];
         }
+      } else if (plStructure.lineItems.netIncome) {
+        // Fallback: Use Net Income if NOI not found
+        for (let i = 1; i <= periods; i++) {
+          const colLetter = this.getColumnLetter(i + 1);
+          const plCol = this.getColumnLetter(i);
+          fcfSheet.getRange(colLetter + currentRow).formulas = [[`='P&L Statement'!${plCol}${plStructure.lineItems.netIncome.row}`]];
+        }
+      } else {
+        // Last fallback: Use zeros and log warning
+        for (let i = 1; i <= periods; i++) {
+          const colLetter = this.getColumnLetter(i + 1);
+          fcfSheet.getRange(colLetter + currentRow).values = [[0]];
+        }
+        console.warn('⚠️ NOI not found in P&L structure for operating cash flows');
       }
       currentRow++;
       
@@ -3700,15 +3743,9 @@ You MUST create a P&L Statement with this EXACT structure:
       fcfSheet.getRange(`A${currentRow}`).values = [['CapEx']];
       if (capExStructure && capExStructure.totalRow) {
         for (let i = 0; i <= periods; i++) {
-          const colLetter = this.getColumnLetter(i + 1); // FCF column
-          if (i === 0) {
-            // Period 0 - Initial CapEx investment
-            fcfSheet.getRange(colLetter + currentRow).formulas = [[`='CapEx'!B${capExStructure?.totalRow}`]];
-          } else {
-            // Operating periods - CapEx column in CapEx sheet matches period number
-            const capExCol = this.getColumnLetter(i);
-            fcfSheet.getRange(colLetter + currentRow).formulas = [[`='CapEx'!${capExCol}${capExStructure?.totalRow}`]];
-          }
+          const colLetter = this.getColumnLetter(i + 1); // FCF column (B, C, D, E...)
+          const capExCol = this.getColumnLetter(i + 1); // CapEx column (B, C, D, E...) - same mapping now
+          fcfSheet.getRange(colLetter + currentRow).formulas = [[`='CapEx'!${capExCol}${capExStructure?.totalRow}`]];
         }
       }
       currentRow++;
@@ -3722,6 +3759,16 @@ You MUST create a P&L Statement with this EXACT structure:
         if (terminalCapRateRef) {
           fcfSheet.getRange(finalPeriodCol + currentRow).formulas = [[`='P&L Statement'!${this.getColumnLetter(periods)}${plStructure.lineItems.noi.row}/${terminalCapRateRef}`]];
         }
+      } else if (plStructure.lineItems.netIncome) {
+        // Fallback: Use Net Income if NOI not found
+        const terminalCapRateRef = this.cellTracker.getCellReference('terminalCapRate');
+        if (terminalCapRateRef) {
+          fcfSheet.getRange(finalPeriodCol + currentRow).formulas = [[`='P&L Statement'!${this.getColumnLetter(periods)}${plStructure.lineItems.netIncome.row}/${terminalCapRateRef}`]];
+        }
+      } else {
+        // Last fallback: If no NOI or Net Income found, use a placeholder note
+        fcfSheet.getRange(finalPeriodCol + currentRow).values = [['Check P&L for NOI']];
+        console.warn('⚠️ NOI not found in P&L structure for terminal value calculation');
       }
       currentRow++;
       
@@ -3774,8 +3821,8 @@ You MUST create a P&L Statement with this EXACT structure:
           if (i === 0) {
             fcfSheet.getRange(colLetter + currentRow).values = [[0]]; // Period 0 - no debt expense
           } else {
-            // Reference debt expense from Debt Model: Period 1 is column C (i + 1)
-            const debtModelCol = this.getColumnLetter(i + 1); 
+            // Reference debt expense from Debt Model: Period 1 is column C, Period 2 is column D, etc.
+            const debtModelCol = this.getColumnLetter(i + 1); // FCF Period i maps to Debt Model column (i+1)
             fcfSheet.getRange(colLetter + currentRow).formulas = [[`=-'Debt Model'!${debtModelCol}6`]];
           }
         }
@@ -3788,8 +3835,36 @@ You MUST create a P&L Statement with this EXACT structure:
       }
       currentRow++;
       
-      // Note: Debt repaid is now included in the debt expense calculation above
-      // No separate debt repaid line needed
+      // Loan proceeds (positive cash inflow in first period)
+      fcfSheet.getRange(`A${currentRow}`).values = [['Loan proceeds']];
+      if (modelData.dealLTV && parseFloat(modelData.dealLTV) > 0) {
+        const debtFinancingRef = this.cellTracker.getCellReference('debtFinancing');
+        for (let i = 0; i <= periods; i++) {
+          const colLetter = this.getColumnLetter(i + 1); // FCF column
+          if (i === 1) {
+            // First operating period - loan proceeds come in
+            if (debtFinancingRef) {
+              fcfSheet.getRange(colLetter + currentRow).formulas = [[`=${debtFinancingRef}`]];
+            } else {
+              // Fallback calculation
+              const dealValue = parseFloat(modelData.dealValue) || 0;
+              const ltvRatio = parseFloat(modelData.dealLTV) / 100 || 0;
+              const loanAmount = dealValue * ltvRatio;
+              fcfSheet.getRange(colLetter + currentRow).values = [[loanAmount]];
+            }
+          } else {
+            // All other periods - no loan proceeds
+            fcfSheet.getRange(colLetter + currentRow).values = [[0]];
+          }
+        }
+      } else {
+        // No debt - all zeros
+        for (let i = 0; i <= periods; i++) {
+          const colLetter = this.getColumnLetter(i + 1);
+          fcfSheet.getRange(colLetter + currentRow).values = [[0]];
+        }
+      }
+      currentRow++;
       
       // Levered Cashflows
       fcfSheet.getRange(`A${currentRow}`).values = [['Levered Cashflows']];
@@ -3798,7 +3873,8 @@ You MUST create a P&L Statement with this EXACT structure:
       const leveredCashflowsRow = currentRow;
       for (let i = 0; i <= periods; i++) {
         const colLetter = this.getColumnLetter(i + 1);
-        fcfSheet.getRange(colLetter + currentRow).formulas = [[`=${colLetter}${unlevereCashflowsRow}+SUM(${colLetter}${currentRow - 4}:${colLetter}${currentRow - 1})`]];
+        // Levered CF = Unlevered CF + Debt upfront costs + Debt Expense + Loan proceeds
+        fcfSheet.getRange(colLetter + currentRow).formulas = [[`=${colLetter}${unlevereCashflowsRow}+${colLetter}${currentRow - 3}+${colLetter}${currentRow - 2}+${colLetter}${currentRow - 1}`]];
       }
       currentRow += 2;
       
@@ -3907,7 +3983,7 @@ You MUST create a P&L Statement with this EXACT structure:
       debtSheet.getRange('B3').values = [['Period 0']];
       
       for (let i = 1; i <= periods; i++) {
-        const colLetter = this.getColumnLetter(i + 1); // Start from column C (i+1)
+        const colLetter = this.getColumnLetter(i + 1); // C, D, E, etc. for Periods 1, 2, 3...
         const periodHeader = this.formatPeriodHeader(new Date(modelData.projectStartDate), i - 1, modelData.modelPeriods);
         debtSheet.getRange(colLetter + '3').values = [[periodHeader]];
       }
@@ -3926,7 +4002,7 @@ You MUST create a P&L Statement with this EXACT structure:
       
       // Debt balance for all periods (constant for interest-only loan)
       for (let i = 1; i <= periods; i++) {
-        const colLetter = this.getColumnLetter(i + 1);
+        const colLetter = this.getColumnLetter(i + 1); // C, D, E, etc.
         if (i === periods) {
           // Final period: debt is repaid
           debtSheet.getRange(colLetter + '4').values = [[0]];
@@ -3946,7 +4022,7 @@ You MUST create a P&L Statement with this EXACT structure:
       const fixedRate = (modelData.debtSettings?.fixedRate || 5.5) / 100;
       
       for (let i = 1; i <= periods; i++) {
-        const colLetter = this.getColumnLetter(i + 1);
+        const colLetter = this.getColumnLetter(i + 1); // C, D, E, etc.
         debtSheet.getRange(colLetter + '5').values = [[fixedRate]];
         debtSheet.getRange(colLetter + '5').numberFormat = [['0.0%']];
       }
@@ -3958,15 +4034,18 @@ You MUST create a P&L Statement with this EXACT structure:
       
       // Calculate debt expense for each period
       for (let i = 1; i <= periods; i++) {
-        const colLetter = this.getColumnLetter(i + 1);
-        const balanceCol = this.getColumnLetter(i); // Previous period's balance for interest calculation
+        const colLetter = this.getColumnLetter(i + 1); // Current period column (C, D, E...)
+        const currentBalanceCol = colLetter; // Use current period's balance for calculation
         
         if (i === periods) {
           // Final period: interest + principal repayment
-          debtSheet.getRange(colLetter + '6').formulas = [[`=${balanceCol}4*${colLetter}5+${balanceCol}4`]];
+          // Use previous period's balance (Period N-1) for both interest and principal
+          const prevBalanceCol = this.getColumnLetter(i); // Previous period's balance (B for Period 0, C for Period 1, etc.)
+          debtSheet.getRange(colLetter + '6').formulas = [[`=${prevBalanceCol}4*${colLetter}5+${prevBalanceCol}4`]];
         } else {
           // Interest-only periods: just interest
-          debtSheet.getRange(colLetter + '6').formulas = [[`=${balanceCol}4*${colLetter}5`]];
+          // Interest = Current Balance * Rate
+          debtSheet.getRange(colLetter + '6').formulas = [[`=${currentBalanceCol}4*${currentBalanceCol}5`]];
         }
       }
       
@@ -3978,7 +4057,7 @@ You MUST create a P&L Statement with this EXACT structure:
       
       // Re-apply percentage formatting to interest rate row
       for (let i = 1; i <= periods; i++) {
-        const colLetter = this.getColumnLetter(i + 1);
+        const colLetter = this.getColumnLetter(i + 1); // C, D, E, etc.
         debtSheet.getRange(colLetter + '5').numberFormat = [['0.0%']];
       }
       
