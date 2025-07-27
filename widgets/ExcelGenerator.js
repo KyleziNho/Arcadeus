@@ -183,7 +183,8 @@ class ExcelGenerator {
     
     // Transaction Fee
     sheet.getRange(`A${currentRow}`).values = [['Transaction Fee (%)']];
-    sheet.getRange(`B${currentRow}`).values = [[data.transactionFee || 2.5]];
+    sheet.getRange(`B${currentRow}`).values = [[(data.transactionFee || 2.5) / 100]];
+    sheet.getRange(`B${currentRow}`).numberFormat = '0.00%';
     this.cellTracker.recordCell('transactionFee', 'Assumptions', `B${currentRow}`);
     currentRow++;
     
@@ -3708,7 +3709,7 @@ You MUST create a P&L Statement with this EXACT structure:
       const dealValueRef = this.cellTracker.getCellReference('dealValue');
       const transactionFeeRef = this.cellTracker.getCellReference('transactionFee');
       if (dealValueRef && transactionFeeRef) {
-        fcfSheet.getRange('B' + currentRow).formulas = [[`=-${dealValueRef}*${transactionFeeRef}/100`]];
+        fcfSheet.getRange('B' + currentRow).formulas = [[`=-${dealValueRef}*${transactionFeeRef}`]];
       }
       for (let i = 1; i <= periods; i++) {
         const colLetter = this.getColumnLetter(i + 1);
