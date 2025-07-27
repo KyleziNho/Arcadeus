@@ -3550,9 +3550,12 @@ You MUST create a P&L Statement with this EXACT structure:
           
           if (valueRef && growthRateRef) {
             for (let col = 0; col <= periods; col++) {
-              const colLetter = this.getColumnLetter(col + 1); // Changed from col + 2 to col + 1 to start at column B (Period 0)
+              const colLetter = this.getColumnLetter(col + 1); // Maps to columns B, C, D, E...
               if (col === 0) {
-                // Period 0: Base CapEx value (negative cash flow)
+                // Period 0: No CapEx - set to 0
+                capExSheet.getRange(`${colLetter}${currentRow}`).values = [[0]];
+              } else if (col === 1) {
+                // Period 1: Base CapEx value (negative cash flow)
                 capExSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=-${valueRef}`]];
               } else {
                 // Operating periods: Apply growth with period-over-period calculation (like revenue)
