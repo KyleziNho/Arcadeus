@@ -3719,11 +3719,10 @@ You MUST create a P&L Statement with this EXACT structure:
       
       // NOI from P&L
       fcfSheet.getRange(`A${currentRow}`).values = [['NOI']];
-      fcfSheet.getRange('B' + currentRow).values = [[0]]; // Period 0
       if (plStructure.lineItems.noi) {
-        for (let i = 1; i <= periods; i++) {
+        for (let i = 0; i <= periods; i++) {
           const colLetter = this.getColumnLetter(i + 1); // FCF column (Period i is in column i+1)
-          const plCol = this.getColumnLetter(i); // P&L column (Period i is in column i)
+          const plCol = this.getColumnLetter(i + 1); // P&L column mapping: Period 0 FCF = Period 1 P&L
           fcfSheet.getRange(colLetter + currentRow).formulas = [[`='P&L Statement'!${plCol}${plStructure.lineItems.noi.row}`]];
         }
       } else if (plStructure.lineItems.netIncome) {
@@ -3761,13 +3760,13 @@ You MUST create a P&L Statement with this EXACT structure:
         // Terminal value = Final NOI / Terminal Cap Rate
         const terminalCapRateRef = this.cellTracker.getCellReference('terminalCapRate');
         if (terminalCapRateRef) {
-          fcfSheet.getRange(finalPeriodCol + currentRow).formulas = [[`='P&L Statement'!${this.getColumnLetter(periods)}${plStructure.lineItems.noi.row}/${terminalCapRateRef}`]];
+          fcfSheet.getRange(finalPeriodCol + currentRow).formulas = [[`='P&L Statement'!${this.getColumnLetter(periods + 1)}${plStructure.lineItems.noi.row}/${terminalCapRateRef}`]];
         }
       } else if (plStructure.lineItems.netIncome) {
         // Fallback: Use Net Income if NOI not found
         const terminalCapRateRef = this.cellTracker.getCellReference('terminalCapRate');
         if (terminalCapRateRef) {
-          fcfSheet.getRange(finalPeriodCol + currentRow).formulas = [[`='P&L Statement'!${this.getColumnLetter(periods)}${plStructure.lineItems.netIncome.row}/${terminalCapRateRef}`]];
+          fcfSheet.getRange(finalPeriodCol + currentRow).formulas = [[`='P&L Statement'!${this.getColumnLetter(periods + 1)}${plStructure.lineItems.netIncome.row}/${terminalCapRateRef}`]];
         }
       } else {
         // Last fallback: If no NOI or Net Income found, use a placeholder note
@@ -3845,8 +3844,8 @@ You MUST create a P&L Statement with this EXACT structure:
         const debtFinancingRef = this.cellTracker.getCellReference('debtFinancing');
         for (let i = 0; i <= periods; i++) {
           const colLetter = this.getColumnLetter(i + 1); // FCF column
-          if (i === 1) {
-            // First operating period - loan proceeds come in
+          if (i === 0) {
+            // Initial period - loan proceeds come in
             if (debtFinancingRef) {
               fcfSheet.getRange(colLetter + currentRow).formulas = [[`=${debtFinancingRef}`]];
             } else {
