@@ -1,5 +1,20 @@
 /* global Office, Excel */
 
+// Excel Formatter class for consistent formatting across sheets
+class ExcelFormatter {
+  static colors = {
+    darkBlue: '#002060',
+    lightGrey: '#D3D3D3',
+    black: '#000000',
+    white: '#FFFFFF',
+    backgroundDarker5: '#F2F2F2'
+  };
+  
+  static applyNumberFormat(range) {
+    range.numberFormat = [['#,##0;(#,##0);"-"']];
+  }
+}
+
 // Simple Cell Reference Tracker - keeps track of where data is stored
 // Updated: Removed all fallback calculations - API required for IRR/MOIC accuracy - v2.1
 class CellTracker {
@@ -3233,20 +3248,19 @@ Generate working Excel formulas using the provided data and structure.`;
 
     // Real estate model: No depreciation calculations required
 
-    prompt += `\n\n**REQUIRED P&L STRUCTURE WITH PERIOD 0:**
+    prompt += `\n\n**REQUIRED P&L STRUCTURE:**
 You MUST create a P&L Statement with this EXACT structure:
 
-**CRITICAL: Include Period 0 (Initial Investment) before operating periods**
-- Period 0: "${this.getPreviousPeriodLabel(modelData.projectStartDate, modelData.modelPeriods)}" 
+**PERIODS:**
 - Period 1: First operating period (${modelData.projectStartDate})
 - Period 2+: Subsequent operating periods
 
 **P&L STRUCTURE:**
-1. REVENUE section (Period 0 = 0, then operating periods with growth)
+1. REVENUE section (with growth formulas)
 2. Total Revenue  
-3. OPERATING EXPENSES section (Period 0 = 0, then operating periods with growth)
+3. OPERATING EXPENSES section (with growth formulas)
 4. Total Operating Expenses  
-5. NOI (Total Revenue - Total Operating Expenses)
+5. NOI (Total Revenue + Total Operating Expenses) - Note: Operating Expenses are negative
 
 **FORMATTING REQUIREMENTS (CRITICAL):**
 - Font: Times New Roman, Size 12 for ALL cells
