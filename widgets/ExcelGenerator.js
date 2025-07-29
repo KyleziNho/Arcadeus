@@ -771,9 +771,14 @@ Required format:
       let currentRow = 1;
       
       // TITLE
-      plSheet.getRange('A1').values = [[`P&L Statement (${modelData.currency})`]];
-      plSheet.getRange('A1').format.font.bold = true;
-      plSheet.getRange('A1').format.font.size = 16;
+      plSheet.getRange('A1').values = [[`Profit & Loss Statement`]];
+      const titleRange = plSheet.getRange(`A1:${this.getColumnLetter(periodColumns)}1`);
+      titleRange.merge();
+      titleRange.format.font.name = 'Times New Roman';
+      titleRange.format.font.size = 12;
+      titleRange.format.font.bold = true;
+      titleRange.format.fill.color = ExcelFormatter.colors.backgroundDarker5;
+      titleRange.format.horizontalAlignment = 'Center';
       currentRow = 3;
       
       // TIME PERIOD HEADERS
@@ -785,21 +790,35 @@ Required format:
       
       const headerRange = plSheet.getRange(`A${currentRow}:${this.getColumnLetter(periodColumns)}${currentRow}`);
       headerRange.values = [headers];
+      headerRange.format.font.name = 'Times New Roman';
+      headerRange.format.font.size = 12;
       headerRange.format.font.bold = true;
-      headerRange.format.fill.color = '#e0e0e0';
+      headerRange.format.fill.color = ExcelFormatter.colors.darkBlue;
+      headerRange.format.font.color = ExcelFormatter.colors.white;
       currentRow += 2;
       
       // REVENUE SECTION
       const revenueStartRow = currentRow;
       plSheet.getRange(`A${currentRow}`).values = [['REVENUE']];
-      plSheet.getRange(`A${currentRow}`).format.font.bold = true;
-      plSheet.getRange(`A${currentRow}`).format.fill.color = '#87CEEB';
+      const revenueSectionRange = plSheet.getRange(`A${currentRow}:${this.getColumnLetter(periodColumns)}${currentRow}`);
+      revenueSectionRange.format.font.name = 'Times New Roman';
+      revenueSectionRange.format.font.size = 12;
+      revenueSectionRange.format.font.bold = true;
+      revenueSectionRange.format.fill.color = ExcelFormatter.colors.darkBlue;
+      revenueSectionRange.format.font.color = ExcelFormatter.colors.white;
+      
+      // Add thin grey underline after section header
+      revenueSectionRange.format.borders.getItem('EdgeBottom').style = 'Continuous';
+      revenueSectionRange.format.borders.getItem('EdgeBottom').weight = 'Thin';
+      revenueSectionRange.format.borders.getItem('EdgeBottom').color = ExcelFormatter.colors.lightGrey;
       currentRow++;
       
       // Add each revenue item
       if (modelData.revenueItems && modelData.revenueItems.length > 0) {
         modelData.revenueItems.forEach((item, index) => {
           plSheet.getRange(`A${currentRow}`).values = [[item.name || `Revenue ${index + 1}`]];
+          plSheet.getRange(`A${currentRow}`).format.font.name = 'Times New Roman';
+          plSheet.getRange(`A${currentRow}`).format.font.size = 12;
           
           // Add formulas for each period
           for (let col = 1; col <= totalColumns; col++) {
@@ -839,7 +858,15 @@ Required format:
       
       // Total Revenue
       plSheet.getRange(`A${currentRow}`).values = [['Total Revenue']];
-      plSheet.getRange(`A${currentRow}`).format.font.bold = true;
+      const totalRevRange = plSheet.getRange(`A${currentRow}:${this.getColumnLetter(periodColumns)}${currentRow}`);
+      totalRevRange.format.font.name = 'Times New Roman';
+      totalRevRange.format.font.size = 12;
+      totalRevRange.format.font.bold = true;
+      
+      // Add thick black underline below total
+      totalRevRange.format.borders.getItem('EdgeBottom').style = 'Continuous';
+      totalRevRange.format.borders.getItem('EdgeBottom').weight = 'Thick';
+      totalRevRange.format.borders.getItem('EdgeBottom').color = ExcelFormatter.colors.black;
       
       for (let col = 1; col <= periodColumns; col++) {
         const colLetter = this.getColumnLetter(col);
@@ -856,14 +883,25 @@ Required format:
       // OPERATING EXPENSES SECTION
       const opexStartRow = currentRow;
       plSheet.getRange(`A${currentRow}`).values = [['OPERATING EXPENSES']];
-      plSheet.getRange(`A${currentRow}`).format.font.bold = true;
-      plSheet.getRange(`A${currentRow}`).format.fill.color = '#FFB6C1';
+      const opexSectionRange = plSheet.getRange(`A${currentRow}:${this.getColumnLetter(periodColumns)}${currentRow}`);
+      opexSectionRange.format.font.name = 'Times New Roman';
+      opexSectionRange.format.font.size = 12;
+      opexSectionRange.format.font.bold = true;
+      opexSectionRange.format.fill.color = ExcelFormatter.colors.darkBlue;
+      opexSectionRange.format.font.color = ExcelFormatter.colors.white;
+      
+      // Add thin grey underline after section header
+      opexSectionRange.format.borders.getItem('EdgeBottom').style = 'Continuous';
+      opexSectionRange.format.borders.getItem('EdgeBottom').weight = 'Thin';
+      opexSectionRange.format.borders.getItem('EdgeBottom').color = ExcelFormatter.colors.lightGrey;
       currentRow++;
       
       // Add each operating expense
       if (modelData.operatingExpenses && modelData.operatingExpenses.length > 0) {
         modelData.operatingExpenses.forEach((item, index) => {
           plSheet.getRange(`A${currentRow}`).values = [[item.name || `OpEx ${index + 1}`]];
+          plSheet.getRange(`A${currentRow}`).format.font.name = 'Times New Roman';
+          plSheet.getRange(`A${currentRow}`).format.font.size = 12;
           
           // Add formulas for each period
           for (let col = 1; col <= totalColumns; col++) {
@@ -903,7 +941,15 @@ Required format:
       
       // Total Operating Expenses
       plSheet.getRange(`A${currentRow}`).values = [['Total Operating Expenses']];
-      plSheet.getRange(`A${currentRow}`).format.font.bold = true;
+      const totalOpExRange = plSheet.getRange(`A${currentRow}:${this.getColumnLetter(periodColumns)}${currentRow}`);
+      totalOpExRange.format.font.name = 'Times New Roman';
+      totalOpExRange.format.font.size = 12;
+      totalOpExRange.format.font.bold = true;
+      
+      // Add thick black underline below total
+      totalOpExRange.format.borders.getItem('EdgeBottom').style = 'Continuous';
+      totalOpExRange.format.borders.getItem('EdgeBottom').weight = 'Thick';
+      totalOpExRange.format.borders.getItem('EdgeBottom').color = ExcelFormatter.colors.black;
       
       for (let col = 1; col <= periodColumns; col++) {
         const colLetter = this.getColumnLetter(col);
@@ -919,8 +965,17 @@ Required format:
       
       // NOI
       plSheet.getRange(`A${currentRow}`).values = [['NOI']];
-      plSheet.getRange(`A${currentRow}`).format.font.bold = true;
-      plSheet.getRange(`A${currentRow}`).format.fill.color = '#98FB98';
+      const noiRange = plSheet.getRange(`A${currentRow}:${this.getColumnLetter(periodColumns)}${currentRow}`);
+      noiRange.format.font.name = 'Times New Roman';
+      noiRange.format.font.size = 12;
+      noiRange.format.font.bold = true;
+      noiRange.format.fill.color = ExcelFormatter.colors.darkBlue;
+      noiRange.format.font.color = ExcelFormatter.colors.white;
+      
+      // Add thick black underline below NOI
+      noiRange.format.borders.getItem('EdgeBottom').style = 'Continuous';
+      noiRange.format.borders.getItem('EdgeBottom').weight = 'Thick';
+      noiRange.format.borders.getItem('EdgeBottom').color = ExcelFormatter.colors.black;
       
       for (let col = 1; col <= periodColumns; col++) {
         const colLetter = this.getColumnLetter(col);
@@ -935,16 +990,24 @@ Required format:
       // Track NOI for FCF calculations
       this.plCellTracker.recordCell('noi', 'P&L Statement', `B${ebitdaRow}:${this.getColumnLetter(totalColumns)}${ebitdaRow}`);
       
-      // Format numbers with standard negative format (no parentheses for Excel compatibility)
+      // Apply number formatting with brackets for negatives and dash for zeros
       const dataRange = plSheet.getRange(`B5:${this.getColumnLetter(periodColumns)}${ebitdaRow}`);
-      const numberFormat = '#,##0;[Red]-#,##0;"-"'; // Positive, negative with minus sign, zero as dash
-      dataRange.numberFormat = [[numberFormat]];
+      ExcelFormatter.applyNumberFormat(dataRange);
+      
+      // Apply Times New Roman font to all data cells
+      const allDataRange = plSheet.getRange(`A1:${this.getColumnLetter(periodColumns)}${ebitdaRow}`);
+      allDataRange.format.font.name = 'Times New Roman';
+      allDataRange.format.font.size = 12;
+      
+      // Hide gridlines
+      await context.sync();
+      plSheet.showGridlines = false;
       
       // Auto-fit columns
       plSheet.getRange(`A:${this.getColumnLetter(periodColumns)}`).format.autofitColumns();
       
       await context.sync();
-      console.log('✅ P&L Statement created successfully');
+      console.log('✅ P&L Statement created successfully with formatting');
       
       // Print tracked P&L cells for debugging
       console.log('📊 P&L Cell References:');
@@ -3174,7 +3237,7 @@ Generate working Excel formulas using the provided data and structure.`;
 You MUST create a P&L Statement with this EXACT structure:
 
 **CRITICAL: Include Period 0 (Initial Investment) before operating periods**
-- Period 0: "Initial Investment" 
+- Period 0: "${this.getPreviousPeriodLabel(modelData.projectStartDate, modelData.modelPeriods)}" 
 - Period 1: First operating period (${modelData.projectStartDate})
 - Period 2+: Subsequent operating periods
 
@@ -3185,9 +3248,21 @@ You MUST create a P&L Statement with this EXACT structure:
 4. Total Operating Expenses  
 5. NOI (Total Revenue - Total Operating Expenses)
 
+**FORMATTING REQUIREMENTS (CRITICAL):**
+- Font: Times New Roman, Size 12 for ALL cells
+- Section Headers (REVENUE, OPERATING EXPENSES): Dark blue (#002060) background with white text, span all columns
+- Title (Profit & Loss Statement): Background color #F2F2F2, centered, span all columns
+- NOI row: Dark blue (#002060) background with white text, span all columns
+- Total rows (Total Revenue, Total Operating Expenses): Bold with thick black underline
+- Section headers: Add thin grey (#D3D3D3) underline
+- Number format: #,##0;(#,##0);"-" (positive, negative with brackets, zero as dash)
+- Hide gridlines on the sheet
+- Period headers: Bold, dark blue background with white text
+
 **CRITICAL REQUIREMENTS:**
 - Real estate model: No depreciation or tax calculations required
 - ALL formulas must reference exact cells provided above
+- Apply ALL formatting requirements listed above
 - Return complete P&L structure in JSON format with exact formulas
 
 **JSON FORMAT REQUIRED:**
