@@ -3934,7 +3934,8 @@ You MUST create a P&L Statement with this EXACT structure:
       for (let i = 0; i <= periods; i++) {
         const colLetter = this.getColumnLetter(i + 1);
         if (i === 0) {
-          capExSheet.getRange(colLetter + currentRow).values = [['0']];
+          const prevPeriodLabel = this.getPreviousPeriodLabel(modelData.projectStartDate, modelData.modelPeriods);
+          capExSheet.getRange(colLetter + currentRow).values = [[prevPeriodLabel]];
         } else {
           const periodHeader = this.formatPeriodHeader(startDate, i - 1, modelData.modelPeriods);
           capExSheet.getRange(colLetter + currentRow).values = [[periodHeader]];
@@ -3964,10 +3965,8 @@ You MUST create a P&L Statement with this EXACT structure:
             for (let col = 0; col <= periods; col++) {
               const colLetter = this.getColumnLetter(col + 1); // Maps to columns B, C, D, E...
               if (col === 0) {
-                // Period 0: No CapEx - show dash aligned right
-                const dashRange = capExSheet.getRange(`${colLetter}${currentRow}`);
-                dashRange.values = [['-']];
-                dashRange.format.horizontalAlignment = 'Right';
+                // Period 0: No CapEx - set to 0
+                capExSheet.getRange(`${colLetter}${currentRow}`).values = [[0]];
               } else if (col === 1) {
                 // Period 1: Base CapEx value (negative cash flow)
                 capExSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=-${valueRef}`]];
@@ -4000,16 +3999,9 @@ You MUST create a P&L Statement with this EXACT structure:
         
         for (let col = 0; col <= periods; col++) {
           const colLetter = this.getColumnLetter(col + 1); // Changed from col + 2 to col + 1 to align with data
-          if (col === 0) {
-            // Period 0: Total should show dash aligned right
-            const dashRange = capExSheet.getRange(`${colLetter}${currentRow}`);
-            dashRange.values = [['-']];
-            dashRange.format.horizontalAlignment = 'Right';
-          } else {
-            const startRow = currentRow - modelData.capEx.length;
-            const endRow = currentRow - 1;
-            capExSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=SUM(${colLetter}${startRow}:${colLetter}${endRow})`]];
-          }
+          const startRow = currentRow - modelData.capEx.length;
+          const endRow = currentRow - 1;
+          capExSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=SUM(${colLetter}${startRow}:${colLetter}${endRow})`]];
         }
       } else {
         // No CapEx items
@@ -4018,14 +4010,7 @@ You MUST create a P&L Statement with this EXACT structure:
         
         for (let col = 0; col <= periods; col++) {
           const colLetter = this.getColumnLetter(col + 1); // Changed from col + 2 to col + 1 to align with headers
-          if (col === 0) {
-            // Period 0: Show dash aligned right
-            const dashRange = capExSheet.getRange(`${colLetter}${currentRow}`);
-            dashRange.values = [['-']];
-            dashRange.format.horizontalAlignment = 'Right';
-          } else {
-            capExSheet.getRange(`${colLetter}${currentRow}`).values = [[0]];
-          }
+          capExSheet.getRange(`${colLetter}${currentRow}`).values = [[0]];
         }
       }
       
@@ -4411,7 +4396,8 @@ You MUST create a P&L Statement with this EXACT structure:
       
       // Set up period headers (row 3)
       debtSheet.getRange('A3').values = [['Period']];
-      debtSheet.getRange('B3').values = [['0']];
+      const prevPeriodLabel = this.getPreviousPeriodLabel(modelData.projectStartDate, modelData.modelPeriods);
+      debtSheet.getRange('B3').values = [[prevPeriodLabel]];
       
       for (let i = 1; i <= periods; i++) {
         const colLetter = this.getColumnLetter(i + 1); // C, D, E, etc. for Periods 1, 2, 3...
@@ -4429,10 +4415,7 @@ You MUST create a P&L Statement with this EXACT structure:
       // Set up debt balance row (row 4)
       debtSheet.getRange('A4').values = [['Outstanding Debt Balance']];
       debtSheet.getRange('A4').format.font.bold = true;
-      // Period 0: Show dash for debt balance (no debt issued yet)
-      const dashRange = debtSheet.getRange('B4');
-      dashRange.values = [['-']];
-      dashRange.format.horizontalAlignment = 'Right';
+      debtSheet.getRange('B4').values = [[debtAmount]]; // Initial debt in Period 0
       
       // Debt balance for all periods (constant for interest-only loan)
       for (let i = 1; i <= periods; i++) {
@@ -4441,7 +4424,7 @@ You MUST create a P&L Statement with this EXACT structure:
           // Final period: debt is repaid
           debtSheet.getRange(colLetter + '4').values = [[0]];
         } else {
-          // All operating periods: debt balance remains the same (including Period 1)
+          // Interest-only periods: debt balance remains the same
           debtSheet.getRange(colLetter + '4').values = [[debtAmount]];
         }
       }
@@ -4449,10 +4432,7 @@ You MUST create a P&L Statement with this EXACT structure:
       // Set up interest rate row (row 5) - Fixed rate only
       debtSheet.getRange('A5').values = [['Interest Rate (%)']];
       debtSheet.getRange('A5').format.font.bold = true;
-      // Period 0: Show dash for interest rate
-      const interestDashRange = debtSheet.getRange('B5');
-      interestDashRange.values = [['-']];
-      interestDashRange.format.horizontalAlignment = 'Right';
+      debtSheet.getRange('B5').values = [[0]]; // Period 0 has no interest
       
       console.log('📊 Using fixed rate:', modelData.debtSettings?.fixedRate || 5.5);
       
@@ -4467,10 +4447,7 @@ You MUST create a P&L Statement with this EXACT structure:
       // Set up debt expense row (row 6) - This is what goes to FCF
       debtSheet.getRange('A6').values = [['Debt Expense per Period']];
       debtSheet.getRange('A6').format.font.bold = true;
-      // Period 0: Show dash for debt expense
-      const expenseDashRange = debtSheet.getRange('B6');
-      expenseDashRange.values = [['-']];
-      expenseDashRange.format.horizontalAlignment = 'Right';
+      debtSheet.getRange('B6').values = [[0]]; // Period 0 has no expense
       
       // Calculate debt expense for each period
       for (let i = 1; i <= periods; i++) {
