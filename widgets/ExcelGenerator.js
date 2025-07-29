@@ -812,9 +812,9 @@ Required format:
       headerRange.format.font.color = ExcelFormatter.colors.white;
       currentRow += 2;
       
-      // REVENUE SECTION
+      // REVENUE ITEMS SECTION
       const revenueStartRow = currentRow;
-      plSheet.getRange(`A${currentRow}`).values = [['REVENUE']];
+      plSheet.getRange(`A${currentRow}`).values = [['Revenue Items']];
       const revenueSectionRange = plSheet.getRange(`A${currentRow}:${this.getColumnLetter(periodColumns)}${currentRow}`);
       revenueSectionRange.format.font.name = 'Times New Roman';
       revenueSectionRange.format.font.size = 12;
@@ -877,12 +877,11 @@ Required format:
       totalRevRange.format.font.name = 'Times New Roman';
       totalRevRange.format.font.size = 12;
       totalRevRange.format.font.bold = true;
-      totalRevRange.format.fill.color = ExcelFormatter.colors.backgroundDarker5;
       
-      // Add thin underline below total
-      totalRevRange.format.borders.getItem('EdgeBottom').style = 'Continuous';
-      totalRevRange.format.borders.getItem('EdgeBottom').weight = 'Thin';
-      totalRevRange.format.borders.getItem('EdgeBottom').color = ExcelFormatter.colors.black;
+      // Add thin underline at top of total
+      totalRevRange.format.borders.getItem('EdgeTop').style = 'Continuous';
+      totalRevRange.format.borders.getItem('EdgeTop').weight = 'Thin';
+      totalRevRange.format.borders.getItem('EdgeTop').color = ExcelFormatter.colors.black;
       
       for (let col = 1; col <= periodColumns; col++) {
         const colLetter = this.getColumnLetter(col);
@@ -896,9 +895,9 @@ Required format:
       const totalRevenueRow = currentRow;
       currentRow += 2;
       
-      // OPERATING EXPENSES SECTION
+      // COST ITEMS SECTION
       const opexStartRow = currentRow;
-      plSheet.getRange(`A${currentRow}`).values = [['OPERATING EXPENSES']];
+      plSheet.getRange(`A${currentRow}`).values = [['Cost Items']];
       const opexSectionRange = plSheet.getRange(`A${currentRow}:${this.getColumnLetter(periodColumns)}${currentRow}`);
       opexSectionRange.format.font.name = 'Times New Roman';
       opexSectionRange.format.font.size = 12;
@@ -961,12 +960,11 @@ Required format:
       totalOpExRange.format.font.name = 'Times New Roman';
       totalOpExRange.format.font.size = 12;
       totalOpExRange.format.font.bold = true;
-      totalOpExRange.format.fill.color = ExcelFormatter.colors.backgroundDarker5;
       
-      // Add thin underline below total
-      totalOpExRange.format.borders.getItem('EdgeBottom').style = 'Continuous';
-      totalOpExRange.format.borders.getItem('EdgeBottom').weight = 'Thin';
-      totalOpExRange.format.borders.getItem('EdgeBottom').color = ExcelFormatter.colors.black;
+      // Add thin underline at top of total
+      totalOpExRange.format.borders.getItem('EdgeTop').style = 'Continuous';
+      totalOpExRange.format.borders.getItem('EdgeTop').weight = 'Thin';
+      totalOpExRange.format.borders.getItem('EdgeTop').color = ExcelFormatter.colors.black;
       
       for (let col = 1; col <= periodColumns; col++) {
         const colLetter = this.getColumnLetter(col);
@@ -978,21 +976,21 @@ Required format:
         }
       }
       const totalOpexRow = currentRow;
-      currentRow += 2;
+      currentRow++;
       
-      // NOI
+      // NOI - moved directly below Total Operating Expenses
       plSheet.getRange(`A${currentRow}`).values = [['NOI']];
       const noiRange = plSheet.getRange(`A${currentRow}:${this.getColumnLetter(periodColumns)}${currentRow}`);
       noiRange.format.font.name = 'Times New Roman';
       noiRange.format.font.size = 12;
       noiRange.format.font.bold = true;
-      noiRange.format.fill.color = ExcelFormatter.colors.darkBlue;
-      noiRange.format.font.color = ExcelFormatter.colors.white;
+      noiRange.format.fill.color = ExcelFormatter.colors.backgroundDarker5; // Light grey background
+      noiRange.format.font.color = ExcelFormatter.colors.black; // Black text
       
-      // Add thin underline below NOI
-      noiRange.format.borders.getItem('EdgeBottom').style = 'Continuous';
-      noiRange.format.borders.getItem('EdgeBottom').weight = 'Thin';
-      noiRange.format.borders.getItem('EdgeBottom').color = ExcelFormatter.colors.black;
+      // Add thin underline at top of NOI
+      noiRange.format.borders.getItem('EdgeTop').style = 'Continuous';
+      noiRange.format.borders.getItem('EdgeTop').weight = 'Thin';
+      noiRange.format.borders.getItem('EdgeTop').color = ExcelFormatter.colors.black;
       
       for (let col = 1; col <= periodColumns; col++) {
         const colLetter = this.getColumnLetter(col);
@@ -3258,18 +3256,18 @@ You MUST create a P&L Statement with this EXACT structure:
 - Period 2+: Subsequent operating periods
 
 **P&L STRUCTURE:**
-1. REVENUE section (with growth formulas)
-2. Total Revenue  
-3. OPERATING EXPENSES section (with growth formulas)
-4. Total Operating Expenses  
-5. NOI (Total Revenue + Total Operating Expenses) - Note: Operating Expenses are negative
+1. Revenue Items section (with growth formulas)
+2. Total Revenue (underline at top, no background)
+3. Cost Items section (with growth formulas)
+4. Total Operating Expenses (underline at top, no background)
+5. NOI (Total Revenue + Total Operating Expenses) - positioned directly below Total Operating Expenses
 
 **FORMATTING REQUIREMENTS (CRITICAL):**
 - Font: Times New Roman, Size 12 for ALL cells
-- Section Headers (REVENUE, OPERATING EXPENSES): Dark blue (#002060) background with white text, span all columns
+- Section Headers (Revenue Items, Cost Items): Dark blue (#002060) background with white text, span all columns
 - Title (Profit & Loss Statement): Background color #F2F2F2, left-aligned, span all columns
-- NOI row: Dark blue (#002060) background with white text, span all columns
-- Total rows (Total Revenue, Total Operating Expenses): Bold with light grey (#F2F2F2) background and thin black underline
+- NOI row: Light grey (#F2F2F2) background with black text, underline at top, span all columns
+- Total rows (Total Revenue, Total Operating Expenses): Bold with thin black underline at TOP of cell, no background
 - Section headers: Add thin grey (#D3D3D3) underline
 - Number format: #,##0;[Red](#,##0);"-" (positive, negative with red brackets, zero as dash)
 - Hide gridlines on the sheet
@@ -3431,8 +3429,8 @@ You MUST create a P&L Statement with this EXACT structure:
       headerRange.format.font.color = ExcelFormatter.colors.white;
       currentRow++;
 
-      // REVENUE SECTION
-      plSheet.getRange(`A${currentRow}`).values = [['REVENUE']];
+      // REVENUE ITEMS SECTION
+      plSheet.getRange(`A${currentRow}`).values = [['Revenue Items']];
       const revenueSectionRange = plSheet.getRange(`A${currentRow}:${this.getColumnLetter(totalColumns)}${currentRow}`);
       revenueSectionRange.format.font.name = 'Times New Roman';
       revenueSectionRange.format.font.size = 12;
@@ -3491,12 +3489,11 @@ You MUST create a P&L Statement with this EXACT structure:
       totalRevRange.format.font.name = 'Times New Roman';
       totalRevRange.format.font.size = 12;
       totalRevRange.format.font.bold = true;
-      totalRevRange.format.fill.color = ExcelFormatter.colors.backgroundDarker5;
       
-      // Add thin underline below total
-      totalRevRange.format.borders.getItem('EdgeBottom').style = 'Continuous';
-      totalRevRange.format.borders.getItem('EdgeBottom').weight = 'Thin';
-      totalRevRange.format.borders.getItem('EdgeBottom').color = ExcelFormatter.colors.black;
+      // Add thin underline at top of total
+      totalRevRange.format.borders.getItem('EdgeTop').style = 'Continuous';
+      totalRevRange.format.borders.getItem('EdgeTop').weight = 'Thin';
+      totalRevRange.format.borders.getItem('EdgeTop').color = ExcelFormatter.colors.black;
       
       const totalRevenueRow = currentRow;
       for (let col = 1; col <= totalColumns; col++) {
@@ -3507,8 +3504,8 @@ You MUST create a P&L Statement with this EXACT structure:
       }
       currentRow += 2;
 
-      // OPERATING EXPENSES SECTION
-      plSheet.getRange(`A${currentRow}`).values = [['OPERATING EXPENSES']];
+      // COST ITEMS SECTION
+      plSheet.getRange(`A${currentRow}`).values = [['Cost Items']];
       const opexSectionRange = plSheet.getRange(`A${currentRow}:${this.getColumnLetter(totalColumns)}${currentRow}`);
       opexSectionRange.format.font.name = 'Times New Roman';
       opexSectionRange.format.font.size = 12;
@@ -3567,12 +3564,11 @@ You MUST create a P&L Statement with this EXACT structure:
       totalOpExRange.format.font.name = 'Times New Roman';
       totalOpExRange.format.font.size = 12;
       totalOpExRange.format.font.bold = true;
-      totalOpExRange.format.fill.color = ExcelFormatter.colors.backgroundDarker5;
       
-      // Add thin underline below total
-      totalOpExRange.format.borders.getItem('EdgeBottom').style = 'Continuous';
-      totalOpExRange.format.borders.getItem('EdgeBottom').weight = 'Thin';
-      totalOpExRange.format.borders.getItem('EdgeBottom').color = ExcelFormatter.colors.black;
+      // Add thin underline at top of total
+      totalOpExRange.format.borders.getItem('EdgeTop').style = 'Continuous';
+      totalOpExRange.format.borders.getItem('EdgeTop').weight = 'Thin';
+      totalOpExRange.format.borders.getItem('EdgeTop').color = ExcelFormatter.colors.black;
       
       const totalOpExRow = currentRow;
       for (let col = 1; col <= totalColumns; col++) {
@@ -3583,19 +3579,19 @@ You MUST create a P&L Statement with this EXACT structure:
       }
       currentRow++;
 
-      // NOI
+      // NOI - moved directly below Total Operating Expenses
       plSheet.getRange(`A${currentRow}`).values = [['NOI']];
       const noiRange = plSheet.getRange(`A${currentRow}:${this.getColumnLetter(totalColumns)}${currentRow}`);
       noiRange.format.font.name = 'Times New Roman';
       noiRange.format.font.size = 12;
       noiRange.format.font.bold = true;
-      noiRange.format.fill.color = ExcelFormatter.colors.darkBlue;
-      noiRange.format.font.color = ExcelFormatter.colors.white;
+      noiRange.format.fill.color = ExcelFormatter.colors.backgroundDarker5; // Light grey background
+      noiRange.format.font.color = ExcelFormatter.colors.black; // Black text
       
-      // Add thin underline below NOI
-      noiRange.format.borders.getItem('EdgeBottom').style = 'Continuous';
-      noiRange.format.borders.getItem('EdgeBottom').weight = 'Thin';
-      noiRange.format.borders.getItem('EdgeBottom').color = ExcelFormatter.colors.black;
+      // Add thin underline at top of NOI
+      noiRange.format.borders.getItem('EdgeTop').style = 'Continuous';
+      noiRange.format.borders.getItem('EdgeTop').weight = 'Thin';
+      noiRange.format.borders.getItem('EdgeTop').color = ExcelFormatter.colors.black;
       
       const ebitdaRow = currentRow;
       for (let col = 1; col <= totalColumns; col++) {
