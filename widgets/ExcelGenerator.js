@@ -3313,10 +3313,13 @@ You MUST create a P&L Statement with this EXACT structure:
 
       // TITLE
       plSheet.getRange('A1').values = [['Profit & Loss Statement']];
-      plSheet.getRange('A1').format.font.bold = true;
-      plSheet.getRange('A1').format.font.size = 16;
-      plSheet.getRange('A1').format.fill.color = '#1f4e79';
-      plSheet.getRange('A1').format.font.color = 'white';
+      const titleRange = plSheet.getRange(`A1:${this.getColumnLetter(totalColumns)}1`);
+      titleRange.merge();
+      titleRange.format.font.name = 'Times New Roman';
+      titleRange.format.font.size = 12;
+      titleRange.format.font.bold = true;
+      titleRange.format.fill.color = ExcelFormatter.colors.backgroundDarker5;
+      titleRange.format.horizontalAlignment = 'Center';
       currentRow = 3;
 
       // TIME PERIOD HEADERS - Include Period 0 for Initial Investment
@@ -3330,20 +3333,34 @@ You MUST create a P&L Statement with this EXACT structure:
 
       const headerRange = plSheet.getRange(`A${currentRow}:${this.getColumnLetter(totalColumns)}${currentRow}`);
       headerRange.values = [headers];
+      headerRange.format.font.name = 'Times New Roman';
+      headerRange.format.font.size = 12;
       headerRange.format.font.bold = true;
-      headerRange.format.fill.color = '#d9d9d9';
+      headerRange.format.fill.color = ExcelFormatter.colors.darkBlue;
+      headerRange.format.font.color = ExcelFormatter.colors.white;
       currentRow++;
 
       // REVENUE SECTION
       plSheet.getRange(`A${currentRow}`).values = [['REVENUE']];
-      plSheet.getRange(`A${currentRow}`).format.font.bold = true;
-      plSheet.getRange(`A${currentRow}`).format.fill.color = '#e8f5e8';
+      const revenueSectionRange = plSheet.getRange(`A${currentRow}:${this.getColumnLetter(totalColumns)}${currentRow}`);
+      revenueSectionRange.format.font.name = 'Times New Roman';
+      revenueSectionRange.format.font.size = 12;
+      revenueSectionRange.format.font.bold = true;
+      revenueSectionRange.format.fill.color = ExcelFormatter.colors.darkBlue;
+      revenueSectionRange.format.font.color = ExcelFormatter.colors.white;
+      
+      // Add thin grey underline after section header
+      revenueSectionRange.format.borders.getItem('EdgeBottom').style = 'Continuous';
+      revenueSectionRange.format.borders.getItem('EdgeBottom').weight = 'Thin';
+      revenueSectionRange.format.borders.getItem('EdgeBottom').color = ExcelFormatter.colors.lightGrey;
       currentRow++;
 
       // Add revenue items with growth
       if (modelData.revenueItems && modelData.revenueItems.length > 0) {
         modelData.revenueItems.forEach((item, index) => {
           plSheet.getRange(`A${currentRow}`).values = [[item.name]];
+          plSheet.getRange(`A${currentRow}`).format.font.name = 'Times New Roman';
+          plSheet.getRange(`A${currentRow}`).format.font.size = 12;
           
           const valueRef = this.cellTracker.getCellReference(`revenue_${index}`);
           const growthRateRef = this.cellTracker.getCellReference(`revenue_${index}_growth_rate`);
@@ -3379,7 +3396,16 @@ You MUST create a P&L Statement with this EXACT structure:
 
       // Total Revenue
       plSheet.getRange(`A${currentRow}`).values = [['Total Revenue']];
-      plSheet.getRange(`A${currentRow}`).format.font.bold = true;
+      const totalRevRange = plSheet.getRange(`A${currentRow}:${this.getColumnLetter(totalColumns)}${currentRow}`);
+      totalRevRange.format.font.name = 'Times New Roman';
+      totalRevRange.format.font.size = 12;
+      totalRevRange.format.font.bold = true;
+      
+      // Add thick black underline below total
+      totalRevRange.format.borders.getItem('EdgeBottom').style = 'Continuous';
+      totalRevRange.format.borders.getItem('EdgeBottom').weight = 'Thick';
+      totalRevRange.format.borders.getItem('EdgeBottom').color = ExcelFormatter.colors.black;
+      
       const totalRevenueRow = currentRow;
       for (let col = 1; col <= totalColumns; col++) {
         const colLetter = this.getColumnLetter(col);
@@ -3391,14 +3417,25 @@ You MUST create a P&L Statement with this EXACT structure:
 
       // OPERATING EXPENSES SECTION
       plSheet.getRange(`A${currentRow}`).values = [['OPERATING EXPENSES']];
-      plSheet.getRange(`A${currentRow}`).format.font.bold = true;
-      plSheet.getRange(`A${currentRow}`).format.fill.color = '#ffe6e6';
+      const opexSectionRange = plSheet.getRange(`A${currentRow}:${this.getColumnLetter(totalColumns)}${currentRow}`);
+      opexSectionRange.format.font.name = 'Times New Roman';
+      opexSectionRange.format.font.size = 12;
+      opexSectionRange.format.font.bold = true;
+      opexSectionRange.format.fill.color = ExcelFormatter.colors.darkBlue;
+      opexSectionRange.format.font.color = ExcelFormatter.colors.white;
+      
+      // Add thin grey underline after section header
+      opexSectionRange.format.borders.getItem('EdgeBottom').style = 'Continuous';
+      opexSectionRange.format.borders.getItem('EdgeBottom').weight = 'Thin';
+      opexSectionRange.format.borders.getItem('EdgeBottom').color = ExcelFormatter.colors.lightGrey;
       currentRow++;
 
       // Add operating expense items
       if (modelData.operatingExpenses && modelData.operatingExpenses.length > 0) {
         modelData.operatingExpenses.forEach((item, index) => {
           plSheet.getRange(`A${currentRow}`).values = [[item.name]];
+          plSheet.getRange(`A${currentRow}`).format.font.name = 'Times New Roman';
+          plSheet.getRange(`A${currentRow}`).format.font.size = 12;
           
           const valueRef = this.cellTracker.getCellReference(`opex_${index}`);
           const growthRateRef = this.cellTracker.getCellReference(`opex_${index}_growth_rate`);
@@ -3434,7 +3471,16 @@ You MUST create a P&L Statement with this EXACT structure:
 
       // Total Operating Expenses
       plSheet.getRange(`A${currentRow}`).values = [['Total Operating Expenses']];
-      plSheet.getRange(`A${currentRow}`).format.font.bold = true;
+      const totalOpExRange = plSheet.getRange(`A${currentRow}:${this.getColumnLetter(totalColumns)}${currentRow}`);
+      totalOpExRange.format.font.name = 'Times New Roman';
+      totalOpExRange.format.font.size = 12;
+      totalOpExRange.format.font.bold = true;
+      
+      // Add thick black underline below total
+      totalOpExRange.format.borders.getItem('EdgeBottom').style = 'Continuous';
+      totalOpExRange.format.borders.getItem('EdgeBottom').weight = 'Thick';
+      totalOpExRange.format.borders.getItem('EdgeBottom').color = ExcelFormatter.colors.black;
+      
       const totalOpExRow = currentRow;
       for (let col = 1; col <= totalColumns; col++) {
         const colLetter = this.getColumnLetter(col);
@@ -3446,8 +3492,18 @@ You MUST create a P&L Statement with this EXACT structure:
 
       // NOI
       plSheet.getRange(`A${currentRow}`).values = [['NOI']];
-      plSheet.getRange(`A${currentRow}`).format.font.bold = true;
-      plSheet.getRange(`A${currentRow}`).format.fill.color = '#fff2cc';
+      const noiRange = plSheet.getRange(`A${currentRow}:${this.getColumnLetter(totalColumns)}${currentRow}`);
+      noiRange.format.font.name = 'Times New Roman';
+      noiRange.format.font.size = 12;
+      noiRange.format.font.bold = true;
+      noiRange.format.fill.color = ExcelFormatter.colors.darkBlue;
+      noiRange.format.font.color = ExcelFormatter.colors.white;
+      
+      // Add thick black underline below NOI
+      noiRange.format.borders.getItem('EdgeBottom').style = 'Continuous';
+      noiRange.format.borders.getItem('EdgeBottom').weight = 'Thick';
+      noiRange.format.borders.getItem('EdgeBottom').color = ExcelFormatter.colors.black;
+      
       const ebitdaRow = currentRow;
       for (let col = 1; col <= totalColumns; col++) {
         const colLetter = this.getColumnLetter(col);
@@ -3460,15 +3516,24 @@ You MUST create a P&L Statement with this EXACT structure:
       // Track NOI for FCF calculations
       this.plCellTracker.recordCell('noi', 'P&L Statement', `B${ebitdaRow}:${this.getColumnLetter(totalColumns)}${ebitdaRow}`);
 
-      // Format all data cells with red brackets for negatives and dash for empty cells
+      // Apply number formatting with brackets for negatives and dash for zeros
       const dataRange = plSheet.getRange(`B5:${this.getColumnLetter(totalColumns)}${currentRow}`);
-      const numberFormat = '#,##0;[Red]-#,##0;"-"'; // Positive, negative with minus sign, zero as dash
-      dataRange.numberFormat = [[numberFormat]];
+      ExcelFormatter.applyNumberFormat(dataRange);
       
-      // Auto-resize columns
-      plSheet.getUsedRange().format.autofitColumns();
+      // Apply Times New Roman font to all data cells
+      const allDataRange = plSheet.getRange(`A1:${this.getColumnLetter(totalColumns)}${currentRow}`);
+      allDataRange.format.font.name = 'Times New Roman';
+      allDataRange.format.font.size = 12;
       
-      console.log('✅ Enhanced P&L Statement with depreciation created successfully!');
+      // Hide gridlines
+      await context.sync();
+      plSheet.showGridlines = false;
+      
+      // Auto-fit columns
+      plSheet.getRange(`A:${this.getColumnLetter(totalColumns)}`).format.autofitColumns();
+      
+      await context.sync();
+      console.log('✅ Enhanced P&L Statement created successfully with formatting');
     });
   }
 
