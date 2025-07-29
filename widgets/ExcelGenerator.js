@@ -11,7 +11,7 @@ class ExcelFormatter {
   };
   
   static applyNumberFormat(range) {
-    range.numberFormat = [['#,##0;(#,##0);"-"']];
+    range.numberFormat = [['#,##0;[Red](#,##0);"-"']];
   }
 }
 
@@ -793,7 +793,7 @@ Required format:
       titleRange.format.font.size = 12;
       titleRange.format.font.bold = true;
       titleRange.format.fill.color = ExcelFormatter.colors.backgroundDarker5;
-      titleRange.format.horizontalAlignment = 'Center';
+      titleRange.format.horizontalAlignment = 'Left';
       currentRow = 3;
       
       // TIME PERIOD HEADERS
@@ -877,10 +877,11 @@ Required format:
       totalRevRange.format.font.name = 'Times New Roman';
       totalRevRange.format.font.size = 12;
       totalRevRange.format.font.bold = true;
+      totalRevRange.format.fill.color = ExcelFormatter.colors.backgroundDarker5;
       
-      // Add thick black underline below total
+      // Add thin underline below total
       totalRevRange.format.borders.getItem('EdgeBottom').style = 'Continuous';
-      totalRevRange.format.borders.getItem('EdgeBottom').weight = 'Thick';
+      totalRevRange.format.borders.getItem('EdgeBottom').weight = 'Thin';
       totalRevRange.format.borders.getItem('EdgeBottom').color = ExcelFormatter.colors.black;
       
       for (let col = 1; col <= periodColumns; col++) {
@@ -960,10 +961,11 @@ Required format:
       totalOpExRange.format.font.name = 'Times New Roman';
       totalOpExRange.format.font.size = 12;
       totalOpExRange.format.font.bold = true;
+      totalOpExRange.format.fill.color = ExcelFormatter.colors.backgroundDarker5;
       
-      // Add thick black underline below total
+      // Add thin underline below total
       totalOpExRange.format.borders.getItem('EdgeBottom').style = 'Continuous';
-      totalOpExRange.format.borders.getItem('EdgeBottom').weight = 'Thick';
+      totalOpExRange.format.borders.getItem('EdgeBottom').weight = 'Thin';
       totalOpExRange.format.borders.getItem('EdgeBottom').color = ExcelFormatter.colors.black;
       
       for (let col = 1; col <= periodColumns; col++) {
@@ -987,9 +989,9 @@ Required format:
       noiRange.format.fill.color = ExcelFormatter.colors.darkBlue;
       noiRange.format.font.color = ExcelFormatter.colors.white;
       
-      // Add thick black underline below NOI
+      // Add thin underline below NOI
       noiRange.format.borders.getItem('EdgeBottom').style = 'Continuous';
-      noiRange.format.borders.getItem('EdgeBottom').weight = 'Thick';
+      noiRange.format.borders.getItem('EdgeBottom').weight = 'Thin';
       noiRange.format.borders.getItem('EdgeBottom').color = ExcelFormatter.colors.black;
       
       for (let col = 1; col <= periodColumns; col++) {
@@ -3265,11 +3267,11 @@ You MUST create a P&L Statement with this EXACT structure:
 **FORMATTING REQUIREMENTS (CRITICAL):**
 - Font: Times New Roman, Size 12 for ALL cells
 - Section Headers (REVENUE, OPERATING EXPENSES): Dark blue (#002060) background with white text, span all columns
-- Title (Profit & Loss Statement): Background color #F2F2F2, centered, span all columns
+- Title (Profit & Loss Statement): Background color #F2F2F2, left-aligned, span all columns
 - NOI row: Dark blue (#002060) background with white text, span all columns
-- Total rows (Total Revenue, Total Operating Expenses): Bold with thick black underline
+- Total rows (Total Revenue, Total Operating Expenses): Bold with light grey (#F2F2F2) background and thin black underline
 - Section headers: Add thin grey (#D3D3D3) underline
-- Number format: #,##0;(#,##0);"-" (positive, negative with brackets, zero as dash)
+- Number format: #,##0;[Red](#,##0);"-" (positive, negative with red brackets, zero as dash)
 - Hide gridlines on the sheet
 - Period headers: Bold, dark blue background with white text
 
@@ -3408,7 +3410,7 @@ You MUST create a P&L Statement with this EXACT structure:
       titleRange.format.font.size = 12;
       titleRange.format.font.bold = true;
       titleRange.format.fill.color = ExcelFormatter.colors.backgroundDarker5;
-      titleRange.format.horizontalAlignment = 'Center';
+      titleRange.format.horizontalAlignment = 'Left';
       currentRow = 3;
 
       // TIME PERIOD HEADERS - Include Period 0 for Initial Investment
@@ -3489,10 +3491,11 @@ You MUST create a P&L Statement with this EXACT structure:
       totalRevRange.format.font.name = 'Times New Roman';
       totalRevRange.format.font.size = 12;
       totalRevRange.format.font.bold = true;
+      totalRevRange.format.fill.color = ExcelFormatter.colors.backgroundDarker5;
       
-      // Add thick black underline below total
+      // Add thin underline below total
       totalRevRange.format.borders.getItem('EdgeBottom').style = 'Continuous';
-      totalRevRange.format.borders.getItem('EdgeBottom').weight = 'Thick';
+      totalRevRange.format.borders.getItem('EdgeBottom').weight = 'Thin';
       totalRevRange.format.borders.getItem('EdgeBottom').color = ExcelFormatter.colors.black;
       
       const totalRevenueRow = currentRow;
@@ -3564,10 +3567,11 @@ You MUST create a P&L Statement with this EXACT structure:
       totalOpExRange.format.font.name = 'Times New Roman';
       totalOpExRange.format.font.size = 12;
       totalOpExRange.format.font.bold = true;
+      totalOpExRange.format.fill.color = ExcelFormatter.colors.backgroundDarker5;
       
-      // Add thick black underline below total
+      // Add thin underline below total
       totalOpExRange.format.borders.getItem('EdgeBottom').style = 'Continuous';
-      totalOpExRange.format.borders.getItem('EdgeBottom').weight = 'Thick';
+      totalOpExRange.format.borders.getItem('EdgeBottom').weight = 'Thin';
       totalOpExRange.format.borders.getItem('EdgeBottom').color = ExcelFormatter.colors.black;
       
       const totalOpExRow = currentRow;
@@ -3588,9 +3592,9 @@ You MUST create a P&L Statement with this EXACT structure:
       noiRange.format.fill.color = ExcelFormatter.colors.darkBlue;
       noiRange.format.font.color = ExcelFormatter.colors.white;
       
-      // Add thick black underline below NOI
+      // Add thin underline below NOI
       noiRange.format.borders.getItem('EdgeBottom').style = 'Continuous';
-      noiRange.format.borders.getItem('EdgeBottom').weight = 'Thick';
+      noiRange.format.borders.getItem('EdgeBottom').weight = 'Thin';
       noiRange.format.borders.getItem('EdgeBottom').color = ExcelFormatter.colors.black;
       
       const ebitdaRow = currentRow;
