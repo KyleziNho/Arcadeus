@@ -4415,7 +4415,6 @@ You MUST create a P&L Statement with this EXACT structure:
       const unleverCashflowRange = fcfSheet.getRange(`A${currentRow}:${this.getColumnLetter(totalColumns)}${currentRow}`);
       unleverCashflowRange.format.font.name = 'Times New Roman';
       unleverCashflowRange.format.font.size = 12;
-      unleverCashflowRange.format.font.bold = true;
       unleverCashflowRange.format.font.color = ExcelFormatter.colors.black;
       
       // Add thin underline at top of unlevered cashflow row
@@ -4429,6 +4428,10 @@ You MUST create a P&L Statement with this EXACT structure:
         fcfSheet.getRange(colLetter + currentRow).formulas = [[`=SUM(${colLetter}${currentRow - 6}:${colLetter}${currentRow - 1})`]];
         ExcelFormatter.applyNumberFormat(fcfSheet.getRange(colLetter + currentRow));
       }
+      currentRow++;
+      
+      // Add empty row between Unlevered cashflows and debt upfront costs as requested
+      fcfSheet.getRange(`A${currentRow}`).format.rowHeight = 8;
       currentRow++;
       
       // Get debt financing reference for later use
@@ -4543,7 +4546,6 @@ You MUST create a P&L Statement with this EXACT structure:
       const leveredCashflowRange = fcfSheet.getRange(`A${currentRow}:${this.getColumnLetter(totalColumns)}${currentRow}`);
       leveredCashflowRange.format.font.name = 'Times New Roman';
       leveredCashflowRange.format.font.size = 12;
-      leveredCashflowRange.format.font.bold = true;
       leveredCashflowRange.format.font.color = ExcelFormatter.colors.black;
       leveredCashflowRange.format.fill.color = ExcelFormatter.colors.backgroundDarker5;
       
@@ -4553,17 +4555,22 @@ You MUST create a P&L Statement with this EXACT structure:
       leveredCashflowRange.format.borders.getItem('EdgeTop').color = ExcelFormatter.colors.black;
       
       const leveredCashflowsRow = currentRow;
+      // Store row numbers for correct formula references (adjusted for empty row)
+      const debtUpfrontCostsRow = currentRow - 4;
+      const debtExpenseRow = currentRow - 3;
+      const loanProceedsRow = currentRow - 2;
+      
       for (let i = 0; i <= periods; i++) {
         const colLetter = this.getColumnLetter(i + 1);
         // Levered CF = Unlevered CF + Debt upfront costs + Debt Expense + Loan proceeds
-        fcfSheet.getRange(colLetter + currentRow).formulas = [[`=${colLetter}${unlevereCashflowsRow}+${colLetter}${currentRow - 3}+${colLetter}${currentRow - 2}+${colLetter}${currentRow - 1}`]];
+        fcfSheet.getRange(colLetter + currentRow).formulas = [[`=${colLetter}${unlevereCashflowsRow}+${colLetter}${debtUpfrontCostsRow}+${colLetter}${debtExpenseRow}+${colLetter}${loanProceedsRow}`]];
         ExcelFormatter.applyNumberFormat(fcfSheet.getRange(colLetter + currentRow));
       }
       currentRow += 2;
       
       // Equity distributions (Levered Cashflows) - removed EQUITY FLOWS header as requested
       fcfSheet.getRange(`A${currentRow}`).values = [['Equity distributions']];
-      const equityDistRange = fcfSheet.getRange(`A${currentRow}:${this.getColumnLetter(totalColumns)}${currentRow}`);
+      const equityDistRange = fcfSheet.getRange(`A${currentRow}`);
       equityDistRange.format.font.name = 'Times New Roman';
       equityDistRange.format.font.size = 12;
       equityDistRange.format.font.color = ExcelFormatter.colors.black;
@@ -4578,46 +4585,49 @@ You MUST create a P&L Statement with this EXACT structure:
       // Use proper column range: B to final period column
       const finalCol = this.getColumnLetter(periods + 1);
       
-      // Unlevered IRR - with dark blue section header formatting as requested
+      // Unlevered IRR - dark blue background only around text and value as requested
       fcfSheet.getRange(`A${currentRow}`).values = [['Unlevered IRR']];
-      const unleverIRRRange = fcfSheet.getRange(`A${currentRow}:${this.getColumnLetter(totalColumns)}${currentRow}`);
-      unleverIRRRange.format.font.name = 'Times New Roman';
-      unleverIRRRange.format.font.size = 12;
-      unleverIRRRange.format.font.bold = true;
-      unleverIRRRange.format.font.color = ExcelFormatter.colors.white;
-      unleverIRRRange.format.fill.color = ExcelFormatter.colors.darkBlue;
+      const unleverIRRLabelRange = fcfSheet.getRange(`A${currentRow}:B${currentRow}`);
+      unleverIRRLabelRange.format.font.name = 'Times New Roman';
+      unleverIRRLabelRange.format.font.size = 12;
+      unleverIRRLabelRange.format.font.bold = true;
+      unleverIRRLabelRange.format.font.color = ExcelFormatter.colors.white;
+      unleverIRRLabelRange.format.fill.color = ExcelFormatter.colors.darkBlue;
       
       // Add 50% starting guess for high IRR calculations
       fcfSheet.getRange('B' + currentRow).formulas = [[`=IFERROR(IRR(B${unlevereCashflowsRow}:${finalCol}${unlevereCashflowsRow}),"No Solution")`]];
       fcfSheet.getRange('B' + currentRow).numberFormat = [['0.00%']];
+      fcfSheet.getRange('B' + currentRow).format.font.bold = true;
       currentRow++;
       
-      // Levered IRR - with dark blue section header formatting as requested
+      // Levered IRR - dark blue background only around text and value as requested
       fcfSheet.getRange(`A${currentRow}`).values = [['Levered IRR']];
-      const leverIRRRange = fcfSheet.getRange(`A${currentRow}:${this.getColumnLetter(totalColumns)}${currentRow}`);
-      leverIRRRange.format.font.name = 'Times New Roman';
-      leverIRRRange.format.font.size = 12;
-      leverIRRRange.format.font.bold = true;
-      leverIRRRange.format.font.color = ExcelFormatter.colors.white;
-      leverIRRRange.format.fill.color = ExcelFormatter.colors.darkBlue;
+      const leverIRRLabelRange = fcfSheet.getRange(`A${currentRow}:B${currentRow}`);
+      leverIRRLabelRange.format.font.name = 'Times New Roman';
+      leverIRRLabelRange.format.font.size = 12;
+      leverIRRLabelRange.format.font.bold = true;
+      leverIRRLabelRange.format.font.color = ExcelFormatter.colors.white;
+      leverIRRLabelRange.format.fill.color = ExcelFormatter.colors.darkBlue;
       
       // Add 100% starting guess for very high IRR calculations
       fcfSheet.getRange('B' + currentRow).formulas = [[`=IFERROR(IRR(B${leveredCashflowsRow}:${finalCol}${leveredCashflowsRow}),"No Solution")`]];
       fcfSheet.getRange('B' + currentRow).numberFormat = [['0.00%']];
+      fcfSheet.getRange('B' + currentRow).format.font.bold = true;
       currentRow++;
       
-      // MOIC - with dark blue section header formatting as requested
+      // MOIC - dark blue background only around text and value as requested
       fcfSheet.getRange(`A${currentRow}`).values = [['MOIC']];
-      const moicRange = fcfSheet.getRange(`A${currentRow}:${this.getColumnLetter(totalColumns)}${currentRow}`);
-      moicRange.format.font.name = 'Times New Roman';
-      moicRange.format.font.size = 12;
-      moicRange.format.font.bold = true;
-      moicRange.format.font.color = ExcelFormatter.colors.white;
-      moicRange.format.fill.color = ExcelFormatter.colors.darkBlue;
+      const moicLabelRange = fcfSheet.getRange(`A${currentRow}:B${currentRow}`);
+      moicLabelRange.format.font.name = 'Times New Roman';
+      moicLabelRange.format.font.size = 12;
+      moicLabelRange.format.font.bold = true;
+      moicLabelRange.format.font.color = ExcelFormatter.colors.white;
+      moicLabelRange.format.fill.color = ExcelFormatter.colors.darkBlue;
       
       // MOIC: Sum of levered cash inflows / Initial equity investment
       fcfSheet.getRange('B' + currentRow).formulas = [[`=SUM(C${leveredCashflowsRow}:${finalCol}${leveredCashflowsRow})/ABS(B${leveredCashflowsRow})`]];
       fcfSheet.getRange('B' + currentRow).numberFormat = [['0.0"x"']];
+      fcfSheet.getRange('B' + currentRow).format.font.bold = true;
       
       // Format all numbers with standard negative format (excluding IRR/MOIC rows)
       // Stop formatting before the RETURNS section to preserve percentage formatting
