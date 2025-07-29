@@ -893,8 +893,7 @@ Required format:
       
       // PERIOD ROW - 'Period' followed by 0, 1, 2, 3, etc.
       const periodHeaders = ['Period'];
-      const prevPeriodLabel = this.getPreviousPeriodLabel(modelData.projectStartDate, modelData.modelPeriods);
-      periodHeaders.push(prevPeriodLabel); // Period 0
+      periodHeaders.push('0'); // Period 0
       for (let i = 1; i <= periodColumns; i++) {
         periodHeaders.push(i.toString());
       }
@@ -919,8 +918,10 @@ Required format:
             
             if (col === 1) {
               // Period 0 - show dash for no revenue
-              plSheet.getRange(`${colLetter}${currentRow}`).values = [['-']];
-              ExcelFormatter.applyNumberFormat(plSheet.getRange(`${colLetter}${currentRow}`));
+              const dashRange = plSheet.getRange(`${colLetter}${currentRow}`);
+              dashRange.values = [['-']];
+              dashRange.format.horizontalAlignment = 'Right';
+              ExcelFormatter.applyNumberFormat(dashRange);
             } else if (col === 2) {
               // First actual period - reference from Assumptions
               const assumptionRef = this.cellTracker.getCellReference(`revenue_${index}`);
@@ -971,7 +972,9 @@ Required format:
         const colLetter = this.getColumnLetter(col);
         if (col === 1) {
           // Period 0 - show dash
-          plSheet.getRange(`${colLetter}${currentRow}`).values = [['-']];
+          const dashRange = plSheet.getRange(`${colLetter}${currentRow}`);
+          dashRange.values = [['-']];
+          dashRange.format.horizontalAlignment = 'Right';
         } else if (modelData.revenueItems && modelData.revenueItems.length > 0) {
           const sumFormula = `=SUM(${colLetter}${revenueStartRow + 3}:${colLetter}${currentRow - 1})`;
           plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[sumFormula]];
@@ -1016,8 +1019,10 @@ Required format:
             
             if (col === 1) {
               // Period 0 - show dash for no costs
-              plSheet.getRange(`${colLetter}${currentRow}`).values = [['-']];
-              ExcelFormatter.applyNumberFormat(plSheet.getRange(`${colLetter}${currentRow}`));
+              const dashRange = plSheet.getRange(`${colLetter}${currentRow}`);
+              dashRange.values = [['-']];
+              dashRange.format.horizontalAlignment = 'Right';
+              ExcelFormatter.applyNumberFormat(dashRange);
             } else if (col === 2) {
               // First actual period - negative value from Assumptions
               const assumptionRef = this.cellTracker.getCellReference(`opex_${index}`);
@@ -1068,7 +1073,9 @@ Required format:
         const colLetter = this.getColumnLetter(col);
         if (col === 1) {
           // Period 0 - show dash
-          plSheet.getRange(`${colLetter}${currentRow}`).values = [['-']];
+          const dashRange = plSheet.getRange(`${colLetter}${currentRow}`);
+          dashRange.values = [['-']];
+          dashRange.format.horizontalAlignment = 'Right';
         } else if (modelData.operatingExpenses && modelData.operatingExpenses.length > 0) {
           const sumFormula = `=SUM(${colLetter}${opexStartRow + 1}:${colLetter}${currentRow - 1})`;
           plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[sumFormula]];
@@ -1098,7 +1105,9 @@ Required format:
         const colLetter = this.getColumnLetter(col);
         if (col === 1) {
           // Period 0 - show dash
-          plSheet.getRange(`${colLetter}${currentRow}`).values = [['-']];
+          const dashRange = plSheet.getRange(`${colLetter}${currentRow}`);
+          dashRange.values = [['-']];
+          dashRange.format.horizontalAlignment = 'Right';
         } else {
           plSheet.getRange(`${colLetter}${currentRow}`).formulas = 
             [[`=${colLetter}${totalRevenueRow}+${colLetter}${totalOpexRow}`]];
@@ -3604,10 +3613,9 @@ You MUST create a P&L Statement with this EXACT structure:
       dateRange.format.borders.getItem('EdgeBottom').color = ExcelFormatter.colors.black;
       currentRow++;
       
-      // PERIOD ROW - 'Period' followed by previous period label, then 1, 2, 3, etc.
+      // PERIOD ROW - 'Period' followed by 0, then 1, 2, 3, etc.
       const periodHeaders = ['Period'];
-      const prevPeriodLabel = this.getPreviousPeriodLabel(modelData.projectStartDate, modelData.modelPeriods);
-      periodHeaders.push(prevPeriodLabel);
+      periodHeaders.push('0'); // Period 0
       for (let i = 1; i <= periodColumns; i++) {
         periodHeaders.push(i.toString());
       }
@@ -3633,8 +3641,10 @@ You MUST create a P&L Statement with this EXACT structure:
             const colLetter = this.getColumnLetter(col);
             if (col === 1) {
               // Period 0 (Initial Investment): No revenue - show dash
-              plSheet.getRange(`${colLetter}${currentRow}`).values = [['-']];
-              ExcelFormatter.applyNumberFormat(plSheet.getRange(`${colLetter}${currentRow}`));
+              const dashRange = plSheet.getRange(`${colLetter}${currentRow}`);
+              dashRange.values = [['-']];
+              dashRange.format.horizontalAlignment = 'Right';
+              ExcelFormatter.applyNumberFormat(dashRange);
             } else if (col === 2) {
               // First operating period: base value
               plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${valueRef}`]];
@@ -3678,7 +3688,9 @@ You MUST create a P&L Statement with this EXACT structure:
         const colLetter = this.getColumnLetter(col);
         if (col === 1) {
           // Period 0 - show dash
-          plSheet.getRange(`${colLetter}${currentRow}`).values = [['-']];
+          const dashRange = plSheet.getRange(`${colLetter}${currentRow}`);
+          dashRange.values = [['-']];
+          dashRange.format.horizontalAlignment = 'Right';
         } else {
           const revenueStartRow = totalRevenueRow - modelData.revenueItems.length;
           const revenueEndRow = totalRevenueRow - 1;
@@ -3721,8 +3733,10 @@ You MUST create a P&L Statement with this EXACT structure:
             const colLetter = this.getColumnLetter(col);
             if (col === 1) {
               // Period 0 (Initial Investment): No operating expenses - show dash
-              plSheet.getRange(`${colLetter}${currentRow}`).values = [['-']];
-              ExcelFormatter.applyNumberFormat(plSheet.getRange(`${colLetter}${currentRow}`));
+              const dashRange = plSheet.getRange(`${colLetter}${currentRow}`);
+              dashRange.values = [['-']];
+              dashRange.format.horizontalAlignment = 'Right';
+              ExcelFormatter.applyNumberFormat(dashRange);
             } else if (col === 2) {
               // First operating period: base value
               plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=-${valueRef}`]];
@@ -3766,7 +3780,9 @@ You MUST create a P&L Statement with this EXACT structure:
         const colLetter = this.getColumnLetter(col);
         if (col === 1) {
           // Period 0 - show dash
-          plSheet.getRange(`${colLetter}${currentRow}`).values = [['-']];
+          const dashRange = plSheet.getRange(`${colLetter}${currentRow}`);
+          dashRange.values = [['-']];
+          dashRange.format.horizontalAlignment = 'Right';
         } else {
           const opexStartRow = totalOpExRow - modelData.operatingExpenses.length;
           const opexEndRow = totalOpExRow - 1;
@@ -3795,7 +3811,9 @@ You MUST create a P&L Statement with this EXACT structure:
         const colLetter = this.getColumnLetter(col);
         if (col === 1) {
           // Period 0 - show dash
-          plSheet.getRange(`${colLetter}${currentRow}`).values = [['-']];
+          const dashRange = plSheet.getRange(`${colLetter}${currentRow}`);
+          dashRange.values = [['-']];
+          dashRange.format.horizontalAlignment = 'Right';
         } else {
           plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${colLetter}${totalRevenueRow}+${colLetter}${totalOpExRow}`]];
         }
