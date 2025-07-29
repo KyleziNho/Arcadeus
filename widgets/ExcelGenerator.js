@@ -4166,90 +4166,155 @@ You MUST create a P&L Statement with this EXACT structure:
       fcfSheet.position = 3; // After CapEx
       fcfSheet.activate();
       
+      // Hide gridlines
+      fcfSheet.showGridlines = false;
+      
       // Calculate periods
       const startDate = new Date(modelData.projectStartDate);
       const endDate = new Date(modelData.projectEndDate);
       const periods = this.calculatePeriods(startDate, endDate, modelData.modelPeriods);
       const totalColumns = periods + 1; // +1 for Period 0 (periods is a number, not array)
       
-      // Add headers
-      fcfSheet.getRange('A1').values = [['Free Cash Flow Statement']];
-      fcfSheet.getRange('A1').format.font.bold = true;
-      fcfSheet.getRange('A1').format.font.size = 16;
+      // TITLE - P&L style formatting
+      fcfSheet.getRange('A1').values = [['Cashflows']];
+      const titleRange = fcfSheet.getRange(`A1:${this.getColumnLetter(totalColumns)}1`);
+      titleRange.merge();
+      titleRange.format.font.name = 'Times New Roman';
+      titleRange.format.font.size = 12;
+      titleRange.format.font.bold = true;
+      titleRange.format.fill.color = ExcelFormatter.colors.backgroundDarker5;
+      titleRange.format.horizontalAlignment = 'Left';
+      titleRange.format.font.color = ExcelFormatter.colors.black;
       
-      let currentRow = 3;
+      let currentRow = 2; // Remove extra blank row
       
-      // FIXED: Proper column structure starting at column B
-      // Period headers with proper alignment
-      fcfSheet.getRange('A' + currentRow).values = [['Period']];
-      for (let i = 0; i <= periods; i++) {
-        const colLetter = this.getColumnLetter(i + 1); // Start at column B (i+1 where i=0 gives column B)
-        if (i === 0) {
-          const prevPeriodLabel = this.getPreviousPeriodLabel(modelData.projectStartDate, modelData.modelPeriods);
-          fcfSheet.getRange(colLetter + currentRow).values = [[prevPeriodLabel]];
-        } else {
-          const periodHeader = this.formatPeriodHeader(startDate, i - 1, modelData.modelPeriods);
-          fcfSheet.getRange(colLetter + currentRow).values = [[periodHeader]];
-        }
+      // Skip one row then add DATES (height 8)
+      fcfSheet.getRange(`A${currentRow}:${this.getColumnLetter(totalColumns)}${currentRow}`).format.rowHeight = 8;
+      currentRow++;
+      
+      // DATES ROW - includes Period 0
+      const dateHeaders = [''];
+      const prevPeriodDate = new Date(modelData.projectStartDate);
+      
+      // Calculate previous period date
+      switch (modelData.modelPeriods) {
+        case 'daily':
+          prevPeriodDate.setDate(prevPeriodDate.getDate() - 1);
+          break;
+        case 'monthly':
+          prevPeriodDate.setMonth(prevPeriodDate.getMonth() - 1);
+          break;
+        case 'quarterly':
+          prevPeriodDate.setMonth(prevPeriodDate.getMonth() - 3);
+          break;
+        case 'yearly':
+          prevPeriodDate.setFullYear(prevPeriodDate.getFullYear() - 1);
+          break;
       }
-      fcfSheet.getRange(`A${currentRow}:${this.getColumnLetter(periods + 1)}${currentRow}`).format.font.bold = true;
-      currentRow++;
       
-      // FIXED: Date row with actual Excel dates for XIRR
-      fcfSheet.getRange('A' + currentRow).values = [['Date Values']];
-      for (let i = 0; i <= periods; i++) {
-        const colLetter = this.getColumnLetter(i + 1);
-        if (i === 0) {
-          // Period 0: Use project start date converted to Excel format
-          const excelEpoch = new Date(1900, 0, 1);
-          const msPerDay = 24 * 60 * 60 * 1000;
-          const excelStartDate = Math.floor((startDate - excelEpoch) / msPerDay) + 2;
-          fcfSheet.getRange(colLetter + currentRow).values = [[excelStartDate]];
-        } else {
-          const periodDate = this.formatPeriodDate(startDate, i - 1, modelData.modelPeriods);
-          fcfSheet.getRange(colLetter + currentRow).values = [[periodDate]];
+      dateHeaders.push(this.formatDateAsLastDay(prevPeriodDate, modelData.modelPeriods)); // Period 0
+      for (let i = 0; i < periods; i++) {
+        const periodDate = new Date(startDate);
+        
+        switch (modelData.modelPeriods) {
+          case 'daily':
+            periodDate.setDate(periodDate.getDate() + i);
+            break;
+          case 'monthly':
+            periodDate.setMonth(periodDate.getMonth() + i);
+            break;
+          case 'quarterly':
+            periodDate.setMonth(periodDate.getMonth() + (i * 3));
+            break;
+          case 'yearly':
+            periodDate.setFullYear(periodDate.getFullYear() + i);
+            break;
         }
+        
+        dateHeaders.push(this.formatDateAsLastDay(periodDate, modelData.modelPeriods));
       }
-      // Format entire date row as dates
-      fcfSheet.getRange(`B${currentRow}:${this.getColumnLetter(periods + 1)}${currentRow}`).numberFormat = [['mm/dd/yyyy']];
-      const dateRowForIRR = currentRow; // Store for IRR formula reference
+      
+      const dateRange = fcfSheet.getRange(`A${currentRow}:${this.getColumnLetter(totalColumns)}${currentRow}`);
+      dateRange.values = [dateHeaders];
+      dateRange.format.font.name = 'Times New Roman';
+      dateRange.format.font.size = 12;
+      dateRange.format.font.bold = true;
+      dateRange.format.fill.color = ExcelFormatter.colors.white;
+      dateRange.format.font.color = ExcelFormatter.colors.black;
+      
+      // Add dashed underline under dates
+      dateRange.format.borders.getItem('EdgeBottom').style = 'Dash';
+      dateRange.format.borders.getItem('EdgeBottom').weight = 'Thin';
+      dateRange.format.borders.getItem('EdgeBottom').color = ExcelFormatter.colors.black;
       currentRow++;
       
-      // UNLEVERED CASH FLOWS
-      fcfSheet.getRange(`A${currentRow}`).values = [['UNLEVERED CASH FLOWS']];
-      fcfSheet.getRange(`A${currentRow}`).format.font.bold = true;
-      fcfSheet.getRange(`A${currentRow}`).format.fill.color = '#d9ead3';
+      // PERIOD ROW
+      const periodHeaders = ['Period'];
+      periodHeaders.push('0'); // Period 0
+      for (let i = 1; i <= periods; i++) {
+        periodHeaders.push(i.toString());
+      }
+      
+      const periodRange = fcfSheet.getRange(`A${currentRow}:${this.getColumnLetter(totalColumns)}${currentRow}`);
+      periodRange.values = [periodHeaders];
+      periodRange.format.font.name = 'Times New Roman';
+      periodRange.format.font.size = 12;
+      periodRange.format.font.bold = false;
+      periodRange.format.font.color = ExcelFormatter.colors.black;
       currentRow++;
+      
+      // Remove section headers - start directly with data rows
       
       // Purchase price (Period 0 only)
       fcfSheet.getRange(`A${currentRow}`).values = [['Purchase price']];
+      fcfSheet.getRange(`A${currentRow}`).format.font.name = 'Times New Roman';
+      fcfSheet.getRange(`A${currentRow}`).format.font.size = 12;
+      fcfSheet.getRange(`A${currentRow}`).format.font.color = ExcelFormatter.colors.black;
+      
       fcfSheet.getRange('B' + currentRow).formulas = [[`=-Assumptions!${this.cellTracker.getCellReference('dealValue')?.split('!')[1] || 'B10'}`]];
+      ExcelFormatter.applyNumberFormat(fcfSheet.getRange('B' + currentRow));
       for (let i = 1; i <= periods; i++) {
         const colLetter = this.getColumnLetter(i + 1);
-        fcfSheet.getRange(colLetter + currentRow).values = [['']];
+        const dashRange = fcfSheet.getRange(colLetter + currentRow);
+        dashRange.values = [['-']];
+        dashRange.format.horizontalAlignment = 'Right';
+        ExcelFormatter.applyNumberFormat(dashRange);
       }
       currentRow++;
       
       // Transaction costs (Period 0 only)
       fcfSheet.getRange(`A${currentRow}`).values = [['Transaction costs']];
+      fcfSheet.getRange(`A${currentRow}`).format.font.name = 'Times New Roman';
+      fcfSheet.getRange(`A${currentRow}`).format.font.size = 12;
+      fcfSheet.getRange(`A${currentRow}`).format.font.color = ExcelFormatter.colors.black;
+      
       const dealValueRef = this.cellTracker.getCellReference('dealValue');
       const transactionFeeRef = this.cellTracker.getCellReference('transactionFee');
       if (dealValueRef && transactionFeeRef) {
         fcfSheet.getRange('B' + currentRow).formulas = [[`=-${dealValueRef}*${transactionFeeRef}`]];
+        ExcelFormatter.applyNumberFormat(fcfSheet.getRange('B' + currentRow));
       }
       for (let i = 1; i <= periods; i++) {
         const colLetter = this.getColumnLetter(i + 1);
-        fcfSheet.getRange(colLetter + currentRow).values = [['']];
+        const dashRange = fcfSheet.getRange(colLetter + currentRow);
+        dashRange.values = [['-']];
+        dashRange.format.horizontalAlignment = 'Right';
+        ExcelFormatter.applyNumberFormat(dashRange);
       }
       currentRow++;
       
       // NOI from P&L
       fcfSheet.getRange(`A${currentRow}`).values = [['NOI']];
+      fcfSheet.getRange(`A${currentRow}`).format.font.name = 'Times New Roman';
+      fcfSheet.getRange(`A${currentRow}`).format.font.size = 12;
+      fcfSheet.getRange(`A${currentRow}`).format.font.color = ExcelFormatter.colors.black;
+      
       if (plStructure.lineItems.noi) {
         for (let i = 0; i <= periods; i++) {
           const colLetter = this.getColumnLetter(i + 1); // FCF column (Period i is in column i+1)
           const plCol = this.getColumnLetter(i + 1); // P&L column mapping: Period 0 FCF = Period 1 P&L
           fcfSheet.getRange(colLetter + currentRow).formulas = [[`='P&L Statement'!${plCol}${plStructure.lineItems.noi.row}`]];
+          ExcelFormatter.applyNumberFormat(fcfSheet.getRange(colLetter + currentRow));
         }
       } else if (plStructure.lineItems.netIncome) {
         // Fallback: Use Net Income if NOI not found
@@ -4257,12 +4322,14 @@ You MUST create a P&L Statement with this EXACT structure:
           const colLetter = this.getColumnLetter(i + 1);
           const plCol = this.getColumnLetter(i);
           fcfSheet.getRange(colLetter + currentRow).formulas = [[`='P&L Statement'!${plCol}${plStructure.lineItems.netIncome.row}`]];
+          ExcelFormatter.applyNumberFormat(fcfSheet.getRange(colLetter + currentRow));
         }
       } else {
         // Last fallback: Use zeros and log warning
         for (let i = 1; i <= periods; i++) {
           const colLetter = this.getColumnLetter(i + 1);
           fcfSheet.getRange(colLetter + currentRow).values = [[0]];
+          ExcelFormatter.applyNumberFormat(fcfSheet.getRange(colLetter + currentRow));
         }
         console.warn('⚠️ NOI not found in P&L structure for operating cash flows');
       }
@@ -4270,29 +4337,49 @@ You MUST create a P&L Statement with this EXACT structure:
       
       // CapEx (from CapEx sheet)
       fcfSheet.getRange(`A${currentRow}`).values = [['CapEx']];
+      fcfSheet.getRange(`A${currentRow}`).format.font.name = 'Times New Roman';
+      fcfSheet.getRange(`A${currentRow}`).format.font.size = 12;
+      fcfSheet.getRange(`A${currentRow}`).format.font.color = ExcelFormatter.colors.black;
+      
       if (capExStructure && capExStructure.totalRow) {
         for (let i = 0; i <= periods; i++) {
           const colLetter = this.getColumnLetter(i + 1); // FCF column (B, C, D, E...)
           const capExCol = this.getColumnLetter(i + 1); // CapEx column (B, C, D, E...) - same mapping now
           fcfSheet.getRange(colLetter + currentRow).formulas = [[`='CapEx'!${capExCol}${capExStructure?.totalRow}`]];
+          ExcelFormatter.applyNumberFormat(fcfSheet.getRange(colLetter + currentRow));
         }
       }
       currentRow++;
       
       // Sale Price (final period only)
       fcfSheet.getRange(`A${currentRow}`).values = [['Sale Price']];
+      fcfSheet.getRange(`A${currentRow}`).format.font.name = 'Times New Roman';
+      fcfSheet.getRange(`A${currentRow}`).format.font.size = 12;
+      fcfSheet.getRange(`A${currentRow}`).format.font.color = ExcelFormatter.colors.black;
+      
+      // Fill Period 0 through Period N-1 with dashes
+      for (let i = 0; i < periods; i++) {
+        const colLetter = this.getColumnLetter(i + 1);
+        const dashRange = fcfSheet.getRange(colLetter + currentRow);
+        dashRange.values = [['-']];
+        dashRange.format.horizontalAlignment = 'Right';
+        ExcelFormatter.applyNumberFormat(dashRange);
+      }
+      
       const finalPeriodCol = this.getColumnLetter(periods + 1); // FIXED: Correct final period column
       if (plStructure.lineItems.noi) {
         // Terminal value = Final NOI / Terminal Cap Rate
         const terminalCapRateRef = this.cellTracker.getCellReference('terminalCapRate');
         if (terminalCapRateRef) {
           fcfSheet.getRange(finalPeriodCol + currentRow).formulas = [[`='P&L Statement'!${this.getColumnLetter(periods + 1)}${plStructure.lineItems.noi.row}/${terminalCapRateRef}`]];
+          ExcelFormatter.applyNumberFormat(fcfSheet.getRange(finalPeriodCol + currentRow));
         }
       } else if (plStructure.lineItems.netIncome) {
         // Fallback: Use Net Income if NOI not found
         const terminalCapRateRef = this.cellTracker.getCellReference('terminalCapRate');
         if (terminalCapRateRef) {
           fcfSheet.getRange(finalPeriodCol + currentRow).formulas = [[`='P&L Statement'!${this.getColumnLetter(periods + 1)}${plStructure.lineItems.netIncome.row}/${terminalCapRateRef}`]];
+          ExcelFormatter.applyNumberFormat(fcfSheet.getRange(finalPeriodCol + currentRow));
         }
       } else {
         // Last fallback: If no NOI or Net Income found, use a placeholder note
@@ -4303,27 +4390,45 @@ You MUST create a P&L Statement with this EXACT structure:
       
       // Disposal Costs (final period only)
       fcfSheet.getRange(`A${currentRow}`).values = [['Disposal Costs']];
+      fcfSheet.getRange(`A${currentRow}`).format.font.name = 'Times New Roman';
+      fcfSheet.getRange(`A${currentRow}`).format.font.size = 12;
+      fcfSheet.getRange(`A${currentRow}`).format.font.color = ExcelFormatter.colors.black;
+      
+      // Fill Period 0 through Period N-1 with dashes
+      for (let i = 0; i < periods; i++) {
+        const colLetter = this.getColumnLetter(i + 1);
+        const dashRange = fcfSheet.getRange(colLetter + currentRow);
+        dashRange.values = [['-']];
+        dashRange.format.horizontalAlignment = 'Right';
+        ExcelFormatter.applyNumberFormat(dashRange);
+      }
+      
       const disposalCostRef = this.cellTracker.getCellReference('disposalCost');
       if (disposalCostRef) {
         fcfSheet.getRange(finalPeriodCol + currentRow).formulas = [[`=${finalPeriodCol}${currentRow - 1}*${disposalCostRef}`]];
+        ExcelFormatter.applyNumberFormat(fcfSheet.getRange(finalPeriodCol + currentRow));
       }
       currentRow++;
       
       // Unlevered Cashflows (sum of all above)
       fcfSheet.getRange(`A${currentRow}`).values = [['Unlevered Cashflows']];
-      fcfSheet.getRange(`A${currentRow}`).format.font.bold = true;
-      fcfSheet.getRange(`A${currentRow}`).format.fill.color = '#fff2cc';
+      const unleverCashflowRange = fcfSheet.getRange(`A${currentRow}:${this.getColumnLetter(totalColumns)}${currentRow}`);
+      unleverCashflowRange.format.font.name = 'Times New Roman';
+      unleverCashflowRange.format.font.size = 12;
+      unleverCashflowRange.format.font.bold = true;
+      unleverCashflowRange.format.font.color = ExcelFormatter.colors.black;
+      
+      // Add thin underline at top of unlevered cashflow row
+      unleverCashflowRange.format.borders.getItem('EdgeTop').style = 'Continuous';
+      unleverCashflowRange.format.borders.getItem('EdgeTop').weight = 'Thin';
+      unleverCashflowRange.format.borders.getItem('EdgeTop').color = ExcelFormatter.colors.black;
+      
       const unlevereCashflowsRow = currentRow;
       for (let i = 0; i <= periods; i++) {
         const colLetter = this.getColumnLetter(i + 1);
         fcfSheet.getRange(colLetter + currentRow).formulas = [[`=SUM(${colLetter}${currentRow - 6}:${colLetter}${currentRow - 1})`]];
+        ExcelFormatter.applyNumberFormat(fcfSheet.getRange(colLetter + currentRow));
       }
-      currentRow += 2;
-      
-      // LEVERED CASH FLOWS
-      fcfSheet.getRange(`A${currentRow}`).values = [['LEVERED CASH FLOWS']];
-      fcfSheet.getRange(`A${currentRow}`).format.font.bold = true;
-      fcfSheet.getRange(`A${currentRow}`).format.fill.color = '#cfe2f3';
       currentRow++;
       
       // Get debt financing reference for later use
@@ -4331,41 +4436,71 @@ You MUST create a P&L Statement with this EXACT structure:
       
       // Debt upfront costs (Period 0 only)
       fcfSheet.getRange(`A${currentRow}`).values = [['Debt upfront costs']];
+      fcfSheet.getRange(`A${currentRow}`).format.font.name = 'Times New Roman';
+      fcfSheet.getRange(`A${currentRow}`).format.font.size = 12;
+      fcfSheet.getRange(`A${currentRow}`).format.font.color = ExcelFormatter.colors.black;
+      
       const loanIssuanceFeesRef = this.cellTracker.getCellReference('loanIssuanceFees');
       if (debtFinancingRef && loanIssuanceFeesRef) {
         // Reference loan issuance fees from Assumptions sheet
         fcfSheet.getRange('B' + currentRow).formulas = [[`=-${debtFinancingRef}*${loanIssuanceFeesRef}`]];
+        ExcelFormatter.applyNumberFormat(fcfSheet.getRange('B' + currentRow));
       } else if (debtFinancingRef) {
         // Fallback if loan issuance fees not found
         fcfSheet.getRange('B' + currentRow).formulas = [[`=-${debtFinancingRef}*1.5/100`]];
+        ExcelFormatter.applyNumberFormat(fcfSheet.getRange('B' + currentRow));
+      }
+      
+      // Fill Period 1 through Period N with dashes
+      for (let i = 1; i <= periods; i++) {
+        const colLetter = this.getColumnLetter(i + 1);
+        const dashRange = fcfSheet.getRange(colLetter + currentRow);
+        dashRange.values = [['-']];
+        dashRange.format.horizontalAlignment = 'Right';
+        ExcelFormatter.applyNumberFormat(dashRange);
       }
       currentRow++;
       
       // Debt Expense (referenced directly from Debt Model)
       fcfSheet.getRange(`A${currentRow}`).values = [['Debt Expense']];
+      fcfSheet.getRange(`A${currentRow}`).format.font.name = 'Times New Roman';
+      fcfSheet.getRange(`A${currentRow}`).format.font.size = 12;
+      fcfSheet.getRange(`A${currentRow}`).format.font.color = ExcelFormatter.colors.black;
+      
       if (modelData.dealLTV && parseFloat(modelData.dealLTV) > 0) {
-        // Reference debt expense directly from the Debt Model sheet row 6
+        // Reference debt expense directly from the Debt Model sheet row 8
         for (let i = 0; i <= periods; i++) {
           const colLetter = this.getColumnLetter(i + 1); // FCF column
           if (i === 0) {
-            fcfSheet.getRange(colLetter + currentRow).values = [[0]]; // Period 0 - no debt expense
+            const dashRange = fcfSheet.getRange(colLetter + currentRow);
+            dashRange.values = [['-']];
+            dashRange.format.horizontalAlignment = 'Right';
+            ExcelFormatter.applyNumberFormat(dashRange);
           } else {
             // Reference debt expense from Debt Model: Period 1 is column C, Period 2 is column D, etc.
             const debtModelCol = this.getColumnLetter(i + 1); // FCF Period i maps to Debt Model column (i+1)
             fcfSheet.getRange(colLetter + currentRow).formulas = [[`=-'Debt Model'!${debtModelCol}8`]];
+            ExcelFormatter.applyNumberFormat(fcfSheet.getRange(colLetter + currentRow));
           }
         }
       } else {
         // No debt - all zeros
         for (let i = 0; i <= periods; i++) {
           const colLetter = this.getColumnLetter(i + 1);
-          fcfSheet.getRange(colLetter + currentRow).values = [[0]];
+          const dashRange = fcfSheet.getRange(colLetter + currentRow);
+          dashRange.values = [['-']];
+          dashRange.format.horizontalAlignment = 'Right';
+          ExcelFormatter.applyNumberFormat(dashRange);
         }
       }
       currentRow++;
       
       // Loan proceeds (positive cash inflow in Period 0)
       fcfSheet.getRange(`A${currentRow}`).values = [['Loan proceeds']];
+      fcfSheet.getRange(`A${currentRow}`).format.font.name = 'Times New Roman';
+      fcfSheet.getRange(`A${currentRow}`).format.font.size = 12;
+      fcfSheet.getRange(`A${currentRow}`).format.font.color = ExcelFormatter.colors.black;
+      
       if (modelData.dealLTV && parseFloat(modelData.dealLTV) > 0) {
         const debtFinancingRef = this.cellTracker.getCellReference('debtFinancing');
         for (let i = 0; i <= periods; i++) {
@@ -4374,82 +4509,112 @@ You MUST create a P&L Statement with this EXACT structure:
             // Initial period - loan proceeds come in
             if (debtFinancingRef) {
               fcfSheet.getRange(colLetter + currentRow).formulas = [[`=${debtFinancingRef}`]];
+              ExcelFormatter.applyNumberFormat(fcfSheet.getRange(colLetter + currentRow));
             } else {
               // Fallback calculation
               const dealValue = parseFloat(modelData.dealValue) || 0;
               const ltvRatio = parseFloat(modelData.dealLTV) / 100 || 0;
               const loanAmount = dealValue * ltvRatio;
               fcfSheet.getRange(colLetter + currentRow).values = [[loanAmount]];
+              ExcelFormatter.applyNumberFormat(fcfSheet.getRange(colLetter + currentRow));
             }
           } else {
             // All other periods - no loan proceeds
-            fcfSheet.getRange(colLetter + currentRow).values = [[0]];
+            const dashRange = fcfSheet.getRange(colLetter + currentRow);
+            dashRange.values = [['-']];
+            dashRange.format.horizontalAlignment = 'Right';
+            ExcelFormatter.applyNumberFormat(dashRange);
           }
         }
       } else {
         // No debt - all zeros
         for (let i = 0; i <= periods; i++) {
           const colLetter = this.getColumnLetter(i + 1);
-          fcfSheet.getRange(colLetter + currentRow).values = [[0]];
+          const dashRange = fcfSheet.getRange(colLetter + currentRow);
+          dashRange.values = [['-']];
+          dashRange.format.horizontalAlignment = 'Right';
+          ExcelFormatter.applyNumberFormat(dashRange);
         }
       }
       currentRow++;
       
       // Levered Cashflows
       fcfSheet.getRange(`A${currentRow}`).values = [['Levered Cashflows']];
-      fcfSheet.getRange(`A${currentRow}`).format.font.bold = true;
-      fcfSheet.getRange(`A${currentRow}`).format.fill.color = '#fff2cc';
+      const leveredCashflowRange = fcfSheet.getRange(`A${currentRow}:${this.getColumnLetter(totalColumns)}${currentRow}`);
+      leveredCashflowRange.format.font.name = 'Times New Roman';
+      leveredCashflowRange.format.font.size = 12;
+      leveredCashflowRange.format.font.bold = true;
+      leveredCashflowRange.format.font.color = ExcelFormatter.colors.black;
+      leveredCashflowRange.format.fill.color = ExcelFormatter.colors.backgroundDarker5;
+      
+      // Add thin underline at top of levered cashflow row
+      leveredCashflowRange.format.borders.getItem('EdgeTop').style = 'Continuous';
+      leveredCashflowRange.format.borders.getItem('EdgeTop').weight = 'Thin';
+      leveredCashflowRange.format.borders.getItem('EdgeTop').color = ExcelFormatter.colors.black;
+      
       const leveredCashflowsRow = currentRow;
       for (let i = 0; i <= periods; i++) {
         const colLetter = this.getColumnLetter(i + 1);
         // Levered CF = Unlevered CF + Debt upfront costs + Debt Expense + Loan proceeds
         fcfSheet.getRange(colLetter + currentRow).formulas = [[`=${colLetter}${unlevereCashflowsRow}+${colLetter}${currentRow - 3}+${colLetter}${currentRow - 2}+${colLetter}${currentRow - 1}`]];
+        ExcelFormatter.applyNumberFormat(fcfSheet.getRange(colLetter + currentRow));
       }
       currentRow += 2;
       
-      // EQUITY FLOWS
-      fcfSheet.getRange(`A${currentRow}`).values = [['EQUITY FLOWS']];
-      fcfSheet.getRange(`A${currentRow}`).format.font.bold = true;
-      fcfSheet.getRange(`A${currentRow}`).format.fill.color = '#fce5cd';
-      currentRow++;
-      
-      // Removed: Equity contributed section - not necessary
-      
-      // Equity distributions (Levered Cashflows)
+      // Equity distributions (Levered Cashflows) - removed EQUITY FLOWS header as requested
       fcfSheet.getRange(`A${currentRow}`).values = [['Equity distributions']];
+      const equityDistRange = fcfSheet.getRange(`A${currentRow}:${this.getColumnLetter(totalColumns)}${currentRow}`);
+      equityDistRange.format.font.name = 'Times New Roman';
+      equityDistRange.format.font.size = 12;
+      equityDistRange.format.font.color = ExcelFormatter.colors.black;
+      
       for (let i = 0; i <= periods; i++) {
         const colLetter = this.getColumnLetter(i + 1);
         fcfSheet.getRange(colLetter + currentRow).formulas = [[`=${colLetter}${leveredCashflowsRow}`]];
+        ExcelFormatter.applyNumberFormat(fcfSheet.getRange(colLetter + currentRow));
       }
       currentRow += 2;
       
-      // RETURNS
-      fcfSheet.getRange(`A${currentRow}`).values = [['RETURNS']];
-      fcfSheet.getRange(`A${currentRow}`).format.font.bold = true;
-      fcfSheet.getRange(`A${currentRow}`).format.fill.color = '#f4cccc';
-      currentRow++;
-      
-      // FIXED: Unlevered IRR with regular IRR function (no dates needed)
-      fcfSheet.getRange(`A${currentRow}`).values = [['Unlevered IRR']];
-      fcfSheet.getRange(`A${currentRow}`).format.font.bold = true;
       // Use proper column range: B to final period column
       const finalCol = this.getColumnLetter(periods + 1);
+      
+      // Unlevered IRR - with dark blue section header formatting as requested
+      fcfSheet.getRange(`A${currentRow}`).values = [['Unlevered IRR']];
+      const unleverIRRRange = fcfSheet.getRange(`A${currentRow}:${this.getColumnLetter(totalColumns)}${currentRow}`);
+      unleverIRRRange.format.font.name = 'Times New Roman';
+      unleverIRRRange.format.font.size = 12;
+      unleverIRRRange.format.font.bold = true;
+      unleverIRRRange.format.font.color = ExcelFormatter.colors.white;
+      unleverIRRRange.format.fill.color = ExcelFormatter.colors.darkBlue;
+      
       // Add 50% starting guess for high IRR calculations
       fcfSheet.getRange('B' + currentRow).formulas = [[`=IFERROR(IRR(B${unlevereCashflowsRow}:${finalCol}${unlevereCashflowsRow}),"No Solution")`]];
       fcfSheet.getRange('B' + currentRow).numberFormat = [['0.00%']];
       currentRow++;
       
-      // FIXED: Levered IRR with regular IRR function (no dates needed)
-      fcfSheet.getRange(`A${currentRow}`).values = [['Levered IRR ']];
-      fcfSheet.getRange(`A${currentRow}`).format.font.bold = true;
+      // Levered IRR - with dark blue section header formatting as requested
+      fcfSheet.getRange(`A${currentRow}`).values = [['Levered IRR']];
+      const leverIRRRange = fcfSheet.getRange(`A${currentRow}:${this.getColumnLetter(totalColumns)}${currentRow}`);
+      leverIRRRange.format.font.name = 'Times New Roman';
+      leverIRRRange.format.font.size = 12;
+      leverIRRRange.format.font.bold = true;
+      leverIRRRange.format.font.color = ExcelFormatter.colors.white;
+      leverIRRRange.format.fill.color = ExcelFormatter.colors.darkBlue;
+      
       // Add 100% starting guess for very high IRR calculations
       fcfSheet.getRange('B' + currentRow).formulas = [[`=IFERROR(IRR(B${leveredCashflowsRow}:${finalCol}${leveredCashflowsRow}),"No Solution")`]];
       fcfSheet.getRange('B' + currentRow).numberFormat = [['0.00%']];
       currentRow++;
       
-      // FIXED: MOIC with correct ranges (using LEVERED/EQUITY cashflows)  
+      // MOIC - with dark blue section header formatting as requested
       fcfSheet.getRange(`A${currentRow}`).values = [['MOIC']];
-      fcfSheet.getRange(`A${currentRow}`).format.font.bold = true;
+      const moicRange = fcfSheet.getRange(`A${currentRow}:${this.getColumnLetter(totalColumns)}${currentRow}`);
+      moicRange.format.font.name = 'Times New Roman';
+      moicRange.format.font.size = 12;
+      moicRange.format.font.bold = true;
+      moicRange.format.font.color = ExcelFormatter.colors.white;
+      moicRange.format.fill.color = ExcelFormatter.colors.darkBlue;
+      
       // MOIC: Sum of levered cash inflows / Initial equity investment
       fcfSheet.getRange('B' + currentRow).formulas = [[`=SUM(C${leveredCashflowsRow}:${finalCol}${leveredCashflowsRow})/ABS(B${leveredCashflowsRow})`]];
       fcfSheet.getRange('B' + currentRow).numberFormat = [['0.0"x"']];
