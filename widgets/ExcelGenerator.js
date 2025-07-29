@@ -269,7 +269,8 @@ class ExcelGenerator {
     
     // Deal LTV
     sheet.getRange(`A${currentRow}`).values = [['Deal LTV (%)']];
-    sheet.getRange(`B${currentRow}`).values = [[data.dealLTV || 70]];
+    sheet.getRange(`B${currentRow}`).values = [[(data.dealLTV || 70) / 100]];
+    sheet.getRange(`B${currentRow}`).numberFormat = '0.00%';
     this.cellTracker.recordCell('dealLTV', 'Assumptions', `B${currentRow}`);
     currentRow++;
     
@@ -277,14 +278,14 @@ class ExcelGenerator {
     sheet.getRange(`A${currentRow}`).values = [['Equity Contribution']];
     const dealValueCell = this.cellTracker.getCellReference('dealValue').split('!')[1];
     const ltvCell = this.cellTracker.getCellReference('dealLTV').split('!')[1];
-    sheet.getRange(`B${currentRow}`).formulas = [[`=${dealValueCell}*(1-${ltvCell}/100)`]];
+    sheet.getRange(`B${currentRow}`).formulas = [[`=${dealValueCell}*(1-${ltvCell})`]];
     sheet.getRange(`B${currentRow}`).numberFormat = '#,##0';
     this.cellTracker.recordCell('equityContribution', 'Assumptions', `B${currentRow}`);
     currentRow++;
     
     // Debt Financing (Calculated)
     sheet.getRange(`A${currentRow}`).values = [['Debt Financing']];
-    sheet.getRange(`B${currentRow}`).formulas = [[`=${dealValueCell}*${ltvCell}/100`]];
+    sheet.getRange(`B${currentRow}`).formulas = [[`=${dealValueCell}*${ltvCell}`]];
     sheet.getRange(`B${currentRow}`).numberFormat = '#,##0';
     this.cellTracker.recordCell('debtFinancing', 'Assumptions', `B${currentRow}`);
     currentRow++;
