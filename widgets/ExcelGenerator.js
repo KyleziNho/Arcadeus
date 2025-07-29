@@ -63,6 +63,21 @@ class ExcelGenerator {
     this.currentWorkbook = null;
   }
 
+  // Helper function to format dates as XX-XXX-XX (last day of month)
+  formatDateAsLastDay(date, periodType) {
+    if (!date) return '';
+    
+    const d = new Date(date);
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    
+    // Get the last day of the month
+    const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+    const monthName = monthNames[d.getMonth()];
+    const year = d.getFullYear().toString().slice(-2); // Last 2 digits of year
+    
+    return `${lastDay.toString().padStart(2, '0')}-${monthName}-${year}`;
+  }
+
   // Helper function to calculate the previous period label based on period type and start date
   getPreviousPeriodLabel(startDate, periodType) {
     if (!startDate) return 'Period 0';
@@ -781,13 +796,13 @@ Required format:
       // Calculate periods and prepare headers
       const periods = this.calculatePeriods(modelData.projectStartDate, modelData.projectEndDate, modelData.modelPeriods);
       const periodColumns = periods; // Use full calculated periods
-      const totalColumns = periodColumns; // For loops that need total columns
+      const totalColumns = periodColumns + 1; // +1 for Period 0 column
       
       let currentRow = 1;
       
       // TITLE
       plSheet.getRange('A1').values = [[`Profit & Loss Statement`]];
-      const titleRange = plSheet.getRange(`A1:${this.getColumnLetter(periodColumns)}1`);
+      const titleRange = plSheet.getRange(`A1:${this.getColumnLetter(totalColumns)}1`);
       titleRange.merge();
       titleRange.format.font.name = 'Times New Roman';
       titleRange.format.font.size = 12;
@@ -799,7 +814,7 @@ Required format:
       // REVENUE ITEMS SECTION
       const revenueStartRow = currentRow;
       plSheet.getRange(`A${currentRow}`).values = [['Revenue Items']];
-      const revenueSectionRange = plSheet.getRange(`A${currentRow}:${this.getColumnLetter(periodColumns)}${currentRow}`);
+      const revenueSectionRange = plSheet.getRange(`A${currentRow}:${this.getColumnLetter(totalColumns)}${currentRow}`);
       revenueSectionRange.format.font.name = 'Times New Roman';
       revenueSectionRange.format.font.size = 12;
       revenueSectionRange.format.font.bold = true;
@@ -813,16 +828,56 @@ Required format:
       currentRow++;
       
       // Skip one row then add DATES (two cells below Revenue Items title)
+      // Set the blank row height to 8
+      plSheet.getRange(`A${currentRow}:${this.getColumnLetter(totalColumns)}${currentRow}`).format.rowHeight = 8;
       currentRow++;
       
-      // DATES ROW - two cells below Revenue Items title
+      // DATES ROW - two cells below Revenue Items title (includes Period 0)
       const dateHeaders = [''];
+      
+      // Add Period 0 date first
+      const prevPeriodDate = new Date(modelData.projectStartDate);
+      switch (modelData.modelPeriods) {
+        case 'daily':
+          prevPeriodDate.setDate(prevPeriodDate.getDate() - 1);
+          break;
+        case 'monthly':
+          prevPeriodDate.setMonth(prevPeriodDate.getMonth() - 1);
+          break;
+        case 'quarterly':
+          prevPeriodDate.setMonth(prevPeriodDate.getMonth() - 3);
+          break;
+        case 'yearly':
+          prevPeriodDate.setFullYear(prevPeriodDate.getFullYear() - 1);
+          break;
+      }
+      dateHeaders.push(this.formatDateAsLastDay(prevPeriodDate, modelData.modelPeriods));
+      
+      // Add regular period dates
       const startDate = new Date(modelData.projectStartDate);
       for (let i = 0; i < periodColumns; i++) {
-        dateHeaders.push(this.formatPeriodHeader(startDate, i, modelData.modelPeriods));
+        const periodDate = new Date(startDate);
+        
+        // Calculate the date for this period
+        switch (modelData.modelPeriods) {
+          case 'daily':
+            periodDate.setDate(periodDate.getDate() + i);
+            break;
+          case 'monthly':
+            periodDate.setMonth(periodDate.getMonth() + i);
+            break;
+          case 'quarterly':
+            periodDate.setMonth(periodDate.getMonth() + (i * 3));
+            break;
+          case 'yearly':
+            periodDate.setFullYear(periodDate.getFullYear() + i);
+            break;
+        }
+        
+        dateHeaders.push(this.formatDateAsLastDay(periodDate, modelData.modelPeriods));
       }
       
-      const dateRange = plSheet.getRange(`A${currentRow}:${this.getColumnLetter(periodColumns)}${currentRow}`);
+      const dateRange = plSheet.getRange(`A${currentRow}:${this.getColumnLetter(totalColumns)}${currentRow}`);
       dateRange.values = [dateHeaders];
       dateRange.format.font.name = 'Times New Roman';
       dateRange.format.font.size = 12;
@@ -836,17 +891,19 @@ Required format:
       dateRange.format.borders.getItem('EdgeBottom').color = ExcelFormatter.colors.black;
       currentRow++;
       
-      // PERIOD ROW - Period 1, Period 2, etc.
-      const periodHeaders = [''];
+      // PERIOD ROW - 'Period' followed by 0, 1, 2, 3, etc.
+      const periodHeaders = ['Period'];
+      const prevPeriodLabel = this.getPreviousPeriodLabel(modelData.projectStartDate, modelData.modelPeriods);
+      periodHeaders.push(prevPeriodLabel); // Period 0
       for (let i = 1; i <= periodColumns; i++) {
-        periodHeaders.push(`Period ${i}`);
+        periodHeaders.push(i.toString());
       }
       
-      const periodRange = plSheet.getRange(`A${currentRow}:${this.getColumnLetter(periodColumns)}${currentRow}`);
+      const periodRange = plSheet.getRange(`A${currentRow}:${this.getColumnLetter(totalColumns)}${currentRow}`);
       periodRange.values = [periodHeaders];  
       periodRange.format.font.name = 'Times New Roman';
       periodRange.format.font.size = 12;
-      periodRange.format.font.bold = true;
+      periodRange.format.font.bold = false; // Remove bold formatting
       currentRow++;
       
       // Add each revenue item
@@ -856,18 +913,23 @@ Required format:
           plSheet.getRange(`A${currentRow}`).format.font.name = 'Times New Roman';
           plSheet.getRange(`A${currentRow}`).format.font.size = 12;
           
-          // Add formulas for each period
+          // Add formulas for each period (including Period 0)
           for (let col = 1; col <= totalColumns; col++) {
             const colLetter = this.getColumnLetter(col);
             
             if (col === 1) {
-              // First period - reference from Assumptions
+              // Period 0 - show dash for no revenue
+              plSheet.getRange(`${colLetter}${currentRow}`).values = [['-']];
+              ExcelFormatter.applyNumberFormat(plSheet.getRange(`${colLetter}${currentRow}`));
+            } else if (col === 2) {
+              // First actual period - reference from Assumptions
               const assumptionRef = this.cellTracker.getCellReference(`revenue_${index}`);
               if (assumptionRef) {
                 plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${assumptionRef}`]];
               } else {
                 plSheet.getRange(`${colLetter}${currentRow}`).values = [[item.value || 0]];
               }
+              ExcelFormatter.applyNumberFormat(plSheet.getRange(`${colLetter}${currentRow}`));
             } else {
               // Growth formula for subsequent periods - reference assumptions sheet
               const prevCol = this.getColumnLetter(col - 1);
@@ -886,6 +948,7 @@ Required format:
                 console.log(`No growth rate reference found for revenue ${index}`);
                 plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${prevCol}${currentRow}`]];
               }
+              ExcelFormatter.applyNumberFormat(plSheet.getRange(`${colLetter}${currentRow}`));
             }
           }
           currentRow++;
@@ -894,7 +957,7 @@ Required format:
       
       // Total Revenue
       plSheet.getRange(`A${currentRow}`).values = [['Total Revenue']];
-      const totalRevRange = plSheet.getRange(`A${currentRow}:${this.getColumnLetter(periodColumns)}${currentRow}`);
+      const totalRevRange = plSheet.getRange(`A${currentRow}:${this.getColumnLetter(totalColumns)}${currentRow}`);
       totalRevRange.format.font.name = 'Times New Roman';
       totalRevRange.format.font.size = 12;
       totalRevRange.format.font.bold = true;
@@ -904,22 +967,30 @@ Required format:
       totalRevRange.format.borders.getItem('EdgeTop').weight = 'Thin';
       totalRevRange.format.borders.getItem('EdgeTop').color = ExcelFormatter.colors.black;
       
-      for (let col = 1; col <= periodColumns; col++) {
+      for (let col = 1; col <= totalColumns; col++) {
         const colLetter = this.getColumnLetter(col);
-        if (modelData.revenueItems && modelData.revenueItems.length > 0) {
-          const sumFormula = `=SUM(${colLetter}${revenueStartRow + 1}:${colLetter}${currentRow - 1})`;
+        if (col === 1) {
+          // Period 0 - show dash
+          plSheet.getRange(`${colLetter}${currentRow}`).values = [['-']];
+        } else if (modelData.revenueItems && modelData.revenueItems.length > 0) {
+          const sumFormula = `=SUM(${colLetter}${revenueStartRow + 3}:${colLetter}${currentRow - 1})`;
           plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[sumFormula]];
         } else {
           plSheet.getRange(`${colLetter}${currentRow}`).values = [[0]];
         }
+        ExcelFormatter.applyNumberFormat(plSheet.getRange(`${colLetter}${currentRow}`));
       }
       const totalRevenueRow = currentRow;
-      currentRow += 2;
+      currentRow++;
+      
+      // Add blank row with height 8 between Total Revenue and Cost Items
+      plSheet.getRange(`A${currentRow}:${this.getColumnLetter(totalColumns)}${currentRow}`).format.rowHeight = 8;
+      currentRow++;
       
       // COST ITEMS SECTION
       const opexStartRow = currentRow;
       plSheet.getRange(`A${currentRow}`).values = [['Cost Items']];
-      const opexSectionRange = plSheet.getRange(`A${currentRow}:${this.getColumnLetter(periodColumns)}${currentRow}`);
+      const opexSectionRange = plSheet.getRange(`A${currentRow}:${this.getColumnLetter(totalColumns)}${currentRow}`);
       opexSectionRange.format.font.name = 'Times New Roman';
       opexSectionRange.format.font.size = 12;
       opexSectionRange.format.font.bold = true;
@@ -939,18 +1010,23 @@ Required format:
           plSheet.getRange(`A${currentRow}`).format.font.name = 'Times New Roman';
           plSheet.getRange(`A${currentRow}`).format.font.size = 12;
           
-          // Add formulas for each period
+          // Add formulas for each period (including Period 0)
           for (let col = 1; col <= totalColumns; col++) {
             const colLetter = this.getColumnLetter(col);
             
             if (col === 1) {
-              // First period - negative value from Assumptions
+              // Period 0 - show dash for no costs
+              plSheet.getRange(`${colLetter}${currentRow}`).values = [['-']];
+              ExcelFormatter.applyNumberFormat(plSheet.getRange(`${colLetter}${currentRow}`));
+            } else if (col === 2) {
+              // First actual period - negative value from Assumptions
               const assumptionRef = this.cellTracker.getCellReference(`opex_${index}`);
               if (assumptionRef) {
                 plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=-${assumptionRef}`]];
               } else {
                 plSheet.getRange(`${colLetter}${currentRow}`).values = [[-item.value || 0]];
               }
+              ExcelFormatter.applyNumberFormat(plSheet.getRange(`${colLetter}${currentRow}`));
             } else {
               // Growth formula for subsequent periods - reference assumptions sheet
               const prevCol = this.getColumnLetter(col - 1);
@@ -969,6 +1045,7 @@ Required format:
                 console.log(`No growth rate reference found for opex ${index}`);
                 plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${prevCol}${currentRow}`]];
               }
+              ExcelFormatter.applyNumberFormat(plSheet.getRange(`${colLetter}${currentRow}`));
             }
           }
           currentRow++;
@@ -977,7 +1054,7 @@ Required format:
       
       // Total Operating Expenses
       plSheet.getRange(`A${currentRow}`).values = [['Total Operating Expenses']];
-      const totalOpExRange = plSheet.getRange(`A${currentRow}:${this.getColumnLetter(periodColumns)}${currentRow}`);
+      const totalOpExRange = plSheet.getRange(`A${currentRow}:${this.getColumnLetter(totalColumns)}${currentRow}`);
       totalOpExRange.format.font.name = 'Times New Roman';
       totalOpExRange.format.font.size = 12;
       totalOpExRange.format.font.bold = true;
@@ -987,21 +1064,25 @@ Required format:
       totalOpExRange.format.borders.getItem('EdgeTop').weight = 'Thin';
       totalOpExRange.format.borders.getItem('EdgeTop').color = ExcelFormatter.colors.black;
       
-      for (let col = 1; col <= periodColumns; col++) {
+      for (let col = 1; col <= totalColumns; col++) {
         const colLetter = this.getColumnLetter(col);
-        if (modelData.operatingExpenses && modelData.operatingExpenses.length > 0) {
+        if (col === 1) {
+          // Period 0 - show dash
+          plSheet.getRange(`${colLetter}${currentRow}`).values = [['-']];
+        } else if (modelData.operatingExpenses && modelData.operatingExpenses.length > 0) {
           const sumFormula = `=SUM(${colLetter}${opexStartRow + 1}:${colLetter}${currentRow - 1})`;
           plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[sumFormula]];
         } else {
           plSheet.getRange(`${colLetter}${currentRow}`).values = [[0]];
         }
+        ExcelFormatter.applyNumberFormat(plSheet.getRange(`${colLetter}${currentRow}`));
       }
       const totalOpexRow = currentRow;
       currentRow++;
       
       // NOI - moved directly below Total Operating Expenses
       plSheet.getRange(`A${currentRow}`).values = [['NOI']];
-      const noiRange = plSheet.getRange(`A${currentRow}:${this.getColumnLetter(periodColumns)}${currentRow}`);
+      const noiRange = plSheet.getRange(`A${currentRow}:${this.getColumnLetter(totalColumns)}${currentRow}`);
       noiRange.format.font.name = 'Times New Roman';
       noiRange.format.font.size = 12;
       noiRange.format.font.bold = true;
@@ -1013,10 +1094,16 @@ Required format:
       noiRange.format.borders.getItem('EdgeTop').weight = 'Thin';
       noiRange.format.borders.getItem('EdgeTop').color = ExcelFormatter.colors.black;
       
-      for (let col = 1; col <= periodColumns; col++) {
+      for (let col = 1; col <= totalColumns; col++) {
         const colLetter = this.getColumnLetter(col);
-        plSheet.getRange(`${colLetter}${currentRow}`).formulas = 
-          [[`=${colLetter}${totalRevenueRow}+${colLetter}${totalOpexRow}`]];
+        if (col === 1) {
+          // Period 0 - show dash
+          plSheet.getRange(`${colLetter}${currentRow}`).values = [['-']];
+        } else {
+          plSheet.getRange(`${colLetter}${currentRow}`).formulas = 
+            [[`=${colLetter}${totalRevenueRow}+${colLetter}${totalOpexRow}`]];
+        }
+        ExcelFormatter.applyNumberFormat(plSheet.getRange(`${colLetter}${currentRow}`));
       }
       const ebitdaRow = currentRow;
       currentRow += 2;
@@ -1027,11 +1114,11 @@ Required format:
       this.plCellTracker.recordCell('noi', 'P&L Statement', `B${ebitdaRow}:${this.getColumnLetter(totalColumns)}${ebitdaRow}`);
       
       // Apply number formatting with brackets for negatives and dash for zeros
-      const dataRange = plSheet.getRange(`B5:${this.getColumnLetter(periodColumns)}${ebitdaRow}`);
+      const dataRange = plSheet.getRange(`B5:${this.getColumnLetter(totalColumns)}${ebitdaRow}`);
       ExcelFormatter.applyNumberFormat(dataRange);
       
       // Apply Times New Roman font to all data cells
-      const allDataRange = plSheet.getRange(`A1:${this.getColumnLetter(periodColumns)}${ebitdaRow}`);
+      const allDataRange = plSheet.getRange(`A1:${this.getColumnLetter(totalColumns)}${ebitdaRow}`);
       allDataRange.format.font.name = 'Times New Roman';
       allDataRange.format.font.size = 12;
       
@@ -3455,15 +3542,52 @@ You MUST create a P&L Statement with this EXACT structure:
       currentRow++;
       
       // Skip one row then add DATES (two cells below Revenue Items title)
+      // Set the blank row height to 8
+      plSheet.getRange(`A${currentRow}:${this.getColumnLetter(totalColumns)}${currentRow}`).format.rowHeight = 8;
       currentRow++;
       
       // DATES ROW - two cells below Revenue Items title (includes Period 0)
       const dateHeaders = [''];
-      const prevPeriodLabel = this.getPreviousPeriodLabel(modelData.projectStartDate, modelData.modelPeriods);
-      dateHeaders.push(prevPeriodLabel); // Period 0 with actual date label
+      const prevPeriodDate = new Date(modelData.projectStartDate);
+      
+      // Calculate previous period date
+      switch (modelData.modelPeriods) {
+        case 'daily':
+          prevPeriodDate.setDate(prevPeriodDate.getDate() - 1);
+          break;
+        case 'monthly':
+          prevPeriodDate.setMonth(prevPeriodDate.getMonth() - 1);
+          break;
+        case 'quarterly':
+          prevPeriodDate.setMonth(prevPeriodDate.getMonth() - 3);
+          break;
+        case 'yearly':
+          prevPeriodDate.setFullYear(prevPeriodDate.getFullYear() - 1);
+          break;
+      }
+      
+      dateHeaders.push(this.formatDateAsLastDay(prevPeriodDate, modelData.modelPeriods)); // Period 0 with XX-XXX-XX format
       const startDate = new Date(modelData.projectStartDate);
       for (let i = 0; i < periodColumns; i++) {
-        dateHeaders.push(this.formatPeriodHeader(startDate, i, modelData.modelPeriods));
+        const periodDate = new Date(startDate);
+        
+        // Calculate the date for this period
+        switch (modelData.modelPeriods) {
+          case 'daily':
+            periodDate.setDate(periodDate.getDate() + i);
+            break;
+          case 'monthly':
+            periodDate.setMonth(periodDate.getMonth() + i);
+            break;
+          case 'quarterly':
+            periodDate.setMonth(periodDate.getMonth() + (i * 3));
+            break;
+          case 'yearly':
+            periodDate.setFullYear(periodDate.getFullYear() + i);
+            break;
+        }
+        
+        dateHeaders.push(this.formatDateAsLastDay(periodDate, modelData.modelPeriods));
       }
       
       const dateRange = plSheet.getRange(`A${currentRow}:${this.getColumnLetter(totalColumns)}${currentRow}`);
@@ -3480,18 +3604,19 @@ You MUST create a P&L Statement with this EXACT structure:
       dateRange.format.borders.getItem('EdgeBottom').color = ExcelFormatter.colors.black;
       currentRow++;
       
-      // PERIOD ROW - Period 0, Period 1, Period 2, etc.
-      const periodHeaders = [''];
-      periodHeaders.push('Period 0');
+      // PERIOD ROW - 'Period' followed by previous period label, then 1, 2, 3, etc.
+      const periodHeaders = ['Period'];
+      const prevPeriodLabel = this.getPreviousPeriodLabel(modelData.projectStartDate, modelData.modelPeriods);
+      periodHeaders.push(prevPeriodLabel);
       for (let i = 1; i <= periodColumns; i++) {
-        periodHeaders.push(`Period ${i}`);
+        periodHeaders.push(i.toString());
       }
       
       const periodRange = plSheet.getRange(`A${currentRow}:${this.getColumnLetter(totalColumns)}${currentRow}`);
       periodRange.values = [periodHeaders];  
       periodRange.format.font.name = 'Times New Roman';
       periodRange.format.font.size = 12;
-      periodRange.format.font.bold = true;
+      periodRange.format.font.bold = false; // Remove bold formatting
       currentRow++;
 
       // Add revenue items with growth
@@ -3507,11 +3632,13 @@ You MUST create a P&L Statement with this EXACT structure:
           for (let col = 1; col <= totalColumns; col++) {
             const colLetter = this.getColumnLetter(col);
             if (col === 1) {
-              // Period 0 (Initial Investment): No revenue
-              plSheet.getRange(`${colLetter}${currentRow}`).values = [[0]];
+              // Period 0 (Initial Investment): No revenue - show dash
+              plSheet.getRange(`${colLetter}${currentRow}`).values = [['-']];
+              ExcelFormatter.applyNumberFormat(plSheet.getRange(`${colLetter}${currentRow}`));
             } else if (col === 2) {
               // First operating period: base value
               plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${valueRef}`]];
+              ExcelFormatter.applyNumberFormat(plSheet.getRange(`${colLetter}${currentRow}`));
             } else {
               // Subsequent periods: apply growth
               if (growthRateRef) {
@@ -3527,6 +3654,7 @@ You MUST create a P&L Statement with this EXACT structure:
                 const prevColLetter = this.getColumnLetter(col - 1);
                 plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${prevColLetter}${currentRow}`]];
               }
+              ExcelFormatter.applyNumberFormat(plSheet.getRange(`${colLetter}${currentRow}`));
             }
           }
           currentRow++;
@@ -3548,11 +3676,21 @@ You MUST create a P&L Statement with this EXACT structure:
       const totalRevenueRow = currentRow;
       for (let col = 1; col <= totalColumns; col++) {
         const colLetter = this.getColumnLetter(col);
-        const revenueStartRow = totalRevenueRow - modelData.revenueItems.length;
-        const revenueEndRow = totalRevenueRow - 1;
-        plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=SUM(${colLetter}${revenueStartRow + 1}:${colLetter}${revenueEndRow})`]];
+        if (col === 1) {
+          // Period 0 - show dash
+          plSheet.getRange(`${colLetter}${currentRow}`).values = [['-']];
+        } else {
+          const revenueStartRow = totalRevenueRow - modelData.revenueItems.length;
+          const revenueEndRow = totalRevenueRow - 1;
+          plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=SUM(${colLetter}${revenueStartRow + 1}:${colLetter}${revenueEndRow})`]];
+        }
+        ExcelFormatter.applyNumberFormat(plSheet.getRange(`${colLetter}${currentRow}`));
       }
-      currentRow += 2;
+      currentRow++;
+      
+      // Add blank row with height 8 between Total Revenue and Cost Items
+      plSheet.getRange(`A${currentRow}:${this.getColumnLetter(totalColumns)}${currentRow}`).format.rowHeight = 8;
+      currentRow++;
 
       // COST ITEMS SECTION
       plSheet.getRange(`A${currentRow}`).values = [['Cost Items']];
@@ -3582,11 +3720,13 @@ You MUST create a P&L Statement with this EXACT structure:
           for (let col = 1; col <= totalColumns; col++) {
             const colLetter = this.getColumnLetter(col);
             if (col === 1) {
-              // Period 0 (Initial Investment): No operating expenses
-              plSheet.getRange(`${colLetter}${currentRow}`).values = [[0]];
+              // Period 0 (Initial Investment): No operating expenses - show dash
+              plSheet.getRange(`${colLetter}${currentRow}`).values = [['-']];
+              ExcelFormatter.applyNumberFormat(plSheet.getRange(`${colLetter}${currentRow}`));
             } else if (col === 2) {
               // First operating period: base value
               plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=-${valueRef}`]];
+              ExcelFormatter.applyNumberFormat(plSheet.getRange(`${colLetter}${currentRow}`));
             } else {
               // Subsequent periods: apply growth
               if (growthRateRef) {
@@ -3602,6 +3742,7 @@ You MUST create a P&L Statement with this EXACT structure:
                 const prevColLetter = this.getColumnLetter(col - 1);
                 plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${prevColLetter}${currentRow}`]];
               }
+              ExcelFormatter.applyNumberFormat(plSheet.getRange(`${colLetter}${currentRow}`));
             }
           }
           currentRow++;
@@ -3623,9 +3764,15 @@ You MUST create a P&L Statement with this EXACT structure:
       const totalOpExRow = currentRow;
       for (let col = 1; col <= totalColumns; col++) {
         const colLetter = this.getColumnLetter(col);
-        const opexStartRow = totalOpExRow - modelData.operatingExpenses.length;
-        const opexEndRow = totalOpExRow - 1;
-        plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=SUM(${colLetter}${opexStartRow + 1}:${colLetter}${opexEndRow})`]];
+        if (col === 1) {
+          // Period 0 - show dash
+          plSheet.getRange(`${colLetter}${currentRow}`).values = [['-']];
+        } else {
+          const opexStartRow = totalOpExRow - modelData.operatingExpenses.length;
+          const opexEndRow = totalOpExRow - 1;
+          plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=SUM(${colLetter}${opexStartRow + 1}:${colLetter}${opexEndRow})`]];
+        }
+        ExcelFormatter.applyNumberFormat(plSheet.getRange(`${colLetter}${currentRow}`));
       }
       currentRow++;
 
@@ -3646,7 +3793,13 @@ You MUST create a P&L Statement with this EXACT structure:
       const ebitdaRow = currentRow;
       for (let col = 1; col <= totalColumns; col++) {
         const colLetter = this.getColumnLetter(col);
-        plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${colLetter}${totalRevenueRow}+${colLetter}${totalOpExRow}`]];
+        if (col === 1) {
+          // Period 0 - show dash
+          plSheet.getRange(`${colLetter}${currentRow}`).values = [['-']];
+        } else {
+          plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${colLetter}${totalRevenueRow}+${colLetter}${totalOpExRow}`]];
+        }
+        ExcelFormatter.applyNumberFormat(plSheet.getRange(`${colLetter}${currentRow}`));
       }
       currentRow += 2;
 
