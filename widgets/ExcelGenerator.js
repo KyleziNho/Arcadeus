@@ -1733,7 +1733,7 @@ Provide the COMPLETE Free Cash Flow model with exact Excel formulas for every ce
             } else {
               // Reference debt expense from Debt Model: Period 1 is in column C
               const debtModelCol = this.getColumnLetter(col + 1); // FCF col 1 -> Debt Model col C (col+1)
-              debtExpenseFormula = `=-'Debt Model'!${debtModelCol}6`;
+              debtExpenseFormula = `=-'Debt Model'!${debtModelCol}8`;
             }
             
             fcfSheet.getRange(`${colLetter}${currentRow}`).formulas = [[debtExpenseFormula]];
@@ -4089,10 +4089,11 @@ You MUST create a P&L Statement with this EXACT structure:
         totalCapExRange.format.font.size = 12;
         totalCapExRange.format.font.bold = true;
         
-        // Add thin underline at top of total
+        // Add thin underline at top of total and light grey background
         totalCapExRange.format.borders.getItem('EdgeTop').style = 'Continuous';
         totalCapExRange.format.borders.getItem('EdgeTop').weight = 'Thin';
         totalCapExRange.format.borders.getItem('EdgeTop').color = ExcelFormatter.colors.black;
+        totalCapExRange.format.fill.color = ExcelFormatter.colors.backgroundDarker5;
         
         capExStructure.totalRow = currentRow;
         
@@ -4112,10 +4113,7 @@ You MUST create a P&L Statement with this EXACT structure:
           }
         }
         
-        // Add thick black underline below total
-        totalCapExRange.format.borders.getItem('EdgeBottom').style = 'Continuous';
-        totalCapExRange.format.borders.getItem('EdgeBottom').weight = 'Thick';
-        totalCapExRange.format.borders.getItem('EdgeBottom').color = ExcelFormatter.colors.black;
+        // Remove thick bottom underline (only keep top underline)
         
       } else {
         // No CapEx items
@@ -4354,7 +4352,7 @@ You MUST create a P&L Statement with this EXACT structure:
           } else {
             // Reference debt expense from Debt Model: Period 1 is column C, Period 2 is column D, etc.
             const debtModelCol = this.getColumnLetter(i + 1); // FCF Period i maps to Debt Model column (i+1)
-            fcfSheet.getRange(colLetter + currentRow).formulas = [[`=-'Debt Model'!${debtModelCol}6`]];
+            fcfSheet.getRange(colLetter + currentRow).formulas = [[`=-'Debt Model'!${debtModelCol}8`]];
           }
         }
       } else {
@@ -4539,18 +4537,79 @@ You MUST create a P&L Statement with this EXACT structure:
       debtSectionRange.format.fill.color = ExcelFormatter.colors.darkBlue;
       debtSectionRange.format.font.color = ExcelFormatter.colors.white;
       
-      // Set up period headers (row 4)
-      debtSheet.getRange('A4').values = [['Period']];
-      const prevPeriodLabel = this.getPreviousPeriodLabel(modelData.projectStartDate, modelData.modelPeriods);
-      debtSheet.getRange('B4').values = [['0']];
+      // Set column B width to 10
+      debtSheet.getRange('B:B').format.columnWidth = 10;
+      
+      // Skip one row then add DATES (height 8) - row 3
+      debtSheet.getRange(`A3:${this.getColumnLetter(totalColumns)}3`).format.rowHeight = 8;
+      
+      // DATES ROW - row 4 (includes Period 0)
+      const dateHeaders = [''];
+      const prevPeriodDate = new Date(modelData.projectStartDate);
+      
+      // Calculate previous period date
+      switch (modelData.modelPeriods) {
+        case 'daily':
+          prevPeriodDate.setDate(prevPeriodDate.getDate() - 1);
+          break;
+        case 'monthly':
+          prevPeriodDate.setMonth(prevPeriodDate.getMonth() - 1);
+          break;
+        case 'quarterly':
+          prevPeriodDate.setMonth(prevPeriodDate.getMonth() - 3);
+          break;
+        case 'yearly':
+          prevPeriodDate.setFullYear(prevPeriodDate.getFullYear() - 1);
+          break;
+      }
+      
+      dateHeaders.push(this.formatDateAsLastDay(prevPeriodDate, modelData.modelPeriods)); // Period 0
+      const startDate = new Date(modelData.projectStartDate);
+      for (let i = 0; i < periods; i++) {
+        const periodDate = new Date(startDate);
+        
+        switch (modelData.modelPeriods) {
+          case 'daily':
+            periodDate.setDate(periodDate.getDate() + i);
+            break;
+          case 'monthly':
+            periodDate.setMonth(periodDate.getMonth() + i);
+            break;
+          case 'quarterly':
+            periodDate.setMonth(periodDate.getMonth() + (i * 3));
+            break;
+          case 'yearly':
+            periodDate.setFullYear(periodDate.getFullYear() + i);
+            break;
+        }
+        
+        dateHeaders.push(this.formatDateAsLastDay(periodDate, modelData.modelPeriods));
+      }
+      
+      const dateRange = debtSheet.getRange(`A4:${this.getColumnLetter(totalColumns)}4`);
+      dateRange.values = [dateHeaders];
+      dateRange.format.font.name = 'Times New Roman';
+      dateRange.format.font.size = 12;
+      dateRange.format.font.bold = true;
+      dateRange.format.fill.color = ExcelFormatter.colors.white;
+      dateRange.format.font.color = ExcelFormatter.colors.black;
+      
+      // Add dashed underline under dates
+      dateRange.format.borders.getItem('EdgeBottom').style = 'Dash';
+      dateRange.format.borders.getItem('EdgeBottom').weight = 'Thin';
+      dateRange.format.borders.getItem('EdgeBottom').color = ExcelFormatter.colors.black;
+      
+      // Set up period headers (row 5)
+      debtSheet.getRange('A5').values = [['Period']];
+      debtSheet.getRange('B5').values = [['0']];
       
       for (let i = 1; i <= periods; i++) {
         const colLetter = this.getColumnLetter(i + 1); // C, D, E, etc. for Periods 1, 2, 3...
-        debtSheet.getRange(colLetter + '4').values = [[i]];
+        debtSheet.getRange(colLetter + '5').values = [[i]];
       }
       
       // Apply font formatting to period headers
-      const periodRange = debtSheet.getRange(`A4:${this.getColumnLetter(totalColumns)}4`);
+      const periodRange = debtSheet.getRange(`A5:${this.getColumnLetter(totalColumns)}5`);
       periodRange.format.font.name = 'Times New Roman';
       periodRange.format.font.size = 12;
       periodRange.format.font.bold = false;
@@ -4562,13 +4621,13 @@ You MUST create a P&L Statement with this EXACT structure:
       
       console.log('📊 Debt calculations:', { dealValue, ltvRatio, debtAmount });
       
-      // Set up debt balance row (row 5)
-      debtSheet.getRange('A5').values = [['Outstanding Debt Balance']];
-      debtSheet.getRange('A5').format.font.name = 'Times New Roman';
-      debtSheet.getRange('A5').format.font.size = 12;
+      // Set up debt balance row (row 6)
+      debtSheet.getRange('A6').values = [['Outstanding Debt Balance']];
+      debtSheet.getRange('A6').format.font.name = 'Times New Roman';
+      debtSheet.getRange('A6').format.font.size = 12;
       
       // Period 0: Show dash for debt balance (no debt issued yet)
-      const dashRange = debtSheet.getRange('B5');
+      const dashRange = debtSheet.getRange('B6');
       dashRange.values = [['-']];
       dashRange.format.horizontalAlignment = 'Right';
       ExcelFormatter.applyNumberFormat(dashRange);
@@ -4578,22 +4637,22 @@ You MUST create a P&L Statement with this EXACT structure:
         const colLetter = this.getColumnLetter(i + 1); // C, D, E, etc.
         if (i === periods) {
           // Final period: debt is repaid
-          debtSheet.getRange(colLetter + '5').values = [[0]];
-          ExcelFormatter.applyNumberFormat(debtSheet.getRange(colLetter + '5'));
+          debtSheet.getRange(colLetter + '6').values = [[0]];
+          ExcelFormatter.applyNumberFormat(debtSheet.getRange(colLetter + '6'));
         } else {
           // Operating periods: debt balance remains the same
-          debtSheet.getRange(colLetter + '5').values = [[debtAmount]];
-          ExcelFormatter.applyNumberFormat(debtSheet.getRange(colLetter + '5'));
+          debtSheet.getRange(colLetter + '6').values = [[debtAmount]];
+          ExcelFormatter.applyNumberFormat(debtSheet.getRange(colLetter + '6'));
         }
       }
       
-      // Set up interest rate row (row 6) - Fixed rate only
-      debtSheet.getRange('A6').values = [['Interest Rate (%)']];
-      debtSheet.getRange('A6').format.font.name = 'Times New Roman';
-      debtSheet.getRange('A6').format.font.size = 12;
+      // Set up interest rate row (row 7) - Fixed rate only
+      debtSheet.getRange('A7').values = [['Interest Rate (%)']];
+      debtSheet.getRange('A7').format.font.name = 'Times New Roman';
+      debtSheet.getRange('A7').format.font.size = 12;
       
       // Period 0: Show dash for interest rate
-      const interestDashRange = debtSheet.getRange('B6');
+      const interestDashRange = debtSheet.getRange('B7');
       interestDashRange.values = [['-']];
       interestDashRange.format.horizontalAlignment = 'Right';
       
@@ -4603,18 +4662,25 @@ You MUST create a P&L Statement with this EXACT structure:
       
       for (let i = 1; i <= periods; i++) {
         const colLetter = this.getColumnLetter(i + 1); // C, D, E, etc.
-        debtSheet.getRange(colLetter + '6').values = [[fixedRate]];
-        debtSheet.getRange(colLetter + '6').numberFormat = [['0.0%']];
+        debtSheet.getRange(colLetter + '7').values = [[fixedRate]];
+        debtSheet.getRange(colLetter + '7').numberFormat = [['0.0%']];
       }
       
-      // Set up debt expense row (row 7) - This is what goes to FCF
-      debtSheet.getRange('A7').values = [['Debt Expense per Period']];
-      debtSheet.getRange('A7').format.font.name = 'Times New Roman';
-      debtSheet.getRange('A7').format.font.size = 12;
-      debtSheet.getRange('A7').format.font.bold = true;
+      // Set up debt expense row (row 8) - This is what goes to FCF
+      debtSheet.getRange('A8').values = [['Debt Expense per Period']];
+      const debtExpenseRange = debtSheet.getRange(`A8:${this.getColumnLetter(totalColumns)}8`);
+      debtExpenseRange.format.font.name = 'Times New Roman';
+      debtExpenseRange.format.font.size = 12;
+      debtExpenseRange.format.font.bold = true;
+      debtExpenseRange.format.fill.color = ExcelFormatter.colors.backgroundDarker5;
+      
+      // Add thin underline at top of debt expense row
+      debtExpenseRange.format.borders.getItem('EdgeTop').style = 'Continuous';
+      debtExpenseRange.format.borders.getItem('EdgeTop').weight = 'Thin';
+      debtExpenseRange.format.borders.getItem('EdgeTop').color = ExcelFormatter.colors.black;
       
       // Period 0: Show dash for debt expense
-      const expenseDashRange = debtSheet.getRange('B7');
+      const expenseDashRange = debtSheet.getRange('B8');
       expenseDashRange.values = [['-']];
       expenseDashRange.format.horizontalAlignment = 'Right';
       ExcelFormatter.applyNumberFormat(expenseDashRange);
@@ -4628,13 +4694,13 @@ You MUST create a P&L Statement with this EXACT structure:
           // Final period: interest + principal repayment
           // Use previous period's balance (Period N-1) for both interest and principal
           const prevBalanceCol = this.getColumnLetter(i); // Previous period's balance (B for Period 0, C for Period 1, etc.)
-          debtSheet.getRange(colLetter + '7').formulas = [[`=${prevBalanceCol}5*${colLetter}6+${prevBalanceCol}5`]];
-          ExcelFormatter.applyNumberFormat(debtSheet.getRange(colLetter + '7'));
+          debtSheet.getRange(colLetter + '8').formulas = [[`=${prevBalanceCol}6*${colLetter}7+${prevBalanceCol}6`]];
+          ExcelFormatter.applyNumberFormat(debtSheet.getRange(colLetter + '8'));
         } else {
           // Interest-only periods: just interest
           // Interest = Current Balance * Rate
-          debtSheet.getRange(colLetter + '7').formulas = [[`=${currentBalanceCol}5*${currentBalanceCol}6`]];
-          ExcelFormatter.applyNumberFormat(debtSheet.getRange(colLetter + '7'));
+          debtSheet.getRange(colLetter + '8').formulas = [[`=${currentBalanceCol}6*${currentBalanceCol}7`]];
+          ExcelFormatter.applyNumberFormat(debtSheet.getRange(colLetter + '8'));
         }
       }
       
@@ -4643,7 +4709,7 @@ You MUST create a P&L Statement with this EXACT structure:
       // Re-apply percentage formatting to interest rate row
       for (let i = 1; i <= periods; i++) {
         const colLetter = this.getColumnLetter(i + 1); // C, D, E, etc.
-        debtSheet.getRange(colLetter + '6').numberFormat = [['0.0%']];
+        debtSheet.getRange(colLetter + '7').numberFormat = [['0.0%']];
       }
       
       // Auto-resize columns
@@ -4652,7 +4718,7 @@ You MUST create a P&L Statement with this EXACT structure:
       await context.sync();
       
       // Store for FCF reference
-      this.debtModelInterestRow = 7; // Updated to point to debt expense row
+      this.debtModelInterestRow = 8; // Updated to point to debt expense row
       
       console.log('✅ Fixed rate debt model sheet created successfully!');
       return { success: true, message: 'Fixed rate debt model sheet created successfully' };
