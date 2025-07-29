@@ -3889,7 +3889,7 @@ You MUST create a P&L Statement with this EXACT structure:
     });
   }
 
-  // Generate CapEx sheet with totals for each period
+  // Generate CapEx sheet with P&L-style formatting
   async generateCapExSheet(modelData) {
     return Excel.run(async (context) => {
       console.log('📊 Creating CapEx Summary Sheet...');
@@ -3916,32 +3916,116 @@ You MUST create a P&L Statement with this EXACT structure:
       capExSheet.position = 2; // After P&L
       capExSheet.activate();
       
+      // Hide gridlines
+      capExSheet.showGridlines = false;
+      
       // Calculate periods
       const startDate = new Date(modelData.projectStartDate);
       const endDate = new Date(modelData.projectEndDate);
       const periods = this.calculatePeriods(startDate, endDate, modelData.modelPeriods);
-      const totalColumns = periods + 1; // +1 for Period 0
+      const periodColumns = periods;
+      const totalColumns = periodColumns + 1; // +1 for Period 0
       
-      // Add headers
-      capExSheet.getRange('A1').values = [['CapEx Summary Sheet']];
-      capExSheet.getRange('A1').format.font.bold = true;
-      capExSheet.getRange('A1').format.font.size = 16;
+      let currentRow = 1;
       
-      let currentRow = 3;
+      // TITLE - P&L style formatting
+      capExSheet.getRange('A1').values = [['Capital Expenditures Summary']];
+      const titleRange = capExSheet.getRange(`A1:${this.getColumnLetter(totalColumns)}1`);
+      titleRange.merge();
+      titleRange.format.font.name = 'Times New Roman';
+      titleRange.format.font.size = 12;
+      titleRange.format.font.bold = true;
+      titleRange.format.fill.color = ExcelFormatter.colors.backgroundDarker5;
+      titleRange.format.horizontalAlignment = 'Left';
+      currentRow = 2; // Remove extra blank row
       
-      // Period headers
-      capExSheet.getRange('A' + currentRow).values = [['Period']];
-      for (let i = 0; i <= periods; i++) {
-        const colLetter = this.getColumnLetter(i + 1);
-        if (i === 0) {
-          const prevPeriodLabel = this.getPreviousPeriodLabel(modelData.projectStartDate, modelData.modelPeriods);
-          capExSheet.getRange(colLetter + currentRow).values = [[prevPeriodLabel]];
-        } else {
-          const periodHeader = this.formatPeriodHeader(startDate, i - 1, modelData.modelPeriods);
-          capExSheet.getRange(colLetter + currentRow).values = [[periodHeader]];
-        }
+      // CAPEX ITEMS SECTION HEADER
+      capExSheet.getRange(`A${currentRow}`).values = [['CapEx Items']];
+      const capExSectionRange = capExSheet.getRange(`A${currentRow}:${this.getColumnLetter(totalColumns)}${currentRow}`);
+      capExSectionRange.format.font.name = 'Times New Roman';
+      capExSectionRange.format.font.size = 12;
+      capExSectionRange.format.font.bold = true;
+      capExSectionRange.format.fill.color = ExcelFormatter.colors.darkBlue;
+      capExSectionRange.format.font.color = ExcelFormatter.colors.white;
+      
+      // Add thin grey underline after section header
+      capExSectionRange.format.borders.getItem('EdgeBottom').style = 'Continuous';
+      capExSectionRange.format.borders.getItem('EdgeBottom').weight = 'Thin';
+      capExSectionRange.format.borders.getItem('EdgeBottom').color = ExcelFormatter.colors.lightGrey;
+      currentRow++;
+      
+      // Skip one row then add DATES (height 8)
+      capExSheet.getRange(`A${currentRow}:${this.getColumnLetter(totalColumns)}${currentRow}`).format.rowHeight = 8;
+      currentRow++;
+      
+      // DATES ROW - includes Period 0
+      const dateHeaders = [''];
+      const prevPeriodDate = new Date(modelData.projectStartDate);
+      
+      // Calculate previous period date
+      switch (modelData.modelPeriods) {
+        case 'daily':
+          prevPeriodDate.setDate(prevPeriodDate.getDate() - 1);
+          break;
+        case 'monthly':
+          prevPeriodDate.setMonth(prevPeriodDate.getMonth() - 1);
+          break;
+        case 'quarterly':
+          prevPeriodDate.setMonth(prevPeriodDate.getMonth() - 3);
+          break;
+        case 'yearly':
+          prevPeriodDate.setFullYear(prevPeriodDate.getFullYear() - 1);
+          break;
       }
-      capExSheet.getRange(`A${currentRow}:${this.getColumnLetter(totalColumns + 1)}${currentRow}`).format.font.bold = true;
+      
+      dateHeaders.push(this.formatDateAsLastDay(prevPeriodDate, modelData.modelPeriods)); // Period 0
+      for (let i = 0; i < periodColumns; i++) {
+        const periodDate = new Date(startDate);
+        
+        switch (modelData.modelPeriods) {
+          case 'daily':
+            periodDate.setDate(periodDate.getDate() + i);
+            break;
+          case 'monthly':
+            periodDate.setMonth(periodDate.getMonth() + i);
+            break;
+          case 'quarterly':
+            periodDate.setMonth(periodDate.getMonth() + (i * 3));
+            break;
+          case 'yearly':
+            periodDate.setFullYear(periodDate.getFullYear() + i);
+            break;
+        }
+        
+        dateHeaders.push(this.formatDateAsLastDay(periodDate, modelData.modelPeriods));
+      }
+      
+      const dateRange = capExSheet.getRange(`A${currentRow}:${this.getColumnLetter(totalColumns)}${currentRow}`);
+      dateRange.values = [dateHeaders];
+      dateRange.format.font.name = 'Times New Roman';
+      dateRange.format.font.size = 12;
+      dateRange.format.font.bold = true;
+      dateRange.format.fill.color = ExcelFormatter.colors.white;
+      dateRange.format.font.color = ExcelFormatter.colors.black;
+      
+      // Add dashed underline under dates
+      dateRange.format.borders.getItem('EdgeBottom').style = 'Dash';
+      dateRange.format.borders.getItem('EdgeBottom').weight = 'Thin';
+      dateRange.format.borders.getItem('EdgeBottom').color = ExcelFormatter.colors.black;
+      currentRow++;
+      
+      // PERIOD ROW
+      const periodHeaders = ['Period'];
+      periodHeaders.push('0'); // Period 0
+      for (let i = 1; i <= periodColumns; i++) {
+        periodHeaders.push(i.toString());
+      }
+      
+      const periodRange = capExSheet.getRange(`A${currentRow}:${this.getColumnLetter(totalColumns)}${currentRow}`);
+      periodRange.values = [periodHeaders];
+      periodRange.format.font.name = 'Times New Roman';
+      periodRange.format.font.size = 12;
+      periodRange.format.font.bold = false;
       currentRow++;
       
       // Individual CapEx items
@@ -3950,6 +4034,8 @@ You MUST create a P&L Statement with this EXACT structure:
       if (modelData.capEx && modelData.capEx.length > 0) {
         modelData.capEx.forEach((item, index) => {
           capExSheet.getRange(`A${currentRow}`).values = [[item.name || `CapEx ${index + 1}`]];
+          capExSheet.getRange(`A${currentRow}`).format.font.name = 'Times New Roman';
+          capExSheet.getRange(`A${currentRow}`).format.font.size = 12;
           
           const valueRef = this.cellTracker.getCellReference(`capex_${index}`);
           const growthRateRef = this.cellTracker.getCellReference(`capex_${index}_growth_rate`);
@@ -3961,31 +4047,35 @@ You MUST create a P&L Statement with this EXACT structure:
             growthRateRef: growthRateRef
           });
           
-          if (valueRef && growthRateRef) {
-            for (let col = 0; col <= periods; col++) {
-              const colLetter = this.getColumnLetter(col + 1); // Maps to columns B, C, D, E...
-              if (col === 0) {
-                // Period 0: No CapEx - set to 0
-                capExSheet.getRange(`${colLetter}${currentRow}`).values = [[0]];
-              } else if (col === 1) {
-                // Period 1: Base CapEx value (negative cash flow)
+          // Fill periods with data
+          for (let col = 1; col <= totalColumns; col++) {
+            const colLetter = this.getColumnLetter(col);
+            if (col === 1) {
+              // Period 0: No CapEx - show dash
+              const dashRange = capExSheet.getRange(`${colLetter}${currentRow}`);
+              dashRange.values = [['-']];
+              dashRange.format.horizontalAlignment = 'Right';
+              ExcelFormatter.applyNumberFormat(dashRange);
+            } else if (col === 2) {
+              // Period 1: Base CapEx value (negative cash flow)
+              if (valueRef) {
                 capExSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=-${valueRef}`]];
-              } else {
-                // Operating periods: Apply growth with period-over-period calculation (like revenue)
-                const prevColLetter = this.getColumnLetter(col); // Previous period column
+                ExcelFormatter.applyNumberFormat(capExSheet.getRange(`${colLetter}${currentRow}`));
+              }
+            } else {
+              // Subsequent periods: Apply growth
+              if (valueRef && growthRateRef) {
+                const prevColLetter = this.getColumnLetter(col - 1);
                 if (modelData.modelPeriods === 'monthly') {
-                  // For monthly periods, divide annual growth rate by 12
                   capExSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${prevColLetter}${currentRow}*(1+${growthRateRef}/12)`]];
                 } else if (modelData.modelPeriods === 'quarterly') {
-                  // For quarterly periods, divide annual growth rate by 4
                   capExSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${prevColLetter}${currentRow}*(1+${growthRateRef}/4)`]];
                 } else if (modelData.modelPeriods === 'daily') {
-                  // For daily periods, divide annual growth rate by 365
                   capExSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${prevColLetter}${currentRow}*(1+${growthRateRef}/365)`]];
                 } else {
-                  // For yearly periods, use full annual growth rate
                   capExSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${prevColLetter}${currentRow}*(1+${growthRateRef})`]];
                 }
+                ExcelFormatter.applyNumberFormat(capExSheet.getRange(`${colLetter}${currentRow}`));
               }
             }
           }
@@ -3994,29 +4084,54 @@ You MUST create a P&L Statement with this EXACT structure:
         
         // Total CapEx row
         capExSheet.getRange(`A${currentRow}`).values = [['Total CapEx']];
-        capExSheet.getRange(`A${currentRow}`).format.font.bold = true;
+        const totalCapExRange = capExSheet.getRange(`A${currentRow}:${this.getColumnLetter(totalColumns)}${currentRow}`);
+        totalCapExRange.format.font.name = 'Times New Roman';
+        totalCapExRange.format.font.size = 12;
+        totalCapExRange.format.font.bold = true;
+        
+        // Add thin underline at top of total
+        totalCapExRange.format.borders.getItem('EdgeTop').style = 'Continuous';
+        totalCapExRange.format.borders.getItem('EdgeTop').weight = 'Thin';
+        totalCapExRange.format.borders.getItem('EdgeTop').color = ExcelFormatter.colors.black;
+        
         capExStructure.totalRow = currentRow;
         
-        for (let col = 0; col <= periods; col++) {
-          const colLetter = this.getColumnLetter(col + 1); // Changed from col + 2 to col + 1 to align with data
-          const startRow = currentRow - modelData.capEx.length;
-          const endRow = currentRow - 1;
-          capExSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=SUM(${colLetter}${startRow}:${colLetter}${endRow})`]];
+        for (let col = 1; col <= totalColumns; col++) {
+          const colLetter = this.getColumnLetter(col);
+          if (col === 1) {
+            // Period 0 - show dash
+            const dashRange = capExSheet.getRange(`${colLetter}${currentRow}`);
+            dashRange.values = [['-']];
+            dashRange.format.horizontalAlignment = 'Right';
+            ExcelFormatter.applyNumberFormat(dashRange);
+          } else {
+            const startRow = currentRow - modelData.capEx.length;
+            const endRow = currentRow - 1;
+            capExSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=SUM(${colLetter}${startRow}:${colLetter}${endRow})`]];
+            ExcelFormatter.applyNumberFormat(capExSheet.getRange(`${colLetter}${currentRow}`));
+          }
         }
+        
+        // Add thick black underline below total
+        totalCapExRange.format.borders.getItem('EdgeBottom').style = 'Continuous';
+        totalCapExRange.format.borders.getItem('EdgeBottom').weight = 'Thick';
+        totalCapExRange.format.borders.getItem('EdgeBottom').color = ExcelFormatter.colors.black;
+        
       } else {
         // No CapEx items
         capExSheet.getRange(`A${currentRow}`).values = [['No CapEx Items']];
+        capExSheet.getRange(`A${currentRow}`).format.font.name = 'Times New Roman';
+        capExSheet.getRange(`A${currentRow}`).format.font.size = 12;
         capExStructure.totalRow = currentRow;
         
-        for (let col = 0; col <= periods; col++) {
-          const colLetter = this.getColumnLetter(col + 1); // Changed from col + 2 to col + 1 to align with headers
-          capExSheet.getRange(`${colLetter}${currentRow}`).values = [[0]];
+        for (let col = 1; col <= totalColumns; col++) {
+          const colLetter = this.getColumnLetter(col);
+          const dashRange = capExSheet.getRange(`${colLetter}${currentRow}`);
+          dashRange.values = [['-']];
+          dashRange.format.horizontalAlignment = 'Right';
+          ExcelFormatter.applyNumberFormat(dashRange);
         }
       }
-      
-      // Format numbers
-      const dataRange = capExSheet.getRange(`B4:${this.getColumnLetter(totalColumns + 1)}${currentRow}`);
-      dataRange.numberFormat = [['#,##0;[Red]-#,##0;"-"']];
       
       // Auto-resize columns
       capExSheet.getUsedRange().format.autofitColumns();
@@ -4356,7 +4471,7 @@ You MUST create a P&L Statement with this EXACT structure:
   // Generate simplified Debt Model sheet (Fixed Rate Only)
   async generateDebtModelSheet(modelData) {
     return Excel.run(async (context) => {
-      console.log('🏦 Creating simple Debt Model sheet (fixed rate only)...');
+      console.log('🏦 Creating Debt Model sheet with P&L-style formatting...');
       
       const sheets = context.workbook.worksheets;
       
