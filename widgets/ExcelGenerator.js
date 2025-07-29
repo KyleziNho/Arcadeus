@@ -794,23 +794,7 @@ Required format:
       titleRange.format.font.bold = true;
       titleRange.format.fill.color = ExcelFormatter.colors.backgroundDarker5;
       titleRange.format.horizontalAlignment = 'Left';
-      currentRow = 3;
-      
-      // TIME PERIOD HEADERS
-      const headers = [''];
-      const startDate = new Date(modelData.projectStartDate);
-      for (let i = 0; i < periodColumns; i++) {
-        headers.push(this.formatPeriodHeader(startDate, i, modelData.modelPeriods));
-      }
-      
-      const headerRange = plSheet.getRange(`A${currentRow}:${this.getColumnLetter(periodColumns)}${currentRow}`);
-      headerRange.values = [headers];
-      headerRange.format.font.name = 'Times New Roman';
-      headerRange.format.font.size = 12;
-      headerRange.format.font.bold = true;
-      headerRange.format.fill.color = ExcelFormatter.colors.darkBlue;
-      headerRange.format.font.color = ExcelFormatter.colors.white;
-      currentRow += 2;
+      currentRow = 2; // Remove extra blank row
       
       // REVENUE ITEMS SECTION
       const revenueStartRow = currentRow;
@@ -826,6 +810,43 @@ Required format:
       revenueSectionRange.format.borders.getItem('EdgeBottom').style = 'Continuous';
       revenueSectionRange.format.borders.getItem('EdgeBottom').weight = 'Thin';
       revenueSectionRange.format.borders.getItem('EdgeBottom').color = ExcelFormatter.colors.lightGrey;
+      currentRow++;
+      
+      // Skip one row then add DATES (two cells below Revenue Items title)
+      currentRow++;
+      
+      // DATES ROW - two cells below Revenue Items title
+      const dateHeaders = [''];
+      const startDate = new Date(modelData.projectStartDate);
+      for (let i = 0; i < periodColumns; i++) {
+        dateHeaders.push(this.formatPeriodHeader(startDate, i, modelData.modelPeriods));
+      }
+      
+      const dateRange = plSheet.getRange(`A${currentRow}:${this.getColumnLetter(periodColumns)}${currentRow}`);
+      dateRange.values = [dateHeaders];
+      dateRange.format.font.name = 'Times New Roman';
+      dateRange.format.font.size = 12;
+      dateRange.format.font.bold = true;
+      dateRange.format.fill.color = ExcelFormatter.colors.white;
+      dateRange.format.font.color = ExcelFormatter.colors.black;
+      
+      // Add dashed underline under dates
+      dateRange.format.borders.getItem('EdgeBottom').style = 'Dash';
+      dateRange.format.borders.getItem('EdgeBottom').weight = 'Thin';
+      dateRange.format.borders.getItem('EdgeBottom').color = ExcelFormatter.colors.black;
+      currentRow++;
+      
+      // PERIOD ROW - Period 1, Period 2, etc.
+      const periodHeaders = [''];
+      for (let i = 1; i <= periodColumns; i++) {
+        periodHeaders.push(`Period ${i}`);
+      }
+      
+      const periodRange = plSheet.getRange(`A${currentRow}:${this.getColumnLetter(periodColumns)}${currentRow}`);
+      periodRange.values = [periodHeaders];  
+      periodRange.format.font.name = 'Times New Roman';
+      periodRange.format.font.size = 12;
+      periodRange.format.font.bold = true;
       currentRow++;
       
       // Add each revenue item
@@ -3256,22 +3277,29 @@ You MUST create a P&L Statement with this EXACT structure:
 - Period 2+: Subsequent operating periods
 
 **P&L STRUCTURE:**
-1. Revenue Items section (with growth formulas)
-2. Total Revenue (underline at top, no background)
-3. Cost Items section (with growth formulas)
-4. Total Operating Expenses (underline at top, no background)
-5. NOI (Total Revenue + Total Operating Expenses) - positioned directly below Total Operating Expenses
+1. Title: Profit & Loss Statement (no extra blank row below)
+2. Revenue Items section header
+3. Skip one row
+4. Dates row (two cells below Revenue Items) - white background, black text, dashed underline
+5. Period row (Period 1, Period 2, etc.)
+6. Revenue items with growth formulas
+7. Total Revenue (underline at top, no background)
+8. Cost Items section header
+9. Cost items with growth formulas  
+10. Total Operating Expenses (underline at top, no background)
+11. NOI (Total Revenue + Total Operating Expenses) - positioned directly below Total Operating Expenses
 
 **FORMATTING REQUIREMENTS (CRITICAL):**
 - Font: Times New Roman, Size 12 for ALL cells
 - Section Headers (Revenue Items, Cost Items): Dark blue (#002060) background with white text, span all columns
-- Title (Profit & Loss Statement): Background color #F2F2F2, left-aligned, span all columns
+- Title (Profit & Loss Statement): Background color #F2F2F2, left-aligned, span all columns, NO extra blank row below
+- Dates row: White background, black text, bold, dashed underline
+- Period row: Bold text
 - NOI row: Light grey (#F2F2F2) background with black text, underline at top, span all columns
 - Total rows (Total Revenue, Total Operating Expenses): Bold with thin black underline at TOP of cell, no background
 - Section headers: Add thin grey (#D3D3D3) underline
 - Number format: #,##0;[Red](#,##0);"-" (positive, negative with red brackets, zero as dash)
 - Hide gridlines on the sheet
-- Period headers: Bold, dark blue background with white text
 
 **CRITICAL REQUIREMENTS:**
 - Real estate model: No depreciation or tax calculations required
@@ -3409,25 +3437,7 @@ You MUST create a P&L Statement with this EXACT structure:
       titleRange.format.font.bold = true;
       titleRange.format.fill.color = ExcelFormatter.colors.backgroundDarker5;
       titleRange.format.horizontalAlignment = 'Left';
-      currentRow = 3;
-
-      // TIME PERIOD HEADERS - Include Period 0 for Initial Investment
-      const headers = [''];
-      const prevPeriodLabel = this.getPreviousPeriodLabel(modelData.projectStartDate, modelData.modelPeriods);
-      headers.push(prevPeriodLabel); // Period 0 with actual date label
-      const startDate = new Date(modelData.projectStartDate);
-      for (let i = 0; i < periodColumns; i++) {
-        headers.push(this.formatPeriodHeader(startDate, i, modelData.modelPeriods));
-      }
-
-      const headerRange = plSheet.getRange(`A${currentRow}:${this.getColumnLetter(totalColumns)}${currentRow}`);
-      headerRange.values = [headers];
-      headerRange.format.font.name = 'Times New Roman';
-      headerRange.format.font.size = 12;
-      headerRange.format.font.bold = true;
-      headerRange.format.fill.color = ExcelFormatter.colors.darkBlue;
-      headerRange.format.font.color = ExcelFormatter.colors.white;
-      currentRow++;
+      currentRow = 2; // Remove extra blank row
 
       // REVENUE ITEMS SECTION
       plSheet.getRange(`A${currentRow}`).values = [['Revenue Items']];
@@ -3442,6 +3452,46 @@ You MUST create a P&L Statement with this EXACT structure:
       revenueSectionRange.format.borders.getItem('EdgeBottom').style = 'Continuous';
       revenueSectionRange.format.borders.getItem('EdgeBottom').weight = 'Thin';
       revenueSectionRange.format.borders.getItem('EdgeBottom').color = ExcelFormatter.colors.lightGrey;
+      currentRow++;
+      
+      // Skip one row then add DATES (two cells below Revenue Items title)
+      currentRow++;
+      
+      // DATES ROW - two cells below Revenue Items title (includes Period 0)
+      const dateHeaders = [''];
+      const prevPeriodLabel = this.getPreviousPeriodLabel(modelData.projectStartDate, modelData.modelPeriods);
+      dateHeaders.push(prevPeriodLabel); // Period 0 with actual date label
+      const startDate = new Date(modelData.projectStartDate);
+      for (let i = 0; i < periodColumns; i++) {
+        dateHeaders.push(this.formatPeriodHeader(startDate, i, modelData.modelPeriods));
+      }
+      
+      const dateRange = plSheet.getRange(`A${currentRow}:${this.getColumnLetter(totalColumns)}${currentRow}`);
+      dateRange.values = [dateHeaders];
+      dateRange.format.font.name = 'Times New Roman';
+      dateRange.format.font.size = 12;
+      dateRange.format.font.bold = true;
+      dateRange.format.fill.color = ExcelFormatter.colors.white;
+      dateRange.format.font.color = ExcelFormatter.colors.black;
+      
+      // Add dashed underline under dates
+      dateRange.format.borders.getItem('EdgeBottom').style = 'Dash';
+      dateRange.format.borders.getItem('EdgeBottom').weight = 'Thin';
+      dateRange.format.borders.getItem('EdgeBottom').color = ExcelFormatter.colors.black;
+      currentRow++;
+      
+      // PERIOD ROW - Period 0, Period 1, Period 2, etc.
+      const periodHeaders = [''];
+      periodHeaders.push('Period 0');
+      for (let i = 1; i <= periodColumns; i++) {
+        periodHeaders.push(`Period ${i}`);
+      }
+      
+      const periodRange = plSheet.getRange(`A${currentRow}:${this.getColumnLetter(totalColumns)}${currentRow}`);
+      periodRange.values = [periodHeaders];  
+      periodRange.format.font.name = 'Times New Roman';
+      periodRange.format.font.size = 12;
+      periodRange.format.font.bold = true;
       currentRow++;
 
       // Add revenue items with growth
