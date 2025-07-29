@@ -14,6 +14,9 @@ class ExcelFormatter {
     range.numberFormat = [['#,##0;[Red](#,##0);"-"']];
     // Ensure right alignment for dash values (preserves existing alignment)
     range.format.horizontalAlignment = 'Right';
+    // Ensure Times New Roman font for all cells
+    range.format.font.name = 'Times New Roman';
+    range.format.font.size = 12;
   }
 }
 
@@ -4136,6 +4139,11 @@ You MUST create a P&L Statement with this EXACT structure:
       // Auto-resize columns
       capExSheet.getUsedRange().format.autofitColumns();
       
+      // Ensure all cells use Times New Roman font
+      const allCapExCellsRange = capExSheet.getUsedRange();
+      allCapExCellsRange.format.font.name = 'Times New Roman';
+      allCapExCellsRange.format.font.size = 12;
+      
       console.log('✅ CapEx Summary Sheet created successfully!');
       return capExStructure;
     });
@@ -4417,6 +4425,7 @@ You MUST create a P&L Statement with this EXACT structure:
       const unleverCashflowRange = fcfSheet.getRange(`A${currentRow}:${this.getColumnLetter(totalColumns)}${currentRow}`);
       unleverCashflowRange.format.font.name = 'Times New Roman';
       unleverCashflowRange.format.font.size = 12;
+      unleverCashflowRange.format.font.bold = true;
       unleverCashflowRange.format.font.color = ExcelFormatter.colors.black;
       
       // Add thin underline at top of unlevered cashflow row
@@ -4548,6 +4557,7 @@ You MUST create a P&L Statement with this EXACT structure:
       const leveredCashflowRange = fcfSheet.getRange(`A${currentRow}:${this.getColumnLetter(totalColumns)}${currentRow}`);
       leveredCashflowRange.format.font.name = 'Times New Roman';
       leveredCashflowRange.format.font.size = 12;
+      leveredCashflowRange.format.font.bold = true;
       leveredCashflowRange.format.font.color = ExcelFormatter.colors.black;
       leveredCashflowRange.format.fill.color = ExcelFormatter.colors.backgroundDarker5;
       
@@ -4564,8 +4574,8 @@ You MUST create a P&L Statement with this EXACT structure:
       
       for (let i = 0; i <= periods; i++) {
         const colLetter = this.getColumnLetter(i + 1);
-        // Levered CF = Unlevered CF + Debt upfront costs + Debt Expense + Loan proceeds
-        fcfSheet.getRange(colLetter + currentRow).formulas = [[`=${colLetter}${unlevereCashflowsRow}+${colLetter}${debtUpfrontCostsRow}+${colLetter}${debtExpenseRow}+${colLetter}${loanProceedsRow}`]];
+        // Levered CF = Unlevered CF + Debt upfront costs + Debt Expense + Loan proceeds (using SUM)
+        fcfSheet.getRange(colLetter + currentRow).formulas = [[`=SUM(${colLetter}${unlevereCashflowsRow},${colLetter}${debtUpfrontCostsRow},${colLetter}${debtExpenseRow},${colLetter}${loanProceedsRow})`]];
         ExcelFormatter.applyNumberFormat(fcfSheet.getRange(colLetter + currentRow));
       }
       currentRow += 2;
@@ -4638,6 +4648,11 @@ You MUST create a P&L Statement with this EXACT structure:
       
       // Auto-resize columns
       fcfSheet.getUsedRange().format.autofitColumns();
+      
+      // Ensure all cells use Times New Roman font
+      const allCellsRange = fcfSheet.getUsedRange();
+      allCellsRange.format.font.name = 'Times New Roman';
+      allCellsRange.format.font.size = 12;
       
       console.log('✅ Free Cash Flow Sheet created successfully!');
     });
@@ -4891,6 +4906,11 @@ You MUST create a P&L Statement with this EXACT structure:
       
       // Auto-resize columns
       debtSheet.getUsedRange().format.autofitColumns();
+      
+      // Ensure all cells use Times New Roman font
+      const allDebtCellsRange = debtSheet.getUsedRange();
+      allDebtCellsRange.format.font.name = 'Times New Roman';
+      allDebtCellsRange.format.font.size = 12;
       
       await context.sync();
       
