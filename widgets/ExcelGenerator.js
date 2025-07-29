@@ -4493,32 +4493,67 @@ You MUST create a P&L Statement with this EXACT structure:
       const debtSheet = sheets.add('Debt Model');
       await context.sync();
       
+      // Hide gridlines
+      debtSheet.showGridlines = false;
+      
       // Check if debt financing is enabled
       const hasDebt = modelData.dealLTV && parseFloat(modelData.dealLTV) > 0;
       
       if (!hasDebt) {
-        debtSheet.getRange('A1').values = [['No debt financing (LTV = 0%)']];
+        // Title for no debt scenario
+        debtSheet.getRange('A1').values = [['Debt Model']];
+        const titleRange = debtSheet.getRange('A1:F1');
+        titleRange.merge();
+        titleRange.format.font.name = 'Times New Roman';
+        titleRange.format.font.size = 12;
+        titleRange.format.font.bold = true;
+        titleRange.format.fill.color = ExcelFormatter.colors.backgroundDarker5;
+        titleRange.format.horizontalAlignment = 'Left';
+        
+        debtSheet.getRange('A3').values = [['No debt financing (LTV = 0%)']];
+        debtSheet.getRange('A3').format.font.name = 'Times New Roman';
+        debtSheet.getRange('A3').format.font.size = 12;
         await context.sync();
         return { success: true, message: 'Debt Model sheet created (no debt)' };
       }
       
-      // Simple title
-      debtSheet.getRange('A1').values = [['Debt Model - Fixed Interest Rate']];
-      debtSheet.getRange('A1').format.font.bold = true;
-      
-      // Calculate periods
+      // P&L-style title formatting
       const periods = this.calculatePeriods(modelData.projectStartDate, modelData.projectEndDate, modelData.modelPeriods);
+      const totalColumns = periods + 1; // +1 for Period 0
       
-      // Set up period headers (row 3)
-      debtSheet.getRange('A3').values = [['Period']];
+      debtSheet.getRange('A1').values = [['Debt Model']];
+      const titleRange = debtSheet.getRange(`A1:${this.getColumnLetter(totalColumns)}1`);
+      titleRange.merge();
+      titleRange.format.font.name = 'Times New Roman';
+      titleRange.format.font.size = 12;
+      titleRange.format.font.bold = true;
+      titleRange.format.fill.color = ExcelFormatter.colors.backgroundDarker5;
+      titleRange.format.horizontalAlignment = 'Left';
+      
+      // Add section header
+      debtSheet.getRange('A2').values = [['Debt Components']];
+      const debtSectionRange = debtSheet.getRange(`A2:${this.getColumnLetter(totalColumns)}2`);
+      debtSectionRange.format.font.name = 'Times New Roman';
+      debtSectionRange.format.font.size = 12;
+      debtSectionRange.format.font.bold = true;
+      debtSectionRange.format.fill.color = ExcelFormatter.colors.darkBlue;
+      debtSectionRange.format.font.color = ExcelFormatter.colors.white;
+      
+      // Set up period headers (row 4)
+      debtSheet.getRange('A4').values = [['Period']];
       const prevPeriodLabel = this.getPreviousPeriodLabel(modelData.projectStartDate, modelData.modelPeriods);
-      debtSheet.getRange('B3').values = [[prevPeriodLabel]];
+      debtSheet.getRange('B4').values = [['0']];
       
       for (let i = 1; i <= periods; i++) {
         const colLetter = this.getColumnLetter(i + 1); // C, D, E, etc. for Periods 1, 2, 3...
-        const periodHeader = this.formatPeriodHeader(new Date(modelData.projectStartDate), i - 1, modelData.modelPeriods);
-        debtSheet.getRange(colLetter + '3').values = [[periodHeader]];
+        debtSheet.getRange(colLetter + '4').values = [[i]];
       }
+      
+      // Apply font formatting to period headers
+      const periodRange = debtSheet.getRange(`A4:${this.getColumnLetter(totalColumns)}4`);
+      periodRange.format.font.name = 'Times New Roman';
+      periodRange.format.font.size = 12;
+      periodRange.format.font.bold = false;
       
       // Calculate debt amount
       const dealValue = parseFloat(modelData.dealValue) || 0;
@@ -4527,27 +4562,40 @@ You MUST create a P&L Statement with this EXACT structure:
       
       console.log('📊 Debt calculations:', { dealValue, ltvRatio, debtAmount });
       
-      // Set up debt balance row (row 4)
-      debtSheet.getRange('A4').values = [['Outstanding Debt Balance']];
-      debtSheet.getRange('A4').format.font.bold = true;
-      debtSheet.getRange('B4').values = [[debtAmount]]; // Initial debt in Period 0
+      // Set up debt balance row (row 5)
+      debtSheet.getRange('A5').values = [['Outstanding Debt Balance']];
+      debtSheet.getRange('A5').format.font.name = 'Times New Roman';
+      debtSheet.getRange('A5').format.font.size = 12;
+      
+      // Period 0: Show dash for debt balance (no debt issued yet)
+      const dashRange = debtSheet.getRange('B5');
+      dashRange.values = [['-']];
+      dashRange.format.horizontalAlignment = 'Right';
+      ExcelFormatter.applyNumberFormat(dashRange);
       
       // Debt balance for all periods (constant for interest-only loan)
       for (let i = 1; i <= periods; i++) {
         const colLetter = this.getColumnLetter(i + 1); // C, D, E, etc.
         if (i === periods) {
           // Final period: debt is repaid
-          debtSheet.getRange(colLetter + '4').values = [[0]];
+          debtSheet.getRange(colLetter + '5').values = [[0]];
+          ExcelFormatter.applyNumberFormat(debtSheet.getRange(colLetter + '5'));
         } else {
-          // Interest-only periods: debt balance remains the same
-          debtSheet.getRange(colLetter + '4').values = [[debtAmount]];
+          // Operating periods: debt balance remains the same
+          debtSheet.getRange(colLetter + '5').values = [[debtAmount]];
+          ExcelFormatter.applyNumberFormat(debtSheet.getRange(colLetter + '5'));
         }
       }
       
-      // Set up interest rate row (row 5) - Fixed rate only
-      debtSheet.getRange('A5').values = [['Interest Rate (%)']];
-      debtSheet.getRange('A5').format.font.bold = true;
-      debtSheet.getRange('B5').values = [[0]]; // Period 0 has no interest
+      // Set up interest rate row (row 6) - Fixed rate only
+      debtSheet.getRange('A6').values = [['Interest Rate (%)']];
+      debtSheet.getRange('A6').format.font.name = 'Times New Roman';
+      debtSheet.getRange('A6').format.font.size = 12;
+      
+      // Period 0: Show dash for interest rate
+      const interestDashRange = debtSheet.getRange('B6');
+      interestDashRange.values = [['-']];
+      interestDashRange.format.horizontalAlignment = 'Right';
       
       console.log('📊 Using fixed rate:', modelData.debtSettings?.fixedRate || 5.5);
       
@@ -4555,14 +4603,21 @@ You MUST create a P&L Statement with this EXACT structure:
       
       for (let i = 1; i <= periods; i++) {
         const colLetter = this.getColumnLetter(i + 1); // C, D, E, etc.
-        debtSheet.getRange(colLetter + '5').values = [[fixedRate]];
-        debtSheet.getRange(colLetter + '5').numberFormat = [['0.0%']];
+        debtSheet.getRange(colLetter + '6').values = [[fixedRate]];
+        debtSheet.getRange(colLetter + '6').numberFormat = [['0.0%']];
       }
       
-      // Set up debt expense row (row 6) - This is what goes to FCF
-      debtSheet.getRange('A6').values = [['Debt Expense per Period']];
-      debtSheet.getRange('A6').format.font.bold = true;
-      debtSheet.getRange('B6').values = [[0]]; // Period 0 has no expense
+      // Set up debt expense row (row 7) - This is what goes to FCF
+      debtSheet.getRange('A7').values = [['Debt Expense per Period']];
+      debtSheet.getRange('A7').format.font.name = 'Times New Roman';
+      debtSheet.getRange('A7').format.font.size = 12;
+      debtSheet.getRange('A7').format.font.bold = true;
+      
+      // Period 0: Show dash for debt expense
+      const expenseDashRange = debtSheet.getRange('B7');
+      expenseDashRange.values = [['-']];
+      expenseDashRange.format.horizontalAlignment = 'Right';
+      ExcelFormatter.applyNumberFormat(expenseDashRange);
       
       // Calculate debt expense for each period
       for (let i = 1; i <= periods; i++) {
@@ -4573,24 +4628,22 @@ You MUST create a P&L Statement with this EXACT structure:
           // Final period: interest + principal repayment
           // Use previous period's balance (Period N-1) for both interest and principal
           const prevBalanceCol = this.getColumnLetter(i); // Previous period's balance (B for Period 0, C for Period 1, etc.)
-          debtSheet.getRange(colLetter + '6').formulas = [[`=${prevBalanceCol}4*${colLetter}5+${prevBalanceCol}4`]];
+          debtSheet.getRange(colLetter + '7').formulas = [[`=${prevBalanceCol}5*${colLetter}6+${prevBalanceCol}5`]];
+          ExcelFormatter.applyNumberFormat(debtSheet.getRange(colLetter + '7'));
         } else {
           // Interest-only periods: just interest
           // Interest = Current Balance * Rate
-          debtSheet.getRange(colLetter + '6').formulas = [[`=${currentBalanceCol}4*${currentBalanceCol}5`]];
+          debtSheet.getRange(colLetter + '7').formulas = [[`=${currentBalanceCol}5*${currentBalanceCol}6`]];
+          ExcelFormatter.applyNumberFormat(debtSheet.getRange(colLetter + '7'));
         }
       }
       
       await context.sync();
       
-      // Format the data range with comma formatting
-      const debtDataRange = debtSheet.getRange(`B4:${this.getColumnLetter(periods + 1)}6`);
-      debtDataRange.numberFormat = [['#,##0;[Red]-#,##0;"-"']];
-      
       // Re-apply percentage formatting to interest rate row
       for (let i = 1; i <= periods; i++) {
         const colLetter = this.getColumnLetter(i + 1); // C, D, E, etc.
-        debtSheet.getRange(colLetter + '5').numberFormat = [['0.0%']];
+        debtSheet.getRange(colLetter + '6').numberFormat = [['0.0%']];
       }
       
       // Auto-resize columns
@@ -4599,7 +4652,7 @@ You MUST create a P&L Statement with this EXACT structure:
       await context.sync();
       
       // Store for FCF reference
-      this.debtModelInterestRow = 6; // Updated to point to debt expense row
+      this.debtModelInterestRow = 7; // Updated to point to debt expense row
       
       console.log('✅ Fixed rate debt model sheet created successfully!');
       return { success: true, message: 'Fixed rate debt model sheet created successfully' };
