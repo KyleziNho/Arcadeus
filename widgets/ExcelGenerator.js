@@ -204,15 +204,11 @@ class ExcelGenerator {
     titleRange.format.horizontalAlignment = 'Left';
     titleRange.format.fill.color = ExcelFormatter.colors.backgroundDarker5; // Light grey background
     
-    // Add blank row with height 8.25
-    currentRow = 2;
-    sheet.getRange(`A${currentRow}`).format.rowHeight = 8.25;
-    currentRow++;
-    
     // Track section start rows for reference
     const sectionRows = {};
     
     // HIGH-LEVEL PARAMETERS (Currency, Start Date, Model Periods, End Date) - values in column F
+    currentRow = 2;
     sheet.getRange(`A${currentRow}`).values = [['Currency']];
     sheet.getRange(`F${currentRow}`).values = [[data.currency || 'USD']];
     sheet.getRange(`F${currentRow}`).format.horizontalAlignment = 'Right';
