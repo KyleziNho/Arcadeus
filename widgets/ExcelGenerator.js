@@ -193,9 +193,9 @@ class ExcelGenerator {
     // Hide gridlines
     sheet.showGridlines = false;
     
-    // TITLE: '[Insert company name] - Assumptions' spanning two cells, left-aligned, light grey background
+    // TITLE: '[Insert company name] - Assumptions' spanning three cells, left-aligned, light grey background
     const title = `${data.dealName || '[Insert company name]'} - Assumptions`;
-    sheet.getRange('A1:B1').merge();
+    sheet.getRange('A1:C1').merge();
     sheet.getRange('A1').values = [[title]];
     const titleRange = sheet.getRange('A1');
     titleRange.format.font.name = 'Times New Roman';
@@ -203,7 +203,11 @@ class ExcelGenerator {
     titleRange.format.font.bold = true;
     titleRange.format.horizontalAlignment = 'Left';
     titleRange.format.fill.color = ExcelFormatter.colors.backgroundDarker5; // Light grey background
-    currentRow = 3;
+    
+    // Add blank row with height 8.25
+    currentRow = 2;
+    sheet.getRange(`A${currentRow}`).format.rowHeight = 8.25;
+    currentRow++;
     
     // Track section start rows for reference
     const sectionRows = {};
@@ -240,9 +244,9 @@ class ExcelGenerator {
     sheet.getRange(`A${currentRow}`).format.rowHeight = 8.25;
     currentRow++;
     
-    // ACQUISITION ASSUMPTIONS - dark blue background, spans two cells, left aligned, white text
+    // ACQUISITION ASSUMPTIONS - dark blue background, spans three cells, left aligned, white text
     sectionRows['dealAssumptions'] = currentRow;
-    sheet.getRange(`A${currentRow}:B${currentRow}`).merge();
+    sheet.getRange(`A${currentRow}:C${currentRow}`).merge();
     sheet.getRange(`A${currentRow}`).values = [['Acquisition Assumptions']];
     const acqAssumptionsRange = sheet.getRange(`A${currentRow}`);
     acqAssumptionsRange.format.font.name = 'Times New Roman';
@@ -253,49 +257,49 @@ class ExcelGenerator {
     acqAssumptionsRange.format.font.color = ExcelFormatter.colors.white;
     currentRow++;
     
-    // Deal Value
+    // Deal Value - values in column C with empty column B
     sheet.getRange(`A${currentRow}`).values = [['Deal Value']];
-    sheet.getRange(`B${currentRow}`).values = [[data.dealValue || 0]];
-    sheet.getRange(`B${currentRow}`).numberFormat = '#,##0';
-    this.cellTracker.recordCell('dealValue', 'Assumptions', `B${currentRow}`);
+    sheet.getRange(`C${currentRow}`).values = [[data.dealValue || 0]];
+    sheet.getRange(`C${currentRow}`).numberFormat = '#,##0';
+    this.cellTracker.recordCell('dealValue', 'Assumptions', `C${currentRow}`);
     currentRow++;
     
-    // Transaction Fee
+    // Transaction Fee - values in column C
     sheet.getRange(`A${currentRow}`).values = [['Transaction Fee (%)']];
-    sheet.getRange(`B${currentRow}`).values = [[(data.transactionFee || 2.5) / 100]];
-    sheet.getRange(`B${currentRow}`).numberFormat = '0.00%';
-    this.cellTracker.recordCell('transactionFee', 'Assumptions', `B${currentRow}`);
+    sheet.getRange(`C${currentRow}`).values = [[(data.transactionFee || 2.5) / 100]];
+    sheet.getRange(`C${currentRow}`).numberFormat = '0.00%';
+    this.cellTracker.recordCell('transactionFee', 'Assumptions', `C${currentRow}`);
     currentRow++;
     
-    // Deal LTV
+    // Deal LTV - values in column C
     sheet.getRange(`A${currentRow}`).values = [['Deal LTV (%)']];
-    sheet.getRange(`B${currentRow}`).values = [[(data.dealLTV || 70) / 100]];
-    sheet.getRange(`B${currentRow}`).numberFormat = '0.00%';
-    this.cellTracker.recordCell('dealLTV', 'Assumptions', `B${currentRow}`);
+    sheet.getRange(`C${currentRow}`).values = [[(data.dealLTV || 70) / 100]];
+    sheet.getRange(`C${currentRow}`).numberFormat = '0.00%';
+    this.cellTracker.recordCell('dealLTV', 'Assumptions', `C${currentRow}`);
     currentRow++;
     
-    // Equity Contribution (Calculated)
+    // Equity Contribution (Calculated) - values in column C
     sheet.getRange(`A${currentRow}`).values = [['Equity Contribution']];
     const dealValueCell = this.cellTracker.getCellReference('dealValue').split('!')[1];
     const ltvCell = this.cellTracker.getCellReference('dealLTV').split('!')[1];
-    sheet.getRange(`B${currentRow}`).formulas = [[`=${dealValueCell}*(1-${ltvCell})`]];
-    sheet.getRange(`B${currentRow}`).numberFormat = '#,##0';
-    this.cellTracker.recordCell('equityContribution', 'Assumptions', `B${currentRow}`);
+    sheet.getRange(`C${currentRow}`).formulas = [[`=${dealValueCell}*(1-${ltvCell})`]];
+    sheet.getRange(`C${currentRow}`).numberFormat = '#,##0';
+    this.cellTracker.recordCell('equityContribution', 'Assumptions', `C${currentRow}`);
     currentRow++;
     
-    // Debt Financing (Calculated)
+    // Debt Financing (Calculated) - values in column C
     sheet.getRange(`A${currentRow}`).values = [['Debt Financing']];
-    sheet.getRange(`B${currentRow}`).formulas = [[`=${dealValueCell}*${ltvCell}`]];
-    sheet.getRange(`B${currentRow}`).numberFormat = '#,##0';
-    this.cellTracker.recordCell('debtFinancing', 'Assumptions', `B${currentRow}`);
+    sheet.getRange(`C${currentRow}`).formulas = [[`=${dealValueCell}*${ltvCell}`]];
+    sheet.getRange(`C${currentRow}`).numberFormat = '#,##0';
+    this.cellTracker.recordCell('debtFinancing', 'Assumptions', `C${currentRow}`);
     currentRow++;
     
-    // Loan Issuance Fees (if there's debt)
+    // Loan Issuance Fees (if there's debt) - values in column C
     if (data.dealLTV && parseFloat(data.dealLTV) > 0) {
       sheet.getRange(`A${currentRow}`).values = [['Loan Issuance Fees (%)']];
-      sheet.getRange(`B${currentRow}`).values = [[(data.debtSettings?.loanIssuanceFees || 1.5) / 100]];
-      sheet.getRange(`B${currentRow}`).numberFormat = '0.00%';
-      this.cellTracker.recordCell('loanIssuanceFees', 'Assumptions', `B${currentRow}`);
+      sheet.getRange(`C${currentRow}`).values = [[(data.debtSettings?.loanIssuanceFees || 1.5) / 100]];
+      sheet.getRange(`C${currentRow}`).numberFormat = '0.00%';
+      this.cellTracker.recordCell('loanIssuanceFees', 'Assumptions', `C${currentRow}`);
       currentRow++;
     }
     
@@ -426,9 +430,9 @@ class ExcelGenerator {
       currentRow++;
     }
     
-    // EXIT ASSUMPTIONS - dark blue background, spans two cells, white text
+    // EXIT ASSUMPTIONS - dark blue background, spans three cells, white text
     sectionRows['exitAssumptions'] = currentRow;
-    sheet.getRange(`A${currentRow}:B${currentRow}`).merge();
+    sheet.getRange(`A${currentRow}:C${currentRow}`).merge();
     sheet.getRange(`A${currentRow}`).values = [['Exit Assumptions']];
     const exitAssumptionsRange = sheet.getRange(`A${currentRow}`);
     exitAssumptionsRange.format.font.name = 'Times New Roman';
@@ -439,25 +443,25 @@ class ExcelGenerator {
     exitAssumptionsRange.format.font.color = ExcelFormatter.colors.white;
     currentRow++;
     
-    // Disposal Cost
+    // Disposal Cost - values in column C with empty column B
     sheet.getRange(`A${currentRow}`).values = [['Disposal Cost (%)']];
-    sheet.getRange(`B${currentRow}`).values = [[(data.disposalCost || 2.5) / 100]];
-    sheet.getRange(`B${currentRow}`).numberFormat = '0.00%';
-    this.cellTracker.recordCell('disposalCost', 'Assumptions', `B${currentRow}`);
+    sheet.getRange(`C${currentRow}`).values = [[(data.disposalCost || 2.5) / 100]];
+    sheet.getRange(`C${currentRow}`).numberFormat = '0.00%';
+    this.cellTracker.recordCell('disposalCost', 'Assumptions', `C${currentRow}`);
     currentRow++;
     
-    // Terminal Cap Rate  
+    // Terminal Cap Rate - values in column C
     sheet.getRange(`A${currentRow}`).values = [['Terminal Cap Rate (%)']];
-    sheet.getRange(`B${currentRow}`).values = [[(data.terminalCapRate || 8.5) / 100]];
-    sheet.getRange(`B${currentRow}`).numberFormat = '0.00%';
-    this.cellTracker.recordCell('terminalCapRate', 'Assumptions', `B${currentRow}`);
+    sheet.getRange(`C${currentRow}`).values = [[(data.terminalCapRate || 8.5) / 100]];
+    sheet.getRange(`C${currentRow}`).numberFormat = '0.00%';
+    this.cellTracker.recordCell('terminalCapRate', 'Assumptions', `C${currentRow}`);
     currentRow++;
     
-    // Discount Rate (WACC)
+    // Discount Rate (WACC) - values in column C
     sheet.getRange(`A${currentRow}`).values = [['Discount Rate - WACC (%)']];
-    sheet.getRange(`B${currentRow}`).values = [[(data.discountRate || 10.0) / 100]];
-    sheet.getRange(`B${currentRow}`).numberFormat = '0.00%';
-    this.cellTracker.recordCell('discountRate', 'Assumptions', `B${currentRow}`);
+    sheet.getRange(`C${currentRow}`).values = [[(data.discountRate || 10.0) / 100]];
+    sheet.getRange(`C${currentRow}`).numberFormat = '0.00%';
+    this.cellTracker.recordCell('discountRate', 'Assumptions', `C${currentRow}`);
     currentRow++;
     
     // Apply Times New Roman font to all cells
