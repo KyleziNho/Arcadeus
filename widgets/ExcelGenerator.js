@@ -4425,7 +4425,6 @@ You MUST create a P&L Statement with this EXACT structure:
       const unleverCashflowRange = fcfSheet.getRange(`A${currentRow}:${this.getColumnLetter(totalColumns)}${currentRow}`);
       unleverCashflowRange.format.font.name = 'Times New Roman';
       unleverCashflowRange.format.font.size = 12;
-      unleverCashflowRange.format.font.bold = true;
       unleverCashflowRange.format.font.color = ExcelFormatter.colors.black;
       
       // Add thin underline at top of unlevered cashflow row
@@ -4644,7 +4643,7 @@ You MUST create a P&L Statement with this EXACT structure:
       // Format all numbers with standard negative format (excluding IRR/MOIC rows)
       // Stop formatting before the RETURNS section to preserve percentage formatting
       const dataRange = fcfSheet.getRange(`B5:${finalCol}${currentRow - 4}`); // Exclude RETURNS, IRR, and MOIC rows
-      dataRange.numberFormat = [['#,##0;[Red]-#,##0;"-"']];
+      dataRange.numberFormat = [['#,##0;[Red](#,##0);"-"']];
       
       // Auto-resize columns
       fcfSheet.getUsedRange().format.autofitColumns();
