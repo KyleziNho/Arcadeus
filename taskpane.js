@@ -651,6 +651,32 @@ class MAModelingAddin {
     console.log('IRR & MOIC are now calculated automatically in the FCF sheet');
   }
   */
+
+  async addFinalResults() {
+    console.log('🎯 Adding final results to Assumptions sheet...');
+    
+    try {
+      // Add IRR and MOIC results to Assumptions sheet
+      if (this.excelGenerator) {
+        const result = await this.excelGenerator.addIRRMOICToAssumptions();
+        
+        if (result && result.success !== false) {
+          console.log('Final results added successfully to Assumptions sheet');
+          return { success: true, message: 'Final results added to Assumptions sheet' };
+        } else {
+          console.error('Failed to add final results');
+          return { success: false, error: 'Failed to add final results' };
+        }
+      } else {
+        console.error('Excel generator not available');
+        return { success: false, error: 'Excel generator not available' };
+      }
+      
+    } catch (error) {
+      console.error('Error in addFinalResults:', error);
+      return { success: false, error: error.message };
+    }
+  }
   
   async generateFullModel() {
     console.log('🚀 Starting unified full model generation...');
@@ -691,11 +717,12 @@ class MAModelingAddin {
       }
       
       const steps = [
-        { name: 'Assumptions', func: () => this.generateAssumptions(), progress: 20 },
-        { name: 'P&L Statement', func: () => this.generatePLWithAI(), progress: 40 },
-        { name: 'CapEx Summary', func: () => this.generateCapExSheet(), progress: 60 },
-        { name: 'Debt Model', func: () => this.generateDebtModelSheet(), progress: 80 },
-        { name: 'Free Cash Flow', func: () => this.generateFCFWithAI(), progress: 100 }
+        { name: 'Assumptions', func: () => this.generateAssumptions(), progress: 16 },
+        { name: 'P&L Statement', func: () => this.generatePLWithAI(), progress: 33 },
+        { name: 'CapEx Summary', func: () => this.generateCapExSheet(), progress: 50 },
+        { name: 'Debt Model', func: () => this.generateDebtModelSheet(), progress: 66 },
+        { name: 'Free Cash Flow', func: () => this.generateFCFWithAI(), progress: 83 },
+        { name: 'Final Results', func: () => this.addFinalResults(), progress: 100 }
       ];
       
       // Execute each step sequentially

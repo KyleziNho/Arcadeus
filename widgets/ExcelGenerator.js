@@ -4929,6 +4929,80 @@ You MUST create a P&L Statement with this EXACT structure:
   }
 
   // REMOVED: Old complex AI sheet creation - replaced with simple version above
+
+  async addIRRMOICToAssumptions() {
+    return Excel.run(async (context) => {
+      console.log('🎯 Adding IRR and MOIC results to Assumptions sheet...');
+      
+      try {
+        const assumptionsSheet = context.workbook.worksheets.getItem('Assumptions');
+        
+        // Find the row with "Acquisition Assumptions" to align with it
+        const usedRange = assumptionsSheet.getUsedRange();
+        usedRange.load('values');
+        await context.sync();
+        
+        let acquisitionAssumptionsRow = 3; // Default fallback
+        const values = usedRange.values;
+        
+        // Find the actual row with "Acquisition Assumptions"
+        for (let i = 0; i < values.length; i++) {
+          if (values[i][0] && values[i][0].toString().includes('Acquisition Assumptions')) {
+            acquisitionAssumptionsRow = i + 1; // Excel rows are 1-based
+            break;
+          }
+        }
+        
+        console.log(`📍 Found Acquisition Assumptions at row ${acquisitionAssumptionsRow}`);
+        
+        // Add results header in column H, spanning H:I, same row as Acquisition Assumptions
+        const resultsHeaderRange = assumptionsSheet.getRange(`H${acquisitionAssumptionsRow}:I${acquisitionAssumptionsRow}`);
+        resultsHeaderRange.merge();
+        resultsHeaderRange.values = [['Results']];
+        resultsHeaderRange.format.font.name = 'Times New Roman';
+        resultsHeaderRange.format.font.size = 12;
+        resultsHeaderRange.format.font.bold = true;
+        resultsHeaderRange.format.horizontalAlignment = 'Left';
+        resultsHeaderRange.format.fill.color = ExcelFormatter.colors.darkBlue;
+        resultsHeaderRange.format.font.color = ExcelFormatter.colors.white;
+        
+        // Add the three metric rows below the header
+        let currentRow = acquisitionAssumptionsRow + 1;
+        
+        // Unlevered IRR
+        assumptionsSheet.getRange(`H${currentRow}`).values = [['Unlevered IRR']];
+        assumptionsSheet.getRange(`I${currentRow}`).values = [['=Cashflows!B35']]; // Reference to FCF sheet
+        assumptionsSheet.getRange(`H${currentRow}:I${currentRow}`).format.font.name = 'Times New Roman';
+        assumptionsSheet.getRange(`H${currentRow}:I${currentRow}`).format.font.size = 12;
+        assumptionsSheet.getRange(`I${currentRow}`).numberFormat = '0.00%';
+        currentRow++;
+        
+        // Levered IRR  
+        assumptionsSheet.getRange(`H${currentRow}`).values = [['Levered IRR']];
+        assumptionsSheet.getRange(`I${currentRow}`).values = [['=Cashflows!B36']]; // Reference to FCF sheet
+        assumptionsSheet.getRange(`H${currentRow}:I${currentRow}`).format.font.name = 'Times New Roman';
+        assumptionsSheet.getRange(`H${currentRow}:I${currentRow}`).format.font.size = 12;
+        assumptionsSheet.getRange(`I${currentRow}`).numberFormat = '0.00%';
+        currentRow++;
+        
+        // MOIC
+        assumptionsSheet.getRange(`H${currentRow}`).values = [['MOIC']];
+        assumptionsSheet.getRange(`I${currentRow}`).values = [['=Cashflows!B37']]; // Reference to FCF sheet
+        assumptionsSheet.getRange(`H${currentRow}:I${currentRow}`).format.font.name = 'Times New Roman';
+        assumptionsSheet.getRange(`H${currentRow}:I${currentRow}`).format.font.size = 12;
+        assumptionsSheet.getRange(`I${currentRow}`).numberFormat = '0.00';
+        
+        await context.sync();
+        
+        console.log('✅ IRR and MOIC results added to Assumptions sheet successfully!');
+        return { success: true, message: 'IRR and MOIC results added to Assumptions sheet' };
+        
+      } catch (error) {
+        console.error('❌ Error adding IRR/MOIC to Assumptions sheet:', error);
+        return { success: false, error: error.message };
+      }
+    });
+  }
 }
 
 // Export for use in main application
