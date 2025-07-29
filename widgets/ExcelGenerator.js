@@ -1762,7 +1762,7 @@ Provide the COMPLETE Free Cash Flow model with exact Excel formulas for every ce
             } else {
               // Reference debt expense from Debt Model: Period 1 is in column C
               const debtModelCol = this.getColumnLetter(col + 1); // FCF col 1 -> Debt Model col C (col+1)
-              debtExpenseFormula = `=-'Debt Model'!${debtModelCol}8`;
+              debtExpenseFormula = `=-'Debt Model'!${debtModelCol}6`;
             }
             
             fcfSheet.getRange(`${colLetter}${currentRow}`).formulas = [[debtExpenseFormula]];
@@ -3958,7 +3958,7 @@ You MUST create a P&L Statement with this EXACT structure:
       let currentRow = 1;
       
       // TITLE - P&L style formatting
-      capExSheet.getRange('A1').values = [['Capital Expenditures Summary']];
+      capExSheet.getRange('A1').values = [['Capital Expenditures']];
       const titleRange = capExSheet.getRange(`A1:${this.getColumnLetter(totalColumns)}1`);
       titleRange.merge();
       titleRange.format.font.name = 'Times New Roman';
@@ -4492,7 +4492,7 @@ You MUST create a P&L Statement with this EXACT structure:
       fcfSheet.getRange(`A${currentRow}`).format.font.color = ExcelFormatter.colors.black;
       
       if (modelData.dealLTV && parseFloat(modelData.dealLTV) > 0) {
-        // Reference debt expense directly from the Debt Model sheet row 8
+        // Reference debt expense directly from the Debt Model sheet row 6
         for (let i = 0; i <= periods; i++) {
           const colLetter = this.getColumnLetter(i + 1); // FCF column
           if (i === 0) {
@@ -4503,7 +4503,7 @@ You MUST create a P&L Statement with this EXACT structure:
           } else {
             // Reference debt expense from Debt Model: Period 1 is column C, Period 2 is column D, etc.
             const debtModelCol = this.getColumnLetter(i + 1); // FCF Period i maps to Debt Model column (i+1)
-            fcfSheet.getRange(colLetter + currentRow).formulas = [[`=-'Debt Model'!${debtModelCol}8`]];
+            fcfSheet.getRange(colLetter + currentRow).formulas = [[`=-'Debt Model'!${debtModelCol}6`]];
             ExcelFormatter.applyNumberFormat(fcfSheet.getRange(colLetter + currentRow));
           }
         }
@@ -4738,10 +4738,7 @@ You MUST create a P&L Statement with this EXACT structure:
       // Set column B width to 10
       debtSheet.getRange('B:B').format.columnWidth = 10;
       
-      // Skip one row then add DATES (height 8) - row 3
-      debtSheet.getRange(`A3:${this.getColumnLetter(totalColumns)}3`).format.rowHeight = 8;
-      
-      // DATES ROW - row 4 (includes Period 0)
+      // DATES ROW - row 2 (includes Period 0)
       const dateHeaders = [''];
       const prevPeriodDate = new Date(modelData.projectStartDate);
       
@@ -4784,7 +4781,7 @@ You MUST create a P&L Statement with this EXACT structure:
         dateHeaders.push(this.formatDateAsLastDay(periodDate, modelData.modelPeriods));
       }
       
-      const dateRange = debtSheet.getRange(`A4:${this.getColumnLetter(totalColumns)}4`);
+      const dateRange = debtSheet.getRange(`A2:${this.getColumnLetter(totalColumns)}2`);
       dateRange.values = [dateHeaders];
       dateRange.format.font.name = 'Times New Roman';
       dateRange.format.font.size = 12;
@@ -4797,17 +4794,17 @@ You MUST create a P&L Statement with this EXACT structure:
       dateRange.format.borders.getItem('EdgeBottom').weight = 'Thin';
       dateRange.format.borders.getItem('EdgeBottom').color = ExcelFormatter.colors.black;
       
-      // Set up period headers (row 5)
-      debtSheet.getRange('A5').values = [['Period']];
-      debtSheet.getRange('B5').values = [['0']];
+      // Set up period headers (row 3)
+      debtSheet.getRange('A3').values = [['Period']];
+      debtSheet.getRange('B3').values = [['0']];
       
       for (let i = 1; i <= periods; i++) {
         const colLetter = this.getColumnLetter(i + 1); // C, D, E, etc. for Periods 1, 2, 3...
-        debtSheet.getRange(colLetter + '5').values = [[i]];
+        debtSheet.getRange(colLetter + '3').values = [[i]];
       }
       
       // Apply font formatting to period headers
-      const periodRange = debtSheet.getRange(`A5:${this.getColumnLetter(totalColumns)}5`);
+      const periodRange = debtSheet.getRange(`A3:${this.getColumnLetter(totalColumns)}3`);
       periodRange.format.font.name = 'Times New Roman';
       periodRange.format.font.size = 12;
       periodRange.format.font.bold = false;
@@ -4819,13 +4816,13 @@ You MUST create a P&L Statement with this EXACT structure:
       
       console.log('📊 Debt calculations:', { dealValue, ltvRatio, debtAmount });
       
-      // Set up debt balance row (row 6)
-      debtSheet.getRange('A6').values = [['Outstanding Debt Balance']];
-      debtSheet.getRange('A6').format.font.name = 'Times New Roman';
-      debtSheet.getRange('A6').format.font.size = 12;
+      // Set up debt balance row (row 4)
+      debtSheet.getRange('A4').values = [['Outstanding Debt Balance']];
+      debtSheet.getRange('A4').format.font.name = 'Times New Roman';
+      debtSheet.getRange('A4').format.font.size = 12;
       
       // Period 0: Show dash for debt balance (no debt issued yet)
-      const dashRange = debtSheet.getRange('B6');
+      const dashRange = debtSheet.getRange('B4');
       dashRange.values = [['-']];
       dashRange.format.horizontalAlignment = 'Right';
       ExcelFormatter.applyNumberFormat(dashRange);
@@ -4835,22 +4832,22 @@ You MUST create a P&L Statement with this EXACT structure:
         const colLetter = this.getColumnLetter(i + 1); // C, D, E, etc.
         if (i === periods) {
           // Final period: debt is repaid
-          debtSheet.getRange(colLetter + '6').values = [[0]];
-          ExcelFormatter.applyNumberFormat(debtSheet.getRange(colLetter + '6'));
+          debtSheet.getRange(colLetter + '4').values = [[0]];
+          ExcelFormatter.applyNumberFormat(debtSheet.getRange(colLetter + '4'));
         } else {
           // Operating periods: debt balance remains the same
-          debtSheet.getRange(colLetter + '6').values = [[debtAmount]];
-          ExcelFormatter.applyNumberFormat(debtSheet.getRange(colLetter + '6'));
+          debtSheet.getRange(colLetter + '4').values = [[debtAmount]];
+          ExcelFormatter.applyNumberFormat(debtSheet.getRange(colLetter + '4'));
         }
       }
       
-      // Set up interest rate row (row 7) - Fixed rate only
-      debtSheet.getRange('A7').values = [['Interest Rate (%)']];
-      debtSheet.getRange('A7').format.font.name = 'Times New Roman';
-      debtSheet.getRange('A7').format.font.size = 12;
+      // Set up interest rate row (row 5) - Fixed rate only
+      debtSheet.getRange('A5').values = [['Interest Rate (%)']];
+      debtSheet.getRange('A5').format.font.name = 'Times New Roman';
+      debtSheet.getRange('A5').format.font.size = 12;
       
       // Period 0: Show dash for interest rate
-      const interestDashRange = debtSheet.getRange('B7');
+      const interestDashRange = debtSheet.getRange('B5');
       interestDashRange.values = [['-']];
       interestDashRange.format.horizontalAlignment = 'Right';
       
@@ -4860,13 +4857,13 @@ You MUST create a P&L Statement with this EXACT structure:
       
       for (let i = 1; i <= periods; i++) {
         const colLetter = this.getColumnLetter(i + 1); // C, D, E, etc.
-        debtSheet.getRange(colLetter + '7').values = [[fixedRate]];
-        debtSheet.getRange(colLetter + '7').numberFormat = [['0.0%']];
+        debtSheet.getRange(colLetter + '5').values = [[fixedRate]];
+        debtSheet.getRange(colLetter + '5').numberFormat = [['0.0%']];
       }
       
-      // Set up debt expense row (row 8) - This is what goes to FCF
-      debtSheet.getRange('A8').values = [['Debt Expense per Period']];
-      const debtExpenseRange = debtSheet.getRange(`A8:${this.getColumnLetter(totalColumns)}8`);
+      // Set up debt expense row (row 6) - This is what goes to FCF
+      debtSheet.getRange('A6').values = [['Debt Expense per Period']];
+      const debtExpenseRange = debtSheet.getRange(`A6:${this.getColumnLetter(totalColumns)}6`);
       debtExpenseRange.format.font.name = 'Times New Roman';
       debtExpenseRange.format.font.size = 12;
       debtExpenseRange.format.font.bold = true;
@@ -4878,7 +4875,7 @@ You MUST create a P&L Statement with this EXACT structure:
       debtExpenseRange.format.borders.getItem('EdgeTop').color = ExcelFormatter.colors.black;
       
       // Period 0: Show dash for debt expense
-      const expenseDashRange = debtSheet.getRange('B8');
+      const expenseDashRange = debtSheet.getRange('B6');
       expenseDashRange.values = [['-']];
       expenseDashRange.format.horizontalAlignment = 'Right';
       ExcelFormatter.applyNumberFormat(expenseDashRange);
@@ -4892,13 +4889,13 @@ You MUST create a P&L Statement with this EXACT structure:
           // Final period: interest + principal repayment
           // Use previous period's balance (Period N-1) for both interest and principal
           const prevBalanceCol = this.getColumnLetter(i); // Previous period's balance (B for Period 0, C for Period 1, etc.)
-          debtSheet.getRange(colLetter + '8').formulas = [[`=${prevBalanceCol}6*${colLetter}7+${prevBalanceCol}6`]];
-          ExcelFormatter.applyNumberFormat(debtSheet.getRange(colLetter + '8'));
+          debtSheet.getRange(colLetter + '6').formulas = [[`=${prevBalanceCol}4*${colLetter}5+${prevBalanceCol}4`]];
+          ExcelFormatter.applyNumberFormat(debtSheet.getRange(colLetter + '6'));
         } else {
           // Interest-only periods: just interest
           // Interest = Current Balance * Rate
-          debtSheet.getRange(colLetter + '8').formulas = [[`=${currentBalanceCol}6*${currentBalanceCol}7`]];
-          ExcelFormatter.applyNumberFormat(debtSheet.getRange(colLetter + '8'));
+          debtSheet.getRange(colLetter + '6').formulas = [[`=${currentBalanceCol}4*${currentBalanceCol}5`]];
+          ExcelFormatter.applyNumberFormat(debtSheet.getRange(colLetter + '6'));
         }
       }
       
@@ -4907,7 +4904,7 @@ You MUST create a P&L Statement with this EXACT structure:
       // Re-apply percentage formatting to interest rate row
       for (let i = 1; i <= periods; i++) {
         const colLetter = this.getColumnLetter(i + 1); // C, D, E, etc.
-        debtSheet.getRange(colLetter + '7').numberFormat = [['0.0%']];
+        debtSheet.getRange(colLetter + '5').numberFormat = [['0.0%']];
       }
       
       // Auto-resize columns
@@ -4921,7 +4918,7 @@ You MUST create a P&L Statement with this EXACT structure:
       await context.sync();
       
       // Store for FCF reference
-      this.debtModelInterestRow = 8; // Updated to point to debt expense row
+      this.debtModelInterestRow = 6; // Updated to point to debt expense row
       
       console.log('✅ Fixed rate debt model sheet created successfully!');
       return { success: true, message: 'Fixed rate debt model sheet created successfully' };
@@ -4969,9 +4966,40 @@ You MUST create a P&L Statement with this EXACT structure:
         // Add the three metric rows below the header
         let currentRow = acquisitionAssumptionsRow + 1;
         
+        // Find the actual rows where IRR and MOIC are located in the FCF sheet
+        const fcfSheet = context.workbook.worksheets.getItem('Cashflows');
+        const fcfUsedRange = fcfSheet.getUsedRange();
+        fcfUsedRange.load('values');
+        await context.sync();
+        
+        const fcfValues = fcfUsedRange.values;
+        let unleverIRRRow = null;
+        let leverIRRRow = null;
+        let moicRow = null;
+        
+        // Search for the IRR and MOIC labels in the FCF sheet
+        for (let i = 0; i < fcfValues.length; i++) {
+          const cellValue = fcfValues[i][0]; // Column A
+          if (cellValue && typeof cellValue === 'string') {
+            if (cellValue.toLowerCase().includes('unlevered irr')) {
+              unleverIRRRow = i + 1; // Convert to 1-based Excel row
+            } else if (cellValue.toLowerCase().includes('levered irr')) {
+              leverIRRRow = i + 1;
+            } else if (cellValue.toLowerCase().includes('moic')) {
+              moicRow = i + 1;
+            }
+          }
+        }
+        
+        console.log(`📍 Found IRR/MOIC at rows: Unlevered=${unleverIRRRow}, Levered=${leverIRRRow}, MOIC=${moicRow}`);
+        
         // Unlevered IRR
         assumptionsSheet.getRange(`H${currentRow}`).values = [['Unlevered IRR']];
-        assumptionsSheet.getRange(`I${currentRow}`).values = [['=Cashflows!B35']]; // Reference to FCF sheet
+        if (unleverIRRRow) {
+          assumptionsSheet.getRange(`I${currentRow}`).values = [[`=Cashflows!B${unleverIRRRow}`]];
+        } else {
+          assumptionsSheet.getRange(`I${currentRow}`).values = [['N/A']];
+        }
         assumptionsSheet.getRange(`H${currentRow}:I${currentRow}`).format.font.name = 'Times New Roman';
         assumptionsSheet.getRange(`H${currentRow}:I${currentRow}`).format.font.size = 12;
         assumptionsSheet.getRange(`I${currentRow}`).numberFormat = '0.00%';
@@ -4979,7 +5007,11 @@ You MUST create a P&L Statement with this EXACT structure:
         
         // Levered IRR  
         assumptionsSheet.getRange(`H${currentRow}`).values = [['Levered IRR']];
-        assumptionsSheet.getRange(`I${currentRow}`).values = [['=Cashflows!B36']]; // Reference to FCF sheet
+        if (leverIRRRow) {
+          assumptionsSheet.getRange(`I${currentRow}`).values = [[`=Cashflows!B${leverIRRRow}`]];
+        } else {
+          assumptionsSheet.getRange(`I${currentRow}`).values = [['N/A']];
+        }
         assumptionsSheet.getRange(`H${currentRow}:I${currentRow}`).format.font.name = 'Times New Roman';
         assumptionsSheet.getRange(`H${currentRow}:I${currentRow}`).format.font.size = 12;
         assumptionsSheet.getRange(`I${currentRow}`).numberFormat = '0.00%';
@@ -4987,7 +5019,11 @@ You MUST create a P&L Statement with this EXACT structure:
         
         // MOIC
         assumptionsSheet.getRange(`H${currentRow}`).values = [['MOIC']];
-        assumptionsSheet.getRange(`I${currentRow}`).values = [['=Cashflows!B37']]; // Reference to FCF sheet
+        if (moicRow) {
+          assumptionsSheet.getRange(`I${currentRow}`).values = [[`=Cashflows!B${moicRow}`]];
+        } else {
+          assumptionsSheet.getRange(`I${currentRow}`).values = [['N/A']];
+        }
         assumptionsSheet.getRange(`H${currentRow}:I${currentRow}`).format.font.name = 'Times New Roman';
         assumptionsSheet.getRange(`H${currentRow}:I${currentRow}`).format.font.size = 12;
         assumptionsSheet.getRange(`I${currentRow}`).numberFormat = '0.00';
