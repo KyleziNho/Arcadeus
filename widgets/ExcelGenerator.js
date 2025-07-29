@@ -389,20 +389,9 @@ class ExcelGenerator {
       currentRow++;
     }
     
-    // CAPEX ITEMS - dark blue background, spans to column F, white text
+    // CAPEX ITEMS - no section header, just items
     if (data.capEx && data.capEx.length > 0) {
       sectionRows['capEx'] = currentRow;
-      sheet.getRange(`A${currentRow}`).values = [['CapEx Items']];
-      sheet.getRange(`E${currentRow}`).values = [['Value']];
-      sheet.getRange(`F${currentRow}`).values = [['Growth Rate']];
-      const capexHeaderRange = sheet.getRange(`A${currentRow}:F${currentRow}`);
-      capexHeaderRange.format.font.name = 'Times New Roman';
-      capexHeaderRange.format.font.size = 12;
-      capexHeaderRange.format.font.bold = true;
-      capexHeaderRange.format.horizontalAlignment = 'Left';
-      capexHeaderRange.format.fill.color = ExcelFormatter.colors.darkBlue;
-      capexHeaderRange.format.font.color = ExcelFormatter.colors.white;
-      currentRow++;
       
       const capexStartRow = currentRow;
       data.capEx.forEach((item, index) => {
@@ -3979,20 +3968,7 @@ You MUST create a P&L Statement with this EXACT structure:
       titleRange.format.horizontalAlignment = 'Left';
       currentRow = 2; // Remove extra blank row
       
-      // CAPEX ITEMS SECTION HEADER
-      capExSheet.getRange(`A${currentRow}`).values = [['CapEx Items']];
-      const capExSectionRange = capExSheet.getRange(`A${currentRow}:${this.getColumnLetter(totalColumns)}${currentRow}`);
-      capExSectionRange.format.font.name = 'Times New Roman';
-      capExSectionRange.format.font.size = 12;
-      capExSectionRange.format.font.bold = true;
-      capExSectionRange.format.fill.color = ExcelFormatter.colors.darkBlue;
-      capExSectionRange.format.font.color = ExcelFormatter.colors.white;
-      
-      // Add thin grey underline after section header
-      capExSectionRange.format.borders.getItem('EdgeBottom').style = 'Continuous';
-      capExSectionRange.format.borders.getItem('EdgeBottom').weight = 'Thin';
-      capExSectionRange.format.borders.getItem('EdgeBottom').color = ExcelFormatter.colors.lightGrey;
-      currentRow++;
+      // No section header for CapEx Items
       
       // Skip one row then add DATES (height 8)
       capExSheet.getRange(`A${currentRow}:${this.getColumnLetter(totalColumns)}${currentRow}`).format.rowHeight = 8;
@@ -4757,14 +4733,7 @@ You MUST create a P&L Statement with this EXACT structure:
       titleRange.format.fill.color = ExcelFormatter.colors.backgroundDarker5;
       titleRange.format.horizontalAlignment = 'Left';
       
-      // Add section header
-      debtSheet.getRange('A2').values = [['Debt Components']];
-      const debtSectionRange = debtSheet.getRange(`A2:${this.getColumnLetter(totalColumns)}2`);
-      debtSectionRange.format.font.name = 'Times New Roman';
-      debtSectionRange.format.font.size = 12;
-      debtSectionRange.format.font.bold = true;
-      debtSectionRange.format.fill.color = ExcelFormatter.colors.darkBlue;
-      debtSectionRange.format.font.color = ExcelFormatter.colors.white;
+      // No section header for Debt Components
       
       // Set column B width to 10
       debtSheet.getRange('B:B').format.columnWidth = 10;
