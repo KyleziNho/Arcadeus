@@ -222,7 +222,10 @@ class ExcelGenerator {
     currentRow++;
     
     sheet.getRange(`A${currentRow}`).values = [['Model Periods']];
-    sheet.getRange(`B${currentRow}`).values = [[data.modelPeriods || 'Monthly']];
+    // Capitalize the first letter of period type
+    const periodType = data.modelPeriods || 'monthly';
+    const capitalizedPeriod = periodType.charAt(0).toUpperCase() + periodType.slice(1).toLowerCase();
+    sheet.getRange(`B${currentRow}`).values = [[capitalizedPeriod]];
     sheet.getRange(`B${currentRow}`).format.horizontalAlignment = 'Right';
     this.cellTracker.recordCell('modelPeriods', 'Assumptions', `B${currentRow}`);
     currentRow++;
@@ -231,7 +234,11 @@ class ExcelGenerator {
     sheet.getRange(`B${currentRow}`).values = [[data.projectEndDate || '']];
     sheet.getRange(`B${currentRow}`).format.horizontalAlignment = 'Right';
     this.cellTracker.recordCell('projectEndDate', 'Assumptions', `B${currentRow}`);
-    currentRow += 2;
+    currentRow++;
+    
+    // Add blank row with height 8.25
+    sheet.getRange(`A${currentRow}`).format.rowHeight = 8.25;
+    currentRow++;
     
     // ACQUISITION ASSUMPTIONS - dark blue background, spans two cells, left aligned, white text
     sectionRows['dealAssumptions'] = currentRow;
@@ -290,6 +297,9 @@ class ExcelGenerator {
       this.cellTracker.recordCell('loanIssuanceFees', 'Assumptions', `B${currentRow}`);
       currentRow++;
     }
+    
+    // Add blank row with height 8.25
+    sheet.getRange(`A${currentRow}`).format.rowHeight = 8.25;
     currentRow++;
     
     // REVENUE ITEMS - dark blue background, spans 3 cells (A:C), white text
@@ -335,6 +345,9 @@ class ExcelGenerator {
       
       this.cellTracker.recordCell('revenue_range', 'Assumptions', `B${revenueStartRow}:B${currentRow - 1}`);
       this.cellTracker.recordCell('revenue_count', 'Assumptions', data.revenueItems.length.toString());
+      
+      // Add blank row with height 8.25
+      sheet.getRange(`A${currentRow}`).format.rowHeight = 8.25;
       currentRow++;
     }
     
@@ -369,6 +382,9 @@ class ExcelGenerator {
       
       this.cellTracker.recordCell('opex_range', 'Assumptions', `B${opexStartRow}:B${currentRow - 1}`);
       this.cellTracker.recordCell('opex_count', 'Assumptions', data.operatingExpenses.length.toString());
+      
+      // Add blank row with height 8.25
+      sheet.getRange(`A${currentRow}`).format.rowHeight = 8.25;
       currentRow++;
     }
     
@@ -403,6 +419,9 @@ class ExcelGenerator {
       
       this.cellTracker.recordCell('capex_range', 'Assumptions', `B${capexStartRow}:B${currentRow - 1}`);
       this.cellTracker.recordCell('capex_count', 'Assumptions', data.capEx.length.toString());
+      
+      // Add blank row with height 8.25
+      sheet.getRange(`A${currentRow}`).format.rowHeight = 8.25;
       currentRow++;
     }
     
