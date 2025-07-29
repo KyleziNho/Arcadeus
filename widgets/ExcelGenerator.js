@@ -193,9 +193,9 @@ class ExcelGenerator {
     // Hide gridlines
     sheet.showGridlines = false;
     
-    // TITLE: '[Insert company name] - Assumptions' spanning three cells, left-aligned, light grey background
+    // TITLE: '[Insert company name] - Assumptions' spanning to column F, left-aligned, light grey background
     const title = `${data.dealName || '[Insert company name]'} - Assumptions`;
-    sheet.getRange('A1:C1').merge();
+    sheet.getRange('A1:F1').merge();
     sheet.getRange('A1').values = [[title]];
     const titleRange = sheet.getRange('A1');
     titleRange.format.font.name = 'Times New Roman';
@@ -212,41 +212,41 @@ class ExcelGenerator {
     // Track section start rows for reference
     const sectionRows = {};
     
-    // HIGH-LEVEL PARAMETERS (Currency, Start Date, Model Periods, End Date) - right aligned
+    // HIGH-LEVEL PARAMETERS (Currency, Start Date, Model Periods, End Date) - values in column F
     sheet.getRange(`A${currentRow}`).values = [['Currency']];
-    sheet.getRange(`B${currentRow}`).values = [[data.currency || 'USD']];
-    sheet.getRange(`B${currentRow}`).format.horizontalAlignment = 'Right';
-    this.cellTracker.recordCell('currency', 'Assumptions', `B${currentRow}`);
+    sheet.getRange(`F${currentRow}`).values = [[data.currency || 'USD']];
+    sheet.getRange(`F${currentRow}`).format.horizontalAlignment = 'Right';
+    this.cellTracker.recordCell('currency', 'Assumptions', `F${currentRow}`);
     currentRow++;
     
     sheet.getRange(`A${currentRow}`).values = [['Start Date']];
-    sheet.getRange(`B${currentRow}`).values = [[data.projectStartDate || '']];
-    sheet.getRange(`B${currentRow}`).format.horizontalAlignment = 'Right';
-    this.cellTracker.recordCell('projectStartDate', 'Assumptions', `B${currentRow}`);
+    sheet.getRange(`F${currentRow}`).values = [[data.projectStartDate || '']];
+    sheet.getRange(`F${currentRow}`).format.horizontalAlignment = 'Right';
+    this.cellTracker.recordCell('projectStartDate', 'Assumptions', `F${currentRow}`);
     currentRow++;
     
     sheet.getRange(`A${currentRow}`).values = [['Model Periods']];
     // Capitalize the first letter of period type
     const periodType = data.modelPeriods || 'monthly';
     const capitalizedPeriod = periodType.charAt(0).toUpperCase() + periodType.slice(1).toLowerCase();
-    sheet.getRange(`B${currentRow}`).values = [[capitalizedPeriod]];
-    sheet.getRange(`B${currentRow}`).format.horizontalAlignment = 'Right';
-    this.cellTracker.recordCell('modelPeriods', 'Assumptions', `B${currentRow}`);
+    sheet.getRange(`F${currentRow}`).values = [[capitalizedPeriod]];
+    sheet.getRange(`F${currentRow}`).format.horizontalAlignment = 'Right';
+    this.cellTracker.recordCell('modelPeriods', 'Assumptions', `F${currentRow}`);
     currentRow++;
     
     sheet.getRange(`A${currentRow}`).values = [['End Date']];
-    sheet.getRange(`B${currentRow}`).values = [[data.projectEndDate || '']];
-    sheet.getRange(`B${currentRow}`).format.horizontalAlignment = 'Right';
-    this.cellTracker.recordCell('projectEndDate', 'Assumptions', `B${currentRow}`);
+    sheet.getRange(`F${currentRow}`).values = [[data.projectEndDate || '']];
+    sheet.getRange(`F${currentRow}`).format.horizontalAlignment = 'Right';
+    this.cellTracker.recordCell('projectEndDate', 'Assumptions', `F${currentRow}`);
     currentRow++;
     
     // Add blank row with height 8.25
     sheet.getRange(`A${currentRow}`).format.rowHeight = 8.25;
     currentRow++;
     
-    // ACQUISITION ASSUMPTIONS - dark blue background, spans three cells, left aligned, white text
+    // ACQUISITION ASSUMPTIONS - dark blue background, spans to column F, left aligned, white text
     sectionRows['dealAssumptions'] = currentRow;
-    sheet.getRange(`A${currentRow}:C${currentRow}`).merge();
+    sheet.getRange(`A${currentRow}:F${currentRow}`).merge();
     sheet.getRange(`A${currentRow}`).values = [['Acquisition Assumptions']];
     const acqAssumptionsRange = sheet.getRange(`A${currentRow}`);
     acqAssumptionsRange.format.font.name = 'Times New Roman';
@@ -257,49 +257,49 @@ class ExcelGenerator {
     acqAssumptionsRange.format.font.color = ExcelFormatter.colors.white;
     currentRow++;
     
-    // Deal Value - values in column C with empty column B
+    // Deal Value - values in column F
     sheet.getRange(`A${currentRow}`).values = [['Deal Value']];
-    sheet.getRange(`C${currentRow}`).values = [[data.dealValue || 0]];
-    sheet.getRange(`C${currentRow}`).numberFormat = '#,##0';
-    this.cellTracker.recordCell('dealValue', 'Assumptions', `C${currentRow}`);
+    sheet.getRange(`F${currentRow}`).values = [[data.dealValue || 0]];
+    sheet.getRange(`F${currentRow}`).numberFormat = '#,##0';
+    this.cellTracker.recordCell('dealValue', 'Assumptions', `F${currentRow}`);
     currentRow++;
     
-    // Transaction Fee - values in column C
+    // Transaction Fee - values in column F
     sheet.getRange(`A${currentRow}`).values = [['Transaction Fee (%)']];
-    sheet.getRange(`C${currentRow}`).values = [[(data.transactionFee || 2.5) / 100]];
-    sheet.getRange(`C${currentRow}`).numberFormat = '0.00%';
-    this.cellTracker.recordCell('transactionFee', 'Assumptions', `C${currentRow}`);
+    sheet.getRange(`F${currentRow}`).values = [[(data.transactionFee || 2.5) / 100]];
+    sheet.getRange(`F${currentRow}`).numberFormat = '0.00%';
+    this.cellTracker.recordCell('transactionFee', 'Assumptions', `F${currentRow}`);
     currentRow++;
     
-    // Deal LTV - values in column C
+    // Deal LTV - values in column F
     sheet.getRange(`A${currentRow}`).values = [['Deal LTV (%)']];
-    sheet.getRange(`C${currentRow}`).values = [[(data.dealLTV || 70) / 100]];
-    sheet.getRange(`C${currentRow}`).numberFormat = '0.00%';
-    this.cellTracker.recordCell('dealLTV', 'Assumptions', `C${currentRow}`);
+    sheet.getRange(`F${currentRow}`).values = [[(data.dealLTV || 70) / 100]];
+    sheet.getRange(`F${currentRow}`).numberFormat = '0.00%';
+    this.cellTracker.recordCell('dealLTV', 'Assumptions', `F${currentRow}`);
     currentRow++;
     
-    // Equity Contribution (Calculated) - values in column C
+    // Equity Contribution (Calculated) - values in column F
     sheet.getRange(`A${currentRow}`).values = [['Equity Contribution']];
     const dealValueCell = this.cellTracker.getCellReference('dealValue').split('!')[1];
     const ltvCell = this.cellTracker.getCellReference('dealLTV').split('!')[1];
-    sheet.getRange(`C${currentRow}`).formulas = [[`=${dealValueCell}*(1-${ltvCell})`]];
-    sheet.getRange(`C${currentRow}`).numberFormat = '#,##0';
-    this.cellTracker.recordCell('equityContribution', 'Assumptions', `C${currentRow}`);
+    sheet.getRange(`F${currentRow}`).formulas = [[`=${dealValueCell}*(1-${ltvCell})`]];
+    sheet.getRange(`F${currentRow}`).numberFormat = '#,##0';
+    this.cellTracker.recordCell('equityContribution', 'Assumptions', `F${currentRow}`);
     currentRow++;
     
-    // Debt Financing (Calculated) - values in column C
+    // Debt Financing (Calculated) - values in column F
     sheet.getRange(`A${currentRow}`).values = [['Debt Financing']];
-    sheet.getRange(`C${currentRow}`).formulas = [[`=${dealValueCell}*${ltvCell}`]];
-    sheet.getRange(`C${currentRow}`).numberFormat = '#,##0';
-    this.cellTracker.recordCell('debtFinancing', 'Assumptions', `C${currentRow}`);
+    sheet.getRange(`F${currentRow}`).formulas = [[`=${dealValueCell}*${ltvCell}`]];
+    sheet.getRange(`F${currentRow}`).numberFormat = '#,##0';
+    this.cellTracker.recordCell('debtFinancing', 'Assumptions', `F${currentRow}`);
     currentRow++;
     
-    // Loan Issuance Fees (if there's debt) - values in column C
+    // Loan Issuance Fees (if there's debt) - values in column F
     if (data.dealLTV && parseFloat(data.dealLTV) > 0) {
       sheet.getRange(`A${currentRow}`).values = [['Loan Issuance Fees (%)']];
-      sheet.getRange(`C${currentRow}`).values = [[(data.debtSettings?.loanIssuanceFees || 1.5) / 100]];
-      sheet.getRange(`C${currentRow}`).numberFormat = '0.00%';
-      this.cellTracker.recordCell('loanIssuanceFees', 'Assumptions', `C${currentRow}`);
+      sheet.getRange(`F${currentRow}`).values = [[(data.debtSettings?.loanIssuanceFees || 1.5) / 100]];
+      sheet.getRange(`F${currentRow}`).numberFormat = '0.00%';
+      this.cellTracker.recordCell('loanIssuanceFees', 'Assumptions', `F${currentRow}`);
       currentRow++;
     }
     
@@ -307,10 +307,10 @@ class ExcelGenerator {
     sheet.getRange(`A${currentRow}`).format.rowHeight = 8.25;
     currentRow++;
     
-    // REVENUE ITEMS - dark blue background, spans 3 cells (A:C), white text
+    // REVENUE ITEMS - dark blue background, spans to column F, white text
     if (data.revenueItems && data.revenueItems.length > 0) {
       sectionRows['revenueItems'] = currentRow;
-      sheet.getRange(`A${currentRow}:C${currentRow}`).merge();
+      sheet.getRange(`A${currentRow}:F${currentRow}`).merge();
       sheet.getRange(`A${currentRow}`).values = [['Revenue Items']];
       const revenueHeaderRange = sheet.getRange(`A${currentRow}`);
       revenueHeaderRange.format.font.name = 'Times New Roman';
@@ -322,11 +322,11 @@ class ExcelGenerator {
       currentRow++;
       
       // Add subheaders in the same row as header
-      sheet.getRange(`A${currentRow-1}:C${currentRow-1}`).unmerge();
+      sheet.getRange(`A${currentRow-1}:F${currentRow-1}`).unmerge();
       sheet.getRange(`A${currentRow-1}`).values = [['Revenue Items']];
-      sheet.getRange(`B${currentRow-1}`).values = [['Value']];
-      sheet.getRange(`C${currentRow-1}`).values = [['Growth Rate']];
-      const revenueSubHeaderRange = sheet.getRange(`A${currentRow-1}:C${currentRow-1}`);
+      sheet.getRange(`E${currentRow-1}`).values = [['Value']];
+      sheet.getRange(`F${currentRow-1}`).values = [['Growth Rate']];
+      const revenueSubHeaderRange = sheet.getRange(`A${currentRow-1}:F${currentRow-1}`);
       revenueSubHeaderRange.format.font.name = 'Times New Roman';
       revenueSubHeaderRange.format.font.size = 12;
       revenueSubHeaderRange.format.font.bold = true;
@@ -339,16 +339,16 @@ class ExcelGenerator {
         const itemName = item.name || `Revenue Item ${index + 1}`;
         const growthRate = item.growthRate || 0;
         sheet.getRange(`A${currentRow}`).values = [[itemName]];
-        sheet.getRange(`B${currentRow}`).values = [[item.value || 0]];
-        sheet.getRange(`B${currentRow}`).numberFormat = '#,##0';
-        sheet.getRange(`C${currentRow}`).values = [[`${growthRate}%`]];
-        this.cellTracker.recordCell(`revenue_${index}`, 'Assumptions', `B${currentRow}`);
+        sheet.getRange(`E${currentRow}`).values = [[item.value || 0]];
+        sheet.getRange(`E${currentRow}`).numberFormat = '#,##0';
+        sheet.getRange(`F${currentRow}`).values = [[`${growthRate}%`]];
+        this.cellTracker.recordCell(`revenue_${index}`, 'Assumptions', `E${currentRow}`);
         this.cellTracker.recordCell(`revenue_${index}_name`, 'Assumptions', `A${currentRow}`);
-        this.cellTracker.recordCell(`revenue_${index}_growth_rate`, 'Assumptions', `C${currentRow}`);
+        this.cellTracker.recordCell(`revenue_${index}_growth_rate`, 'Assumptions', `F${currentRow}`);
         currentRow++;
       });
       
-      this.cellTracker.recordCell('revenue_range', 'Assumptions', `B${revenueStartRow}:B${currentRow - 1}`);
+      this.cellTracker.recordCell('revenue_range', 'Assumptions', `E${revenueStartRow}:E${currentRow - 1}`);
       this.cellTracker.recordCell('revenue_count', 'Assumptions', data.revenueItems.length.toString());
       
       // Add blank row with height 8.25
@@ -356,13 +356,13 @@ class ExcelGenerator {
       currentRow++;
     }
     
-    // COST ITEMS (OPERATING EXPENSES) - dark blue background, spans 3 cells (A:C), white text  
+    // COST ITEMS (OPERATING EXPENSES) - dark blue background, spans to column F, white text  
     if (data.operatingExpenses && data.operatingExpenses.length > 0) {
       sectionRows['operatingExpenses'] = currentRow;
       sheet.getRange(`A${currentRow}`).values = [['Cost Items']];
-      sheet.getRange(`B${currentRow}`).values = [['Value']];
-      sheet.getRange(`C${currentRow}`).values = [['Growth Rate']];
-      const costHeaderRange = sheet.getRange(`A${currentRow}:C${currentRow}`);
+      sheet.getRange(`E${currentRow}`).values = [['Value']];
+      sheet.getRange(`F${currentRow}`).values = [['Growth Rate']];
+      const costHeaderRange = sheet.getRange(`A${currentRow}:F${currentRow}`);
       costHeaderRange.format.font.name = 'Times New Roman';
       costHeaderRange.format.font.size = 12;
       costHeaderRange.format.font.bold = true;
@@ -376,16 +376,16 @@ class ExcelGenerator {
         const itemName = item.name || `Cost Item ${index + 1}`;
         const growthRate = item.growthRate || 0;
         sheet.getRange(`A${currentRow}`).values = [[itemName]];
-        sheet.getRange(`B${currentRow}`).values = [[item.value || 0]];
-        sheet.getRange(`B${currentRow}`).numberFormat = '#,##0';
-        sheet.getRange(`C${currentRow}`).values = [[`${growthRate}%`]];
-        this.cellTracker.recordCell(`opex_${index}`, 'Assumptions', `B${currentRow}`);
+        sheet.getRange(`E${currentRow}`).values = [[item.value || 0]];
+        sheet.getRange(`E${currentRow}`).numberFormat = '#,##0';
+        sheet.getRange(`F${currentRow}`).values = [[`${growthRate}%`]];
+        this.cellTracker.recordCell(`opex_${index}`, 'Assumptions', `E${currentRow}`);
         this.cellTracker.recordCell(`opex_${index}_name`, 'Assumptions', `A${currentRow}`);
-        this.cellTracker.recordCell(`opex_${index}_growth_rate`, 'Assumptions', `C${currentRow}`);
+        this.cellTracker.recordCell(`opex_${index}_growth_rate`, 'Assumptions', `F${currentRow}`);
         currentRow++;
       });
       
-      this.cellTracker.recordCell('opex_range', 'Assumptions', `B${opexStartRow}:B${currentRow - 1}`);
+      this.cellTracker.recordCell('opex_range', 'Assumptions', `E${opexStartRow}:E${currentRow - 1}`);
       this.cellTracker.recordCell('opex_count', 'Assumptions', data.operatingExpenses.length.toString());
       
       // Add blank row with height 8.25
@@ -393,13 +393,13 @@ class ExcelGenerator {
       currentRow++;
     }
     
-    // CAPEX ITEMS - dark blue background, spans 3 cells (A:C), white text
+    // CAPEX ITEMS - dark blue background, spans to column F, white text
     if (data.capEx && data.capEx.length > 0) {
       sectionRows['capEx'] = currentRow;
       sheet.getRange(`A${currentRow}`).values = [['CapEx Items']];
-      sheet.getRange(`B${currentRow}`).values = [['Value']];
-      sheet.getRange(`C${currentRow}`).values = [['Growth Rate']];
-      const capexHeaderRange = sheet.getRange(`A${currentRow}:C${currentRow}`);
+      sheet.getRange(`E${currentRow}`).values = [['Value']];
+      sheet.getRange(`F${currentRow}`).values = [['Growth Rate']];
+      const capexHeaderRange = sheet.getRange(`A${currentRow}:F${currentRow}`);
       capexHeaderRange.format.font.name = 'Times New Roman';
       capexHeaderRange.format.font.size = 12;
       capexHeaderRange.format.font.bold = true;
@@ -413,16 +413,16 @@ class ExcelGenerator {
         const itemName = item.name || `CapEx ${index + 1}`;
         const growthRate = item.growthRate || 0;
         sheet.getRange(`A${currentRow}`).values = [[itemName]];
-        sheet.getRange(`B${currentRow}`).values = [[item.value || 0]];
-        sheet.getRange(`B${currentRow}`).numberFormat = '#,##0';
-        sheet.getRange(`C${currentRow}`).values = [[`${growthRate}%`]];
-        this.cellTracker.recordCell(`capex_${index}`, 'Assumptions', `B${currentRow}`);
+        sheet.getRange(`E${currentRow}`).values = [[item.value || 0]];
+        sheet.getRange(`E${currentRow}`).numberFormat = '#,##0';
+        sheet.getRange(`F${currentRow}`).values = [[`${growthRate}%`]];
+        this.cellTracker.recordCell(`capex_${index}`, 'Assumptions', `E${currentRow}`);
         this.cellTracker.recordCell(`capex_${index}_name`, 'Assumptions', `A${currentRow}`);
-        this.cellTracker.recordCell(`capex_${index}_growth_rate`, 'Assumptions', `C${currentRow}`);
+        this.cellTracker.recordCell(`capex_${index}_growth_rate`, 'Assumptions', `F${currentRow}`);
         currentRow++;
       });
       
-      this.cellTracker.recordCell('capex_range', 'Assumptions', `B${capexStartRow}:B${currentRow - 1}`);
+      this.cellTracker.recordCell('capex_range', 'Assumptions', `E${capexStartRow}:E${currentRow - 1}`);
       this.cellTracker.recordCell('capex_count', 'Assumptions', data.capEx.length.toString());
       
       // Add blank row with height 8.25
@@ -430,9 +430,9 @@ class ExcelGenerator {
       currentRow++;
     }
     
-    // EXIT ASSUMPTIONS - dark blue background, spans three cells, white text
+    // EXIT ASSUMPTIONS - dark blue background, spans to column F, white text
     sectionRows['exitAssumptions'] = currentRow;
-    sheet.getRange(`A${currentRow}:C${currentRow}`).merge();
+    sheet.getRange(`A${currentRow}:F${currentRow}`).merge();
     sheet.getRange(`A${currentRow}`).values = [['Exit Assumptions']];
     const exitAssumptionsRange = sheet.getRange(`A${currentRow}`);
     exitAssumptionsRange.format.font.name = 'Times New Roman';
@@ -443,25 +443,25 @@ class ExcelGenerator {
     exitAssumptionsRange.format.font.color = ExcelFormatter.colors.white;
     currentRow++;
     
-    // Disposal Cost - values in column C with empty column B
+    // Disposal Cost - values in column F
     sheet.getRange(`A${currentRow}`).values = [['Disposal Cost (%)']];
-    sheet.getRange(`C${currentRow}`).values = [[(data.disposalCost || 2.5) / 100]];
-    sheet.getRange(`C${currentRow}`).numberFormat = '0.00%';
-    this.cellTracker.recordCell('disposalCost', 'Assumptions', `C${currentRow}`);
+    sheet.getRange(`F${currentRow}`).values = [[(data.disposalCost || 2.5) / 100]];
+    sheet.getRange(`F${currentRow}`).numberFormat = '0.00%';
+    this.cellTracker.recordCell('disposalCost', 'Assumptions', `F${currentRow}`);
     currentRow++;
     
-    // Terminal Cap Rate - values in column C
+    // Terminal Cap Rate - values in column F
     sheet.getRange(`A${currentRow}`).values = [['Terminal Cap Rate (%)']];
-    sheet.getRange(`C${currentRow}`).values = [[(data.terminalCapRate || 8.5) / 100]];
-    sheet.getRange(`C${currentRow}`).numberFormat = '0.00%';
-    this.cellTracker.recordCell('terminalCapRate', 'Assumptions', `C${currentRow}`);
+    sheet.getRange(`F${currentRow}`).values = [[(data.terminalCapRate || 8.5) / 100]];
+    sheet.getRange(`F${currentRow}`).numberFormat = '0.00%';
+    this.cellTracker.recordCell('terminalCapRate', 'Assumptions', `F${currentRow}`);
     currentRow++;
     
-    // Discount Rate (WACC) - values in column C
+    // Discount Rate (WACC) - values in column F
     sheet.getRange(`A${currentRow}`).values = [['Discount Rate - WACC (%)']];
-    sheet.getRange(`C${currentRow}`).values = [[(data.discountRate || 10.0) / 100]];
-    sheet.getRange(`C${currentRow}`).numberFormat = '0.00%';
-    this.cellTracker.recordCell('discountRate', 'Assumptions', `C${currentRow}`);
+    sheet.getRange(`F${currentRow}`).values = [[(data.discountRate || 10.0) / 100]];
+    sheet.getRange(`F${currentRow}`).numberFormat = '0.00%';
+    this.cellTracker.recordCell('discountRate', 'Assumptions', `F${currentRow}`);
     currentRow++;
     
     // Apply Times New Roman font to all cells
@@ -470,7 +470,7 @@ class ExcelGenerator {
     allCellsRange.format.font.size = 12;
     
     // Auto-resize columns
-    sheet.getRange('A:C').format.autofitColumns();
+    sheet.getRange('A:F').format.autofitColumns();
     
     // Store section row information for reference
     this.cellTracker.recordCell('section_rows', 'Assumptions', JSON.stringify(sectionRows));
