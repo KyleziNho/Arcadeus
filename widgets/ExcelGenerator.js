@@ -190,57 +190,60 @@ class ExcelGenerator {
     
     let currentRow = 1;
     
-    // HEADER
-    sheet.getRange('A1').values = [['M&A Financial Model - Assumptions']];
-    sheet.getRange('A1').format.font.bold = true;
-    sheet.getRange('A1').format.font.size = 16;
+    // Hide gridlines
+    sheet.showGridlines = false;
+    
+    // TITLE: '[Insert company name] - Assumptions' spanning two cells, left-aligned, light grey background
+    const title = `${data.dealName || '[Insert company name]'} - Assumptions`;
+    sheet.getRange('A1:B1').merge();
+    sheet.getRange('A1').values = [[title]];
+    const titleRange = sheet.getRange('A1');
+    titleRange.format.font.name = 'Times New Roman';
+    titleRange.format.font.size = 12;
+    titleRange.format.font.bold = true;
+    titleRange.format.horizontalAlignment = 'Left';
+    titleRange.format.fill.color = ExcelFormatter.colors.backgroundDarker5; // Light grey background
     currentRow = 3;
     
     // Track section start rows for reference
     const sectionRows = {};
     
-    // HIGH-LEVEL PARAMETERS SECTION
-    sectionRows['highLevelParams'] = currentRow;
-    sheet.getRange(`A${currentRow}`).values = [['HIGH-LEVEL PARAMETERS']];
-    sheet.getRange(`A${currentRow}`).format.font.bold = true;
-    currentRow += 2;
-    
-    // Currency
+    // HIGH-LEVEL PARAMETERS (Currency, Start Date, Model Periods, End Date) - right aligned
     sheet.getRange(`A${currentRow}`).values = [['Currency']];
     sheet.getRange(`B${currentRow}`).values = [[data.currency || 'USD']];
+    sheet.getRange(`B${currentRow}`).format.horizontalAlignment = 'Right';
     this.cellTracker.recordCell('currency', 'Assumptions', `B${currentRow}`);
     currentRow++;
     
-    // Project Start Date
-    sheet.getRange(`A${currentRow}`).values = [['Project Start Date']];
+    sheet.getRange(`A${currentRow}`).values = [['Start Date']];
     sheet.getRange(`B${currentRow}`).values = [[data.projectStartDate || '']];
+    sheet.getRange(`B${currentRow}`).format.horizontalAlignment = 'Right';
     this.cellTracker.recordCell('projectStartDate', 'Assumptions', `B${currentRow}`);
     currentRow++;
     
-    // Model Periods
     sheet.getRange(`A${currentRow}`).values = [['Model Periods']];
     sheet.getRange(`B${currentRow}`).values = [[data.modelPeriods || 'Monthly']];
+    sheet.getRange(`B${currentRow}`).format.horizontalAlignment = 'Right';
     this.cellTracker.recordCell('modelPeriods', 'Assumptions', `B${currentRow}`);
     currentRow++;
     
-    // Project End Date
-    sheet.getRange(`A${currentRow}`).values = [['Project End Date']];
+    sheet.getRange(`A${currentRow}`).values = [['End Date']];
     sheet.getRange(`B${currentRow}`).values = [[data.projectEndDate || '']];
+    sheet.getRange(`B${currentRow}`).format.horizontalAlignment = 'Right';
     this.cellTracker.recordCell('projectEndDate', 'Assumptions', `B${currentRow}`);
-    currentRow++;
-    
-    currentRow += 2; // Add space
-    
-    // DEAL ASSUMPTIONS SECTION
-    sectionRows['dealAssumptions'] = currentRow;
-    sheet.getRange(`A${currentRow}`).values = [['DEAL ASSUMPTIONS']];
-    sheet.getRange(`A${currentRow}`).format.font.bold = true;
     currentRow += 2;
     
-    // Deal Name
-    sheet.getRange(`A${currentRow}`).values = [['Deal Name']];
-    sheet.getRange(`B${currentRow}`).values = [[data.dealName || '']];
-    this.cellTracker.recordCell('dealName', 'Assumptions', `B${currentRow}`);
+    // ACQUISITION ASSUMPTIONS - dark blue background, spans two cells, left aligned, white text
+    sectionRows['dealAssumptions'] = currentRow;
+    sheet.getRange(`A${currentRow}:B${currentRow}`).merge();
+    sheet.getRange(`A${currentRow}`).values = [['Acquisition Assumptions']];
+    const acqAssumptionsRange = sheet.getRange(`A${currentRow}`);
+    acqAssumptionsRange.format.font.name = 'Times New Roman';
+    acqAssumptionsRange.format.font.size = 12;
+    acqAssumptionsRange.format.font.bold = true;
+    acqAssumptionsRange.format.horizontalAlignment = 'Left';
+    acqAssumptionsRange.format.fill.color = ExcelFormatter.colors.darkBlue;
+    acqAssumptionsRange.format.font.color = ExcelFormatter.colors.white;
     currentRow++;
     
     // Deal Value
@@ -264,7 +267,7 @@ class ExcelGenerator {
     currentRow++;
     
     // Equity Contribution (Calculated)
-    sheet.getRange(`A${currentRow}`).values = [['Equity Contribution (Calculated)']];
+    sheet.getRange(`A${currentRow}`).values = [['Equity Contribution']];
     const dealValueCell = this.cellTracker.getCellReference('dealValue').split('!')[1];
     const ltvCell = this.cellTracker.getCellReference('dealLTV').split('!')[1];
     sheet.getRange(`B${currentRow}`).formulas = [[`=${dealValueCell}*(1-${ltvCell}/100)`]];
@@ -273,7 +276,7 @@ class ExcelGenerator {
     currentRow++;
     
     // Debt Financing (Calculated)
-    sheet.getRange(`A${currentRow}`).values = [['Debt Financing (Calculated)']];
+    sheet.getRange(`A${currentRow}`).values = [['Debt Financing']];
     sheet.getRange(`B${currentRow}`).formulas = [[`=${dealValueCell}*${ltvCell}/100`]];
     sheet.getRange(`B${currentRow}`).numberFormat = '#,##0';
     this.cellTracker.recordCell('debtFinancing', 'Assumptions', `B${currentRow}`);
@@ -287,29 +290,37 @@ class ExcelGenerator {
       this.cellTracker.recordCell('loanIssuanceFees', 'Assumptions', `B${currentRow}`);
       currentRow++;
     }
+    currentRow++;
     
-    currentRow += 2; // Add space
-    
-    // REVENUE ITEMS SECTION
+    // REVENUE ITEMS - dark blue background, spans 3 cells (A:C), white text
     if (data.revenueItems && data.revenueItems.length > 0) {
-      console.log('📝 ====== WRITING REVENUE ITEMS TO EXCEL ======');
-      console.log('📝 Number of revenue items:', data.revenueItems.length);
-      
       sectionRows['revenueItems'] = currentRow;
-      sheet.getRange(`A${currentRow}`).values = [['REVENUE ITEMS']];
-      sheet.getRange(`A${currentRow}`).format.font.bold = true;
-      currentRow += 1;
+      sheet.getRange(`A${currentRow}:C${currentRow}`).merge();
+      sheet.getRange(`A${currentRow}`).values = [['Revenue Items']];
+      const revenueHeaderRange = sheet.getRange(`A${currentRow}`);
+      revenueHeaderRange.format.font.name = 'Times New Roman';
+      revenueHeaderRange.format.font.size = 12;
+      revenueHeaderRange.format.font.bold = true;
+      revenueHeaderRange.format.horizontalAlignment = 'Left';
+      revenueHeaderRange.format.fill.color = ExcelFormatter.colors.darkBlue;
+      revenueHeaderRange.format.font.color = ExcelFormatter.colors.white;
+      currentRow++;
       
-      // Add column headers
-      sheet.getRange(`A${currentRow}`).values = [['Name']];
-      sheet.getRange(`B${currentRow}`).values = [['Base Value']];
-      sheet.getRange(`C${currentRow}`).values = [['Growth Rate']];
-      sheet.getRange(`A${currentRow}:C${currentRow}`).format.font.bold = true;
-      currentRow += 1;
+      // Add subheaders in the same row as header
+      sheet.getRange(`A${currentRow-1}:C${currentRow-1}`).unmerge();
+      sheet.getRange(`A${currentRow-1}`).values = [['Revenue Items']];
+      sheet.getRange(`B${currentRow-1}`).values = [['Value']];
+      sheet.getRange(`C${currentRow-1}`).values = [['Growth Rate']];
+      const revenueSubHeaderRange = sheet.getRange(`A${currentRow-1}:C${currentRow-1}`);
+      revenueSubHeaderRange.format.font.name = 'Times New Roman';
+      revenueSubHeaderRange.format.font.size = 12;
+      revenueSubHeaderRange.format.font.bold = true;
+      revenueSubHeaderRange.format.horizontalAlignment = 'Left';
+      revenueSubHeaderRange.format.fill.color = ExcelFormatter.colors.darkBlue;
+      revenueSubHeaderRange.format.font.color = ExcelFormatter.colors.white;
       
       const revenueStartRow = currentRow;
       data.revenueItems.forEach((item, index) => {
-        console.log(`📝 Writing revenue item ${index + 1}:`, item);
         const itemName = item.name || `Revenue Item ${index + 1}`;
         const growthRate = item.growthRate || 0;
         sheet.getRange(`A${currentRow}`).values = [[itemName]];
@@ -322,30 +333,29 @@ class ExcelGenerator {
         currentRow++;
       });
       
-      // Record the range of revenue items for future reference
       this.cellTracker.recordCell('revenue_range', 'Assumptions', `B${revenueStartRow}:B${currentRow - 1}`);
       this.cellTracker.recordCell('revenue_count', 'Assumptions', data.revenueItems.length.toString());
-      
-      currentRow += 2; // Add space
+      currentRow++;
     }
     
-    // OPERATING EXPENSES SECTION
+    // COST ITEMS (OPERATING EXPENSES) - dark blue background, spans 3 cells (A:C), white text  
     if (data.operatingExpenses && data.operatingExpenses.length > 0) {
       sectionRows['operatingExpenses'] = currentRow;
-      sheet.getRange(`A${currentRow}`).values = [['OPERATING EXPENSES']];
-      sheet.getRange(`A${currentRow}`).format.font.bold = true;
-      currentRow += 1;
-      
-      // Add column headers
-      sheet.getRange(`A${currentRow}`).values = [['Name']];
-      sheet.getRange(`B${currentRow}`).values = [['Base Value']];
+      sheet.getRange(`A${currentRow}`).values = [['Cost Items']];
+      sheet.getRange(`B${currentRow}`).values = [['Value']];
       sheet.getRange(`C${currentRow}`).values = [['Growth Rate']];
-      sheet.getRange(`A${currentRow}:C${currentRow}`).format.font.bold = true;
-      currentRow += 1;
+      const costHeaderRange = sheet.getRange(`A${currentRow}:C${currentRow}`);
+      costHeaderRange.format.font.name = 'Times New Roman';
+      costHeaderRange.format.font.size = 12;
+      costHeaderRange.format.font.bold = true;
+      costHeaderRange.format.horizontalAlignment = 'Left';
+      costHeaderRange.format.fill.color = ExcelFormatter.colors.darkBlue;
+      costHeaderRange.format.font.color = ExcelFormatter.colors.white;
+      currentRow++;
       
       const opexStartRow = currentRow;
       data.operatingExpenses.forEach((item, index) => {
-        const itemName = item.name || `OpEx Item ${index + 1}`;
+        const itemName = item.name || `Cost Item ${index + 1}`;
         const growthRate = item.growthRate || 0;
         sheet.getRange(`A${currentRow}`).values = [[itemName]];
         sheet.getRange(`B${currentRow}`).values = [[item.value || 0]];
@@ -357,26 +367,25 @@ class ExcelGenerator {
         currentRow++;
       });
       
-      // Record the range of operating expenses for future reference
       this.cellTracker.recordCell('opex_range', 'Assumptions', `B${opexStartRow}:B${currentRow - 1}`);
       this.cellTracker.recordCell('opex_count', 'Assumptions', data.operatingExpenses.length.toString());
-      
-      currentRow += 2; // Add space
+      currentRow++;
     }
     
-    // CAPEX SECTION
+    // CAPEX ITEMS - dark blue background, spans 3 cells (A:C), white text
     if (data.capEx && data.capEx.length > 0) {
       sectionRows['capEx'] = currentRow;
-      sheet.getRange(`A${currentRow}`).values = [['CAPITAL EXPENDITURES (CAPEX)']];
-      sheet.getRange(`A${currentRow}`).format.font.bold = true;
-      currentRow += 1;
-      
-      // Add column headers
-      sheet.getRange(`A${currentRow}`).values = [['CapEx Name']];
-      sheet.getRange(`B${currentRow}`).values = [['Annual Value']];
-      sheet.getRange(`C${currentRow}`).values = [['Growth Rate (%)']];
-      sheet.getRange(`A${currentRow}:C${currentRow}`).format.font.bold = true;
-      currentRow += 1;
+      sheet.getRange(`A${currentRow}`).values = [['CapEx Items']];
+      sheet.getRange(`B${currentRow}`).values = [['Value']];
+      sheet.getRange(`C${currentRow}`).values = [['Growth Rate']];
+      const capexHeaderRange = sheet.getRange(`A${currentRow}:C${currentRow}`);
+      capexHeaderRange.format.font.name = 'Times New Roman';
+      capexHeaderRange.format.font.size = 12;
+      capexHeaderRange.format.font.bold = true;
+      capexHeaderRange.format.horizontalAlignment = 'Left';
+      capexHeaderRange.format.fill.color = ExcelFormatter.colors.darkBlue;
+      capexHeaderRange.format.font.color = ExcelFormatter.colors.white;
+      currentRow++;
       
       const capexStartRow = currentRow;
       data.capEx.forEach((item, index) => {
@@ -392,30 +401,33 @@ class ExcelGenerator {
         currentRow++;
       });
       
-      // Record the range of CapEx for future reference
       this.cellTracker.recordCell('capex_range', 'Assumptions', `B${capexStartRow}:B${currentRow - 1}`);
       this.cellTracker.recordCell('capex_count', 'Assumptions', data.capEx.length.toString());
-      
-      currentRow += 2; // Add space
+      currentRow++;
     }
     
-    // EXIT ASSUMPTIONS SECTION
+    // EXIT ASSUMPTIONS - dark blue background, spans two cells, white text
     sectionRows['exitAssumptions'] = currentRow;
-    sheet.getRange(`A${currentRow}`).values = [['EXIT ASSUMPTIONS']];
-    sheet.getRange(`A${currentRow}`).format.font.bold = true;
-    currentRow += 2;
+    sheet.getRange(`A${currentRow}:B${currentRow}`).merge();
+    sheet.getRange(`A${currentRow}`).values = [['Exit Assumptions']];
+    const exitAssumptionsRange = sheet.getRange(`A${currentRow}`);
+    exitAssumptionsRange.format.font.name = 'Times New Roman';
+    exitAssumptionsRange.format.font.size = 12;
+    exitAssumptionsRange.format.font.bold = true;
+    exitAssumptionsRange.format.horizontalAlignment = 'Left';
+    exitAssumptionsRange.format.fill.color = ExcelFormatter.colors.darkBlue;
+    exitAssumptionsRange.format.font.color = ExcelFormatter.colors.white;
+    currentRow++;
     
     // Disposal Cost
     sheet.getRange(`A${currentRow}`).values = [['Disposal Cost (%)']];
-    console.log('🔍 Disposal Cost value from form:', data.disposalCost);
     sheet.getRange(`B${currentRow}`).values = [[(data.disposalCost || 2.5) / 100]];
     sheet.getRange(`B${currentRow}`).numberFormat = '0.00%';
     this.cellTracker.recordCell('disposalCost', 'Assumptions', `B${currentRow}`);
     currentRow++;
     
-    // Terminal Cap Rate
+    // Terminal Cap Rate  
     sheet.getRange(`A${currentRow}`).values = [['Terminal Cap Rate (%)']];
-    console.log('🔍 Terminal Cap Rate value from form:', data.terminalCapRate);
     sheet.getRange(`B${currentRow}`).values = [[(data.terminalCapRate || 8.5) / 100]];
     sheet.getRange(`B${currentRow}`).numberFormat = '0.00%';
     this.cellTracker.recordCell('terminalCapRate', 'Assumptions', `B${currentRow}`);
@@ -428,10 +440,13 @@ class ExcelGenerator {
     this.cellTracker.recordCell('discountRate', 'Assumptions', `B${currentRow}`);
     currentRow++;
     
-    // Debt model moved to separate sheet
+    // Apply Times New Roman font to all cells
+    const allCellsRange = sheet.getUsedRange();
+    allCellsRange.format.font.name = 'Times New Roman';
+    allCellsRange.format.font.size = 12;
     
     // Auto-resize columns
-    sheet.getRange('A:B').format.autofitColumns();
+    sheet.getRange('A:C').format.autofitColumns();
     
     // Store section row information for reference
     this.cellTracker.recordCell('section_rows', 'Assumptions', JSON.stringify(sectionRows));
