@@ -12,6 +12,8 @@ class ExcelFormatter {
   
   static applyNumberFormat(range) {
     range.numberFormat = [['#,##0;[Red](#,##0);"-"']];
+    // Ensure right alignment for dash values (preserves existing alignment)
+    range.format.horizontalAlignment = 'Right';
   }
 }
 
