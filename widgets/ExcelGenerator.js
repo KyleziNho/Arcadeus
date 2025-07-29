@@ -4556,9 +4556,12 @@ You MUST create a P&L Statement with this EXACT structure:
       const leveredCashflowRange = fcfSheet.getRange(`A${currentRow}:${this.getColumnLetter(totalColumns)}${currentRow}`);
       leveredCashflowRange.format.font.name = 'Times New Roman';
       leveredCashflowRange.format.font.size = 12;
-      leveredCashflowRange.format.font.bold = true;
       leveredCashflowRange.format.font.color = ExcelFormatter.colors.black;
       leveredCashflowRange.format.fill.color = ExcelFormatter.colors.backgroundDarker5;
+      
+      // Make only the label in column A bold, not the values
+      const leveredCashflowLabelRange = fcfSheet.getRange(`A${currentRow}`);
+      leveredCashflowLabelRange.format.font.bold = true;
       
       // Add thin underline at top of levered cashflow row
       leveredCashflowRange.format.borders.getItem('EdgeTop').style = 'Continuous';
