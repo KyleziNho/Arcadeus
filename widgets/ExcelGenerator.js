@@ -48,6 +48,40 @@ class ExcelGenerator {
     this.currentWorkbook = null;
   }
 
+  // Helper function to calculate the previous period label based on period type and start date
+  getPreviousPeriodLabel(startDate, periodType) {
+    if (!startDate) return 'Period 0';
+    
+    const date = new Date(startDate);
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    
+    switch (periodType) {
+      case 'daily':
+        // Previous day
+        date.setDate(date.getDate() - 1);
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        
+      case 'monthly':
+        // Previous month
+        date.setMonth(date.getMonth() - 1);
+        return `${monthNames[date.getMonth()]} ${date.getFullYear()}`;
+        
+      case 'quarterly':
+        // Previous quarter
+        const currentQuarter = Math.floor(date.getMonth() / 3) + 1;
+        date.setMonth(date.getMonth() - 3);
+        const prevQuarter = Math.floor(date.getMonth() / 3) + 1;
+        return `Q${prevQuarter} ${date.getFullYear()}`;
+        
+      case 'yearly':
+        // Previous year
+        return (date.getFullYear() - 1).toString();
+        
+      default:
+        return 'Period 0';
+    }
+  }
+
   async generateModel(modelData) {
     try {
       console.log('🚀 Starting fresh model generation...');
@@ -1343,7 +1377,8 @@ Provide the COMPLETE Free Cash Flow model with exact Excel formulas for every ce
       
       // TIME PERIOD HEADERS - Include Period 0 for Initial Investment
       const headers = [''];
-      headers.push('Initial Investment'); // Period 0
+      const prevPeriodLabel = this.getPreviousPeriodLabel(modelData.projectStartDate, modelData.modelPeriods);
+      headers.push(prevPeriodLabel); // Period 0 with actual date label
       const startDate = new Date(modelData.projectStartDate);
       for (let i = 0; i < periodColumns; i++) {
         headers.push(this.formatPeriodHeader(startDate, i, modelData.modelPeriods));
@@ -1517,7 +1552,7 @@ Provide the COMPLETE Free Cash Flow model with exact Excel formulas for every ce
         }
         currentRow++;
         
-        // Loan proceeds (positive cash inflow in first period)
+        // Loan proceeds (positive cash inflow in Period 0)
         fcfSheet.getRange(`A${currentRow}`).values = [['Loan proceeds']];
         fcfStructure.loanProceeds = currentRow;
         if (hasDebt) {
@@ -3286,7 +3321,8 @@ You MUST create a P&L Statement with this EXACT structure:
 
       // TIME PERIOD HEADERS - Include Period 0 for Initial Investment
       const headers = [''];
-      headers.push('Initial Investment'); // Period 0
+      const prevPeriodLabel = this.getPreviousPeriodLabel(modelData.projectStartDate, modelData.modelPeriods);
+      headers.push(prevPeriodLabel); // Period 0 with actual date label
       const startDate = new Date(modelData.projectStartDate);
       for (let i = 0; i < periodColumns; i++) {
         headers.push(this.formatPeriodHeader(startDate, i, modelData.modelPeriods));
@@ -3523,7 +3559,8 @@ You MUST create a P&L Statement with this EXACT structure:
       for (let i = 0; i <= periods; i++) {
         const colLetter = this.getColumnLetter(i + 1);
         if (i === 0) {
-          capExSheet.getRange(colLetter + currentRow).values = [['Period 0']];
+          const prevPeriodLabel = this.getPreviousPeriodLabel(modelData.projectStartDate, modelData.modelPeriods);
+          capExSheet.getRange(colLetter + currentRow).values = [[prevPeriodLabel]];
         } else {
           const periodHeader = this.formatPeriodHeader(startDate, i - 1, modelData.modelPeriods);
           capExSheet.getRange(colLetter + currentRow).values = [[periodHeader]];
@@ -3660,7 +3697,8 @@ You MUST create a P&L Statement with this EXACT structure:
       for (let i = 0; i <= periods; i++) {
         const colLetter = this.getColumnLetter(i + 1); // Start at column B (i+1 where i=0 gives column B)
         if (i === 0) {
-          fcfSheet.getRange(colLetter + currentRow).values = [['Period 0']];
+          const prevPeriodLabel = this.getPreviousPeriodLabel(modelData.projectStartDate, modelData.modelPeriods);
+          fcfSheet.getRange(colLetter + currentRow).values = [[prevPeriodLabel]];
         } else {
           const periodHeader = this.formatPeriodHeader(startDate, i - 1, modelData.modelPeriods);
           fcfSheet.getRange(colLetter + currentRow).values = [[periodHeader]];
@@ -3838,7 +3876,7 @@ You MUST create a P&L Statement with this EXACT structure:
       }
       currentRow++;
       
-      // Loan proceeds (positive cash inflow in first period)
+      // Loan proceeds (positive cash inflow in Period 0)
       fcfSheet.getRange(`A${currentRow}`).values = [['Loan proceeds']];
       if (modelData.dealLTV && parseFloat(modelData.dealLTV) > 0) {
         const debtFinancingRef = this.cellTracker.getCellReference('debtFinancing');
@@ -3983,7 +4021,8 @@ You MUST create a P&L Statement with this EXACT structure:
       
       // Set up period headers (row 3)
       debtSheet.getRange('A3').values = [['Period']];
-      debtSheet.getRange('B3').values = [['Period 0']];
+      const prevPeriodLabel = this.getPreviousPeriodLabel(modelData.projectStartDate, modelData.modelPeriods);
+      debtSheet.getRange('B3').values = [[prevPeriodLabel]];
       
       for (let i = 1; i <= periods; i++) {
         const colLetter = this.getColumnLetter(i + 1); // C, D, E, etc. for Periods 1, 2, 3...
