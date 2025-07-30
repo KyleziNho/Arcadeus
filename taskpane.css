@@ -110,7 +110,8 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: var(--space-3);
+  width: 100%;
+  padding: 12px 0;
 }
 
 .logo-mark {
@@ -119,13 +120,57 @@ body {
 }
 
 .brand-title {
-  font-family: 'Times New Roman', serif;
-  font-size: var(--font-size-3xl);
-  font-weight: bold;
-  color: var(--text-primary);
-  letter-spacing: -0.025em;
+  font-family: 'Lora', serif;
+  font-size: 32px;
+  font-weight: 500;
+  color: #2c3e50;
+  letter-spacing: 0.2em;
   margin: 0;
-  line-height: 1;
+  line-height: 1.2;
+  text-align: center;
+  position: relative;
+  padding: 16px 0;
+  transition: all 0.3s ease;
+  background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Add elegant underline with animation */
+.brand-title::after {
+  content: '';
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80px;
+  height: 2px;
+  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+  opacity: 0.8;
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+/* Hover effect for interactivity */
+.brand-container:hover .brand-title::after {
+  width: 120px;
+}
+
+/* Add subtle glow effect */
+.brand-title::before {
+  content: 'ARCADEUS';
+  position: absolute;
+  top: 16px;
+  left: 0;
+  right: 0;
+  z-index: -1;
+  filter: blur(8px);
+  opacity: 0.1;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 /* Modern File Upload Section */
