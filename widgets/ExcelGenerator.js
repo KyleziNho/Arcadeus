@@ -4426,7 +4426,8 @@ You MUST create a P&L Statement with this EXACT structure:
       
       const disposalCostRef = this.cellTracker.getCellReference('disposalCost');
       if (disposalCostRef) {
-        fcfSheet.getRange(finalPeriodCol + currentRow).formulas = [[`=${finalPeriodCol}${currentRow - 1}*${disposalCostRef}`]];
+        // Disposal cost should be negative (it's a cost)
+        fcfSheet.getRange(finalPeriodCol + currentRow).formulas = [[`=-${finalPeriodCol}${currentRow - 1}*${disposalCostRef}`]];
         ExcelFormatter.applyNumberFormat(fcfSheet.getRange(finalPeriodCol + currentRow));
       }
       currentRow++;
@@ -4587,11 +4588,34 @@ You MUST create a P&L Statement with this EXACT structure:
       
       for (let i = 0; i <= periods; i++) {
         const colLetter = this.getColumnLetter(i + 1);
-        // Levered CF = Unlevered CF + Debt upfront costs + Debt Expense + Loan proceeds (using SUM)
-        fcfSheet.getRange(colLetter + currentRow).formulas = [[`=SUM(${colLetter}${unlevereCashflowsRow},${colLetter}${debtUpfrontCostsRow},${colLetter}${debtExpenseRow},${colLetter}${loanProceedsRow})`]];
+        // Levered CF = SUM of all components: Unlevered CF + Debt upfront costs + Debt Expense + Loan proceeds
+        // Use range from debtUpfrontCostsRow to loanProceedsRow to ensure all rows are included
+        fcfSheet.getRange(colLetter + currentRow).formulas = [[`=SUM(${colLetter}${unlevereCashflowsRow},${colLetter}${debtUpfrontCostsRow}:${colLetter}${loanProceedsRow})`]];
         ExcelFormatter.applyNumberFormat(fcfSheet.getRange(colLetter + currentRow));
       }
       currentRow += 2;
+      
+      // Equity Contributions - initial equity investment from levered cash flow
+      fcfSheet.getRange(`A${currentRow}`).values = [['Equity Contributions']];
+      const equityContribRange = fcfSheet.getRange(`A${currentRow}`);
+      equityContribRange.format.font.name = 'Times New Roman';
+      equityContribRange.format.font.size = 12;
+      equityContribRange.format.font.color = ExcelFormatter.colors.black;
+      
+      for (let i = 0; i <= periods; i++) {
+        const colLetter = this.getColumnLetter(i + 1);
+        if (i === 0) {
+          // Period 0: Show the initial equity investment (negative value from levered cash flow)
+          fcfSheet.getRange(colLetter + currentRow).formulas = [[`=${colLetter}${leveredCashflowsRow}`]];
+        } else {
+          // Other periods: Show dash (no additional equity contributions)
+          const dashRange = fcfSheet.getRange(colLetter + currentRow);
+          dashRange.values = [['-']];
+          dashRange.format.horizontalAlignment = 'Right';
+          ExcelFormatter.applyNumberFormat(dashRange);
+        }
+      }
+      currentRow++;
       
       // Equity distributions (Levered Cashflows) - removed EQUITY FLOWS header as requested
       fcfSheet.getRange(`A${currentRow}`).values = [['Equity distributions']];
@@ -4602,8 +4626,17 @@ You MUST create a P&L Statement with this EXACT structure:
       
       for (let i = 0; i <= periods; i++) {
         const colLetter = this.getColumnLetter(i + 1);
-        fcfSheet.getRange(colLetter + currentRow).formulas = [[`=${colLetter}${leveredCashflowsRow}`]];
-        ExcelFormatter.applyNumberFormat(fcfSheet.getRange(colLetter + currentRow));
+        if (i === 0) {
+          // Period 0: Show dash (no distributions in initial period)
+          const dashRange = fcfSheet.getRange(colLetter + currentRow);
+          dashRange.values = [['-']];
+          dashRange.format.horizontalAlignment = 'Right';
+          ExcelFormatter.applyNumberFormat(dashRange);
+        } else {
+          // Operating periods: Show the levered cash flows (distributions)
+          fcfSheet.getRange(colLetter + currentRow).formulas = [[`=${colLetter}${leveredCashflowsRow}`]];
+          ExcelFormatter.applyNumberFormat(fcfSheet.getRange(colLetter + currentRow));
+        }
       }
       currentRow += 2;
       
