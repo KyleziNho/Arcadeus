@@ -1,12 +1,11 @@
-// Firebase configuration
+// Firebase configuration - Update with your actual values from Firebase Console
 const firebaseConfig = {
-    // TODO: Replace with your Firebase config
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_AUTH_DOMAIN",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_STORAGE_BUCKET",
-    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-    appId: "YOUR_APP_ID"
+    apiKey: "YOUR_ACTUAL_API_KEY_FROM_FIREBASE", // Get this from Firebase Console > Project Settings > General > Web apps
+    authDomain: "project-183306943540.firebaseapp.com", 
+    projectId: "project-183306943540", 
+    storageBucket: "project-183306943540.appspot.com",
+    messagingSenderId: "YOUR_ACTUAL_MESSAGING_SENDER_ID", // Get this from Firebase Console
+    appId: "YOUR_ACTUAL_APP_ID" // Get this from Firebase Console
 };
 
 // Initialize Firebase
@@ -71,6 +70,24 @@ document.getElementById('googleSignIn')?.addEventListener('click', async () => {
     } finally {
         setLoading(false);
     }
+});
+
+// Skip login functionality
+document.getElementById('skipLogin')?.addEventListener('click', () => {
+    // Create demo user data
+    const demoUser = {
+        uid: 'demo-user',
+        email: 'demo@arcadeus.com',
+        displayName: 'Demo User',
+        photoURL: null,
+        provider: 'demo'
+    };
+    
+    // Store demo user info
+    localStorage.setItem('arcadeusUser', JSON.stringify(demoUser));
+    
+    // Redirect to main app
+    window.location.href = 'taskpane.html';
 });
 
 // Microsoft authentication removed - using Google only
