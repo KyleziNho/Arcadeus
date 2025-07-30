@@ -133,6 +133,7 @@
             display: flex;
             flex-direction: column;
             gap: 16px;
+            align-items: center;
         }
 
         .auth-button {
@@ -187,6 +188,25 @@
             width: 20px;
             height: 20px;
             flex-shrink: 0;
+        }
+
+        .google-button {
+            background: linear-gradient(135deg, #4285f4 0%, #34a853 100%);
+            color: white;
+            border: none;
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(66, 133, 244, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .google-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(66, 133, 244, 0.4);
+            background: linear-gradient(135deg, #3367d6 0%, #2d8f47 100%);
+        }
+
+        .google-button::before {
+            background: rgba(255, 255, 255, 0.1);
         }
 
         .divider {
@@ -294,13 +314,13 @@
 
         <div class="login-header">
             <h2>Welcome Back</h2>
-            <p>Sign in to access your financial models</p>
+            <p>Sign in with Google to access your financial models</p>
         </div>
 
         <div class="error-message" id="errorMessage"></div>
 
         <div class="auth-buttons">
-            <button class="auth-button" id="googleSignIn">
+            <button class="auth-button google-button" id="googleSignIn">
                 <svg viewBox="0 0 24 24">
                     <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                     <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
@@ -309,20 +329,6 @@
                 </svg>
                 Continue with Google
             </button>
-
-            <button class="auth-button" id="microsoftSignIn">
-                <svg viewBox="0 0 24 24">
-                    <path fill="#F25022" d="M11.4 11.4H1V1h10.4v10.4z"/>
-                    <path fill="#7FBA00" d="M23 11.4H12.6V1H23v10.4z"/>
-                    <path fill="#00A4EF" d="M11.4 23H1V12.6h10.4V23z"/>
-                    <path fill="#FFB900" d="M23 23H12.6V12.6H23V23z"/>
-                </svg>
-                Continue with Microsoft
-            </button>
-        </div>
-
-        <div class="divider">
-            <span>OR</span>
         </div>
 
         <p class="terms">

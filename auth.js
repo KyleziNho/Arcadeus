@@ -73,50 +73,7 @@ document.getElementById('googleSignIn')?.addEventListener('click', async () => {
     }
 });
 
-// Microsoft Sign In
-document.getElementById('microsoftSignIn')?.addEventListener('click', async () => {
-    setLoading(true);
-    const provider = new firebase.auth.OAuthProvider('microsoft.com');
-    
-    // Add required scopes
-    provider.addScope('openid');
-    provider.addScope('profile');
-    provider.addScope('email');
-    
-    // Custom parameters for better UX
-    provider.setCustomParameters({
-        prompt: 'select_account',
-        login_hint: 'user@example.com' // Remove this in production
-    });
-    
-    try {
-        const result = await auth.signInWithPopup(provider);
-        console.log('Microsoft sign in successful:', result.user.email);
-        
-        // Optional: Access Microsoft Graph API token if needed
-        // const credential = result.credential;
-        // const accessToken = credential.accessToken;
-        
-    } catch (error) {
-        console.error('Microsoft sign in error:', error);
-        
-        // More specific error messages
-        let errorMessage = 'Failed to sign in with Microsoft.';
-        if (error.code === 'auth/popup-blocked') {
-            errorMessage = 'Popup was blocked. Please allow popups for this site.';
-        } else if (error.code === 'auth/cancelled-popup-request') {
-            errorMessage = 'Sign in was cancelled.';
-        } else if (error.code === 'auth/popup-closed-by-user') {
-            errorMessage = 'Sign in window was closed.';
-        } else if (error.code === 'auth/unauthorized-domain') {
-            errorMessage = 'This domain is not authorized. Please check Firebase settings.';
-        }
-        
-        showError(errorMessage);
-    } finally {
-        setLoading(false);
-    }
-});
+// Microsoft authentication removed - using Google only
 
 // Sign out function
 function signOut() {
