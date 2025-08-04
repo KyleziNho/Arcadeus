@@ -1,16 +1,27 @@
 // Firebase configuration
 const firebaseConfig = {
-    apiKey: "AIzaSyA8btt-jKfkbf2_SspNZgz2mY9Fy6JFIo",
+    apiKey: "AIzaSyA8btt-jKfkbf2_SspNZgz2mY9Fy6Jf-lo",
     authDomain: "arcadeus-5641b.firebaseapp.com", 
     projectId: "arcadeus-5641b", 
-    storageBucket: "arcadeus-5641b.appspot.com",
+    storageBucket: "arcadeus-5641b.firebasestorage.app",
     messagingSenderId: "183306943540",
-    appId: "1:183306943540:web:ed482fc5ccf6a4ecdede61"
+    appId: "1:183306943540:web:ed482fc5ccf6a4ecdede61",
+    measurementId: "G-Z07WWE0H64"
 };
 
 // Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
+
+// Handle redirect result on page load
+auth.getRedirectResult().then((result) => {
+    if (result.credential) {
+        // Google sign in successful via redirect
+        console.log('Google sign in successful via redirect:', result.user.email);
+    }
+}).catch((error) => {
+    console.error('Redirect sign in error:', error);
+});
 
 // Auth state observer
 auth.onAuthStateChanged((user) => {
@@ -70,18 +81,34 @@ document.getElementById('googleSignIn')?.addEventListener('click', async () => {
     const provider = new firebase.auth.GoogleAuthProvider();
     
     try {
-        const result = await auth.signInWithPopup(provider);
-        console.log('Google sign in successful:', result.user.email);
+        // Try signInWithRedirect for better compatibility
+        if (window.location.protocol === 'file:' || window.location.hostname === 'localhost') {
+            // For local development, use redirect instead of popup
+            await auth.signInWithRedirect(provider);
+        } else {
+            // For production, use popup
+            const result = await auth.signInWithPopup(provider);
+            console.log('Google sign in successful:', result.user.email);
+        }
     } catch (error) {
         console.error('Google sign in error:', error);
         console.error('Error code:', error.code);
         console.error('Error message:', error.message);
         
         let errorMessage = 'Failed to sign in with Google. ';
-        if (error.code === 'auth/configuration-not-found' || error.code === 'auth/invalid-api-key') {
+        if (error.code === 'auth/api-key-not-valid.-please-pass-a-valid-api-key.') {
+            errorMessage = 'API key issue detected. Please ensure:\n1. You\'ve enabled Google auth in Firebase Console\n2. The Web API Key is enabled in Google Cloud Console\n\nFor now, please use "Skip Login" to continue.';
+        } else if (error.code === 'auth/configuration-not-found' || error.code === 'auth/invalid-api-key') {
             errorMessage += 'Firebase configuration invalid. Please use Skip Login.';
         } else if (error.code === 'auth/popup-blocked') {
-            errorMessage += 'Popup was blocked. Please allow popups and try again.';
+            errorMessage += 'Popup was blocked. Trying redirect method...';
+            // Fallback to redirect
+            try {
+                await auth.signInWithRedirect(provider);
+                return;
+            } catch (redirectError) {
+                errorMessage = 'Authentication failed. Please use Skip Login.';
+            }
         } else if (error.code === 'auth/popup-closed-by-user') {
             errorMessage += 'Sign-in was cancelled.';
         } else {

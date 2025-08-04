@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Firebase Config</title>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+</head>
+<body>
+    <h1>Firebase Configuration Test</h1>
+    <button id="testBtn">Test Firebase Config</button>
+    <pre id="output"></pre>
+    
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyA8btt-jKfkbf2_SspNZgz2mY9Fy6JFIo",
+            authDomain: "arcadeus-5641b.firebaseapp.com", 
+            projectId: "arcadeus-5641b", 
+            storageBucket: "arcadeus-5641b.appspot.com",
+            messagingSenderId: "183306943540",
+            appId: "1:183306943540:web:ed482fc5ccf6a4ecdede61"
+        };
+        
+        const output = document.getElementById('output');
+        
+        document.getElementById('testBtn').addEventListener('click', () => {
+            try {
+                // Initialize Firebase
+                firebase.initializeApp(firebaseConfig);
+                const auth = firebase.auth();
+                
+                output.textContent = 'Firebase initialized successfully!\n';
+                output.textContent += 'Auth instance created: ' + (auth ? 'Yes' : 'No') + '\n';
+                
+                // Try to create Google provider
+                const provider = new firebase.auth.GoogleAuthProvider();
+                output.textContent += 'Google provider created: ' + (provider ? 'Yes' : 'No') + '\n';
+                
+                // Check auth settings
+                auth.useDeviceLanguage();
+                output.textContent += 'Device language set successfully\n';
+                
+            } catch (error) {
+                output.textContent = 'Error: ' + error.message + '\n';
+                output.textContent += 'Error code: ' + error.code + '\n';
+                console.error(error);
+            }
+        });
+    </script>
+</body>
+</html>
