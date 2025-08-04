@@ -4,13 +4,19 @@
   "description": "M&A Excel Add-in with AI-powered autofill",
   "main": "index.html",
   "dependencies": {
+    "firebase": "^12.0.0",
     "node-fetch": "^2.6.12"
   },
-  "devDependencies": {},
   "scripts": {
     "start": "node server.js"
   },
-  "keywords": ["excel", "addin", "ma", "ai", "autofill"],
+  "keywords": [
+    "excel",
+    "addin",
+    "ma",
+    "ai",
+    "autofill"
+  ],
   "author": "",
   "license": "ISC"
 }

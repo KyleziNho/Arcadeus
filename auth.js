@@ -1,11 +1,11 @@
-// Firebase configuration - Update with your actual values from Firebase Console
+// Firebase configuration
 const firebaseConfig = {
-    apiKey: "YOUR_ACTUAL_API_KEY_FROM_FIREBASE", // Get this from Firebase Console > Project Settings > General > Web apps
-    authDomain: "project-183306943540.firebaseapp.com", 
-    projectId: "project-183306943540", 
-    storageBucket: "project-183306943540.appspot.com",
-    messagingSenderId: "YOUR_ACTUAL_MESSAGING_SENDER_ID", // Get this from Firebase Console
-    appId: "YOUR_ACTUAL_APP_ID" // Get this from Firebase Console
+    apiKey: "AIzaSyA8btt-jKfkbf2_SspNZgz2mY9Fy6JFIo",
+    authDomain: "arcadeus-5641b.firebaseapp.com", 
+    projectId: "arcadeus-5641b", 
+    storageBucket: "arcadeus-5641b.appspot.com",
+    messagingSenderId: "183306943540",
+    appId: "1:183306943540:web:ed482fc5ccf6a4ecdede61"
 };
 
 // Initialize Firebase
@@ -59,6 +59,14 @@ function showError(message) {
 // Google Sign In
 document.getElementById('googleSignIn')?.addEventListener('click', async () => {
     setLoading(true);
+    
+    // Check if Firebase is properly configured
+    if (firebaseConfig.apiKey.includes('YOUR_ACTUAL')) {
+        setLoading(false);
+        showError('Firebase not configured. Please use Skip Login or configure Firebase credentials.');
+        return;
+    }
+    
     const provider = new firebase.auth.GoogleAuthProvider();
     
     try {
@@ -66,7 +74,21 @@ document.getElementById('googleSignIn')?.addEventListener('click', async () => {
         console.log('Google sign in successful:', result.user.email);
     } catch (error) {
         console.error('Google sign in error:', error);
-        showError('Failed to sign in with Google. Please try again.');
+        console.error('Error code:', error.code);
+        console.error('Error message:', error.message);
+        
+        let errorMessage = 'Failed to sign in with Google. ';
+        if (error.code === 'auth/configuration-not-found' || error.code === 'auth/invalid-api-key') {
+            errorMessage += 'Firebase configuration invalid. Please use Skip Login.';
+        } else if (error.code === 'auth/popup-blocked') {
+            errorMessage += 'Popup was blocked. Please allow popups and try again.';
+        } else if (error.code === 'auth/popup-closed-by-user') {
+            errorMessage += 'Sign-in was cancelled.';
+        } else {
+            errorMessage += 'Please try Skip Login instead.';
+        }
+        
+        showError(errorMessage);
     } finally {
         setLoading(false);
     }
