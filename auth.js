@@ -68,28 +68,11 @@ function showError(message) {
     }
 }
 
-// Test function to verify button clicks
-function testClick() {
-    console.log('🔘 Test button click registered!');
-    alert('Button click working! CSP may be blocking Firebase auth.');
-}
 
 // Google Sign In
 document.getElementById('googleSignIn')?.addEventListener('click', async () => {
     console.log('Google Sign In clicked');
     setLoading(true);
-    
-    // Check if we're in Excel Online environment
-    const isExcelOnline = window.location.hostname.includes('excel.office') || 
-                          window.location.hostname.includes('officeapps.live.com') ||
-                          window.parent !== window; // Running in iframe
-    
-    if (isExcelOnline) {
-        console.log('⚠️ Detected Excel Online environment - CSP restrictions may apply');
-        showError('Google sign-in is not available in Excel Online due to security restrictions. Please open this add-in in Excel Desktop or use a web browser.');
-        setLoading(false);
-        return;
-    }
     
     // Check if Firebase is properly configured
     if (firebaseConfig.apiKey.includes('YOUR_ACTUAL')) {
@@ -100,18 +83,17 @@ document.getElementById('googleSignIn')?.addEventListener('click', async () => {
     
     console.log('Firebase config looks valid, attempting sign in...');
     
-    const provider = new firebase.auth.GoogleAuthProvider();
-    
     try {
-        // Try signInWithRedirect for better compatibility
-        if (window.location.protocol === 'file:' || window.location.hostname === 'localhost') {
-            // For local development, use redirect instead of popup
-            await auth.signInWithRedirect(provider);
-        } else {
-            // For production, use popup
-            const result = await auth.signInWithPopup(provider);
-            console.log('Google sign in successful:', result.user.email);
+        // Check if Firebase auth is available
+        if (typeof firebase === 'undefined' || !firebase.auth) {
+            throw new Error('Firebase auth not available');
         }
+        
+        const provider = new firebase.auth.GoogleAuthProvider();
+        
+        // Always try redirect method for better Excel Online compatibility
+        await auth.signInWithRedirect(provider);
+        
     } catch (error) {
         console.error('Google sign in error:', error);
         console.error('Error code:', error.code);
@@ -126,7 +108,7 @@ document.getElementById('googleSignIn')?.addEventListener('click', async () => {
             errorMessage = 'This domain is not authorized for OAuth operations. Please add your domain to Firebase Console → Authentication → Settings → Authorized domains.';
         } else if (error.code === 'auth/popup-blocked') {
             errorMessage += 'Popup was blocked. Trying redirect method...';
-            // Fallback to redirect
+            // Already using redirect, so this shouldn't happen
             try {
                 await auth.signInWithRedirect(provider);
                 return;
@@ -135,8 +117,10 @@ document.getElementById('googleSignIn')?.addEventListener('click', async () => {
             }
         } else if (error.code === 'auth/popup-closed-by-user') {
             errorMessage += 'Sign-in was cancelled.';
+        } else if (error.message && error.message.includes('Firebase auth not available')) {
+            errorMessage = 'Authentication service not available. Please try the admin login option below.';
         } else {
-            errorMessage += 'Error code: ' + error.code;
+            errorMessage += 'Error code: ' + (error.code || 'unknown');
         }
         
         showError(errorMessage);
@@ -145,41 +129,73 @@ document.getElementById('googleSignIn')?.addEventListener('click', async () => {
     }
 });
 
-// Demo sign-in for Excel Online environments
-document.getElementById('demoSignIn')?.addEventListener('click', async () => {
-    console.log('Demo Sign In clicked');
+// Admin sign-in functionality
+document.getElementById('adminSignIn')?.addEventListener('click', async () => {
+    console.log('Admin Sign In clicked');
     setLoading(true);
     
-    // Create a demo user object
-    const demoUser = {
-        uid: 'demo-user-' + Date.now(),
-        email: 'demo@arcadeus.com',
-        displayName: 'Demo User',
-        photoURL: null,
-        provider: 'demo'
-    };
+    const username = document.getElementById('adminUsername')?.value;
+    const password = document.getElementById('adminPassword')?.value;
     
-    try {
-        // Store demo user info in local storage
-        localStorage.setItem('arcadeusUser', JSON.stringify(demoUser));
-        console.log('Demo user authenticated:', demoUser.email);
+    // Check admin credentials
+    if (username === 'admin' && password === '88888888') {
+        // Create admin user object with pre-filled details
+        const adminUser = {
+            uid: 'admin-user-' + Date.now(),
+            email: 'admin@arcadeus.com',
+            displayName: 'Admin User',
+            photoURL: null,
+            provider: 'admin'
+        };
         
-        // Check if user needs onboarding
-        const hasOnboarded = localStorage.getItem('arcadeusOnboarding') === 'completed';
+        // Pre-filled onboarding data for admin
+        const adminProfileData = {
+            userType: 'company',
+            organizationName: 'Arcadeus Development',
+            userRole: 'System Administrator',
+            teamSize: '21-50',
+            propertyTypes: ['office', 'retail', 'multifamily', 'industrial'],
+            onboardingCompleted: new Date().toISOString()
+        };
         
-        if (hasOnboarded) {
-            console.log('Demo user has completed onboarding, redirecting to app...');
+        try {
+            // Store admin user info and profile data
+            localStorage.setItem('arcadeusUser', JSON.stringify(adminUser));
+            localStorage.setItem('arcadeusUserProfile', JSON.stringify(adminProfileData));
+            localStorage.setItem('arcadeusOnboarding', 'completed');
+            
+            console.log('Admin user authenticated:', adminUser.email);
+            
+            // Save to Firebase if available
+            if (typeof firebase !== 'undefined' && firebase.firestore && adminUser.uid) {
+                try {
+                    const db = firebase.firestore();
+                    await db.collection('users').doc(adminUser.uid).set({
+                        ...adminProfileData,
+                        email: adminUser.email,
+                        displayName: adminUser.displayName,
+                        photoURL: adminUser.photoURL,
+                        lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+                    }, { merge: true });
+                    console.log('Admin profile saved to Firebase');
+                } catch (firebaseError) {
+                    console.log('Firebase not available, using localStorage only');
+                }
+            }
+            
+            // Redirect directly to main app (skip onboarding)
+            console.log('Admin user redirecting to main app...');
             window.location.href = 'taskpane.html';
-        } else {
-            console.log('Demo user needs to complete onboarding...');
-            window.location.href = 'onboarding.html';
+            
+        } catch (error) {
+            console.error('Admin sign in error:', error);
+            showError('Admin authentication failed. Please try again.');
         }
-    } catch (error) {
-        console.error('Demo sign in error:', error);
-        showError('Demo authentication failed. Please try again.');
-    } finally {
-        setLoading(false);
+    } else {
+        showError('Invalid admin credentials. Please check username and password.');
     }
+    
+    setLoading(false);
 });
 
 // Skip login functionality removed
