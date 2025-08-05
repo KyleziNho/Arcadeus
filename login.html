@@ -180,8 +180,8 @@
         }
 
         .auth-button:hover::before {
-            width: 300px;
-            height: 300px;
+            width: 400px;
+            height: 400px;
         }
 
         .auth-button svg {
@@ -363,5 +363,24 @@
     </div>
 
     <script src="auth.js"></script>
+    
+    <script>
+        // Check if user is already authenticated on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            const user = JSON.parse(localStorage.getItem('arcadeusUser') || 'null');
+            if (user) {
+                console.log('User already authenticated, checking onboarding status...');
+                const hasOnboarded = localStorage.getItem('arcadeusOnboarding') === 'completed';
+                
+                if (hasOnboarded) {
+                    console.log('User has completed onboarding, redirecting to app...');
+                    window.location.href = 'taskpane.html';
+                } else {
+                    console.log('User needs to complete onboarding...');
+                    window.location.href = 'onboarding.html';
+                }
+            }
+        });
+    </script>
 </body>
 </html>

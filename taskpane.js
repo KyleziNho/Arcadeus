@@ -22,7 +22,44 @@ class MAModelingAddin {
 
     console.log('MAModelingAddin constructor called');
     
-    // Check if Office is already available
+    // Check authentication first
+    this.checkAuthAndInitialize();
+  }
+
+  checkAuthAndInitialize() {
+    // Wait for auth.js to be loaded
+    if (!window.arcadeusAuth) {
+      setTimeout(() => this.checkAuthAndInitialize(), 100);
+      return;
+    }
+    
+    console.log('Checking authentication...');
+    
+    // Check if user is authenticated
+    const user = window.arcadeusAuth.checkAuth();
+    
+    if (!user) {
+      console.log('User not authenticated, will be redirected to login');
+      return;
+    }
+    
+    console.log('User authenticated:', user.email);
+    
+    // Check if user has completed onboarding
+    const hasOnboarded = localStorage.getItem('arcadeusOnboarding') === 'completed';
+    
+    if (!hasOnboarded) {
+      console.log('User has not completed onboarding, redirecting...');
+      window.location.href = 'onboarding.html';
+      return;
+    }
+    
+    console.log('User has completed onboarding, showing app...');
+    
+    // User is authenticated and onboarded, show the app
+    this.hideAuthLoadingScreen();
+    
+    // Continue with Office initialization
     if (typeof Office !== 'undefined' && Office.onReady) {
       Office.onReady((info) => {
         console.log('Office.onReady fired:', info);
@@ -34,6 +71,29 @@ class MAModelingAddin {
       setTimeout(() => {
         this.initializeAddin();
       }, 2000);
+    }
+  }
+
+  hideAuthLoadingScreen() {
+    const authLoading = document.getElementById('authLoading');
+    const mainApp = document.getElementById('mainApp');
+    
+    if (authLoading && mainApp) {
+      // Fade out loading screen
+      authLoading.style.opacity = '0';
+      authLoading.style.transition = 'opacity 0.3s ease-out';
+      
+      setTimeout(() => {
+        authLoading.style.display = 'none';
+        mainApp.style.display = 'block';
+        mainApp.style.opacity = '0';
+        
+        // Fade in main app
+        setTimeout(() => {
+          mainApp.style.transition = 'opacity 0.3s ease-in';
+          mainApp.style.opacity = '1';
+        }, 50);
+      }, 300);
     }
   }
 

@@ -154,11 +154,21 @@ function signOut() {
 // Check authentication status
 function checkAuth() {
     const user = JSON.parse(localStorage.getItem('arcadeusUser') || 'null');
-    if (!user && !window.location.href.includes('login.html')) {
+    
+    // Only redirect on taskpane.html, not on other pages
+    if (!user && window.location.pathname.includes('taskpane.html')) {
         // Redirect to login if not authenticated
         window.location.href = 'login.html';
+        return null;
     }
+    
     return user;
+}
+
+// Check if user has completed onboarding
+function hasCompletedOnboarding() {
+    const onboardingStatus = localStorage.getItem('arcadeusOnboarding');
+    return onboardingStatus === 'completed';
 }
 
 // Profile menu functions

@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to Arcadeus</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Lora:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --text-tertiary: #64748b;
+            --bg-white: #ffffff;
+            --bg-gray: #f8fafc;
+            --border-color: #e2e8f0;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-gray);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Animated background */
+        body::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 20% 80%, rgba(102, 126, 234, 0.1) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 20%, rgba(118, 75, 162, 0.1) 0%, transparent 50%);
+            animation: gradientShift 20s ease infinite;
+        }
+
+        @keyframes gradientShift {
+            0%, 100% { transform: rotate(0deg); }
+            50% { transform: rotate(180deg); }
+        }
+
+        .onboarding-container {
+            background: var(--bg-white);
+            border-radius: 20px;
+            box-shadow: var(--shadow-lg);
+            max-width: 500px;
+            width: 90%;
+            position: relative;
+            z-index: 1;
+            overflow: hidden;
+            animation: slideUp 0.6s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .progress-bar {
+            height: 4px;
+            background: var(--border-color);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--primary-gradient);
+            transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+
+        .step-container {
+            padding: 48px;
+        }
+
+        .step {
+            display: none;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .step.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .brand-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .brand-title {
+            font-family: 'Lora', serif;
+            font-size: 36px;
+            font-weight: 500;
+            letter-spacing: 0.2em;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .step-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 16px;
+            text-align: center;
+        }
+
+        .step-description {
+            font-size: 16px;
+            color: var(--text-secondary);
+            text-align: center;
+            margin-bottom: 32px;
+            line-height: 1.6;
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.2s ease;
+            background: var(--bg-white);
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .radio-group {
+            display: grid;
+            gap: 12px;
+        }
+
+        .radio-option {
+            position: relative;
+            display: flex;
+            align-items: center;
+            padding: 16px 20px;
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .radio-option:hover {
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.05);
+        }
+
+        .radio-input {
+            position: absolute;
+            opacity: 0;
+        }
+
+        .radio-input:checked + .radio-content {
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.05);
+        }
+
+        .radio-content {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .radio-icon {
+            width: 24px;
+            height: 24px;
+            color: #667eea;
+        }
+
+        .radio-text {
+            flex: 1;
+        }
+
+        .radio-title {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 2px;
+        }
+
+        .radio-desc {
+            font-size: 14px;
+            color: var(--text-tertiary);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 40px;
+        }
+
+        .button {
+            flex: 1;
+            padding: 14px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .button-secondary {
+            background: var(--bg-gray);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-color);
+        }
+
+        .button-secondary:hover {
+            background: var(--border-color);
+        }
+
+        .button-primary {
+            background: var(--primary-gradient);
+            color: white;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .button-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .error-message {
+            background: #fee;
+            border: 1px solid #fcc;
+            color: #c33;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .select-multiple {
+            display: grid;
+            gap: 12px;
+        }
+
+        .checkbox-option {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .checkbox-option:hover {
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.05);
+        }
+
+        .checkbox-input {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .checkbox-label {
+            flex: 1;
+            font-weight: 500;
+            color: var(--text-primary);
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="onboarding-container">
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressBar" style="width: 25%"></div>
+        </div>
+        
+        <div class="step-container">
+            <!-- Step 1: Welcome -->
+            <div class="step active" id="step1">
+                <div class="brand-header">
+                    <h1 class="brand-title">ARCADEUS</h1>
+                </div>
+                <h2 class="step-title">Welcome to Real Estate Financial Modeling</h2>
+                <p class="step-description">
+                    Let's personalize your experience. This will help us provide better insights and recommendations for your real estate investments.
+                </p>
+                
+                <div class="button-group">
+                    <button class="button button-primary" onclick="nextStep()">
+                        Get Started
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M5 12h14M12 5l7 7-7 7"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step 2: User Type -->
+            <div class="step" id="step2">
+                <h2 class="step-title">What best describes you?</h2>
+                <p class="step-description">This helps us tailor the experience to your needs</p>
+                
+                <div class="error-message" id="step2Error"></div>
+                
+                <div class="radio-group">
+                    <label class="radio-option">
+                        <input type="radio" name="userType" value="company" class="radio-input">
+                        <div class="radio-content">
+                            <svg class="radio-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M20 7h-9l-2-2H4c-1.1 0-1.99.9-1.99 2L2 17c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V9c0-1.1-.9-2-2-2z"/>
+                            </svg>
+                            <div class="radio-text">
+                                <div class="radio-title">Real Estate Company</div>
+                                <div class="radio-desc">Investment firm, REIT, or development company</div>
+                            </div>
+                        </div>
+                    </label>
+                    
+                    <label class="radio-option">
+                        <input type="radio" name="userType" value="institutional" class="radio-input">
+                        <div class="radio-content">
+                            <svg class="radio-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-5h2v5zm4 0h-2V7h2v10zm4 0h-2v-8h2v8z"/>
+                            </svg>
+                            <div class="radio-text">
+                                <div class="radio-title">Institutional Investor</div>
+                                <div class="radio-desc">Pension fund, insurance company, or bank</div>
+                            </div>
+                        </div>
+                    </label>
+                    
+                    <label class="radio-option">
+                        <input type="radio" name="userType" value="researcher" class="radio-input">
+                        <div class="radio-content">
+                            <svg class="radio-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+                            </svg>
+                            <div class="radio-text">
+                                <div class="radio-title">Researcher / Analyst</div>
+                                <div class="radio-desc">Academic or market research professional</div>
+                            </div>
+                        </div>
+                    </label>
+                    
+                    <label class="radio-option">
+                        <input type="radio" name="userType" value="individual" class="radio-input">
+                        <div class="radio-content">
+                            <svg class="radio-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="7" r="4"></circle>
+                                <path d="M5.5 21v-2a4 4 0 014-4h5a4 4 0 014 4v2"/>
+                            </svg>
+                            <div class="radio-text">
+                                <div class="radio-title">Individual Investor</div>
+                                <div class="radio-desc">Private investor or property owner</div>
+                            </div>
+                        </div>
+                    </label>
+                </div>
+                
+                <div class="button-group">
+                    <button class="button button-secondary" onclick="previousStep()">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M19 12H5M12 19l-7-7 7-7"/>
+                        </svg>
+                        Back
+                    </button>
+                    <button class="button button-primary" onclick="nextStep()">
+                        Continue
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M5 12h14M12 5l7 7-7 7"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step 3: Company/Organization Details -->
+            <div class="step" id="step3">
+                <h2 class="step-title">Tell us about your organization</h2>
+                <p class="step-description">This information helps us provide relevant insights</p>
+                
+                <div class="error-message" id="step3Error"></div>
+                
+                <div class="form-group">
+                    <label class="form-label">Organization Name</label>
+                    <input type="text" class="form-input" id="organizationName" placeholder="e.g., Blackstone Real Estate">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Your Role</label>
+                    <input type="text" class="form-input" id="userRole" placeholder="e.g., Senior Analyst, VP Acquisitions">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Team Size</label>
+                    <select class="form-input" id="teamSize">
+                        <option value="">Select team size</option>
+                        <option value="1">Just me</option>
+                        <option value="2-5">2-5 people</option>
+                        <option value="6-20">6-20 people</option>
+                        <option value="21-50">21-50 people</option>
+                        <option value="50+">50+ people</option>
+                    </select>
+                </div>
+                
+                <div class="button-group">
+                    <button class="button button-secondary" onclick="previousStep()">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M19 12H5M12 19l-7-7 7-7"/>
+                        </svg>
+                        Back
+                    </button>
+                    <button class="button button-primary" onclick="nextStep()">
+                        Continue
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M5 12h14M12 5l7 7-7 7"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step 4: Investment Focus -->
+            <div class="step" id="step4">
+                <h2 class="step-title">What types of real estate do you focus on?</h2>
+                <p class="step-description">Select all that apply</p>
+                
+                <div class="error-message" id="step4Error"></div>
+                
+                <div class="select-multiple">
+                    <label class="checkbox-option">
+                        <input type="checkbox" value="office" class="checkbox-input property-type">
+                        <span class="checkbox-label">Office Buildings</span>
+                    </label>
+                    
+                    <label class="checkbox-option">
+                        <input type="checkbox" value="retail" class="checkbox-input property-type">
+                        <span class="checkbox-label">Retail Properties</span>
+                    </label>
+                    
+                    <label class="checkbox-option">
+                        <input type="checkbox" value="multifamily" class="checkbox-input property-type">
+                        <span class="checkbox-label">Multifamily Residential</span>
+                    </label>
+                    
+                    <label class="checkbox-option">
+                        <input type="checkbox" value="industrial" class="checkbox-input property-type">
+                        <span class="checkbox-label">Industrial & Logistics</span>
+                    </label>
+                    
+                    <label class="checkbox-option">
+                        <input type="checkbox" value="hospitality" class="checkbox-input property-type">
+                        <span class="checkbox-label">Hospitality & Hotels</span>
+                    </label>
+                    
+                    <label class="checkbox-option">
+                        <input type="checkbox" value="mixed" class="checkbox-input property-type">
+                        <span class="checkbox-label">Mixed-Use Development</span>
+                    </label>
+                    
+                    <label class="checkbox-option">
+                        <input type="checkbox" value="land" class="checkbox-input property-type">
+                        <span class="checkbox-label">Land Development</span>
+                    </label>
+                    
+                    <label class="checkbox-option">
+                        <input type="checkbox" value="other" class="checkbox-input property-type">
+                        <span class="checkbox-label">Other / Specialized</span>
+                    </label>
+                </div>
+                
+                <div class="button-group">
+                    <button class="button button-secondary" onclick="previousStep()">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M19 12H5M12 19l-7-7 7-7"/>
+                        </svg>
+                        Back
+                    </button>
+                    <button class="button button-primary" onclick="completeOnboarding()">
+                        Complete Setup
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 11l3 3L22 4"/>
+                            <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentStep = 1;
+        const totalSteps = 4;
+        const userData = {};
+
+        function updateProgress() {
+            const progress = (currentStep / totalSteps) * 100;
+            document.getElementById('progressBar').style.width = `${progress}%`;
+        }
+
+        function showStep(stepNumber) {
+            // Hide all steps
+            document.querySelectorAll('.step').forEach(step => {
+                step.classList.remove('active');
+            });
+            
+            // Show current step
+            document.getElementById(`step${stepNumber}`).classList.add('active');
+            
+            // Update progress
+            updateProgress();
+        }
+
+        function nextStep() {
+            // Validate current step
+            if (!validateStep(currentStep)) {
+                return;
+            }
+            
+            // Save data from current step
+            saveStepData(currentStep);
+            
+            // Move to next step
+            if (currentStep < totalSteps) {
+                currentStep++;
+                showStep(currentStep);
+            }
+        }
+
+        function previousStep() {
+            if (currentStep > 1) {
+                currentStep--;
+                showStep(currentStep);
+            }
+        }
+
+        function validateStep(stepNumber) {
+            clearErrors();
+            
+            switch(stepNumber) {
+                case 2:
+                    const userType = document.querySelector('input[name="userType"]:checked');
+                    if (!userType) {
+                        showError('step2Error', 'Please select what best describes you');
+                        return false;
+                    }
+                    break;
+                    
+                case 3:
+                    const orgName = document.getElementById('organizationName').value.trim();
+                    const role = document.getElementById('userRole').value.trim();
+                    if (!orgName || !role) {
+                        showError('step3Error', 'Please fill in all required fields');
+                        return false;
+                    }
+                    break;
+                    
+                case 4:
+                    const selectedTypes = document.querySelectorAll('.property-type:checked');
+                    if (selectedTypes.length === 0) {
+                        showError('step4Error', 'Please select at least one property type');
+                        return false;
+                    }
+                    break;
+            }
+            
+            return true;
+        }
+
+        function saveStepData(stepNumber) {
+            switch(stepNumber) {
+                case 2:
+                    userData.userType = document.querySelector('input[name="userType"]:checked').value;
+                    break;
+                    
+                case 3:
+                    userData.organizationName = document.getElementById('organizationName').value.trim();
+                    userData.userRole = document.getElementById('userRole').value.trim();
+                    userData.teamSize = document.getElementById('teamSize').value;
+                    break;
+                    
+                case 4:
+                    userData.propertyTypes = Array.from(document.querySelectorAll('.property-type:checked'))
+                        .map(cb => cb.value);
+                    break;
+            }
+        }
+
+        function showError(elementId, message) {
+            const errorElement = document.getElementById(elementId);
+            if (errorElement) {
+                errorElement.textContent = message;
+                errorElement.style.display = 'block';
+            }
+        }
+
+        function clearErrors() {
+            document.querySelectorAll('.error-message').forEach(el => {
+                el.style.display = 'none';
+            });
+        }
+
+        function completeOnboarding() {
+            // Validate final step
+            if (!validateStep(currentStep)) {
+                return;
+            }
+            
+            // Save final step data
+            saveStepData(currentStep);
+            
+            // Add timestamp
+            userData.onboardingCompleted = new Date().toISOString();
+            
+            // Save to localStorage
+            localStorage.setItem('arcadeusUserProfile', JSON.stringify(userData));
+            localStorage.setItem('arcadeusOnboarding', 'completed');
+            
+            // Redirect to main app
+            window.location.href = 'taskpane.html';
+        }
+
+        // Check if user is authenticated
+        window.addEventListener('DOMContentLoaded', () => {
+            const user = JSON.parse(localStorage.getItem('arcadeusUser') || 'null');
+            if (!user) {
+                window.location.href = 'login.html';
+            }
+        });
+    </script>
+</body>
+</html>
