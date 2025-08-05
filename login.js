@@ -1,6 +1,15 @@
 // Simple login functionality without Firebase
 console.log('🔧 Login page loaded - no external dependencies');
 
+// Show any error messages from previous attempts
+window.addEventListener('DOMContentLoaded', () => {
+    const errorMessage = localStorage.getItem('arcadeusLoginError');
+    if (errorMessage) {
+        showError(errorMessage);
+        localStorage.removeItem('arcadeusLoginError'); // Clear the error
+    }
+});
+
 // Show/hide loading overlay
 function setLoading(isLoading) {
     const loadingOverlay = document.getElementById('loadingOverlay');

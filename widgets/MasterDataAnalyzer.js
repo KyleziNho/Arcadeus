@@ -127,7 +127,7 @@ class MasterDataAnalyzer {
       } else {
         console.log('🤖 CRITICAL: AI extraction failed - no extractedData in response');
         console.log('🤖 Full response data:', data);
-        alert('AI extraction failed. Check console for details. Using fallback parsing...');
+        console.error('AI extraction failed. Check console for details. Using fallback parsing...');
         return null;
       }
       
@@ -883,9 +883,9 @@ Reporting: ${summary.reportingPeriod || ''}
 
 Check console for detailed parsing logs.`;
     
-    // Show to user via alert (you can change this to a better UI element)
+    // Show to user via console (Excel Online doesn't support alert)
     setTimeout(() => {
-      alert(summaryText);
+      console.log('File Analysis Summary:', summaryText);
     }, 1000);
     
     return summary;

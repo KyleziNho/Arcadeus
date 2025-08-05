@@ -467,26 +467,33 @@
 
         async function loadProfileData() {
             try {
-                // First try to load from Firebase
-                if (firebase.firestore && currentUser.uid) {
-                    const db = firebase.firestore();
-                    const doc = await db.collection('users').doc(currentUser.uid).get();
-                    
-                    if (doc.exists) {
-                        profileData = doc.data();
-                        console.log('Profile loaded from Firebase');
-                        return;
+                // Check if Firebase is actually available and working (not blocked by CSP)
+                if (typeof firebase !== 'undefined' && firebase.firestore && currentUser.uid) {
+                    try {
+                        const db = firebase.firestore();
+                        const doc = await db.collection('users').doc(currentUser.uid).get();
+                        
+                        if (doc.exists) {
+                            profileData = doc.data();
+                            console.log('Profile loaded from Firebase');
+                            return;
+                        }
+                    } catch (firebaseError) {
+                        console.log('Firebase blocked or unavailable, using localStorage:', firebaseError.message);
+                        // Don't throw - just fall back to localStorage
                     }
                 }
             } catch (error) {
-                console.error('Error loading from Firebase:', error);
+                console.log('Firebase not available, using localStorage:', error.message);
             }
 
-            // Fallback to localStorage
+            // Fallback to localStorage (primary method in Excel Online)
             const localProfile = localStorage.getItem('arcadeusUserProfile');
             if (localProfile) {
                 profileData = JSON.parse(localProfile);
                 console.log('Profile loaded from localStorage');
+            } else {
+                console.log('No profile data found in localStorage');
             }
         }
 

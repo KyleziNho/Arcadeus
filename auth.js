@@ -40,7 +40,8 @@ if (firebaseAvailable && auth) {
             console.log('Google sign in successful via redirect:', result.user.email);
         }
     }).catch((error) => {
-        console.error('Redirect sign in error:', error);
+        console.error('Redirect sign in error:', error.code, error.message);
+        // Don't show errors for network/internal errors - they're expected in Excel Online
     });
 
     // Auth state observer

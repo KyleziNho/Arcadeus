@@ -38,8 +38,17 @@ class MAModelingAddin {
     // Check if user came from login page wanting Google auth
     const authIntent = localStorage.getItem('arcadeusAuthIntent');
     if (authIntent === 'google') {
-      console.log('Google auth intent detected, initiating Firebase Google auth...');
+      console.log('Google auth intent detected, checking Firebase availability...');
       localStorage.removeItem('arcadeusAuthIntent'); // Clear the intent
+      
+      // Check if Firebase can actually be used (not blocked by CSP)
+      if (typeof firebase === 'undefined' || !firebase.auth) {
+        console.error('Firebase not available for Google auth - redirecting back to login');
+        localStorage.setItem('arcadeusLoginError', 'Google sign-in is not available in this environment. Please use the admin login option.');
+        window.location.href = 'login.html';
+        return;
+      }
+      
       this.initiateGoogleAuth();
       return;
     }
@@ -1284,7 +1293,8 @@ class MAModelingAddin {
       if (authLoading) authLoading.style.display = 'none';
       
       // Show error message and redirect back to login
-      alert('Google sign-in failed: ' + (error.message || 'Unknown error') + '\n\nPlease try the admin login option.');
+      console.error('Google sign-in failed, redirecting to login with error message');
+      localStorage.setItem('arcadeusLoginError', 'Google sign-in is currently unavailable. Please use the admin login option.');
       window.location.href = 'login.html';
     }
   }
