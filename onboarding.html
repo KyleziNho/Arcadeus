@@ -121,10 +121,10 @@
         }
 
         .onboarding-logo {
-            max-width: 300px;
+            max-width: 450px;
             width: 100%;
             height: auto;
-            margin: 0 auto 20px;
+            margin: 0 auto 30px;
             display: block;
         }
         
@@ -188,13 +188,12 @@
 
         .radio-option {
             position: relative;
-            display: flex;
-            align-items: center;
-            padding: 16px 20px;
+            display: block;
             border: 2px solid var(--border-color);
             border-radius: 12px;
             cursor: pointer;
             transition: all 0.2s ease;
+            overflow: hidden;
         }
 
         .radio-option:hover {
@@ -205,18 +204,36 @@
         .radio-input {
             position: absolute;
             opacity: 0;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            cursor: pointer;
+            z-index: 1;
         }
 
-        .radio-input:checked + .radio-content {
-            border-color: #667eea;
+        .radio-input:checked ~ .radio-content {
             background: rgba(102, 126, 234, 0.05);
         }
 
+        .radio-input:checked ~ .radio-content::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border: 2px solid #667eea;
+            border-radius: 10px;
+            pointer-events: none;
+        }
+
         .radio-content {
-            flex: 1;
             display: flex;
             align-items: center;
             gap: 16px;
+            padding: 16px 20px;
+            position: relative;
         }
 
         .radio-icon {
@@ -327,9 +344,15 @@
             cursor: pointer;
         }
     </style>
+    
+    <!-- Firebase SDK - Load before page scripts -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="auth.js"></script>
 </head>
 <body>
-    <img src="src/images/arcadeus.svg" alt="Arcadeus" class="app-icon">
+    <img src="assets/arcadeus.svg" alt="Arcadeus" class="app-icon">
     <div class="onboarding-container">
         <div class="progress-bar">
             <div class="progress-fill" id="progressBar" style="width: 25%"></div>
@@ -660,13 +683,17 @@
         }
 
         async function completeOnboarding() {
+            console.log('Complete onboarding clicked');
+            
             // Validate final step
             if (!validateStep(currentStep)) {
+                console.log('Validation failed');
                 return;
             }
             
             // Save final step data
             saveStepData(currentStep);
+            console.log('User data:', userData);
             
             // Add timestamp
             userData.onboardingCompleted = new Date().toISOString();
@@ -674,11 +701,13 @@
             // Save to localStorage
             localStorage.setItem('arcadeusUserProfile', JSON.stringify(userData));
             localStorage.setItem('arcadeusOnboarding', 'completed');
+            console.log('Saved to localStorage');
             
             // Save to Firebase if available
             const user = JSON.parse(localStorage.getItem('arcadeusUser') || 'null');
             if (user && user.uid && typeof firebase !== 'undefined' && firebase.firestore) {
                 try {
+                    console.log('Attempting to save to Firebase...');
                     const db = firebase.firestore();
                     await db.collection('users').doc(user.uid).set({
                         ...userData,
@@ -692,9 +721,12 @@
                     console.error('Error saving to Firebase:', error);
                     // Continue anyway - localStorage is our backup
                 }
+            } else {
+                console.log('Firebase not available or user not authenticated');
             }
             
             // Redirect to main app
+            console.log('Redirecting to taskpane.html...');
             window.location.href = 'taskpane.html';
         }
 
@@ -706,11 +738,5 @@
             }
         });
     </script>
-    
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-    <script src="auth.js"></script>
 </body>
 </html>
