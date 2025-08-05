@@ -8,7 +8,7 @@
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Lora:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Lora:wght@400;500;600&family=Lander+Grande:wght@400;500;600&display=swap" rel="stylesheet">
     
     
     <!-- Firebase SDK -->
@@ -113,6 +113,31 @@
             margin: 0 auto;
             display: block;
             min-width: 300px;
+        }
+
+        .brand-tagline {
+            font-family: 'Lander Grande', 'Lora', serif;
+            font-size: 18px;
+            font-weight: 400;
+            color: var(--text-secondary);
+            text-align: center;
+            margin-top: 16px;
+            letter-spacing: 0.5px;
+            min-height: 25px;
+        }
+
+        .typewriter-cursor {
+            display: inline-block;
+            width: 2px;
+            height: 1.2em;
+            background-color: var(--text-secondary);
+            animation: blink 1s infinite;
+            margin-left: 2px;
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
         }
 
         .login-header {
@@ -347,7 +372,8 @@
 
     <div class="login-container">
         <div class="brand-header">
-            <img src="assets/arcadeus-logo-black-on-white.svg" alt="Arcadeus" class="brand-logo">
+            <img src="assets/arcadeus-logo-black-on-white-simple.svg" alt="Arcadeus" class="brand-logo">
+            <div class="brand-tagline" id="typewriterText"></div>
         </div>
 
 
@@ -392,8 +418,32 @@
     <script src="auth.js"></script>
     
     <script>
+        // Typewriter effect
+        function typeWriter(text, element, speed = 100) {
+            let i = 0;
+            element.innerHTML = '';
+            
+            function type() {
+                if (i < text.length) {
+                    element.innerHTML += text.charAt(i);
+                    i++;
+                    setTimeout(type, speed);
+                } else {
+                    // Add blinking cursor after typing is complete
+                    element.innerHTML += '<span class="typewriter-cursor"></span>';
+                }
+            }
+            type();
+        }
+
         // Check if user is already authenticated on page load
         window.addEventListener('DOMContentLoaded', () => {
+            // Start typewriter effect
+            const typewriterElement = document.getElementById('typewriterText');
+            setTimeout(() => {
+                typeWriter('AI-Powered Real Estate Modeling', typewriterElement, 80);
+            }, 500);
+            
             const user = JSON.parse(localStorage.getItem('arcadeusUser') || 'null');
             if (user) {
                 console.log('User already authenticated, checking onboarding status...');
