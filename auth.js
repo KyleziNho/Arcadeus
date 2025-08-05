@@ -106,9 +106,12 @@ document.getElementById('googleSignIn')?.addEventListener('click', async () => {
     try {
         const provider = new firebase.auth.GoogleAuthProvider();
         
-        // Use redirect method (was working before)
-        console.log('Starting Google auth redirect...');
-        await auth.signInWithRedirect(provider);
+        // Use popup method for external window (correct for Excel)
+        console.log('Starting Google auth popup...');
+        const result = await auth.signInWithPopup(provider);
+        
+        console.log('Google sign in successful:', result.user.email);
+        // Auth state observer will handle the redirect
         
     } catch (error) {
         console.error('Google sign in error:', error);
@@ -117,13 +120,11 @@ document.getElementById('googleSignIn')?.addEventListener('click', async () => {
         if (error.code === 'auth/unauthorized-domain') {
             errorMessage = 'This domain is not authorized for OAuth operations. Please add your domain to Firebase Console → Authentication → Settings → Authorized domains.';
         } else if (error.code === 'auth/popup-blocked') {
-            errorMessage = 'Popup was blocked. Trying redirect method...';
-            try {
-                await auth.signInWithRedirect(provider);
-                return;
-            } catch (redirectError) {
-                errorMessage = 'Authentication failed.';
-            }
+            errorMessage = 'Popup was blocked. Please allow popups for this site and try again.';
+        } else if (error.code === 'auth/popup-closed-by-user') {
+            errorMessage = 'Sign-in was cancelled. Please try again.';
+        } else if (error.code === 'auth/network-request-failed') {
+            errorMessage = 'Network error occurred. Please check your connection and try again.';
         }
         
         showError(errorMessage);
