@@ -68,10 +68,28 @@ function showError(message) {
     }
 }
 
+// Test function to verify button clicks
+function testClick() {
+    console.log('🔘 Test button click registered!');
+    alert('Button click working! CSP may be blocking Firebase auth.');
+}
+
 // Google Sign In
 document.getElementById('googleSignIn')?.addEventListener('click', async () => {
     console.log('Google Sign In clicked');
     setLoading(true);
+    
+    // Check if we're in Excel Online environment
+    const isExcelOnline = window.location.hostname.includes('excel.office') || 
+                          window.location.hostname.includes('officeapps.live.com') ||
+                          window.parent !== window; // Running in iframe
+    
+    if (isExcelOnline) {
+        console.log('⚠️ Detected Excel Online environment - CSP restrictions may apply');
+        showError('Google sign-in is not available in Excel Online due to security restrictions. Please open this add-in in Excel Desktop or use a web browser.');
+        setLoading(false);
+        return;
+    }
     
     // Check if Firebase is properly configured
     if (firebaseConfig.apiKey.includes('YOUR_ACTUAL')) {
@@ -122,6 +140,43 @@ document.getElementById('googleSignIn')?.addEventListener('click', async () => {
         }
         
         showError(errorMessage);
+    } finally {
+        setLoading(false);
+    }
+});
+
+// Demo sign-in for Excel Online environments
+document.getElementById('demoSignIn')?.addEventListener('click', async () => {
+    console.log('Demo Sign In clicked');
+    setLoading(true);
+    
+    // Create a demo user object
+    const demoUser = {
+        uid: 'demo-user-' + Date.now(),
+        email: 'demo@arcadeus.com',
+        displayName: 'Demo User',
+        photoURL: null,
+        provider: 'demo'
+    };
+    
+    try {
+        // Store demo user info in local storage
+        localStorage.setItem('arcadeusUser', JSON.stringify(demoUser));
+        console.log('Demo user authenticated:', demoUser.email);
+        
+        // Check if user needs onboarding
+        const hasOnboarded = localStorage.getItem('arcadeusOnboarding') === 'completed';
+        
+        if (hasOnboarded) {
+            console.log('Demo user has completed onboarding, redirecting to app...');
+            window.location.href = 'taskpane.html';
+        } else {
+            console.log('Demo user needs to complete onboarding...');
+            window.location.href = 'onboarding.html';
+        }
+    } catch (error) {
+        console.error('Demo sign in error:', error);
+        showError('Demo authentication failed. Please try again.');
     } finally {
         setLoading(false);
     }
