@@ -9,44 +9,72 @@ const firebaseConfig = {
     measurementId: "G-Z07WWE0H64"
 };
 
-// Initialize Firebase
-firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const db = firebase.firestore();
+// Initialize Firebase with error handling
+let auth = null;
+let db = null;
+let firebaseAvailable = false;
 
-// Handle redirect result on page load
-auth.getRedirectResult().then((result) => {
-    if (result.credential) {
-        // Google sign in successful via redirect
-        console.log('Google sign in successful via redirect:', result.user.email);
-    }
-}).catch((error) => {
-    console.error('Redirect sign in error:', error);
-});
-
-// Auth state observer
-auth.onAuthStateChanged((user) => {
-    if (user) {
-        // User is signed in
-        console.log('User signed in:', user.email);
-        // Store user info in local storage for the add-in
-        localStorage.setItem('arcadeusUser', JSON.stringify({
-            uid: user.uid,
-            email: user.email,
-            displayName: user.displayName,
-            photoURL: user.photoURL,
-            provider: user.providerData[0].providerId
-        }));
-        // Redirect to main app or close window if in add-in context
-        if (window.location.href.includes('login.html')) {
-            window.location.href = 'taskpane.html';
+try {
+    if (typeof firebase !== 'undefined') {
+        firebase.initializeApp(firebaseConfig);
+        auth = firebase.auth();
+        if (firebase.firestore) {
+            db = firebase.firestore();
         }
+        firebaseAvailable = true;
+        console.log('✅ Firebase initialized successfully');
     } else {
-        // User is signed out
-        console.log('User signed out');
-        localStorage.removeItem('arcadeusUser');
+        throw new Error('Firebase not loaded');
     }
-});
+} catch (error) {
+    console.error('❌ Firebase initialization failed:', error);
+    console.log('🔄 Running in offline mode - using localStorage only');
+    firebaseAvailable = false;
+}
+
+// Handle redirect result on page load (only if Firebase is available)
+if (firebaseAvailable && auth) {
+    auth.getRedirectResult().then((result) => {
+        if (result.credential) {
+            // Google sign in successful via redirect
+            console.log('Google sign in successful via redirect:', result.user.email);
+        }
+    }).catch((error) => {
+        console.error('Redirect sign in error:', error);
+    });
+
+    // Auth state observer
+    auth.onAuthStateChanged((user) => {
+        if (user) {
+            // User is signed in
+            console.log('User signed in:', user.email);
+            // Store user info in local storage for the add-in
+            localStorage.setItem('arcadeusUser', JSON.stringify({
+                uid: user.uid,
+                email: user.email,
+                displayName: user.displayName,
+                photoURL: user.photoURL,
+                provider: user.providerData[0].providerId
+            }));
+            // Redirect to main app or close window if in add-in context
+            if (window.location.href.includes('login.html')) {
+                // Check if user needs onboarding
+                const hasOnboarded = localStorage.getItem('arcadeusOnboarding') === 'completed';
+                if (hasOnboarded) {
+                    window.location.href = 'taskpane.html';
+                } else {
+                    window.location.href = 'onboarding.html';
+                }
+            }
+        } else {
+            // User is signed out
+            console.log('User signed out');
+            localStorage.removeItem('arcadeusUser');
+        }
+    });
+} else {
+    console.log('🔄 Firebase auth not available - relying on localStorage for session management');
+}
 
 // Show/hide loading overlay
 function setLoading(isLoading) {
@@ -74,6 +102,13 @@ document.getElementById('googleSignIn')?.addEventListener('click', async () => {
     console.log('Google Sign In clicked');
     setLoading(true);
     
+    if (!firebaseAvailable) {
+        console.error('Firebase not available - showing helpful error');
+        showError('Google sign-in is temporarily unavailable due to network restrictions. Please use the "Admin login" option below for now.');
+        setLoading(false);
+        return;
+    }
+    
     // Check if Firebase is properly configured
     if (firebaseConfig.apiKey.includes('YOUR_ACTUAL')) {
         setLoading(false);
@@ -81,17 +116,13 @@ document.getElementById('googleSignIn')?.addEventListener('click', async () => {
         return;
     }
     
-    console.log('Firebase config looks valid, attempting sign in...');
+    console.log('Firebase available, attempting Google sign in...');
     
     try {
-        // Check if Firebase auth is available
-        if (typeof firebase === 'undefined' || !firebase.auth) {
-            throw new Error('Firebase auth not available');
-        }
-        
         const provider = new firebase.auth.GoogleAuthProvider();
         
-        // Always try redirect method for better Excel Online compatibility
+        // Use redirect method for better Excel Online compatibility
+        console.log('Starting Google auth redirect...');
         await auth.signInWithRedirect(provider);
         
     } catch (error) {
@@ -108,7 +139,6 @@ document.getElementById('googleSignIn')?.addEventListener('click', async () => {
             errorMessage = 'This domain is not authorized for OAuth operations. Please add your domain to Firebase Console → Authentication → Settings → Authorized domains.';
         } else if (error.code === 'auth/popup-blocked') {
             errorMessage += 'Popup was blocked. Trying redirect method...';
-            // Already using redirect, so this shouldn't happen
             try {
                 await auth.signInWithRedirect(provider);
                 return;
@@ -117,10 +147,8 @@ document.getElementById('googleSignIn')?.addEventListener('click', async () => {
             }
         } else if (error.code === 'auth/popup-closed-by-user') {
             errorMessage += 'Sign-in was cancelled.';
-        } else if (error.message && error.message.includes('Firebase auth not available')) {
-            errorMessage = 'Authentication service not available. Please try the admin login option below.';
         } else {
-            errorMessage += 'Error code: ' + (error.code || 'unknown');
+            errorMessage += 'Please try the admin login option below. Error: ' + (error.code || error.message || 'unknown');
         }
         
         showError(errorMessage);
@@ -137,8 +165,12 @@ document.getElementById('adminSignIn')?.addEventListener('click', async () => {
     const username = document.getElementById('adminUsername')?.value;
     const password = document.getElementById('adminPassword')?.value;
     
+    console.log('Admin credentials entered:', { username, password: password ? '[HIDDEN]' : 'empty' });
+    
     // Check admin credentials
     if (username === 'admin' && password === '88888888') {
+        console.log('Admin credentials valid, proceeding with login...');
+        
         // Create admin user object with pre-filled details
         const adminUser = {
             uid: 'admin-user-' + Date.now(),
@@ -159,39 +191,52 @@ document.getElementById('adminSignIn')?.addEventListener('click', async () => {
         };
         
         try {
+            console.log('Storing admin data in localStorage...');
+            
             // Store admin user info and profile data
             localStorage.setItem('arcadeusUser', JSON.stringify(adminUser));
             localStorage.setItem('arcadeusUserProfile', JSON.stringify(adminProfileData));
             localStorage.setItem('arcadeusOnboarding', 'completed');
             
-            console.log('Admin user authenticated:', adminUser.email);
+            console.log('Admin user authenticated and stored:', adminUser.email);
+            console.log('LocalStorage contents:', {
+                user: localStorage.getItem('arcadeusUser'),
+                profile: localStorage.getItem('arcadeusUserProfile'),
+                onboarding: localStorage.getItem('arcadeusOnboarding')
+            });
             
-            // Save to Firebase if available
-            if (typeof firebase !== 'undefined' && firebase.firestore && adminUser.uid) {
-                try {
-                    const db = firebase.firestore();
-                    await db.collection('users').doc(adminUser.uid).set({
-                        ...adminProfileData,
-                        email: adminUser.email,
-                        displayName: adminUser.displayName,
-                        photoURL: adminUser.photoURL,
-                        lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
-                    }, { merge: true });
+            // Don't wait for Firebase - it might be blocked
+            // Just try to save but don't block the redirect
+            if (typeof firebase !== 'undefined' && firebase.firestore) {
+                firebase.firestore().collection('users').doc(adminUser.uid).set({
+                    ...adminProfileData,
+                    email: adminUser.email,
+                    displayName: adminUser.displayName,
+                    photoURL: adminUser.photoURL,
+                    lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+                }, { merge: true }).then(() => {
                     console.log('Admin profile saved to Firebase');
-                } catch (firebaseError) {
-                    console.log('Firebase not available, using localStorage only');
-                }
+                }).catch((firebaseError) => {
+                    console.log('Firebase save failed:', firebaseError);
+                });
+            } else {
+                console.log('Firebase not available, using localStorage only');
             }
             
             // Redirect directly to main app (skip onboarding)
             console.log('Admin user redirecting to main app...');
+            setLoading(false);
             window.location.href = 'taskpane.html';
+            return;
             
         } catch (error) {
             console.error('Admin sign in error:', error);
-            showError('Admin authentication failed. Please try again.');
+            showError('Admin authentication failed: ' + error.message);
+            setLoading(false);
+            return;
         }
     } else {
+        console.log('Invalid admin credentials provided');
         showError('Invalid admin credentials. Please check username and password.');
     }
     
