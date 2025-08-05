@@ -106,7 +106,7 @@
         }
 
         .brand-logo {
-            max-width: 600px;
+            max-width: 700px;
             width: 100%;
             height: auto;
             margin: 0 auto;
@@ -321,7 +321,7 @@
         <div class="error-message" id="errorMessage"></div>
 
         <div class="auth-buttons">
-            <button class="auth-button google-button" id="googleSignIn" onclick="testClick()">
+            <button class="auth-button google-button" id="googleSignIn">
                 <svg viewBox="0 0 24 24">
                     <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                     <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
@@ -372,6 +372,37 @@
                 } else {
                     console.log('User needs to complete onboarding...');
                     window.location.href = 'onboarding.html';
+                }
+                return;
+            }
+            
+            // Detect Excel Online environment and show appropriate guidance
+            const isExcelOnline = window.location.hostname.includes('excel.office') || 
+                                  window.location.hostname.includes('officeapps.live.com') ||
+                                  window.parent !== window;
+            
+            if (isExcelOnline) {
+                // Hide Google button and show message for Excel Online
+                const googleBtn = document.getElementById('googleSignIn');
+                const demoBtn = document.getElementById('demoSignIn');
+                
+                if (googleBtn) {
+                    googleBtn.style.opacity = '0.5';
+                    googleBtn.style.cursor = 'not-allowed';
+                    googleBtn.title = 'Not available in Excel Online due to security restrictions';
+                }
+                
+                if (demoBtn) {
+                    demoBtn.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+                    demoBtn.style.color = 'white';
+                    demoBtn.style.border = 'none';
+                    demoBtn.style.fontWeight = '600';
+                }
+                
+                // Update help text
+                const helpText = document.querySelector('div[style*="text-align: center"][style*="margin: 16px 0"]');
+                if (helpText) {
+                    helpText.innerHTML = '<p style="color: #667eea; font-weight: 600;">Excel Online Detected - Use Demo Mode Below</p><p><strong>Demo Mode:</strong> Full functionality without Google account required</p>';
                 }
             }
         });
