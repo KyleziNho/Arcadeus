@@ -35,23 +35,6 @@ class MAModelingAddin {
     
     console.log('Checking authentication...');
     
-    // Check if user came from login page wanting Google auth
-    const authIntent = localStorage.getItem('arcadeusAuthIntent');
-    if (authIntent === 'google') {
-      console.log('Google auth intent detected, checking Firebase availability...');
-      localStorage.removeItem('arcadeusAuthIntent'); // Clear the intent
-      
-      // Check if Firebase can actually be used (not blocked by CSP)
-      if (typeof firebase === 'undefined' || !firebase.auth) {
-        console.error('Firebase not available for Google auth - redirecting back to login');
-        localStorage.setItem('arcadeusLoginError', 'Google sign-in is not available in this environment. Please use the admin login option.');
-        window.location.href = 'login.html';
-        return;
-      }
-      
-      this.initiateGoogleAuth();
-      return;
-    }
     
     // Check if user is authenticated
     const user = window.arcadeusAuth.checkAuth();
@@ -1232,72 +1215,6 @@ class MAModelingAddin {
     };
   }
 
-  // Google authentication method for users coming from login page
-  async initiateGoogleAuth() {
-    console.log('Initiating Google authentication with Firebase...');
-    
-    // Show auth loading screen
-    const authLoading = document.getElementById('authLoading');
-    const mainApp = document.getElementById('mainApp');
-    
-    if (authLoading) authLoading.style.display = 'flex';
-    if (mainApp) mainApp.style.display = 'none';
-    
-    try {
-      // Check if Firebase is available
-      if (typeof firebase === 'undefined' || !firebase.auth) {
-        throw new Error('Firebase not available');
-      }
-      
-      const auth = firebase.auth();
-      const provider = new firebase.auth.GoogleAuthProvider();
-      
-      console.log('Starting Google auth redirect...');
-      
-      // Set up auth state listener for when user returns from redirect
-      auth.onAuthStateChanged((user) => {
-        if (user) {
-          console.log('Google auth successful:', user.email);
-          
-          // Store user info
-          localStorage.setItem('arcadeusUser', JSON.stringify({
-            uid: user.uid,
-            email: user.email,
-            displayName: user.displayName,
-            photoURL: user.photoURL,
-            provider: user.providerData[0].providerId
-          }));
-          
-          // Check if user needs onboarding
-          const hasOnboarded = localStorage.getItem('arcadeusOnboarding') === 'completed';
-          
-          if (hasOnboarded) {
-            console.log('User has completed onboarding, showing main app...');
-            if (authLoading) authLoading.style.display = 'none';
-            if (mainApp) mainApp.style.display = 'block';
-            this.initialize();
-          } else {
-            console.log('User needs onboarding, redirecting...');
-            window.location.href = 'onboarding.html';
-          }
-        }
-      });
-      
-      // Start the Google auth redirect
-      await auth.signInWithRedirect(provider);
-      
-    } catch (error) {
-      console.error('Google auth error:', error);
-      
-      // Hide loading and show error
-      if (authLoading) authLoading.style.display = 'none';
-      
-      // Show error message and redirect back to login
-      console.error('Google sign-in failed, redirecting to login with error message');
-      localStorage.setItem('arcadeusLoginError', 'Google sign-in is currently unavailable. Please use the admin login option.');
-      window.location.href = 'login.html';
-    }
-  }
 }
 
 // Global error handlers

@@ -447,12 +447,28 @@
 
         // Initialize
         document.addEventListener('DOMContentLoaded', async () => {
-            // Check authentication
-            currentUser = window.arcadeusAuth?.getUser();
-            if (!currentUser) {
+            // Wait for auth to be available
+            let attempts = 0;
+            while (!window.arcadeusAuth && attempts < 50) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+                attempts++;
+            }
+            
+            if (!window.arcadeusAuth) {
+                console.error('Auth not available, redirecting to login');
                 window.location.href = 'login.html';
                 return;
             }
+            
+            // Check authentication using localStorage directly (more reliable)
+            currentUser = JSON.parse(localStorage.getItem('arcadeusUser') || 'null');
+            if (!currentUser) {
+                console.log('No user found in localStorage, redirecting to login');
+                window.location.href = 'login.html';
+                return;
+            }
+            
+            console.log('Profile page - User authenticated:', currentUser.email);
 
             // Load profile data
             await loadProfileData();
@@ -461,7 +477,15 @@
             // Sign out handler
             document.getElementById('signOutLink')?.addEventListener('click', (e) => {
                 e.preventDefault();
-                window.arcadeusAuth?.signOut();
+                console.log('Sign out clicked');
+                
+                // Clear localStorage directly
+                localStorage.removeItem('arcadeusUser');
+                localStorage.removeItem('arcadeusUserProfile');
+                localStorage.removeItem('arcadeusOnboarding');
+                
+                // Redirect to login
+                window.location.href = 'login.html';
             });
         });
 

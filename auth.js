@@ -103,53 +103,27 @@ document.getElementById('googleSignIn')?.addEventListener('click', async () => {
     console.log('Google Sign In clicked');
     setLoading(true);
     
-    if (!firebaseAvailable) {
-        console.error('Firebase not available - showing helpful error');
-        showError('Google sign-in is temporarily unavailable due to network restrictions. Please use the "Admin login" option below for now.');
-        setLoading(false);
-        return;
-    }
-    
-    // Check if Firebase is properly configured
-    if (firebaseConfig.apiKey.includes('YOUR_ACTUAL')) {
-        setLoading(false);
-        showError('Firebase not configured properly.');
-        return;
-    }
-    
-    console.log('Firebase available, attempting Google sign in...');
-    
     try {
         const provider = new firebase.auth.GoogleAuthProvider();
         
-        // Use redirect method for better Excel Online compatibility
+        // Use redirect method (was working before)
         console.log('Starting Google auth redirect...');
         await auth.signInWithRedirect(provider);
         
     } catch (error) {
         console.error('Google sign in error:', error);
-        console.error('Error code:', error.code);
-        console.error('Error message:', error.message);
         
-        let errorMessage = 'Failed to sign in with Google. ';
-        if (error.code === 'auth/api-key-not-valid.-please-pass-a-valid-api-key.') {
-            errorMessage = 'API key issue detected. Please ensure:\n1. You\'ve enabled Google auth in Firebase Console\n2. The Web API Key is enabled in Google Cloud Console';
-        } else if (error.code === 'auth/configuration-not-found' || error.code === 'auth/invalid-api-key') {
-            errorMessage += 'Firebase configuration invalid.';
-        } else if (error.code === 'auth/unauthorized-domain') {
+        let errorMessage = 'Failed to sign in with Google. Please try again.';
+        if (error.code === 'auth/unauthorized-domain') {
             errorMessage = 'This domain is not authorized for OAuth operations. Please add your domain to Firebase Console → Authentication → Settings → Authorized domains.';
         } else if (error.code === 'auth/popup-blocked') {
-            errorMessage += 'Popup was blocked. Trying redirect method...';
+            errorMessage = 'Popup was blocked. Trying redirect method...';
             try {
                 await auth.signInWithRedirect(provider);
                 return;
             } catch (redirectError) {
                 errorMessage = 'Authentication failed.';
             }
-        } else if (error.code === 'auth/popup-closed-by-user') {
-            errorMessage += 'Sign-in was cancelled.';
-        } else {
-            errorMessage += 'Please try the admin login option below. Error: ' + (error.code || error.message || 'unknown');
         }
         
         showError(errorMessage);

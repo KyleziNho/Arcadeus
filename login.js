@@ -7,6 +7,36 @@ window.addEventListener('DOMContentLoaded', () => {
     if (errorMessage) {
         showError(errorMessage);
         localStorage.removeItem('arcadeusLoginError'); // Clear the error
+        
+        // Make admin login more prominent when Google fails
+        const adminToggle = document.getElementById('adminLoginToggle');
+        const googleButton = document.getElementById('googleSignIn');
+        
+        if (adminToggle) {
+            adminToggle.style.fontSize = '14px';
+            adminToggle.style.fontWeight = '600';
+            adminToggle.style.color = '#667eea';
+            adminToggle.style.textDecoration = 'none';
+            adminToggle.style.padding = '8px 16px';
+            adminToggle.style.border = '2px solid #667eea';
+            adminToggle.style.borderRadius = '6px';
+            adminToggle.style.background = 'rgba(102, 126, 234, 0.05)';
+            adminToggle.textContent = '👨‍💼 Admin Login (Recommended for Excel Online)';
+            
+            // Auto-show the admin form
+            setTimeout(() => {
+                const adminForm = document.getElementById('adminLoginForm');
+                if (adminForm) {
+                    adminForm.style.display = 'block';
+                }
+            }, 1000);
+        }
+        
+        if (googleButton) {
+            googleButton.style.opacity = '0.6';
+            googleButton.style.cursor = 'not-allowed';
+            googleButton.title = 'Not available in Excel Online - Use Admin Login below';
+        }
     }
 });
 
@@ -30,17 +60,8 @@ function showError(message) {
     }
 }
 
-// Google Sign In - redirect to taskpane for Firebase handling
-document.getElementById('googleSignIn')?.addEventListener('click', () => {
-    console.log('Google Sign In clicked - redirecting to main app for Firebase auth');
-    setLoading(true);
-    
-    // Set a flag to indicate Google auth was requested
-    localStorage.setItem('arcadeusAuthIntent', 'google');
-    
-    // Redirect to main app where Firebase is available
-    window.location.href = 'taskpane.html';
-});
+// Google Sign In is now handled directly in auth.js
+// No need for redirect logic
 
 // Admin sign-in functionality - no Firebase needed
 document.getElementById('adminSignIn')?.addEventListener('click', () => {
