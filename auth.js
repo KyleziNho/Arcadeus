@@ -12,6 +12,7 @@ const firebaseConfig = {
 // Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
+const db = firebase.firestore();
 
 // Handle redirect result on page load
 auth.getRedirectResult().then((result) => {
@@ -189,13 +190,13 @@ function createProfileMenu(user) {
                     <div class="profile-email">${user.email}</div>
                 </div>
                 <div class="profile-divider"></div>
-                <button class="profile-menu-item" id="viewProfile">
+                <a href="profile.html" class="profile-menu-item" style="text-decoration: none;">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                         <circle cx="12" cy="7" r="4"></circle>
                     </svg>
                     View Profile
-                </button>
+                </a>
                 <button class="profile-menu-item" id="signOutButton">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
@@ -232,10 +233,7 @@ function initializeProfileMenu() {
             
             signOutButton?.addEventListener('click', signOut);
             
-            viewProfile?.addEventListener('click', () => {
-                // TODO: Implement profile view
-                alert('Profile view coming soon!');
-            });
+            // Remove old viewProfile event listener since it's now a link
             
             // Close dropdown when clicking outside
             document.addEventListener('click', () => {

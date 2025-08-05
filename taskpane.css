@@ -87,20 +87,15 @@
     text-align: center;
 }
 
-.loading-title {
-    font-family: 'Lora', serif;
-    font-size: 48px;
-    font-weight: 500;
-    letter-spacing: 0.2em;
-    margin-bottom: 30px;
-    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    animation: pulseText 2s ease-in-out infinite;
+.loading-logo {
+    max-width: 350px;
+    width: 100%;
+    height: auto;
+    margin-bottom: 40px;
+    animation: pulseOpacity 2s ease-in-out infinite;
 }
 
-@keyframes pulseText {
+@keyframes pulseOpacity {
     0%, 100% { opacity: 0.7; }
     50% { opacity: 1; }
 }
@@ -177,22 +172,12 @@ body {
   flex-shrink: 0;
 }
 
-.brand-title {
-  font-family: 'Lora', serif;
-  font-size: 32px;
-  font-weight: 500;
-  color: #2c3e50;
-  letter-spacing: 0.2em;
-  margin: 0;
-  line-height: 1.2;
-  text-align: center;
-  position: relative;
-  padding: 16px 0;
-  transition: all 0.3s ease;
-  background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+.header-logo {
+  max-width: 280px;
+  width: 100%;
+  height: auto;
+  margin: 0 auto;
+  display: block;
 }
 
 /* Add elegant underline with animation */
@@ -334,6 +319,11 @@ body {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+a.profile-menu-item {
+  text-decoration: none;
+  display: flex;
 }
 
 .profile-menu-item:hover {

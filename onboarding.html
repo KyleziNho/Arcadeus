@@ -120,16 +120,21 @@
             margin-bottom: 40px;
         }
 
-        .brand-title {
-            font-family: 'Lora', serif;
-            font-size: 36px;
-            font-weight: 500;
-            letter-spacing: 0.2em;
-            margin-bottom: 8px;
-            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+        .onboarding-logo {
+            max-width: 300px;
+            width: 100%;
+            height: auto;
+            margin: 0 auto 20px;
+            display: block;
+        }
+        
+        .app-icon {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            width: 40px;
+            height: 40px;
+            z-index: 10;
         }
 
         .step-title {
@@ -324,6 +329,7 @@
     </style>
 </head>
 <body>
+    <img src="src/images/arcadeus.svg" alt="Arcadeus" class="app-icon">
     <div class="onboarding-container">
         <div class="progress-bar">
             <div class="progress-fill" id="progressBar" style="width: 25%"></div>
@@ -333,7 +339,7 @@
             <!-- Step 1: Welcome -->
             <div class="step active" id="step1">
                 <div class="brand-header">
-                    <h1 class="brand-title">ARCADEUS</h1>
+                    <img src="src/images/arcadeus-logo-black-on-white.svg" alt="Arcadeus" class="onboarding-logo">
                 </div>
                 <h2 class="step-title">Welcome to Real Estate Financial Modeling</h2>
                 <p class="step-description">
@@ -653,7 +659,7 @@
             });
         }
 
-        function completeOnboarding() {
+        async function completeOnboarding() {
             // Validate final step
             if (!validateStep(currentStep)) {
                 return;
@@ -669,6 +675,25 @@
             localStorage.setItem('arcadeusUserProfile', JSON.stringify(userData));
             localStorage.setItem('arcadeusOnboarding', 'completed');
             
+            // Save to Firebase if available
+            const user = JSON.parse(localStorage.getItem('arcadeusUser') || 'null');
+            if (user && user.uid && typeof firebase !== 'undefined' && firebase.firestore) {
+                try {
+                    const db = firebase.firestore();
+                    await db.collection('users').doc(user.uid).set({
+                        ...userData,
+                        email: user.email,
+                        displayName: user.displayName,
+                        photoURL: user.photoURL,
+                        lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+                    }, { merge: true });
+                    console.log('Profile saved to Firebase');
+                } catch (error) {
+                    console.error('Error saving to Firebase:', error);
+                    // Continue anyway - localStorage is our backup
+                }
+            }
+            
             // Redirect to main app
             window.location.href = 'taskpane.html';
         }
@@ -681,5 +706,11 @@
             }
         });
     </script>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="auth.js"></script>
 </body>
 </html>

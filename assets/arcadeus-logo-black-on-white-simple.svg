@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="600" height="200" viewBox="0 0 600 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- White background -->
+  <rect width="600" height="200" fill="#FFFFFF"/>
+  
+  <!-- Black text -->
+  <text x="300" y="125" font-family="'Source Serif Pro', 'Times New Roman', serif" font-size="80" font-weight="600" fill="#000000" text-anchor="middle" letter-spacing="-2">
+    Arcadeus
+  </text>
+</svg>

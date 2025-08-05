@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="800" height="300" viewBox="0 0 800 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- White background -->
+  <rect width="800" height="300" fill="#FFFFFF"/>
+  
+  <!-- Black text -->
+  <text x="400" y="170" font-family="'Source Serif Pro', 'Times New Roman', serif" font-size="72" font-weight="600" fill="#000000" text-anchor="middle" letter-spacing="-2">
+    Arcadeus
+  </text>
+  
+  <!-- Optional tagline -->
+  <text x="400" y="210" font-family="'Source Serif Pro', 'Times New Roman', serif" font-size="18" font-weight="400" fill="#000000" text-anchor="middle" opacity="0.8">
+    AI-Powered Financial Modeling
+  </text>
+</svg>
