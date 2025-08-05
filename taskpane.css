@@ -88,7 +88,7 @@
 }
 
 .loading-logo {
-    max-width: 450px;
+    max-width: 600px;
     width: 100%;
     height: auto;
     margin-bottom: 40px;
@@ -208,8 +208,8 @@ body {
 }
 
 .header-logo {
-  max-width: 350px;
   width: 100%;
+  max-width: 600px;
   height: auto;
   margin: 0 auto;
   display: block;
