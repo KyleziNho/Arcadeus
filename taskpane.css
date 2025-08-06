@@ -637,8 +637,8 @@ a.profile-menu-item {
 .section {
   background: var(--bg-secondary);
   border-radius: var(--radius-lg);
-  margin: 0 var(--space-4) var(--space-3) var(--space-4);
-  overflow: visible;
+  margin: 0 var(--space-4) var(--space-4) var(--space-4);
+  overflow: hidden;
   transition: all var(--transition-normal);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
   border: 1px solid var(--border-primary);
@@ -902,13 +902,9 @@ select {
 
 /* Action Section */
 .action-section {
-  padding: var(--space-6) var(--space-5);
-  background: var(--bg-secondary);
-  border-top: 1px solid var(--border-primary);
-  margin: var(--space-6) var(--space-4) var(--space-4) var(--space-4);
-  border-radius: var(--radius-lg);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
-  border: 1px solid var(--border-primary);
+  padding: var(--space-4);
+  background: transparent;
+  margin: 0;
 }
 
 .button-group-horizontal {
@@ -917,12 +913,30 @@ select {
   margin-bottom: var(--space-8);
 }
 
+.standalone-button-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 var(--space-4) var(--space-4) var(--space-4);
+  padding: var(--space-4);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  border: 1px solid var(--border-primary);
+}
+
 .generate-button-container {
-  margin-top: var(--space-8);
+  margin: 0 var(--space-4) var(--space-4) var(--space-4);
+  padding: var(--space-6);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  border: 1px solid var(--border-primary);
+  min-height: 120px;
 }
 
 .generate-button-container .button {
