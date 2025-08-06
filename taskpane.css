@@ -812,6 +812,8 @@ select {
   font-weight: 600 !important;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
   transition: all 0.3s ease !important;
+  width: auto !important;
+  max-width: none !important;
 }
 
 .generate-model-btn:hover {
@@ -941,11 +943,11 @@ select {
 
 .generate-button-container .button {
   width: auto;
-  max-width: 400px;
+  max-width: none;
   justify-content: center;
-  padding: var(--space-6) var(--space-8);
-  font-size: var(--font-size-lg);
-  font-weight: 700;
+  padding: 16px 24px;
+  font-size: 16px;
+  font-weight: 600;
   background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
   box-shadow: var(--shadow-lg);
 }
@@ -1111,8 +1113,8 @@ select {
   transition: all 0.2s ease;
   user-select: none;
   position: relative;
-  border-radius: 12px;
-  margin-bottom: 2px;
+  border-radius: 12px 12px 0 0;
+  margin-bottom: 0;
 }
 
 .section-header:hover {
@@ -1174,7 +1176,8 @@ select {
 
 .section.collapsed .section-header {
   background: #ffffff;
-  border: 1px solid #e2e8f0;
+  border: none;
+  border-radius: 12px;
 }
 
 .section.collapsed .section-header:hover {
