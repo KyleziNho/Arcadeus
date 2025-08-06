@@ -241,26 +241,7 @@ body {
 .profile-container {
   display: flex;
   justify-content: flex-end;
-}
-
-.profile-btn {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  border: 1px solid var(--border-primary);
-  background: var(--bg-secondary);
-  cursor: pointer;
-  display: flex;
   align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-  color: var(--text-secondary);
-}
-
-.profile-btn:hover {
-  background: var(--bg-tertiary);
-  border-color: var(--border-secondary);
-  color: var(--text-primary);
 }
 
 /* Chat Page Styles */

@@ -9,6 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Lora:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="taskpane.css">
     
     <style>
         :root {
@@ -41,51 +42,16 @@
             min-height: 100vh;
         }
 
-        /* Header */
-        .header {
-            background: var(--bg-white);
-            border-bottom: 1px solid var(--border-color);
-            padding: 20px 0;
+        /* Profile page specific overrides */
+        body {
+            background: var(--bg-gray);
+        }
+        
+        .app-header {
             position: sticky;
             top: 0;
             z-index: 100;
-            box-shadow: var(--shadow-sm);
-        }
-
-        .header-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 24px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .logo {
-            height: 80px;
-            width: auto;
-            max-width: 400px;
-        }
-
-        .nav-links {
-            display: flex;
-            gap: 32px;
-            align-items: center;
-        }
-
-        .nav-link {
-            text-decoration: none;
-            color: var(--text-secondary);
-            font-weight: 500;
-            transition: color 0.2s ease;
-        }
-
-        .nav-link:hover {
-            color: var(--text-primary);
-        }
-
-        .nav-link.active {
-            color: #667eea;
+            margin-bottom: 0;
         }
 
         /* Main Content */
@@ -444,14 +410,30 @@
 </head>
 <body>
     <!-- Header -->
-    <header class="header">
-        <div class="header-container">
-            <img src="assets/arcadeus-logo-black-on-white.svg" alt="Arcadeus" class="logo">
-            <nav class="nav-links">
-                <a href="taskpane.html" class="nav-link">Dashboard</a>
-                <a href="profile.html" class="nav-link active">Profile</a>
-                <a href="#" class="nav-link" id="signOutLink">Sign Out</a>
-            </nav>
+    <header class="app-header">
+        <div class="brand-container">
+            <img src="assets/Arcadeus.svg" alt="Arcadeus" class="header-logo">
+        </div>
+        <div class="nav-tabs">
+            <button class="nav-tab" onclick="window.location.href='taskpane.html'">Dashboard</button>
+            <button class="nav-tab active">Profile</button>
+        </div>
+        <div class="profile-container">
+            <div class="profile-section">
+                <button class="profile-button" id="profileButton"></button>
+                <div class="profile-dropdown" id="profileDropdown">
+                    <div class="profile-info" id="profileInfo"></div>
+                    <div class="profile-divider"></div>
+                    <button class="profile-menu-item" id="signOutButton">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                            <polyline points="16 17 21 12 16 7"></polyline>
+                            <line x1="21" y1="12" x2="9" y2="12"></line>
+                        </svg>
+                        Sign Out
+                    </button>
+                </div>
+            </div>
         </div>
     </header>
 
@@ -513,8 +495,12 @@
             await loadProfileData();
             renderProfile();
 
+            // Initialize profile dropdown
+            initializeProfileDropdown();
+            
             // Sign out handler
-            document.getElementById('signOutLink')?.addEventListener('click', (e) => {
+            document.getElementById('signOutButton')?.addEventListener('click', (e) => {
+                e.preventDefault();
                 e.preventDefault();
                 console.log('Sign out clicked');
                 
@@ -750,6 +736,43 @@
         function editProfile() {
             // Redirect to onboarding to update profile
             window.location.href = 'onboarding.html';
+        }
+
+        function initializeProfileDropdown() {
+            const profileButton = document.getElementById('profileButton');
+            const profileDropdown = document.getElementById('profileDropdown');
+            const profileInfo = document.getElementById('profileInfo');
+            
+            if (!profileButton || !profileDropdown || !currentUser) return;
+            
+            // Create profile button content
+            if (currentUser.photoURL) {
+                profileButton.innerHTML = `<img src="${currentUser.photoURL}" alt="${currentUser.displayName}" class="profile-avatar">`;
+            } else {
+                const initial = (currentUser.displayName || currentUser.email || 'U')[0].toUpperCase();
+                profileButton.innerHTML = `<div class="profile-avatar-placeholder">${initial}</div>`;
+            }
+            
+            // Set profile info
+            profileInfo.innerHTML = `
+                <div class="profile-name">${currentUser.displayName || 'User'}</div>
+                <div class="profile-email">${currentUser.email}</div>
+            `;
+            
+            // Toggle dropdown
+            profileButton.addEventListener('click', (e) => {
+                e.stopPropagation();
+                profileDropdown.classList.toggle('show');
+            });
+            
+            // Close dropdown when clicking outside
+            document.addEventListener('click', () => {
+                profileDropdown.classList.remove('show');
+            });
+            
+            profileDropdown.addEventListener('click', (e) => {
+                e.stopPropagation();
+            });
         }
     </script>
 </body>
