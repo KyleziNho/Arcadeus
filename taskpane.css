@@ -919,10 +919,15 @@ select {
 
 .generate-button-container {
   margin-top: var(--space-8);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
 .generate-button-container .button {
-  width: 100%;
+  width: auto;
+  max-width: 400px;
   justify-content: center;
   padding: var(--space-6) var(--space-8);
   font-size: var(--font-size-lg);

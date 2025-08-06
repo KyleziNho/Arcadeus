@@ -1254,7 +1254,7 @@ document.addEventListener('DOMContentLoaded', () => {
   console.log('DOM loaded - setting up immediate collapsible functionality');
   
   // Simple click handler for all collapsible sections
-  document.querySelectorAll('.collapsible-section h3').forEach(header => {
+  document.querySelectorAll('.collapsible-section .section-header').forEach(header => {
     header.style.cursor = 'pointer';
     header.addEventListener('click', function(e) {
       e.preventDefault();
