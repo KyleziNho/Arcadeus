@@ -285,7 +285,12 @@ class MAModelingAddin {
     // Auto-fill Test Data button
     const autoFillTestDataBtn = document.getElementById('autoFillTestDataBtn');
     if (autoFillTestDataBtn) {
-      autoFillTestDataBtn.addEventListener('click', () => this.autoFillTestData());
+      autoFillTestDataBtn.addEventListener('click', () => {
+        const confirmed = confirm('This will delete all current inputs and replace them with test data. Are you sure you want to continue?');
+        if (confirmed) {
+          this.autoFillTestData();
+        }
+      });
       console.log('Auto-fill test data button listener added');
     }
     
@@ -308,7 +313,7 @@ class MAModelingAddin {
     console.log(`Found ${collapsibleSections.length} collapsible sections`);
     
     collapsibleSections.forEach((section, index) => {
-      const header = section.querySelector('h3');
+      const header = section.querySelector('.section-header');
       console.log(`Section ${index + 1}: ID=${section.id}, Header found=${!!header}`);
       
       if (header) {

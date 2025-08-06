@@ -185,7 +185,7 @@ body {
 .app-header {
   background: var(--bg-secondary);
   border-bottom: 1px solid var(--border-primary);
-  padding: var(--space-5) var(--space-4);
+  padding: var(--space-3) var(--space-4);
   margin-bottom: var(--space-4);
   position: relative;
   display: flex;
@@ -199,7 +199,7 @@ body {
   align-items: center;
   justify-content: center;
   width: 100%;
-  padding: 12px 0;
+  padding: 8px 0;
 }
 
 .logo-mark {
@@ -209,7 +209,7 @@ body {
 
 .header-logo {
   width: 100%;
-  max-width: 450px;
+  max-width: 350px;
   height: auto;
   margin: 0 auto;
   display: block;
@@ -221,7 +221,7 @@ body {
   font-weight: 400;
   color: var(--text-secondary);
   text-align: center;
-  margin-top: 12px;
+  margin-top: 6px;
   letter-spacing: 0.5px;
 }
 
@@ -1154,26 +1154,14 @@ select {
 }
 
 .section.collapsed .section-header {
-  background: #000000;
-  color: white;
-}
-
-.section.collapsed .section-header .section-title {
-  color: white;
-}
-
-.section.collapsed .section-header .section-icon {
-  stroke: white;
-}
-
-.section.collapsed .section-header .chevron-icon {
-  color: white;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
 }
 
 .section.collapsed .section-header:hover {
-  background: #333333;
+  background: #f8f9fa;
   transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .section.collapsed .section-content {
