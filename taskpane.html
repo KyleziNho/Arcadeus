@@ -84,12 +84,16 @@
         <div class="app-header">
             <div class="brand-container">
                 <img src="assets/arcadeus-logo-black-on-white-simple.svg" alt="Arcadeus" class="header-logo">
-                <div class="brand-tagline">AI-Powered Real Estate Modeling</div>
+            </div>
+            <div class="nav-tabs">
+                <button class="nav-tab active" id="assumptionsTab" onclick="showAssumptions()">Assumptions</button>
+                <button class="nav-tab" id="chatTab" onclick="showChat()">Chat</button>
             </div>
         </div>
 
-
-        <div class="section collapsible-section" id="highLevelParametersSection">
+        <!-- Assumptions Page -->
+        <div id="assumptionsPage" class="page-content">
+            <div class="section collapsible-section" id="highLevelParametersSection">
             <div class="section-header" id="minimizeHighLevel">
                 <div class="section-title">
                     <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -456,9 +460,46 @@
                 </div>
             </div>
         </div>
+        </div>
+        <!-- End Assumptions Page -->
+
+        <!-- Chat Page -->
+        <div id="chatPage" class="page-content" style="display: none;">
+            <div class="chat-container">
+                <div class="chat-messages" id="chatMessages">
+                    <!-- Messages will be dynamically added here -->
+                </div>
+                <div class="chat-input-container">
+                    <textarea id="chatInput" class="chat-input" placeholder="Ask anything about your model..." rows="3"></textarea>
+                    <button id="sendMessage" class="send-button">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="22" y1="2" x2="11" y2="13"></line>
+                            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <!-- End Chat Page -->
 
     </div>
     <!-- End mainApp -->
     </div>
+
+    <script>
+        function showAssumptions() {
+            document.getElementById('assumptionsPage').style.display = 'block';
+            document.getElementById('chatPage').style.display = 'none';
+            document.getElementById('assumptionsTab').classList.add('active');
+            document.getElementById('chatTab').classList.remove('active');
+        }
+
+        function showChat() {
+            document.getElementById('assumptionsPage').style.display = 'none';
+            document.getElementById('chatPage').style.display = 'block';
+            document.getElementById('assumptionsTab').classList.remove('active');
+            document.getElementById('chatTab').classList.add('active');
+        }
+    </script>
 </body>
 </html>
