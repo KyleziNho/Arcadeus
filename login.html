@@ -116,7 +116,7 @@
         }
 
         .brand-tagline {
-            font-family: 'Lander Grande', 'Lora', serif;
+            font-family: Georgia, 'Times New Roman', serif;
             font-size: 18px;
             font-weight: 400;
             color: var(--text-secondary);
@@ -219,18 +219,19 @@
         }
 
         .google-button {
-            background: linear-gradient(135deg, #4285f4 0%, #34a853 100%);
+            background: #000000;
             color: white;
-            border: none;
+            border: 2px solid #000000;
             font-weight: 600;
-            box-shadow: 0 4px 12px rgba(66, 133, 244, 0.3);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
             transition: all 0.3s ease;
         }
 
         .google-button:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 20px rgba(66, 133, 244, 0.4);
-            background: linear-gradient(135deg, #3367d6 0%, #2d8f47 100%);
+            background: white;
+            color: #000000;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         }
 
         .google-button::before {
@@ -270,14 +271,14 @@
         }
 
         .terms a {
-            color: #667eea;
+            color: #000000;
             text-decoration: none;
             font-weight: 500;
             transition: color 0.2s ease;
         }
 
         .terms a:hover {
-            color: #764ba2;
+            color: #333333;
             text-decoration: underline;
         }
 
@@ -372,7 +373,7 @@
 
     <div class="login-container">
         <div class="brand-header">
-            <img src="assets/arcadeus-logo-black-on-white-simple.svg" alt="Arcadeus" class="brand-logo">
+            <img src="assets/arcadeus-logo-black-on-white.svg" alt="Arcadeus" class="brand-logo">
             <div class="brand-tagline" id="typewriterText"></div>
         </div>
 
@@ -410,8 +411,8 @@
 
         <p class="terms">
             By continuing, you agree to our 
-            <a href="#" target="_blank">Terms of Service</a> and 
-            <a href="#" target="_blank">Privacy Policy</a>
+            <a href="https://arcadeus.ai" target="_blank">Terms of Service</a> and 
+            <a href="https://arcadeus.ai" target="_blank">Privacy Policy</a>
         </p>
     </div>
 
@@ -428,9 +429,6 @@
                     element.innerHTML += text.charAt(i);
                     i++;
                     setTimeout(type, speed);
-                } else {
-                    // Add blinking cursor after typing is complete
-                    element.innerHTML += '<span class="typewriter-cursor"></span>';
                 }
             }
             type();
