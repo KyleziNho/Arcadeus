@@ -22,7 +22,7 @@
   --accent-warning: #f59e0b;
   --accent-error: #ef4444;
   
-  --border-primary: #000000;
+  --border-primary: #e2e8f0;
   --border-secondary: #cbd5e1;
   --border-accent: #3b82f6;
   
@@ -209,7 +209,7 @@ body {
 
 .header-logo {
   width: 100%;
-  max-width: 600px;
+  max-width: 450px;
   height: auto;
   margin: 0 auto;
   display: block;
@@ -217,11 +217,11 @@ body {
 
 .brand-tagline {
   font-family: Georgia, 'Times New Roman', serif;
-  font-size: 16px;
+  font-size: 20px;
   font-weight: 400;
   color: var(--text-secondary);
   text-align: center;
-  margin-top: 8px;
+  margin-top: 12px;
   letter-spacing: 0.5px;
 }
 
@@ -656,7 +656,7 @@ a.profile-menu-item {
 .section-icon {
   width: 24px;
   height: 24px;
-  stroke: var(--accent-primary);
+  stroke: #000000;
   stroke-width: 2;
   flex-shrink: 0;
   transition: all var(--transition-fast);
@@ -822,15 +822,18 @@ select {
 }
 
 .autofill-btn {
-  background: #000000 !important;
-  color: white !important;
+  background: white !important;
+  color: #000000 !important;
   border: 2px solid #000000 !important;
+  font-size: 16px !important;
+  padding: 16px 24px !important;
+  font-weight: 600 !important;
   transition: all 0.3s ease !important;
 }
 
 .autofill-btn:hover {
-  background: white !important;
-  color: #000000 !important;
+  background: #000000 !important;
+  color: white !important;
   transform: translateY(-2px) !important;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
 }
@@ -1084,17 +1087,19 @@ select {
   align-items: center;
   justify-content: space-between;
   padding: var(--space-4) var(--space-5);
-  background: transparent;
+  background: #f8f9fa;
   cursor: pointer;
   transition: all 0.2s ease;
   user-select: none;
   position: relative;
-  border-bottom: 1px solid var(--border-primary);
+  border-radius: 12px;
+  margin-bottom: 2px;
 }
 
 .section-header:hover {
-  background: transparent;
-  border-bottom-color: #000000;
+  background: #f1f3f5;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .section-header:hover .section-title {
@@ -1149,7 +1154,26 @@ select {
 }
 
 .section.collapsed .section-header {
-  border-bottom: none;
+  background: #000000;
+  color: white;
+}
+
+.section.collapsed .section-header .section-title {
+  color: white;
+}
+
+.section.collapsed .section-header .section-icon {
+  stroke: white;
+}
+
+.section.collapsed .section-header .chevron-icon {
+  color: white;
+}
+
+.section.collapsed .section-header:hover {
+  background: #333333;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .section.collapsed .section-content {
