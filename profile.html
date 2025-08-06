@@ -483,25 +483,28 @@
 
         // Initialize
         document.addEventListener('DOMContentLoaded', async () => {
-            // Wait for auth to be available
-            let attempts = 0;
-            while (!window.arcadeusAuth && attempts < 50) {
-                await new Promise(resolve => setTimeout(resolve, 100));
-                attempts++;
-            }
-            
-            if (!window.arcadeusAuth) {
-                console.error('Auth not available, redirecting to login');
-                window.location.href = 'login.html';
-                return;
-            }
-            
             // Check authentication using localStorage directly (more reliable)
             currentUser = JSON.parse(localStorage.getItem('arcadeusUser') || 'null');
             if (!currentUser) {
                 console.log('No user found in localStorage, redirecting to login');
                 window.location.href = 'login.html';
                 return;
+            }
+            
+            // For admin users, we don't need to wait for arcadeusAuth
+            if (currentUser.provider !== 'admin') {
+                // Wait for auth to be available for non-admin users
+                let attempts = 0;
+                while (!window.arcadeusAuth && attempts < 50) {
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    attempts++;
+                }
+                
+                if (!window.arcadeusAuth) {
+                    console.error('Auth not available for non-admin user, redirecting to login');
+                    window.location.href = 'login.html';
+                    return;
+                }
             }
             
             console.log('Profile page - User authenticated:', currentUser.email);
