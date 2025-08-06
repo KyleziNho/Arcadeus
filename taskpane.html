@@ -112,7 +112,28 @@
 
         <!-- Assumptions Page -->
         <div id="assumptionsPage" class="page-content">
-            <div class="section collapsible-section" id="highLevelParametersSection">
+            <!-- Top Toolbar -->
+            <div class="assumptions-toolbar">
+                <button class="toolbar-btn autofill-ai-btn" id="autofillAIBtn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+                        <path d="m2 17 10 5 10-5"></path>
+                        <path d="m2 12 10 5 10-5"></path>
+                    </svg>
+                    Autofill with AI
+                </button>
+                <button class="toolbar-btn" id="toggleAllBtn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M10 6h4"></path>
+                        <path d="M10 12h4"></path>
+                        <path d="M10 18h4"></path>
+                    </svg>
+                    Collapse All
+                </button>
+            </div>
+            
+            <div class="assumptions-content">
+                <div class="section collapsible-section" id="highLevelParametersSection">
             <div class="section-header" id="minimizeHighLevel">
                 <div class="section-title">
                     <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -400,17 +421,6 @@
             </div>
         </div>
 
-        <!-- Standalone Auto-fill Test Data Button -->
-        <div class="standalone-button-container">
-            <button class="button button-secondary autofill-btn" id="autoFillTestDataBtn">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
-                    <path d="m2 17 10 5 10-5"></path>
-                    <path d="m2 12 10 5 10-5"></path>
-                </svg>
-                Auto-fill Test Data
-            </button>
-        </div>
 
         <!-- Action Section -->
         <div class="action-section">
@@ -479,6 +489,7 @@
                 </div>
             </div>
         </div>
+            </div>
         </div>
         <!-- End Assumptions Page -->
 
@@ -622,6 +633,34 @@
 
                 logoDropdown.addEventListener('click', function(e) {
                     e.stopPropagation();
+                });
+            }
+
+            // Toggle all sections functionality
+            const toggleAllBtn = document.getElementById('toggleAllBtn');
+            if (toggleAllBtn) {
+                toggleAllBtn.addEventListener('click', function() {
+                    const sections = document.querySelectorAll('.collapsible-section');
+                    const allCollapsed = Array.from(sections).every(section => section.classList.contains('collapsed'));
+                    
+                    sections.forEach(section => {
+                        if (allCollapsed) {
+                            section.classList.remove('collapsed');
+                        } else {
+                            section.classList.add('collapsed');
+                        }
+                    });
+                    
+                    // Update button text
+                    const buttonText = allCollapsed ? 'Collapse All' : 'Expand All';
+                    toggleAllBtn.innerHTML = `
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M10 6h4"></path>
+                            <path d="M10 12h4"></path>
+                            <path d="M10 18h4"></path>
+                        </svg>
+                        ${buttonText}
+                    `;
                 });
             }
         });

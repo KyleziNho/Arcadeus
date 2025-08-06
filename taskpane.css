@@ -272,6 +272,47 @@ body {
   color: white;
 }
 
+/* Page Content Styles */
+.page-content {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 80px);
+}
+
+/* Assumptions Page Styles */
+#assumptionsPage {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 80px);
+}
+
+.assumptions-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-primary);
+  flex-shrink: 0;
+}
+
+.autofill-ai-btn {
+  background: #217346 !important;
+  color: white !important;
+  border: 1px solid #217346 !important;
+}
+
+.autofill-ai-btn:hover {
+  background: #185132 !important;
+  border-color: #185132 !important;
+}
+
+.assumptions-content {
+  flex: 1;
+  overflow-y: auto;
+  padding-bottom: 20px;
+}
+
 /* Chat Page Styles */
 #chatPage {
   display: flex;
