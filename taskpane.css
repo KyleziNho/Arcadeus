@@ -22,7 +22,7 @@
   --accent-warning: #f59e0b;
   --accent-error: #ef4444;
   
-  --border-primary: #e2e8f0;
+  --border-primary: #000000;
   --border-secondary: #cbd5e1;
   --border-accent: #3b82f6;
   
@@ -195,6 +195,7 @@ body {
 
 .brand-container {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   width: 100%;
@@ -212,6 +213,16 @@ body {
   height: auto;
   margin: 0 auto;
   display: block;
+}
+
+.brand-tagline {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 16px;
+  font-weight: 400;
+  color: var(--text-secondary);
+  text-align: center;
+  margin-top: 8px;
+  letter-spacing: 0.5px;
 }
 
 /* Add elegant underline with animation */
@@ -792,6 +803,38 @@ select {
   box-shadow: var(--shadow-lg);
 }
 
+.generate-model-btn {
+  background: #000000 !important;
+  color: white !important;
+  border: 2px solid #000000 !important;
+  font-size: 16px !important;
+  padding: 16px 24px !important;
+  font-weight: 600 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+  transition: all 0.3s ease !important;
+}
+
+.generate-model-btn:hover {
+  background: white !important;
+  color: #000000 !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+}
+
+.autofill-btn {
+  background: #000000 !important;
+  color: white !important;
+  border: 2px solid #000000 !important;
+  transition: all 0.3s ease !important;
+}
+
+.autofill-btn:hover {
+  background: white !important;
+  color: #000000 !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+}
+
 .button-secondary {
   background: var(--bg-secondary);
   color: var(--text-primary);
@@ -1050,7 +1093,12 @@ select {
 }
 
 .section-header:hover {
-  background: var(--bg-tertiary);
+  background: transparent;
+  border-bottom-color: #000000;
+}
+
+.section-header:hover .section-title {
+  color: #000000;
 }
 
 .section-header:active {
@@ -1077,22 +1125,22 @@ select {
 .section-icon {
   width: 18px;
   height: 18px;
-  color: var(--text-tertiary);
+  color: #000000;
   flex-shrink: 0;
-  opacity: 0.7;
+  opacity: 0.8;
 }
 
 .chevron-icon {
   width: 20px;
   height: 20px;
-  color: var(--text-tertiary);
+  color: #000000;
   transition: transform 0.2s ease;
   flex-shrink: 0;
   transform: rotate(180deg);
 }
 
 .section-header:hover .chevron-icon {
-  color: var(--accent-primary);
+  color: #000000;
 }
 
 /* Collapsed state with smooth animation */
