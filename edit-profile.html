@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Profile - Arcadeus</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Lora:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="taskpane.css">
+    
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #217346 0%, #185132 100%);
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --text-tertiary: #64748b;
+            --bg-white: #ffffff;
+            --bg-gray: #f8fafc;
+            --bg-light: #f1f5f9;
+            --border-color: #e2e8f0;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --error-color: #ef4444;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-gray);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+
+        /* Edit profile specific overrides */
+        body {
+            background: white;
+        }
+        
+        .app-header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            margin-bottom: 0;
+        }
+
+        /* Main Content */
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 24px;
+            height: calc(100vh - 80px);
+            overflow-y: auto;
+        }
+
+        /* Edit Profile Form */
+        .edit-form {
+            background: var(--bg-white);
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--border-color);
+        }
+
+        .form-header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .form-header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+        }
+
+        .form-header p {
+            font-size: 16px;
+            color: var(--text-secondary);
+        }
+
+        .form-section {
+            margin-bottom: 32px;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .form-label {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .form-input {
+            padding: 12px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.2s ease;
+            background: var(--bg-white);
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #217346;
+            box-shadow: 0 0 0 3px rgba(33, 115, 70, 0.1);
+        }
+
+        .form-select {
+            padding: 12px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.2s ease;
+            background: var(--bg-white);
+            cursor: pointer;
+        }
+
+        .form-select:focus {
+            outline: none;
+            border-color: #217346;
+            box-shadow: 0 0 0 3px rgba(33, 115, 70, 0.1);
+        }
+
+        /* Property Types Selection */
+        .property-types-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+        }
+
+        .property-option {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: var(--bg-white);
+        }
+
+        .property-option:hover {
+            border-color: #217346;
+            background: rgba(33, 115, 70, 0.05);
+        }
+
+        .property-option input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            accent-color: #217346;
+        }
+
+        .property-option.selected {
+            border-color: #217346;
+            background: rgba(33, 115, 70, 0.05);
+        }
+
+        .property-label {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        /* Action Buttons */
+        .form-actions {
+            display: flex;
+            gap: 16px;
+            justify-content: flex-end;
+            margin-top: 40px;
+            padding-top: 32px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--text-secondary);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: var(--bg-light);
+            border-color: var(--text-secondary);
+        }
+
+        .btn-primary {
+            background: var(--primary-gradient);
+            color: white;
+            border: none;
+            box-shadow: 0 4px 12px rgba(33, 115, 70, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(33, 115, 70, 0.4);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Loading State */
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 200px;
+            color: var(--text-secondary);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .form-actions {
+                flex-direction: column;
+            }
+            
+            .container {
+                padding: 20px 16px;
+            }
+            
+            .edit-form {
+                padding: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="app-header">
+        <div class="brand-container">
+            <img src="assets/Arcadeus.svg" alt="Arcadeus" class="header-logo">
+        </div>
+        <div class="nav-tabs">
+            <button class="nav-tab" onclick="window.location.href='profile.html'">Profile</button>
+            <button class="nav-tab" onclick="window.location.href='taskpane.html'">Dashboard</button>
+        </div>
+        <div class="profile-section">
+            <button class="profile-icon" onclick="window.location.href='profile.html'">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container">
+        <div id="editProfileContent">
+            <div class="loading">
+                <div>Loading profile data...</div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="auth.js"></script>
+    
+    <script>
+        let currentUser = null;
+        let profileData = null;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Check authentication
+            currentUser = JSON.parse(localStorage.getItem('arcadeusUser') || 'null');
+            if (!currentUser) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            // For admin users, we don't need to wait for arcadeusAuth
+            if (currentUser.provider !== 'admin') {
+                // Wait for auth to be available for non-admin users
+                let attempts = 0;
+                while (!window.arcadeusAuth && attempts < 50) {
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    attempts++;
+                }
+                
+                if (!window.arcadeusAuth) {
+                    console.error('Auth not available for non-admin user, redirecting to login');
+                    window.location.href = 'login.html';
+                    return;
+                }
+            }
+
+            // Load and render profile form
+            await loadProfileData();
+            renderEditForm();
+        });
+
+        async function loadProfileData() {
+            try {
+                // Try Firebase first
+                if (typeof firebase !== 'undefined' && firebase.firestore && currentUser.uid) {
+                    try {
+                        const db = firebase.firestore();
+                        const doc = await db.collection('users').doc(currentUser.uid).get();
+                        
+                        if (doc.exists) {
+                            profileData = doc.data();
+                            return;
+                        }
+                    } catch (firebaseError) {
+                        console.log('Firebase blocked, using localStorage');
+                    }
+                }
+            } catch (error) {
+                console.log('Firebase not available, using localStorage');
+            }
+
+            // Fallback to localStorage
+            const localProfile = localStorage.getItem('arcadeusUserProfile');
+            if (localProfile) {
+                profileData = JSON.parse(localProfile);
+            }
+        }
+
+        function renderEditForm() {
+            const container = document.getElementById('editProfileContent');
+            
+            if (!profileData) {
+                container.innerHTML = `
+                    <div class="edit-form">
+                        <div class="form-header">
+                            <h1>Edit Profile</h1>
+                            <p>No profile data found. Please complete the onboarding process.</p>
+                        </div>
+                        <div class="form-actions">
+                            <a href="onboarding.html" class="btn btn-primary">Complete Onboarding</a>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = `
+                <form class="edit-form" id="editProfileForm">
+                    <div class="form-header">
+                        <h1>Edit Profile</h1>
+                        <p>Update your information to personalize your Arcadeus experience</p>
+                    </div>
+
+                    <div class="form-section">
+                        <div class="section-title">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="3"></circle>
+                                <path d="M12 1v6m0 6v6m11-11h-6m-6 0H1"></path>
+                            </svg>
+                            Account Type
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">What best describes you?</label>
+                            <select class="form-select" id="userType" required>
+                                <option value="">Select an option</option>
+                                <option value="company" ${profileData.userType === 'company' ? 'selected' : ''}>Real Estate Company</option>
+                                <option value="institutional" ${profileData.userType === 'institutional' ? 'selected' : ''}>Institutional Investor</option>
+                                <option value="researcher" ${profileData.userType === 'researcher' ? 'selected' : ''}>Researcher / Analyst</option>
+                                <option value="individual" ${profileData.userType === 'individual' ? 'selected' : ''}>Individual Investor</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <div class="section-title">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M20 7h-9l-2-2H4c-1.1 0-1.99.9-1.99 2L2 17c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V9c0-1.1-.9-2-2-2z"/>
+                            </svg>
+                            Organization Details
+                        </div>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label class="form-label">Organization Name</label>
+                                <input type="text" class="form-input" id="organizationName" value="${profileData.organizationName || ''}" placeholder="Your company/organization">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Your Role</label>
+                                <input type="text" class="form-input" id="userRole" value="${profileData.userRole || ''}" placeholder="e.g., Investment Manager">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Team Size</label>
+                                <select class="form-select" id="teamSize">
+                                    <option value="">Select team size</option>
+                                    <option value="1-5" ${profileData.teamSize === '1-5' ? 'selected' : ''}>1-5 people</option>
+                                    <option value="6-20" ${profileData.teamSize === '6-20' ? 'selected' : ''}>6-20 people</option>
+                                    <option value="21-100" ${profileData.teamSize === '21-100' ? 'selected' : ''}>21-100 people</option>
+                                    <option value="100+" ${profileData.teamSize === '100+' ? 'selected' : ''}>100+ people</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <div class="section-title">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                            </svg>
+                            Investment Focus
+                        </div>
+                        <div class="form-group full-width">
+                            <label class="form-label">Property Types (select all that apply)</label>
+                            <div class="property-types-grid">
+                                ${generatePropertyTypeOptions(profileData.propertyTypes || [])}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <a href="profile.html" class="btn btn-secondary">Cancel</a>
+                        <button type="submit" class="btn btn-primary" id="saveButton">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                                <polyline points="17,21 17,13 7,13 7,21"></polyline>
+                                <polyline points="7,3 7,8 15,8"></polyline>
+                            </svg>
+                            Save Changes
+                        </button>
+                    </div>
+                </form>
+            `;
+
+            // Set up form submission
+            document.getElementById('editProfileForm').addEventListener('submit', handleFormSubmit);
+        }
+
+        function generatePropertyTypeOptions(selectedTypes) {
+            const propertyTypes = [
+                { value: 'office', label: 'Office Buildings' },
+                { value: 'retail', label: 'Retail Properties' },
+                { value: 'multifamily', label: 'Multifamily Residential' },
+                { value: 'industrial', label: 'Industrial & Logistics' },
+                { value: 'hospitality', label: 'Hospitality & Hotels' },
+                { value: 'mixed', label: 'Mixed-Use Development' },
+                { value: 'land', label: 'Land Development' },
+                { value: 'other', label: 'Other / Specialized' }
+            ];
+
+            return propertyTypes.map(type => `
+                <label class="property-option ${selectedTypes.includes(type.value) ? 'selected' : ''}">
+                    <input type="checkbox" name="propertyTypes" value="${type.value}" ${selectedTypes.includes(type.value) ? 'checked' : ''}>
+                    <span class="property-label">${type.label}</span>
+                </label>
+            `).join('');
+        }
+
+        async function handleFormSubmit(e) {
+            e.preventDefault();
+            
+            const saveButton = document.getElementById('saveButton');
+            saveButton.disabled = true;
+            saveButton.innerHTML = 'Saving...';
+
+            try {
+                // Collect form data
+                const formData = {
+                    userType: document.getElementById('userType').value,
+                    organizationName: document.getElementById('organizationName').value,
+                    userRole: document.getElementById('userRole').value,
+                    teamSize: document.getElementById('teamSize').value,
+                    propertyTypes: Array.from(document.querySelectorAll('input[name="propertyTypes"]:checked')).map(cb => cb.value),
+                    profileUpdated: new Date().toISOString()
+                };
+
+                // Validate required fields
+                if (!formData.userType) {
+                    alert('Please select your user type');
+                    return;
+                }
+
+                // Save to Firebase if available
+                if (typeof firebase !== 'undefined' && firebase.firestore && currentUser.uid) {
+                    try {
+                        const db = firebase.firestore();
+                        await db.collection('users').doc(currentUser.uid).update(formData);
+                    } catch (firebaseError) {
+                        console.log('Firebase update failed, using localStorage only');
+                    }
+                }
+
+                // Save to localStorage
+                const updatedProfile = { ...profileData, ...formData };
+                localStorage.setItem('arcadeusUserProfile', JSON.stringify(updatedProfile));
+
+                // Show success and redirect
+                alert('Profile updated successfully!');
+                window.location.href = 'profile.html';
+
+            } catch (error) {
+                console.error('Error updating profile:', error);
+                alert('Failed to update profile. Please try again.');
+            } finally {
+                saveButton.disabled = false;
+                saveButton.innerHTML = `
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                        <polyline points="17,21 17,13 7,13 7,21"></polyline>
+                        <polyline points="7,3 7,8 15,8"></polyline>
+                    </svg>
+                    Save Changes
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

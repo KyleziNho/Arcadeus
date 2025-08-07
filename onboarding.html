@@ -12,7 +12,7 @@
     
     <style>
         :root {
-            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --primary-gradient: linear-gradient(135deg, #217346 0%, #185132 100%);
             --text-primary: #0f172a;
             --text-secondary: #475569;
             --text-tertiary: #64748b;
@@ -32,7 +32,7 @@
 
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: var(--bg-gray);
+            background: white;
             color: var(--text-primary);
             min-height: 100vh;
             display: flex;
@@ -178,8 +178,8 @@
 
         .form-input:focus {
             outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            border-color: #217346;
+            box-shadow: 0 0 0 3px rgba(33, 115, 70, 0.1);
         }
 
         .radio-group {
@@ -198,8 +198,8 @@
         }
 
         .radio-option:hover {
-            border-color: #667eea;
-            background: rgba(102, 126, 234, 0.05);
+            border-color: #217346;
+            background: rgba(33, 115, 70, 0.05);
         }
 
         .radio-input {
@@ -224,7 +224,7 @@
             left: 0;
             right: 0;
             bottom: 0;
-            border: 2px solid #667eea;
+            border: 2px solid #217346;
             border-radius: 10px;
             pointer-events: none;
         }
@@ -240,7 +240,7 @@
         .radio-icon {
             width: 24px;
             height: 24px;
-            color: #667eea;
+            color: #217346;
         }
 
         .radio-text {
@@ -292,7 +292,7 @@
         .button-primary {
             background: var(--primary-gradient);
             color: white;
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+            box-shadow: 0 4px 12px rgba(33, 115, 70, 0.3);
         }
 
         .button-primary:hover {
@@ -328,8 +328,8 @@
         }
 
         .checkbox-option:hover {
-            border-color: #667eea;
-            background: rgba(102, 126, 234, 0.05);
+            border-color: #217346;
+            background: rgba(33, 115, 70, 0.05);
         }
 
         .checkbox-input {
@@ -353,7 +353,7 @@
     <script src="auth.js"></script>
 </head>
 <body>
-    <img src="assets/arcadeus-logo-black-on-white.svg" alt="Arcadeus" class="app-icon">
+    <img src="assets/Arcadeus.svg" alt="Arcadeus" class="app-icon">
     <div class="onboarding-container">
         <div class="progress-bar">
             <div class="progress-fill" id="progressBar" style="width: 25%"></div>
@@ -363,7 +363,7 @@
             <!-- Step 1: Welcome -->
             <div class="step active" id="step1">
                 <div class="brand-header">
-                    <img src="assets/arcadeus-logo-black-on-white.svg" alt="Arcadeus" class="onboarding-logo">
+                    <img src="assets/Arcadeus.svg" alt="Arcadeus" class="onboarding-logo">
                 </div>
                 <p class="step-description">
                     Let's personalise your experience. This will help us provide better insights and recommendations for your real estate investments.
