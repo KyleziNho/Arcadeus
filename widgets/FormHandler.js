@@ -102,10 +102,10 @@ class FormHandler {
       holdingPeriodsCalculated: document.getElementById('holdingPeriodsCalculated')?.value || '',
       
       // Deal Assumptions
-      dealName: document.getElementById('dealName')?.value || 'Sample Company Ltd.',
+      dealName: document.getElementById('dealName')?.value || '',
       dealValue: parseFloat(this.removeCommas(document.getElementById('dealValue')?.value || '0')) || 0,
-      transactionFee: parseFloat(document.getElementById('transactionFee')?.value) || 2.5,
-      dealLTV: parseFloat(document.getElementById('dealLTV')?.value) || 70,
+      transactionFee: parseFloat(document.getElementById('transactionFee')?.value) || 0,
+      dealLTV: parseFloat(document.getElementById('dealLTV')?.value) || 0,
       equityContribution: document.getElementById('equityContribution')?.value || '',
       debtFinancing: document.getElementById('debtFinancing')?.value || '',
       
@@ -119,9 +119,9 @@ class FormHandler {
       capEx: this.collectCapEx(),
       
       // Exit Assumptions
-      disposalCost: parseFloat(document.getElementById('disposalCost')?.value) || 2.5,
-      terminalCapRate: parseFloat(document.getElementById('terminalCapRate')?.value) || 8.5,
-      discountRate: parseFloat(document.getElementById('discountRate')?.value) || 10.0,
+      disposalCost: parseFloat(document.getElementById('disposalCost')?.value) || 0,
+      terminalCapRate: parseFloat(document.getElementById('terminalCapRate')?.value) || 0,
+      discountRate: parseFloat(document.getElementById('discountRate')?.value) || 0,
       
       // Debt Model
       hasDebt: this.checkDebtEligibility(),
@@ -250,12 +250,12 @@ class FormHandler {
 
 
   collectDebtSettings() {
-    const loanIssuanceFees = document.getElementById('loanIssuanceFees')?.value || '1.5';
+    const loanIssuanceFees = document.getElementById('loanIssuanceFees')?.value || '0';
     
     const settings = {
       loanIssuanceFees: parseFloat(this.removeCommas(loanIssuanceFees)),
       rateType: 'fixed',
-      fixedRate: parseFloat(this.removeCommas(document.getElementById('fixedRate')?.value || '5.5'))
+      fixedRate: parseFloat(this.removeCommas(document.getElementById('fixedRate')?.value || '0'))
     };
 
     return settings;

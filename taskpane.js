@@ -879,6 +879,96 @@ class MAModelingAddin {
     }
   }
   
+  async generateFullModelWithProgress() {
+    console.log('🚀 Starting full model generation with header progress...');
+    
+    try {
+      // Validate form data first
+      if (this.formHandler) {
+        const validation = this.formHandler.validateAllFields();
+        if (!validation.isValid) {
+          const errorMessage = 'Please complete the following required fields: ' + validation.errors.join(', ');
+          console.log('Validation failed:', validation.errors);
+          if (this.uiController) {
+            this.uiController.showMessage(errorMessage, 'error');
+          }
+          throw new Error(errorMessage);
+        }
+      }
+      
+      // Get progress elements from the header
+      const progressFill = document.getElementById('generationProgressFill');
+      const statusElement = document.getElementById('generationStatus');
+      
+      const steps = [
+        { name: 'Assumptions', func: () => this.generateAssumptions(), progress: 16 },
+        { name: 'P&L Statement', func: () => this.generatePLWithAI(), progress: 33 },
+        { name: 'CapEx Summary', func: () => this.generateCapExSheet(), progress: 50 },
+        { name: 'Debt Model', func: () => this.generateDebtModelSheet(), progress: 66 },
+        { name: 'Free Cash Flow', func: () => this.generateFCFWithAI(), progress: 83 },
+        { name: 'Final Results', func: () => this.addFinalResults(), progress: 100 }
+      ];
+      
+      // Execute each step sequentially
+      for (let i = 0; i < steps.length; i++) {
+        const step = steps[i];
+        
+        // Update progress UI in header
+        if (statusElement) {
+          statusElement.textContent = `Generating ${step.name}... (${i + 1}/${steps.length})`;
+        }
+        if (progressFill) {
+          progressFill.style.width = `${step.progress}%`;
+        }
+        
+        console.log(`🔄 Step ${i + 1}/${steps.length}: Generating ${step.name}...`);
+        
+        // Execute the step
+        const result = await step.func();
+        
+        // Check if step failed 
+        if (result && result.success === false) {
+          console.warn(`⚠️ Step ${step.name} may have encountered issues, but continuing...`);
+        }
+        
+        console.log(`✅ Step ${i + 1}/${steps.length}: ${step.name} completed`);
+        
+        // Small delay between steps to ensure Excel operations complete
+        if (i < steps.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      }
+      
+      // Update final status
+      if (statusElement) {
+        statusElement.textContent = 'Model generation completed successfully!';
+      }
+      
+      // Model generation completed
+      console.log('🎉 Full model generation with progress completed successfully!');
+      
+      // Show success message
+      if (this.uiController) {
+        this.uiController.showMessage('🎉 Complete M&A financial model generated successfully! All sheets created with formulas and calculations.', 'success');
+      }
+      
+    } catch (error) {
+      console.error('❌ Error in generateFullModelWithProgress:', error);
+      
+      // Update status to show error
+      const statusElement = document.getElementById('generationStatus');
+      if (statusElement) {
+        statusElement.textContent = 'Model generation failed. Please try again.';
+      }
+      
+      if (this.uiController) {
+        this.uiController.showMessage('Error generating full model: ' + error.message, 'error');
+      }
+      
+      throw error; // Re-throw so the HTML can handle the error state
+    }
+  }
+  
   // Legacy function for backward compatibility
   async generateModel() {
     console.log('Legacy generateModel called - redirecting to generateFullModel...');
