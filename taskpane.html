@@ -119,7 +119,7 @@
                         <div class="progress-fill" id="progressFill"></div>
                     </div>
                     <div class="progress-text">
-                        <span id="progressText">1 of 7 sections completed</span>
+                        <span id="progressText">0 of 7 sections completed</span>
                     </div>
                 </div>
             </div>
@@ -224,10 +224,31 @@
                 <div class="tab-panel" id="revenueItems">
                     <div class="tab-content">
                         <div class="revenue-items-container" id="revenueItemsContainer">
-                            <!-- Revenue items will be dynamically added here -->
+                            <div class="revenue-item" id="revenueItem_1">
+                                <div class="revenue-item-header">
+                                    <span class="revenue-item-title">Revenue Item 1</span>
+                                </div>
+                                <button class="remove-revenue-item" onclick="this.parentElement.remove()">Remove</button>
+                                
+                                <div class="form-group">
+                                    <label for="revenueName_1">Revenue Source Name</label>
+                                    <input type="text" id="revenueName_1" placeholder="e.g., Product Sales" />
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="revenueValue_1">Base Value (Year 1)</label>
+                                    <input type="number" id="revenueValue_1" placeholder="100000" step="1000" />
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="revenueGrowthRate_1">Linear Growth Rate (%)</label>
+                                    <input type="number" id="revenueGrowthRate_1" placeholder="e.g., 5" step="0.1" />
+                                    <small class="help-text">Annual growth rate (e.g., 5 for 5% growth)</small>
+                                </div>
+                            </div>
                         </div>
                         <div class="revenue-actions">
-                            <button class="button button-secondary" id="addRevenueItem">
+                            <button class="add-item-button" id="addRevenueItem">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <circle cx="12" cy="12" r="10"></circle>
                                     <line x1="12" y1="8" x2="12" y2="16"></line>
@@ -243,10 +264,31 @@
                 <div class="tab-panel" id="operatingExpenses">
                     <div class="tab-content">
                         <div class="cost-items-container" id="operatingExpensesContainer">
-                            <!-- Operating expenses will be dynamically added here -->
+                            <div class="cost-item" id="opExItem_1">
+                                <div class="cost-item-header">
+                                    <span class="cost-item-title">Operating Expense 1</span>
+                                </div>
+                                <button class="remove-cost-item" onclick="this.parentElement.remove()">Remove</button>
+                                
+                                <div class="form-group">
+                                    <label for="opExName_1">Expense Name</label>
+                                    <input type="text" id="opExName_1" placeholder="e.g., Staff Costs" />
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="opExValue_1">Annual Value</label>
+                                    <input type="number" id="opExValue_1" placeholder="50000" step="1000" />
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="opExGrowthRate_1">Linear Growth Rate (%)</label>
+                                    <input type="number" id="opExGrowthRate_1" placeholder="e.g., 3" step="0.1" />
+                                    <small class="help-text">Annual growth rate (e.g., 3 for 3% growth)</small>
+                                </div>
+                            </div>
                         </div>
                         <div class="cost-actions">
-                            <button class="button button-secondary" id="addOperatingExpense">
+                            <button class="add-item-button" id="addOperatingExpense">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <circle cx="12" cy="12" r="10"></circle>
                                     <line x1="12" y1="8" x2="12" y2="16"></line>
@@ -265,10 +307,31 @@
                             Ongoing capital expenditures for property improvements, maintenance, and upgrades
                         </p>
                         <div class="cost-items-container" id="capExContainer">
-                            <!-- CapEx items will be dynamically added here -->
+                            <div class="cost-item" id="capExItem_1">
+                                <div class="cost-item-header">
+                                    <span class="cost-item-title">CapEx 1</span>
+                                </div>
+                                <button class="remove-cost-item" onclick="this.parentElement.remove()">Remove</button>
+                                
+                                <div class="form-group">
+                                    <label for="capExName_1">CapEx Name</label>
+                                    <input type="text" id="capExName_1" placeholder="e.g., Property Improvements" />
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="capExValue_1">Annual Value</label>
+                                    <input type="number" id="capExValue_1" placeholder="50000" step="1000" />
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="capExGrowthRate_1">Linear Growth Rate (%)</label>
+                                    <input type="number" id="capExGrowthRate_1" placeholder="e.g., 3" step="0.1" />
+                                    <small class="help-text">Annual growth rate (e.g., 3 for 3% growth)</small>
+                                </div>
+                            </div>
                         </div>
                         <div class="cost-actions">
-                            <button class="button button-secondary" id="addCapExItem">
+                            <button class="add-item-button" id="addCapExItem">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <circle cx="12" cy="12" r="10"></circle>
                                     <line x1="12" y1="8" x2="12" y2="16"></line>
