@@ -906,15 +906,271 @@
             console.log(`📊 Progress: ${completedSections}/${sections.length} sections completed`);
         }
 
-        function autoFillWithAI() {
+        async function autoFillWithAI() {
             // Close the dropdown
             const menuDropdown = document.getElementById('menuDropdown');
             if (menuDropdown) {
                 menuDropdown.classList.remove('show');
             }
             
-            // Show auto fill functionality (placeholder for future implementation)
-            alert('Auto Fill with AI functionality will be available soon!');
+            // Show loading state
+            const loadingToast = showLoadingToast('Generating M&A model data with AI...');
+            
+            try {
+                // Call OpenAI to generate comprehensive M&A data
+                const aiData = await generateAIData();
+                
+                // Fill all sections with the generated data
+                await fillAllSections(aiData);
+                
+                // Update progress after filling
+                if (typeof updateProgress === 'function') {
+                    updateProgress();
+                }
+                
+                hideLoadingToast(loadingToast);
+                showSuccessToast('Successfully auto-filled all sections with AI-generated data!');
+                
+            } catch (error) {
+                console.error('AI Auto-fill error:', error);
+                hideLoadingToast(loadingToast);
+                showErrorToast('Failed to generate AI data. Please try again.');
+            }
+        }
+
+        async function generateAIData() {
+            const prompt = `Generate realistic M&A transaction data for a private equity deal. Return valid JSON only with this structure:
+
+{
+  "highLevelParameters": {
+    "currency": "USD",
+    "projectStartDate": "2024-01-01",
+    "projectEndDate": "2029-12-31",
+    "modelPeriods": "yearly"
+  },
+  "dealAssumptions": {
+    "dealName": "realistic company name",
+    "dealValue": large number in millions,
+    "transactionFee": number between 1.5-3.5,
+    "dealLTV": number between 60-75
+  },
+  "revenueItems": [
+    {
+      "name": "realistic revenue source",
+      "value": large number,
+      "growthRate": number between 3-15
+    }
+  ],
+  "operatingExpenses": [
+    {
+      "name": "realistic expense name",
+      "value": number,
+      "growthRate": number between 2-8
+    }
+  ],
+  "capEx": [
+    {
+      "name": "realistic capex item",
+      "value": number,
+      "growthRate": number between 2-6
+    }
+  ],
+  "exitAssumptions": {
+    "disposalCost": number between 2-4,
+    "terminalCapRate": number between 6-10
+  },
+  "debtModel": {
+    "loanIssuanceFees": number between 1-3,
+    "fixedRate": number between 4-8
+  }
+}
+
+Generate 2-4 revenue items, 2-3 operating expense items, and 1-3 capex items. Ensure total revenues are significantly higher than total costs to make it profitable. Use realistic business names and amounts in millions.`;
+
+            const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${getOpenAIKey()}`
+                },
+                body: JSON.stringify({
+                    model: 'gpt-3.5-turbo',
+                    messages: [
+                        {
+                            role: 'system',
+                            content: 'You are a financial modeling expert. Generate realistic M&A deal data. Always return valid JSON only.'
+                        },
+                        {
+                            role: 'user',
+                            content: prompt
+                        }
+                    ],
+                    temperature: 0.8,
+                    max_tokens: 1500
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`OpenAI API error: ${response.status}`);
+            }
+
+            const result = await response.json();
+            const content = result.choices[0].message.content.trim();
+            
+            // Parse JSON response
+            let jsonStart = content.indexOf('{');
+            let jsonEnd = content.lastIndexOf('}') + 1;
+            const jsonStr = content.substring(jsonStart, jsonEnd);
+            
+            return JSON.parse(jsonStr);
+        }
+
+        async function fillAllSections(data) {
+            // Fill High Level Parameters
+            document.getElementById('currency').value = data.highLevelParameters.currency;
+            document.getElementById('projectStartDate').value = data.highLevelParameters.projectStartDate;
+            document.getElementById('projectEndDate').value = data.highLevelParameters.projectEndDate;
+            document.getElementById('modelPeriods').value = data.highLevelParameters.modelPeriods;
+            
+            // Fill Deal Assumptions
+            document.getElementById('dealName').value = data.dealAssumptions.dealName;
+            document.getElementById('dealValue').value = data.dealAssumptions.dealValue;
+            document.getElementById('transactionFee').value = data.dealAssumptions.transactionFee;
+            document.getElementById('dealLTV').value = data.dealAssumptions.dealLTV;
+            
+            // Fill Revenue Items
+            await fillDynamicItems('revenue', data.revenueItems, 'revenueItemsContainer');
+            
+            // Fill Operating Expenses
+            await fillDynamicItems('opEx', data.operatingExpenses, 'operatingExpensesContainer');
+            
+            // Fill CapEx
+            await fillDynamicItems('capEx', data.capEx, 'capExContainer');
+            
+            // Fill Exit Assumptions
+            document.getElementById('disposalCost').value = data.exitAssumptions.disposalCost;
+            document.getElementById('terminalCapRate').value = data.exitAssumptions.terminalCapRate;
+            
+            // Fill Debt Model
+            document.getElementById('loanIssuanceFees').value = data.debtModel.loanIssuanceFees;
+            document.getElementById('fixedRate').value = data.debtModel.fixedRate;
+        }
+
+        async function fillDynamicItems(type, items, containerId) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            
+            // Clear existing items except the first one
+            const existingItems = container.querySelectorAll(`.${type === 'revenue' ? 'revenue' : 'cost'}-item`);
+            for (let i = 1; i < existingItems.length; i++) {
+                existingItems[i].remove();
+            }
+            
+            // Fill items
+            for (let i = 0; i < items.length; i++) {
+                const itemNumber = i + 1;
+                const item = items[i];
+                
+                // Add new item if needed
+                if (i > 0) {
+                    if (type === 'revenue') {
+                        if (window.formHandler && window.formHandler.addRevenueItem) {
+                            window.formHandler.addRevenueItem();
+                        }
+                    } else {
+                        if (window.formHandler && window.formHandler.addCostItem) {
+                            window.formHandler.addCostItem(type === 'opEx' ? 'operating' : 'capex');
+                        }
+                    }
+                    
+                    // Wait a bit for DOM to update
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                }
+                
+                // Fill the item data
+                const nameId = type === 'revenue' ? `revenueName_${itemNumber}` : 
+                             type === 'opEx' ? `opExName_${itemNumber}` : `capExName_${itemNumber}`;
+                const valueId = type === 'revenue' ? `revenueValue_${itemNumber}` : 
+                              type === 'opEx' ? `opExValue_${itemNumber}` : `capExValue_${itemNumber}`;
+                const growthId = type === 'revenue' ? `revenueGrowthRate_${itemNumber}` : 
+                               type === 'opEx' ? `opExGrowthRate_${itemNumber}` : `capExGrowthRate_${itemNumber}`;
+                
+                const nameField = document.getElementById(nameId);
+                const valueField = document.getElementById(valueId);
+                const growthField = document.getElementById(growthId);
+                
+                if (nameField) nameField.value = item.name;
+                if (valueField) valueField.value = item.value;
+                if (growthField) growthField.value = item.growthRate;
+            }
+        }
+
+        function getOpenAIKey() {
+            // Try to get from environment variables or localStorage
+            return localStorage.getItem('openai_api_key') || 
+                   process?.env?.OPENAI_API_KEY || 
+                   'sk-your-openai-key-here'; // Replace with actual key
+        }
+
+        // Toast notification functions
+        function showLoadingToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'ai-toast loading';
+            toast.innerHTML = `
+                <div class="toast-content">
+                    <div class="toast-spinner"></div>
+                    <span>${message}</span>
+                </div>
+            `;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.classList.add('show'), 100);
+            return toast;
+        }
+
+        function showSuccessToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'ai-toast success';
+            toast.innerHTML = `
+                <div class="toast-content">
+                    <svg class="toast-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 11l3 3L22 4"></path>
+                        <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"></path>
+                    </svg>
+                    <span>${message}</span>
+                </div>
+            `;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.classList.add('show'), 100);
+            setTimeout(() => hideLoadingToast(toast), 4000);
+        }
+
+        function showErrorToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'ai-toast error';
+            toast.innerHTML = `
+                <div class="toast-content">
+                    <svg class="toast-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="15" y1="9" x2="9" y2="15"></line>
+                        <line x1="9" y1="9" x2="15" y2="15"></line>
+                    </svg>
+                    <span>${message}</span>
+                </div>
+            `;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.classList.add('show'), 100);
+            setTimeout(() => hideLoadingToast(toast), 5000);
+        }
+
+        function hideLoadingToast(toast) {
+            if (toast && toast.parentNode) {
+                toast.classList.remove('show');
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        toast.parentNode.removeChild(toast);
+                    }
+                }, 300);
+            }
         }
     </script>
 </body>
