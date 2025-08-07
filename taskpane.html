@@ -552,6 +552,9 @@
 
             // Initialize assumption tabs
             initializeAssumptionTabs();
+            
+            // Initialize progress tracking
+            initializeProgressTracking();
         });
 
         function initializeAssumptionTabs() {
@@ -584,6 +587,169 @@
                     }
                 });
             });
+        }
+
+        function initializeProgressTracking() {
+            const sections = [
+                'highLevelParameters',
+                'dealAssumptions', 
+                'revenueItems',
+                'operatingExpenses',
+                'capEx',
+                'exitAssumptions',
+                'debtModel'
+            ];
+            
+            // Add change listeners to all form inputs
+            sections.forEach(sectionId => {
+                const section = document.getElementById(sectionId);
+                if (section) {
+                    const inputs = section.querySelectorAll('input, select, textarea');
+                    inputs.forEach(input => {
+                        input.addEventListener('input', updateProgress);
+                        input.addEventListener('change', updateProgress);
+                    });
+                }
+            });
+            
+            // Set up observer for dynamically added items
+            const observer = new MutationObserver((mutations) => {
+                mutations.forEach((mutation) => {
+                    mutation.addedNodes.forEach((node) => {
+                        if (node.nodeType === 1) { // Element node
+                            // Check if the added node is a revenue/cost item
+                            if (node.classList && (node.classList.contains('revenue-item') || 
+                                node.classList.contains('cost-item'))) {
+                                const inputs = node.querySelectorAll('input, select, textarea');
+                                inputs.forEach(input => {
+                                    input.addEventListener('input', updateProgress);
+                                    input.addEventListener('change', updateProgress);
+                                });
+                                updateProgress(); // Update immediately when item is added
+                            }
+                        }
+                    });
+                });
+            });
+            
+            // Start observing for dynamic content changes
+            sections.forEach(sectionId => {
+                const section = document.getElementById(sectionId);
+                if (section) {
+                    observer.observe(section, { childList: true, subtree: true });
+                }
+            });
+            
+            // Initial progress update
+            updateProgress();
+        }
+        
+        function updateProgress() {
+            const sections = [
+                { id: 'highLevelParameters', requiredFields: ['currency', 'projectStartDate', 'modelPeriods', 'projectEndDate'] },
+                { id: 'dealAssumptions', requiredFields: ['dealName', 'dealValue', 'transactionFee', 'dealLTV'] },
+                { id: 'revenueItems', requiredFields: [] }, // Will check for revenue items
+                { id: 'operatingExpenses', requiredFields: [] }, // Will check for expense items  
+                { id: 'capEx', requiredFields: [] }, // Will check for capex items
+                { id: 'exitAssumptions', requiredFields: ['disposalCost', 'terminalCapRate'] },
+                { id: 'debtModel', requiredFields: [] } // Special handling for debt model
+            ];
+            
+            let completedSections = 0;
+            
+            sections.forEach(section => {
+                let sectionComplete = true;
+                
+                if (section.requiredFields.length > 0) {
+                    // Check required fields
+                    section.requiredFields.forEach(fieldId => {
+                        const field = document.getElementById(fieldId);
+                        if (!field || !field.value.trim()) {
+                            sectionComplete = false;
+                        }
+                    });
+                } else if (section.id === 'debtModel') {
+                    // Special handling for debt model - check if LTV enables debt or if settings are filled
+                    const ltvField = document.getElementById('dealLTV');
+                    const ltv = ltvField ? parseFloat(ltvField.value) || 0 : 0;
+                    
+                    if (ltv > 0) {
+                        // If LTV > 0, check if debt settings are filled
+                        const loanFees = document.getElementById('loanIssuanceFees');
+                        const interestRate = document.getElementById('fixedRate');
+                        if (!loanFees?.value || !interestRate?.value) {
+                            sectionComplete = false;
+                        }
+                    }
+                    // If LTV = 0, debt section is considered complete (no debt needed)
+                } else {
+                    // For dynamic sections (revenue, expenses, capex), check if items exist
+                    const sectionElement = document.getElementById(section.id);
+                    if (sectionElement) {
+                        const items = sectionElement.querySelectorAll('.revenue-item, .cost-item');
+                        if (items.length === 0) {
+                            sectionComplete = false;
+                        }
+                    }
+                }
+                
+                if (sectionComplete) {
+                    completedSections++;
+                }
+            });
+            
+            // Update progress bar or show generate button
+            const progressContainer = document.querySelector('.progress-container');
+            const progressBarWrapper = document.querySelector('.progress-bar-wrapper');
+            
+            if (completedSections === sections.length) {
+                // Replace progress bar with generate button
+                if (progressBarWrapper && !progressContainer.querySelector('.progress-generate-button')) {
+                    progressBarWrapper.innerHTML = `
+                        <button class="progress-generate-button" id="progressGenerateBtn">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                <line x1="3" y1="9" x2="21" y2="9"></line>
+                                <line x1="9" y1="21" x2="9" y2="9"></line>
+                            </svg>
+                            Generate Full Model
+                        </button>
+                    `;
+                    
+                    // Add click handler to the new button
+                    const progressGenerateBtn = document.getElementById('progressGenerateBtn');
+                    const originalGenerateBtn = document.getElementById('generateFullModelBtn');
+                    if (progressGenerateBtn && originalGenerateBtn) {
+                        progressGenerateBtn.addEventListener('click', () => {
+                            originalGenerateBtn.click();
+                        });
+                    }
+                }
+            } else {
+                // Show progress bar
+                if (progressBarWrapper && !progressBarWrapper.querySelector('.progress-bar')) {
+                    progressBarWrapper.innerHTML = `
+                        <div class="progress-bar" id="assumptionsProgress">
+                            <div class="progress-fill" id="progressFill"></div>
+                        </div>
+                        <div class="progress-text">
+                            <span id="progressText">0 of 7 sections completed</span>
+                        </div>
+                    `;
+                }
+                
+                const progressFill = document.getElementById('progressFill');
+                const progressText = document.getElementById('progressText');
+                const progressPercentage = (completedSections / sections.length) * 100;
+                
+                if (progressFill) {
+                    progressFill.style.width = progressPercentage + '%';
+                }
+                
+                if (progressText) {
+                    progressText.textContent = `${completedSections} of ${sections.length} sections completed`;
+                }
+            }
         }
     </script>
 </body>

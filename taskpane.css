@@ -310,8 +310,34 @@ body {
 /* Progress Bar */
 .progress-container {
   padding: 20px 20px 10px 20px;
-  background: white;
+  background: var(--bg-primary);
   border-bottom: 1px solid #f1f1f1;
+}
+
+/* Generate Button in Progress Section */
+.progress-generate-button {
+  width: 100%;
+  background: #217346;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 14px 24px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(33, 115, 70, 0.2);
+}
+
+.progress-generate-button:hover {
+  background: #185132;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(33, 115, 70, 0.3);
 }
 
 .progress-bar-wrapper {

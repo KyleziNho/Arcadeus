@@ -449,6 +449,11 @@ class FormHandler {
     if (newValueInput) {
       this.setupNumberFormatting(newValueInput);
     }
+    
+    // Update progress tracking
+    if (typeof updateProgress === 'function') {
+      updateProgress();
+    }
   }
 
   addOperatingExpense() {
@@ -490,6 +495,11 @@ class FormHandler {
     if (newValueInput) {
       this.setupNumberFormatting(newValueInput);
     }
+    
+    // Update progress tracking
+    if (typeof updateProgress === 'function') {
+      updateProgress();
+    }
   }
 
   addCapEx() {
@@ -530,6 +540,11 @@ class FormHandler {
     const newValueInput = document.getElementById(`capExValue_${itemCount}`);
     if (newValueInput) {
       this.setupNumberFormatting(newValueInput);
+    }
+    
+    // Update progress tracking
+    if (typeof updateProgress === 'function') {
+      updateProgress();
     }
   }
 
