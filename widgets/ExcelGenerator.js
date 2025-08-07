@@ -1844,8 +1844,16 @@ Provide the COMPLETE Free Cash Flow model with exact Excel formulas for every ce
         fcfStructure.leveredFCF = currentRow;
         for (let col = 1; col <= periodColumns; col++) {
           const colLetter = this.getColumnLetter(col);
-          // Include loan proceeds in levered cash flow calculation
-          fcfSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${colLetter}${fcfStructure.unleveredFCF}+${colLetter}${fcfStructure.interestPayments}+${colLetter}${fcfStructure.loanProceeds}+${colLetter}${fcfStructure.assetDisposal}`]];
+          // Include loan proceeds in levered cash flow calculation using SUM range
+          // If we have debt-related items, sum them together
+          if (fcfStructure.interestPayments && fcfStructure.assetDisposal) {
+            const startRow = Math.min(fcfStructure.interestPayments, fcfStructure.loanProceeds, fcfStructure.assetDisposal);
+            const endRow = Math.max(fcfStructure.interestPayments, fcfStructure.loanProceeds, fcfStructure.assetDisposal);
+            fcfSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${colLetter}${fcfStructure.unleveredFCF}+SUM(${colLetter}${startRow}:${colLetter}${endRow})`]];
+          } else {
+            // Fallback to just unlevered FCF if no debt items
+            fcfSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${colLetter}${fcfStructure.unleveredFCF}`]];
+          }
           fcfSheet.getRange(`${colLetter}${currentRow}`).format.borders.getItem('EdgeTop').style = 'Double';
           fcfSheet.getRange(`${colLetter}${currentRow}`).format.borders.getItem('EdgeTop').weight = 'Thick';
         }
@@ -4842,12 +4850,16 @@ You MUST create a P&L Statement with this EXACT structure:
       periodRange.format.font.size = 12;
       periodRange.format.font.bold = false;
       
-      // Calculate debt amount
+      // Calculate debt amount using references to Assumptions sheet
       const dealValue = parseFloat(modelData.dealValue) || 0;
       const ltvRatio = parseFloat(modelData.dealLTV) / 100 || 0.7;
       const debtAmount = dealValue * ltvRatio;
       
-      console.log('📊 Debt calculations:', { dealValue, ltvRatio, debtAmount });
+      // Get cell references to Assumptions sheet for dynamic linking
+      const dealValueRef = this.cellTracker.getCellReference('dealValue') || 'Assumptions!$B$4';
+      const dealLTVRef = this.cellTracker.getCellReference('dealLTV') || 'Assumptions!$B$6';
+      
+      console.log('📊 Debt calculations:', { dealValue, ltvRatio, debtAmount, dealValueRef, dealLTVRef });
       
       // Set up debt balance row (row 4)
       debtSheet.getRange('A4').values = [['Outstanding Debt Balance']];
@@ -4860,16 +4872,16 @@ You MUST create a P&L Statement with this EXACT structure:
       dashRange.format.horizontalAlignment = 'Right';
       ExcelFormatter.applyNumberFormat(dashRange);
       
-      // Debt balance for all periods (constant for interest-only loan)
+      // Debt balance for all periods - Final period shows full loan amount (per Leon's requirements)
       for (let i = 1; i <= periods; i++) {
         const colLetter = this.getColumnLetter(i + 1); // C, D, E, etc.
         if (i === periods) {
-          // Final period: debt is repaid
-          debtSheet.getRange(colLetter + '4').values = [[0]];
+          // Final period: show full loan amount (referencing assumptions tab)
+          debtSheet.getRange(colLetter + '4').formulas = [[`=${dealValueRef}*${dealLTVRef}/100`]];
           ExcelFormatter.applyNumberFormat(debtSheet.getRange(colLetter + '4'));
         } else {
-          // Operating periods: debt balance remains the same
-          debtSheet.getRange(colLetter + '4').values = [[debtAmount]];
+          // Operating periods: debt balance remains the same (also reference assumptions)
+          debtSheet.getRange(colLetter + '4').formulas = [[`=${dealValueRef}*${dealLTVRef}/100`]];
           ExcelFormatter.applyNumberFormat(debtSheet.getRange(colLetter + '4'));
         }
       }
