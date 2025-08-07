@@ -286,6 +286,7 @@ body {
   display: flex;
   flex-direction: column;
   height: calc(100vh - 80px);
+  background: white;
 }
 
 .assumptions-toolbar {
@@ -311,8 +312,8 @@ body {
 
 /* Progress Bar */
 .progress-container {
-  padding: 0 20px 10px 20px;
-  background: var(--bg-primary);
+  padding: 16px 20px 16px 20px;
+  background: white;
   border-bottom: 1px solid #f1f1f1;
 }
 
