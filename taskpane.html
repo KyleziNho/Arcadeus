@@ -948,6 +948,9 @@
                 // Fill all sections with the generated data
                 await fillAllSections(aiData);
                 
+                // Ensure debt model section is visible if it was filled
+                ensureDebtModelSectionVisible();
+                
                 // Update progress after filling
                 if (typeof updateProgress === 'function') {
                     updateProgress();
@@ -964,7 +967,7 @@
         }
 
         async function generateAIData() {
-            const prompt = `Generate realistic M&A transaction data for a private equity deal. Return valid JSON only with this structure:
+            const prompt = `Generate realistic M&A transaction data for a REAL private equity deal with institutional-grade valuations. This should reflect actual deal sizes and financial metrics from the market. Return valid JSON only with this structure:
 
 {
   "highLevelParameters": {
@@ -974,43 +977,57 @@
     "modelPeriods": "yearly"
   },
   "dealAssumptions": {
-    "dealName": "realistic company name",
-    "dealValue": large number in millions,
-    "transactionFee": number between 1.5-3.5,
-    "dealLTV": number between 60-75
+    "dealName": "realistic company name (e.g., TechFlow Solutions, MidAtlantic Manufacturing, etc.)",
+    "dealValue": "number between 150-800 (million USD - realistic PE deal sizes)",
+    "transactionFee": "number between 1.8-3.2",
+    "dealLTV": "number between 55-70"
   },
   "revenueItems": [
     {
-      "name": "realistic revenue source",
-      "value": large number,
-      "growthRate": number between 3-15
+      "name": "Primary Revenue Stream (e.g., Product Sales, Service Revenue, Subscription Revenue)",
+      "value": "large number in millions (50-200M typically)",
+      "growthRate": "number between 8-25 (realistic growth rates)"
     }
   ],
   "operatingExpenses": [
     {
-      "name": "realistic expense name",
-      "value": number,
-      "growthRate": number between 2-8
+      "name": "Major expense category (e.g., Personnel Costs, R&D, Sales & Marketing)",
+      "value": "realistic expense amount in millions",
+      "growthRate": "number between 3-12"
     }
   ],
   "capEx": [
     {
-      "name": "realistic capex item",
-      "value": number,
-      "growthRate": number between 2-6
+      "name": "Capital expenditure (e.g., Equipment Upgrades, Facility Expansion, Technology Infrastructure)",
+      "value": "realistic capex amount in millions",
+      "growthRate": "number between 2-8"
     }
   ],
   "exitAssumptions": {
-    "disposalCost": number between 2-4,
-    "terminalCapRate": number between 6-10
+    "disposalCost": "number between 2.5-4.2",
+    "terminalCapRate": "number between 7.5-11.5"
   },
   "debtModel": {
-    "loanIssuanceFees": number between 1-3,
-    "fixedRate": number between 4-8
+    "loanIssuanceFees": "number between 1.5-2.8",
+    "interestRateType": "fixed",
+    "fixedRate": "number between 5.5-9.2",
+    "wacc": "number between 9.5-14.5"
   }
 }
 
-Generate 2-4 revenue items, 2-3 operating expense items, and 1-3 capex items. Ensure total revenues are significantly higher than total costs to make it profitable. Use realistic business names and amounts in millions.`;
+CRITICAL REQUIREMENTS:
+1. Generate 2-5 revenue items with varying realistic names and substantial values
+2. Generate 3-6 operating expense items covering major cost categories
+3. Generate 2-4 capex items with realistic infrastructure/equipment investments
+4. Deal values should be 150M+ (realistic PE deal sizes)
+5. Revenue items should total 80-300M annually (realistic for PE targets)
+6. Operating expenses should be 60-80% of revenues (realistic margins)
+7. CapEx should be 3-8% of revenues annually
+8. Use real business terminology and realistic company names
+9. Include WACC in debt model
+10. Ensure profitable deal structure with realistic multiples
+
+Generate a company in technology, manufacturing, healthcare, or business services sector with realistic financial metrics.`;
 
             // Use the same Netlify Functions endpoint as existing generate model functionality
             const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
@@ -1079,6 +1096,23 @@ Generate 2-4 revenue items, 2-3 operating expense items, and 1-3 capex items. En
             }
         }
 
+        function ensureDebtModelSectionVisible() {
+            // Find the debt model section and ensure it's expanded
+            const debtModelSection = document.getElementById('debtModel');
+            if (debtModelSection) {
+                // Remove collapsed state if present
+                debtModelSection.classList.remove('collapsed');
+                
+                // Find the minimize button and ensure it shows correct state
+                const minimizeBtn = debtModelSection.querySelector('.minimize-btn');
+                if (minimizeBtn) {
+                    minimizeBtn.innerHTML = '−'; // Show minimize symbol
+                }
+                
+                console.log('Debt model section ensured visible');
+            }
+        }
+
         async function fillAllSections(data) {
             // Fill High Level Parameters
             document.getElementById('currency').value = data.highLevelParameters.currency;
@@ -1107,7 +1141,19 @@ Generate 2-4 revenue items, 2-3 operating expense items, and 1-3 capex items. En
             
             // Fill Debt Model
             document.getElementById('loanIssuanceFees').value = data.debtModel.loanIssuanceFees;
+            if (data.debtModel.interestRateType) {
+                const interestRateTypeElement = document.querySelector('input[name="interestRateType"][value="' + data.debtModel.interestRateType + '"]');
+                if (interestRateTypeElement) {
+                    interestRateTypeElement.checked = true;
+                }
+            }
             document.getElementById('fixedRate').value = data.debtModel.fixedRate;
+            if (data.debtModel.wacc) {
+                const waccElement = document.getElementById('wacc');
+                if (waccElement) {
+                    waccElement.value = data.debtModel.wacc;
+                }
+            }
         }
 
         async function fillDynamicItems(type, items, containerId) {

@@ -542,16 +542,14 @@ body {
   border-color: #1e6b41;
 }
 
-/* Completed section tabs */
+/* Completed section tabs - removed green background as requested */
 .assumption-tab.completed {
-  background: #d1fae5;
-  border-color: #a7f3d0;
-  color: #065f46;
+  /* No special background - keep default styling */
 }
 
 .assumption-tab.completed:hover {
-  background: #a7f3d0;
-  border-color: #6ee7b7;
+  background: #f9fafb;
+  border-color: #d1d5db;
 }
 
 .assumption-tab.completed.active {
