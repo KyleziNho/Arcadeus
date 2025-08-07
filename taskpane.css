@@ -2491,8 +2491,9 @@ select {
 
 /* User messages aligned right */
 .chat-message.user-message {
-  justify-content: flex-end;
-  flex-direction: row-reverse;
+  justify-content: flex-end !important;
+  flex-direction: row-reverse !important;
+  margin-left: auto;
 }
 
 /* Assistant and system messages aligned left */
@@ -2520,6 +2521,34 @@ select {
 .user-avatar {
   background: var(--text-primary);
   color: white;
+}
+
+.profile-picture-avatar {
+  background: transparent !important;
+  border: 2px solid var(--accent-secondary) !important; /* Green outline */
+  border-radius: 50% !important; /* Make it circular for profile pictures */
+  padding: 0 !important;
+  overflow: hidden;
+}
+
+.user-profile-pic {
+  width: 24px;
+  height: 24px;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.generic-user-avatar {
+  background: var(--text-primary);
+  color: white;
+  border: 2px solid var(--accent-secondary); /* Green outline for generic avatar too */
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  width: 24px;
+  height: 24px;
 }
 
 .assistant-avatar {

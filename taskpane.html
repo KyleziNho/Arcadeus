@@ -576,6 +576,37 @@
         let chatContext = null;
         let conversationHistory = [];
         let isReadingExcelFiles = false;
+        let userProfilePicture = null;
+
+        function getUserProfilePicture() {
+            if (userProfilePicture) return userProfilePicture;
+            
+            try {
+                // Try to get user info from authentication system
+                if (window.arcadeusAuth && window.arcadeusAuth.checkAuth) {
+                    const user = window.arcadeusAuth.checkAuth();
+                    if (user && user.photoURL) {
+                        userProfilePicture = user.photoURL;
+                        return userProfilePicture;
+                    }
+                }
+                
+                // Fallback: try to get from localStorage or other sources
+                const storedUser = localStorage.getItem('user');
+                if (storedUser) {
+                    const userData = JSON.parse(storedUser);
+                    if (userData.photoURL) {
+                        userProfilePicture = userData.photoURL;
+                        return userProfilePicture;
+                    }
+                }
+            } catch (error) {
+                console.log('Could not retrieve user profile picture:', error);
+            }
+            
+            // Return null if no profile picture found
+            return null;
+        }
 
         function initializeChatSystem() {
             console.log('Initializing chat system...');
@@ -956,7 +987,12 @@
             
             switch(type) {
                 case 'user':
-                    avatar = '<div class="message-avatar user-avatar">U</div>';
+                    const profilePic = getUserProfilePicture();
+                    if (profilePic) {
+                        avatar = `<div class="message-avatar user-avatar profile-picture-avatar"><img src="${profilePic}" alt="User" class="user-profile-pic" onerror="this.parentElement.innerHTML='<div class=\\'generic-user-avatar\\'>U</div>'"></div>`;
+                    } else {
+                        avatar = '<div class="message-avatar user-avatar generic-user-avatar">U</div>';
+                    }
                     messageClass = 'user-message-content';
                     break;
                 case 'assistant':
