@@ -647,10 +647,15 @@ body {
   display: flex;
   flex-direction: column;
   padding: 16px;
-  padding-bottom: 0;
+  padding-bottom: 200px;
   min-height: 0;
-  overflow: hidden;
+  overflow-y: auto;
   height: calc(100vh - 80px);
+  background: white;
+  border-radius: 8px;
+  margin: 16px;
+  min-height: 70vh;
+  max-height: 85vh;
 }
 
 .chat-tip-section {
@@ -690,16 +695,6 @@ body {
   line-height: 1.4;
 }
 
-.chat-messages {
-  flex: 1;
-  overflow-y: auto;
-  padding: 16px;
-  padding-bottom: 200px;
-  background: var(--bg-secondary);
-  border-radius: 8px;
-  min-height: 70vh;
-  max-height: 85vh;
-}
 
 .chat-message {
   margin-bottom: var(--space-4);
@@ -808,6 +803,7 @@ body {
 .input-actions {
   display: flex;
   gap: 8px;
+  width: 100%;
 }
 
 .action-btn {
@@ -823,6 +819,8 @@ body {
   display: flex;
   align-items: center;
   gap: 4px;
+  flex: 1;
+  justify-content: center;
 }
 
 .action-btn:hover {
@@ -2265,4 +2263,20 @@ select {
   cursor: not-allowed;
   transform: none !important;
   box-shadow: none !important;
+}
+
+/* Responsive design for action buttons */
+@media (max-width: 600px) {
+  .action-btn .btn-text {
+    display: none;
+  }
+  
+  .action-btn {
+    padding: 8px 12px;
+    min-width: 40px;
+  }
+  
+  .input-actions {
+    gap: 4px;
+  }
 }
