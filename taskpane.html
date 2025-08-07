@@ -1007,29 +1007,51 @@ Generate 2-4 revenue items, 2-3 operating expense items, and 1-3 capex items. En
             });
 
             if (!response.ok) {
-                throw new Error(`API error: ${response.status}`);
+                const errorText = await response.text();
+                console.error('API Error Response:', errorText);
+                throw new Error(`API error: ${response.status} - ${errorText}`);
             }
 
             const result = await response.json();
+            console.log('AutoFill API Response:', result);
             
             // Handle Netlify Functions response format
             let content;
-            if (result.response) {
-                // Standard chat response format
+            if (result.content) {
+                // Netlify Functions format from chat.js
+                content = result.content;
+            } else if (result.response) {
+                // Alternative chat response format
                 content = result.response;
             } else if (result.choices && result.choices[0]) {
                 // OpenAI direct response format (fallback)
                 content = result.choices[0].message.content.trim();
             } else {
+                console.error('Unexpected API response structure:', result);
                 throw new Error('Unexpected API response format');
             }
             
             // Parse JSON response
+            console.log('Raw AI Content:', content);
+            
             let jsonStart = content.indexOf('{');
             let jsonEnd = content.lastIndexOf('}') + 1;
-            const jsonStr = content.substring(jsonStart, jsonEnd);
             
-            return JSON.parse(jsonStr);
+            if (jsonStart === -1 || jsonEnd === 0) {
+                console.error('No JSON found in response:', content);
+                throw new Error('AI response does not contain valid JSON');
+            }
+            
+            const jsonStr = content.substring(jsonStart, jsonEnd);
+            console.log('Extracted JSON:', jsonStr);
+            
+            try {
+                return JSON.parse(jsonStr);
+            } catch (parseError) {
+                console.error('JSON Parse Error:', parseError);
+                console.error('Failed to parse:', jsonStr);
+                throw new Error(`Failed to parse AI response as JSON: ${parseError.message}`);
+            }
         }
 
         async function fillAllSections(data) {
