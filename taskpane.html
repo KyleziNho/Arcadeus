@@ -1640,7 +1640,7 @@
 
         async function generateAIData() {
             console.log('🎯 generateAIData called - using enhanced institutional-grade prompt');
-            const prompt = `Generate realistic M&A transaction data for a REAL private equity deal with institutional-grade valuations. This should reflect actual deal sizes and financial metrics from the market. Return valid JSON only with this structure:
+            const prompt = `Generate realistic M&A transaction data for a REAL ESTATE private equity deal with institutional-grade valuations. This should reflect actual real estate deal sizes and financial metrics from the market. Return valid JSON only with this structure:
 
 {
   "highLevelParameters": {
@@ -1650,62 +1650,66 @@
     "modelPeriods": "yearly"
   },
   "dealAssumptions": {
-    "dealName": "realistic company name (e.g., TechFlow Solutions, MidAtlantic Manufacturing, etc.)",
-    "dealValue": "number between 150000000-800000000 (EXACT NUMBERS: 150 million to 800 million USD)",
-    "transactionFee": "number between 1.8-3.2",
-    "dealLTV": "number between 55-70"
+    "dealName": "realistic real estate property name (e.g., Manhattan Office Tower, Sunbelt Logistics Center, Premier Retail Plaza, etc.)",
+    "dealValue": "number between 75000000-500000000 (EXACT NUMBERS: 75 million to 500 million USD)",
+    "transactionFee": "number between 1.5-2.8",
+    "dealLTV": "number between 65-80"
   },
   "revenueItems": [
     {
-      "name": "Primary Revenue Stream (e.g., Product Sales, Service Revenue, Subscription Revenue)",
-      "value": "EXACT NUMBERS: between 50000000-200000000 (50 million to 200 million USD)",
-      "growthRate": "number between 8-25 (realistic growth rates)"
+      "name": "Real estate revenue stream (e.g., Base Rent, Parking Revenue, Tenant Reimbursements, Storage Income)",
+      "value": "EXACT NUMBERS: between 3000000-25000000 (3 million to 25 million USD)",
+      "growthRate": "number between 2-8 (realistic real estate growth rates)"
     }
   ],
   "operatingExpenses": [
     {
-      "name": "Major expense category (e.g., Personnel Costs, R&D, Sales & Marketing)",
-      "value": "EXACT NUMBERS: between 25000000-150000000 (25 million to 150 million USD)",
-      "growthRate": "number between 3-12"
+      "name": "Real estate operating expense (e.g., Property Management, Utilities, Maintenance & Repairs, Insurance, Property Taxes)",
+      "value": "EXACT NUMBERS: between 500000-8000000 (500K to 8 million USD)",
+      "growthRate": "number between 2-6"
     }
   ],
   "capEx": [
     {
-      "name": "Capital expenditure (e.g., Equipment Upgrades, Facility Expansion, Technology Infrastructure)",
-      "value": "EXACT NUMBERS: between 5000000-25000000 (5 million to 25 million USD)",
-      "growthRate": "number between 2-8"
+      "name": "Real estate capital expenditure (e.g., Tenant Improvements, HVAC Upgrades, Roof Replacement, Elevator Modernization, Parking Lot Resurfacing)",
+      "value": "EXACT NUMBERS: between 1000000-12000000 (1 million to 12 million USD)",
+      "growthRate": "number between 1-5"
     }
   ],
   "exitAssumptions": {
-    "disposalCost": "number between 2.5-4.2",
-    "terminalCapRate": "number between 7.5-11.5"
+    "disposalCost": "number between 2.0-3.5",
+    "terminalCapRate": "number between 4.5-7.5"
   },
   "debtModel": {
-    "loanIssuanceFees": "number between 1.5-2.8",
+    "loanIssuanceFees": "number between 0.75-1.5",
     "interestRateType": "fixed",
-    "fixedRate": "number between 5.5-9.2",
-    "wacc": "number between 9.5-14.5"
+    "fixedRate": "number between 4.5-7.5",
+    "wacc": "number between 6.5-10.5"
   }
 }
 
 CRITICAL REQUIREMENTS:
-1. Generate 2-5 revenue items with varying realistic names and substantial values
-2. Generate 3-6 operating expense items covering major cost categories
-3. Generate 2-4 capex items with realistic infrastructure/equipment investments
+1. Generate 1-4 REAL ESTATE revenue items (varying each time) with realistic names like:
+   - Base Rent, Parking Revenue, Storage Income, Tenant Reimbursements, Signage Revenue, Event Space Rental, etc.
+2. Generate 1-4 REAL ESTATE operating expense items (varying each time) covering realistic costs like:
+   - Property Management, Utilities, Maintenance & Repairs, Insurance, Property Taxes, Security, Landscaping, etc.
+3. Generate 1-4 REAL ESTATE capex items (varying each time) with realistic property investments like:
+   - Tenant Improvements, HVAC Upgrades, Roof Replacement, Elevator Modernization, Parking Improvements, etc.
 4. ALL NUMBERS MUST BE EXACT NUMERIC VALUES (no text like "M" or "million"):
-   - Deal values: 150000000 to 800000000 (150-800 million)
-   - Revenue items: 50000000 to 200000000 each (50-200 million each)
-   - Operating expenses: 25000000 to 150000000 each (25-150 million each)
-   - CapEx items: 5000000 to 25000000 each (5-25 million each)
-5. Revenue items should total 100000000-400000000 annually (100-400M total)
-6. Operating expenses should be 60-80% of revenues (realistic margins)
-7. CapEx should be 3-8% of revenues annually
-8. Use real business terminology and realistic company names
-9. Include WACC in debt model (9.5-14.5 range)
-10. Ensure profitable deal structure with realistic multiples
+   - Deal values: 75000000 to 500000000 (75-500 million)
+   - Revenue items: 3000000 to 25000000 each (3-25 million each)
+   - Operating expenses: 500000 to 8000000 each (500K-8 million each)
+   - CapEx items: 1000000 to 12000000 each (1-12 million each)
+5. Revenue items should total 8000000-60000000 annually (8-60M total)
+6. Operating expenses should be 25-45% of revenues (realistic NOI margins for real estate)
+7. CapEx should be 8-15% of revenues annually (typical for real estate)
+8. Use real property terminology and realistic property names
+9. Include real estate appropriate WACC (6.5-10.5 range)
+10. Include realistic real estate cap rates (4.5-7.5%)
 11. RETURN ONLY NUMERIC VALUES - NO CURRENCY SYMBOLS OR TEXT
+12. Vary the NUMBER of items each time (1-4 for each category) - don't always generate the same quantity
 
-Generate a company in technology, manufacturing, healthcare, or business services sector with realistic financial metrics.`;
+Generate a realistic real estate property (office, retail, industrial, mixed-use) with market-appropriate financial metrics.`;
 
             // Use the same Netlify Functions endpoint as existing generate model functionality
             const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
