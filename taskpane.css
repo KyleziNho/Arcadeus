@@ -2440,6 +2440,7 @@ select {
 /* Generate Model Button - Black with Rainbow Underline Animation */
 .progress-generate-button {
   position: relative;
+  width: 100% !important;
   background: #1a1a1a !important; /* Black background */
   color: #ffffff !important;
   border: none !important;
@@ -2450,6 +2451,7 @@ select {
   font-weight: 600;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   cursor: pointer;
   transition: all 0.3s ease;
