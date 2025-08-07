@@ -489,7 +489,7 @@ body {
 
 /* Modern Tab Navigation */
 .assumptions-tabs {
-  display: flex;
+  display: flex !important; /* Force display to prevent hiding */
   background: transparent;
   padding: 16px 20px 0 20px;
   margin: 0 0 16px 0;
@@ -499,6 +499,8 @@ body {
   scrollbar-width: none; /* Firefox */
   -ms-overflow-style: none; /* Internet Explorer 10+ */
   gap: 8px;
+  visibility: visible !important; /* Force visibility */
+  opacity: 1 !important; /* Force opacity */
 }
 
 .assumptions-tabs::-webkit-scrollbar {

@@ -558,40 +558,80 @@
             
             // Initialize progress tracking
             initializeProgressTracking();
+            
+            // Re-initialize tabs if they get lost (safeguard)
+            // This observer will detect if the tabs container is modified
+            const tabsObserver = new MutationObserver(function(mutations) {
+                const tabsContainer = document.querySelector('.assumptions-tabs');
+                if (tabsContainer && !tabsContainer.hasAttribute('data-initialized')) {
+                    console.log('Re-initializing tabs due to DOM change');
+                    initializeAssumptionTabs();
+                    tabsContainer.setAttribute('data-initialized', 'true');
+                }
+            });
+            
+            // Start observing the assumptions page for changes
+            const assumptionsPage = document.getElementById('assumptionsPage');
+            if (assumptionsPage) {
+                tabsObserver.observe(assumptionsPage, {
+                    childList: true,
+                    subtree: true
+                });
+            }
         });
 
         function initializeAssumptionTabs() {
-            const tabs = document.querySelectorAll('.assumption-tab');
-            const panels = document.querySelectorAll('.tab-panel');
+            // Use event delegation on the parent container instead of individual tabs
+            const tabsContainer = document.querySelector('.assumptions-tabs');
             
-            console.log('Initializing assumption tabs:', tabs.length, 'tabs found');
+            if (!tabsContainer) {
+                console.error('Tabs container not found');
+                return;
+            }
             
-            tabs.forEach((tab) => {
-                tab.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    
-                    const targetId = this.getAttribute('data-tab');
-                    console.log('Tab clicked:', targetId);
-                    
-                    // Remove active class from all tabs and panels
-                    tabs.forEach(t => t.classList.remove('active'));
-                    panels.forEach(p => p.classList.remove('active'));
-                    
-                    // Add active class to clicked tab and corresponding panel
-                    this.classList.add('active');
-                    const targetPanel = document.getElementById(targetId);
-                    if (targetPanel) {
-                        targetPanel.classList.add('active');
-                        console.log('Panel activated:', targetId);
-                    }
-                    
-                    // Update progress tracking
-                    if (typeof updateProgress === 'function') {
-                        updateProgress();
-                    }
-                });
-            });
+            // Remove any existing listeners
+            tabsContainer.removeEventListener('click', handleTabClick);
+            
+            // Add the event listener to the container
+            tabsContainer.addEventListener('click', handleTabClick);
+            
+            // Mark as initialized
+            tabsContainer.setAttribute('data-initialized', 'true');
+            
+            console.log('Tab event listener attached to container');
+        }
+        
+        function handleTabClick(e) {
+            // Check if clicked element is a tab button
+            const tab = e.target.closest('.assumption-tab');
+            if (!tab) return;
+            
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const targetId = tab.getAttribute('data-tab');
+            console.log('Tab clicked:', targetId);
+            
+            // Get fresh references to all tabs and panels
+            const allTabs = document.querySelectorAll('.assumption-tab');
+            const allPanels = document.querySelectorAll('.tab-panel');
+            
+            // Remove active class from all tabs and panels
+            allTabs.forEach(t => t.classList.remove('active'));
+            allPanels.forEach(p => p.classList.remove('active'));
+            
+            // Add active class to clicked tab and corresponding panel
+            tab.classList.add('active');
+            const targetPanel = document.getElementById(targetId);
+            if (targetPanel) {
+                targetPanel.classList.add('active');
+                console.log('Panel activated:', targetId);
+            }
+            
+            // Update progress tracking
+            if (typeof updateProgress === 'function') {
+                updateProgress();
+            }
         }
 
         function initializeProgressTracking() {
