@@ -83,30 +83,19 @@
         <!-- Clean Header -->
         <div class="app-header">
             <div class="brand-container">
-                <button class="logo-button" id="logoButton">
-                    <img src="assets/Arcadeus.svg" alt="Arcadeus" class="header-logo">
-                </button>
-                <div class="logo-dropdown" id="logoDropdown">
-                    <a href="profile.html" class="profile-menu-item">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                            <circle cx="12" cy="7" r="4"></circle>
-                        </svg>
-                        View Profile
-                    </a>
-                    <button class="profile-menu-item" id="signOutButton">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                            <polyline points="16 17 21 12 16 7"></polyline>
-                            <line x1="21" y1="12" x2="9" y2="12"></line>
-                        </svg>
-                        Sign Out
-                    </button>
-                </div>
+                <img src="assets/Arcadeus.svg" alt="Arcadeus" class="header-logo">
             </div>
             <div class="nav-tabs">
                 <button class="nav-tab active" id="assumptionsTab" onclick="showAssumptions()">Assumptions</button>
                 <button class="nav-tab" id="chatTab" onclick="showChat()">Chat</button>
+            </div>
+            <div class="profile-section">
+                <button class="profile-icon" id="profileIcon" onclick="window.location.href='profile.html'">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                </button>
             </div>
         </div>
 
@@ -513,25 +502,6 @@
                 });
             });
 
-            // Logo dropdown functionality
-            const logoButton = document.getElementById('logoButton');
-            const logoDropdown = document.getElementById('logoDropdown');
-            
-            if (logoButton && logoDropdown) {
-                logoButton.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    logoDropdown.classList.toggle('show');
-                });
-
-                // Close dropdown when clicking outside
-                document.addEventListener('click', function() {
-                    logoDropdown.classList.remove('show');
-                });
-
-                logoDropdown.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                });
-            }
 
             // Upgrade button functionality
             const upgradeButton = document.getElementById('upgradeButton');
