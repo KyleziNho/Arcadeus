@@ -421,8 +421,8 @@ class FormHandler {
       <div class="revenue-item" id="revenueItem_${itemCount}">
         <div class="revenue-item-header">
           <span class="revenue-item-title">Revenue Item ${itemCount}</span>
+          <button class="remove-revenue-item" onclick="this.parentElement.parentElement.remove()">Remove</button>
         </div>
-        <button class="remove-revenue-item" onclick="this.parentElement.remove()">Remove</button>
         
         <div class="form-group">
           <label for="revenueName_${itemCount}">Revenue Source Name</label>
@@ -467,8 +467,8 @@ class FormHandler {
       <div class="cost-item" id="opExItem_${itemCount}">
         <div class="cost-item-header">
           <span class="cost-item-title">Operating Expense ${itemCount}</span>
+          <button class="remove-cost-item" onclick="this.parentElement.parentElement.remove()">Remove</button>
         </div>
-        <button class="remove-cost-item" onclick="this.parentElement.remove()">Remove</button>
         
         <div class="form-group">
           <label for="opExName_${itemCount}">Expense Name</label>
@@ -513,8 +513,8 @@ class FormHandler {
       <div class="cost-item" id="capExItem_${itemCount}">
         <div class="cost-item-header">
           <span class="cost-item-title">CapEx ${itemCount}</span>
+          <button class="remove-cost-item" onclick="this.parentElement.parentElement.remove()">Remove</button>
         </div>
-        <button class="remove-cost-item" onclick="this.parentElement.remove()">Remove</button>
         
         <div class="form-group">
           <label for="capExName_${itemCount}">CapEx Name</label>

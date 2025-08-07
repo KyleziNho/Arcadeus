@@ -517,7 +517,7 @@ body {
 }
 
 .tab-content {
-  max-width: 800px;
+  width: 100%;
   padding: 24px;
   background: #ffffff;
   border-radius: 8px;
@@ -527,11 +527,8 @@ body {
 
 /* Item containers */
 .revenue-items-container, .cost-items-container {
-  background: #f8fafc;
-  border-radius: 8px;
-  padding: 16px;
+  padding: 0;
   margin-bottom: 16px;
-  border: 1px solid #e1e5e9;
 }
 
 .revenue-actions, .cost-actions {
