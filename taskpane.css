@@ -535,6 +535,98 @@ body {
   margin-top: 0;
 }
 
+/* Upgrade Card Styles */
+.upgrade-card {
+  background: #ffffff;
+  border: 1px solid #e1e5e9;
+  border-radius: 16px;
+  padding: 0;
+  margin: 20px auto 32px auto;
+  max-width: 500px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.upgrade-card::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, 
+    #ff6b6b 0%, 
+    #ff9f43 16.67%, 
+    #feca57 33.33%, 
+    #48dbfb 50%, 
+    #0abde3 66.67%, 
+    #686de0 83.33%, 
+    #ff6b6b 100%);
+  background-size: 300% 100%;
+  animation: rainbowMove 3s ease-in-out infinite;
+}
+
+@keyframes rainbowMove {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.upgrade-content {
+  padding: 32px;
+  text-align: center;
+}
+
+.upgrade-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1a202c;
+  margin: 0 0 12px 0;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.upgrade-description {
+  font-size: 16px;
+  color: #64748b;
+  margin: 0 0 24px 0;
+  line-height: 1.5;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.upgrade-button {
+  background: #1a202c;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 24px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  position: relative;
+  overflow: hidden;
+}
+
+.upgrade-button:hover {
+  background: #2d3748;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(26, 32, 44, 0.3);
+}
+
+.upgrade-button:active {
+  transform: translateY(0);
+}
+
+.button-text {
+  position: relative;
+  z-index: 1;
+}
+
 /* Chat Page Styles */
 #chatPage {
   display: flex;
