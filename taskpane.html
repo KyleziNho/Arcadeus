@@ -645,6 +645,7 @@
         }
         
         function updateProgress() {
+            console.log('🔄 Updating progress...');
             const sections = [
                 { id: 'highLevelParameters', requiredFields: ['currency', 'projectStartDate', 'modelPeriods', 'projectEndDate'] },
                 { id: 'dealAssumptions', requiredFields: ['dealName', 'dealValue', 'transactionFee', 'dealLTV'] },
@@ -683,18 +684,34 @@
                     }
                     // If LTV = 0, debt section is considered complete (no debt needed)
                 } else {
-                    // For dynamic sections (revenue, expenses, capex), check if items exist
+                    // For dynamic sections (revenue, expenses, capex), check if items exist and have values
                     const sectionElement = document.getElementById(section.id);
                     if (sectionElement) {
                         const items = sectionElement.querySelectorAll('.revenue-item, .cost-item');
                         if (items.length === 0) {
                             sectionComplete = false;
+                        } else {
+                            // Check if at least one item has both name and value filled
+                            let hasCompleteItem = false;
+                            items.forEach(item => {
+                                const nameInput = item.querySelector('input[id*="Name"]');
+                                const valueInput = item.querySelector('input[id*="Value"]');
+                                if (nameInput?.value.trim() && valueInput?.value.trim()) {
+                                    hasCompleteItem = true;
+                                }
+                            });
+                            if (!hasCompleteItem) {
+                                sectionComplete = false;
+                            }
                         }
                     }
                 }
                 
                 if (sectionComplete) {
                     completedSections++;
+                    console.log(`✅ Section ${section.id} completed`);
+                } else {
+                    console.log(`❌ Section ${section.id} incomplete`);
                 }
             });
             
@@ -750,6 +767,8 @@
                     progressText.textContent = `${completedSections} of ${sections.length} sections completed`;
                 }
             }
+            
+            console.log(`📊 Progress: ${completedSections}/${sections.length} sections completed`);
         }
     </script>
 </body>

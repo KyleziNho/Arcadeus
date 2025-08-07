@@ -14,8 +14,8 @@ class FormHandler {
     this.initializeDebtModel();
     this.initializeNumberFormatting();
     
-    // Clear any existing items with old growth rate structure
-    this.clearAndResetAllItems();
+    // Skip clearing items on initialization to preserve user data
+    // this.clearAndResetAllItems();
     
     this.isInitialized = true;
   }
@@ -678,16 +678,24 @@ class FormHandler {
       }
     });
 
-    field.addEventListener('input', (e) => {
-      // Remove any non-numeric characters except decimal point
-      let value = e.target.value.replace(/[^0-9.]/g, '');
-      // Ensure only one decimal point
-      const parts = value.split('.');
-      if (parts.length > 2) {
-        value = parts[0] + '.' + parts.slice(1).join('');
-      }
-      e.target.value = value;
-    });
+    // Only add input validation for text fields that need numeric formatting
+    // Skip for number inputs as they have built-in browser validation
+    if (field.type !== 'number') {
+      field.addEventListener('input', (e) => {
+        // Remove any non-numeric characters except decimal point and minus sign
+        let value = e.target.value.replace(/[^0-9.-]/g, '');
+        // Ensure only one decimal point
+        const decimalCount = (value.match(/\./g) || []).length;
+        if (decimalCount > 1) {
+          const parts = value.split('.');
+          value = parts[0] + '.' + parts.slice(1).join('');
+        }
+        // Only update if the value actually changed to avoid cursor jumping
+        if (e.target.value !== value) {
+          e.target.value = value;
+        }
+      });
+    }
   }
 
   formatAllExistingValueFields() {

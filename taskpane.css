@@ -371,15 +371,16 @@ body {
 /* Excel-style Tab Navigation */
 .assumptions-tabs {
   display: flex;
-  background: #f8f9fa;
-  border-bottom: 2px solid #e9ecef;
-  padding: 0 0 0 20px;
+  background: #e1e1e1;
+  border-bottom: 1px solid #c0c0c0;
+  padding: 2px 0 0 20px;
   margin: 0 0 20px 0;
   overflow-x: auto;
   overflow-y: hidden;
   white-space: nowrap;
   scrollbar-width: none; /* Firefox */
   -ms-overflow-style: none; /* Internet Explorer 10+ */
+  min-height: 32px;
 }
 
 .assumptions-tabs::-webkit-scrollbar {
@@ -387,43 +388,49 @@ body {
 }
 
 .assumption-tab {
-  background: #f8f9fa;
-  border: none;
-  border-bottom: 2px solid transparent;
-  padding: 12px 20px;
-  font-size: 13px;
-  font-weight: 500;
-  color: #495057;
+  background: linear-gradient(to bottom, #f0f0f0 0%, #e0e0e0 50%, #d0d0d0 51%, #c8c8c8 100%);
+  border: 1px solid #a0a0a0;
+  border-bottom: none;
+  border-radius: 4px 4px 0 0;
+  padding: 6px 16px 8px 16px;
+  font-size: 12px;
+  font-weight: 400;
+  color: #333333;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
   white-space: nowrap;
   flex-shrink: 0;
-  margin-right: 8px;
+  margin-right: 2px;
+  margin-top: 2px;
+  position: relative;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.5);
 }
 
 .assumption-tab:hover {
-  background: #e9ecef;
-  color: #343a40;
+  background: linear-gradient(to bottom, #f8f8f8 0%, #e8e8e8 50%, #d8d8d8 51%, #d0d0d0 100%);
+  border-color: #909090;
 }
 
 .assumption-tab.active {
-  background: white;
-  color: #217346;
-  border-bottom-color: #217346;
-  position: relative;
-  z-index: 1;
-  margin-bottom: -2px;
-  border-bottom: 2px solid white;
+  background: linear-gradient(to bottom, #ffffff 0%, #f8f8f8 50%, #f0f0f0 51%, #e8e8e8 100%);
+  border-color: #707070;
+  color: #000000;
+  font-weight: 500;
+  margin-top: 0px;
+  padding-top: 8px;
+  padding-bottom: 10px;
+  z-index: 10;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.8), 0 0 3px rgba(0,0,0,0.1);
 }
 
 .assumption-tab.active::after {
   content: '';
   position: absolute;
-  bottom: -2px;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: white;
+  bottom: -1px;
+  left: -1px;
+  right: -1px;
+  height: 1px;
+  background: #ffffff;
 }
 
 /* Tab Content */
