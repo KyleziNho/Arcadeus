@@ -1127,61 +1127,143 @@
         });
 
         function handleTabClick(e) {
-            // Check if clicked element is a tab button
-            const tab = e.target.closest('.assumption-tab');
-            if (!tab) return;
-            
-            e.preventDefault();
-            e.stopPropagation();
-            
-            const targetId = tab.getAttribute('data-tab');
-            console.log('Tab clicked:', targetId);
-            
-            // Get fresh references to all tabs and panels
-            const allTabs = document.querySelectorAll('.assumption-tab');
-            const allPanels = document.querySelectorAll('.tab-panel');
-            
-            // Remove active class from all tabs and panels
-            allTabs.forEach(t => t.classList.remove('active'));
-            allPanels.forEach(p => p.classList.remove('active'));
-            
-            // Add active class to clicked tab and corresponding panel
-            tab.classList.add('active');
-            const targetPanel = document.getElementById(targetId);
-            if (targetPanel) {
-                targetPanel.classList.add('active');
-                console.log('Panel activated:', targetId);
-            }
-            
-            // Update progress tracking
-            if (typeof updateProgress === 'function') {
-                updateProgress();
+            try {
+                // Check if clicked element is a tab button
+                const tab = e.target.closest('.assumption-tab');
+                if (!tab) return;
+                
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const targetId = tab.getAttribute('data-tab');
+                console.log('Tab clicked:', targetId);
+                
+                // Ensure tabs container remains visible
+                const tabsContainer = document.querySelector('.assumptions-tabs');
+                if (tabsContainer) {
+                    tabsContainer.style.display = 'flex';
+                    tabsContainer.style.visibility = 'visible';
+                    tabsContainer.style.opacity = '1';
+                }
+                
+                // Get fresh references to all tabs and panels
+                const allTabs = document.querySelectorAll('.assumption-tab');
+                const allPanels = document.querySelectorAll('.tab-panel');
+                
+                console.log(`Found ${allTabs.length} tabs and ${allPanels.length} panels`);
+                
+                // Remove active class from all tabs and panels
+                allTabs.forEach(t => t.classList.remove('active'));
+                allPanels.forEach(p => p.classList.remove('active'));
+                
+                // Add active class to clicked tab and corresponding panel
+                tab.classList.add('active');
+                const targetPanel = document.getElementById(targetId);
+                if (targetPanel) {
+                    targetPanel.classList.add('active');
+                    console.log('Panel activated:', targetId);
+                } else {
+                    console.error('Target panel not found:', targetId);
+                }
+                
+                // Update progress tracking
+                if (typeof updateProgress === 'function') {
+                    updateProgress();
+                }
+                
+                console.log('Tab click handled successfully');
+            } catch (error) {
+                console.error('Error in handleTabClick:', error);
+                
+                // Force tabs container to remain visible on error
+                const tabsContainer = document.querySelector('.assumptions-tabs');
+                if (tabsContainer) {
+                    tabsContainer.style.display = 'flex';
+                    tabsContainer.style.visibility = 'visible';
+                    tabsContainer.style.opacity = '1';
+                }
             }
         }
 
         function initializeAssumptionTabs() {
-            // Use event delegation on the parent container instead of individual tabs
-            const tabsContainer = document.querySelector('.assumptions-tabs');
-            
-            if (!tabsContainer) {
-                console.error('Tabs container not found');
-                return;
+            try {
+                console.log('🔧 Initializing assumption tabs...');
+                
+                // Use event delegation on the parent container instead of individual tabs
+                const tabsContainer = document.querySelector('.assumptions-tabs');
+                
+                if (!tabsContainer) {
+                    console.error('❌ Tabs container not found');
+                    return;
+                }
+                
+                // Force visibility
+                tabsContainer.style.display = 'flex';
+                tabsContainer.style.visibility = 'visible';
+                tabsContainer.style.opacity = '1';
+                
+                // Remove any existing listeners
+                tabsContainer.removeEventListener('click', handleTabClick);
+                
+                // Add the event listener to the container
+                tabsContainer.addEventListener('click', handleTabClick);
+                
+                // Mark as initialized
+                tabsContainer.setAttribute('data-initialized', 'true');
+                
+                console.log('✅ Tab event listener attached to container');
+                
+                // Verify all tab buttons exist
+                const tabs = tabsContainer.querySelectorAll('.assumption-tab');
+                console.log(`✅ Found ${tabs.length} tab buttons:`, Array.from(tabs).map(t => t.getAttribute('data-tab')));
+                
+            } catch (error) {
+                console.error('❌ Error initializing assumption tabs:', error);
             }
-            
-            // Remove any existing listeners
-            tabsContainer.removeEventListener('click', handleTabClick);
-            
-            // Add the event listener to the container
-            tabsContainer.addEventListener('click', handleTabClick);
-            
-            // Mark as initialized
-            tabsContainer.setAttribute('data-initialized', 'true');
-            
-            console.log('Tab event listener attached to container');
         }
         
         // Make function globally available
         window.initializeAssumptionTabs = initializeAssumptionTabs;
+        
+        // Add a mutation observer to watch for disappearing tabs
+        function setupTabsWatcher() {
+            const tabsContainer = document.querySelector('.assumptions-tabs');
+            if (!tabsContainer) return;
+            
+            // Create observer
+            const observer = new MutationObserver((mutations) => {
+                mutations.forEach((mutation) => {
+                    if (mutation.type === 'attributes' && 
+                        (mutation.attributeName === 'style' || mutation.attributeName === 'class')) {
+                        
+                        const container = mutation.target;
+                        const isHidden = container.style.display === 'none' || 
+                                       container.style.visibility === 'hidden' || 
+                                       container.style.opacity === '0' ||
+                                       container.classList.contains('hidden');
+                        
+                        if (isHidden) {
+                            console.warn('⚠️ Tabs container was hidden! Restoring visibility...');
+                            container.style.display = 'flex';
+                            container.style.visibility = 'visible'; 
+                            container.style.opacity = '1';
+                            container.classList.remove('hidden');
+                        }
+                    }
+                });
+            });
+            
+            // Start observing
+            observer.observe(tabsContainer, {
+                attributes: true,
+                attributeFilter: ['style', 'class']
+            });
+            
+            console.log('✅ Tabs visibility watcher established');
+        }
+        
+        // Setup watcher after DOM is ready
+        setTimeout(setupTabsWatcher, 1000);
 
         function initializeProgressTracking() {
             const sections = [

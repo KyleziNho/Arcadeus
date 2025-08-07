@@ -459,11 +459,8 @@ class MAModelingAddin {
             generatePLBtn.style.display = 'inline-flex';
           }
           
-          if (this.uiController) {
-            this.uiController.showMessage('Assumptions sheet created! You can now generate the P&L.', 'success');
-          } else {
-            console.log('Assumptions sheet created successfully!');
-          }
+          // Sheet created successfully - no popup needed
+          console.log('Assumptions sheet created successfully!');
         } else {
           console.error('Assumptions generation failed:', result.error);
           if (this.uiController) {
@@ -524,14 +521,8 @@ class MAModelingAddin {
             generateCapExBtn.style.display = 'inline-flex';
           }
           
-          if (this.uiController) {
-            this.uiController.showMessage('P&L Statement created! You can now generate the CapEx Summary.', 'success');
-          } else {
-            console.log('P&L Statement created successfully!');
-            if (this.uiController) {
-              this.uiController.showMessage('P&L Statement created successfully! You can now generate the Free Cash Flow.', 'success');
-            }
-          }
+          // Sheet created successfully - no popup needed
+          console.log('P&L Statement created successfully!');
         } else {
           console.error('AI P&L generation failed:', result.error);
           if (this.uiController) {
@@ -592,9 +583,8 @@ class MAModelingAddin {
             generateDebtModelBtn.style.display = 'inline-flex';
           }
           
-          if (this.uiController) {
-            this.uiController.showMessage('CapEx Summary created! You can now generate the Debt Model.', 'success');
-          }
+          // Sheet created successfully - no popup needed
+          console.log('CapEx Summary created successfully!');
         } else {
           console.error('CapEx generation failed');
           if (this.uiController) {
@@ -634,9 +624,8 @@ class MAModelingAddin {
             generateFCFBtn.style.display = 'inline-flex';
           }
           
-          if (this.uiController) {
-            this.uiController.showMessage('Debt Financing created! You can now generate the Free Cash Flow.', 'success');
-          }
+          // Sheet created successfully - no popup needed
+          console.log('Debt Financing created successfully!');
         } else {
           console.error('Debt Model generation failed');
           if (this.uiController) {
@@ -674,14 +663,8 @@ class MAModelingAddin {
         
         if (result.success) {
           console.log('FCF generated successfully');
-          if (this.uiController) {
-            this.uiController.showMessage('Free Cash Flow Statement created! Check the Free Cash Flow sheet.', 'success');
-          } else {
-            console.log('Free Cash Flow Statement created successfully!');
-            if (this.uiController) {
-              this.uiController.showMessage('Free Cash Flow Statement created successfully! Check the Free Cash Flow sheet in Excel.', 'success');
-            }
-          }
+          // Sheet created successfully - no popup needed
+          console.log('Free Cash Flow Statement created successfully!');
           
           // IRR & MOIC are now calculated automatically in the FCF sheet
         } else {
