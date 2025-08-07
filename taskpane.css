@@ -2533,6 +2533,21 @@ select {
   border: 1px solid var(--border-primary);
 }
 
+.arcadeus-avatar {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.avatar-logo {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+
 .user-message-content,
 .assistant-message-content,
 .system-message-content,
@@ -2700,4 +2715,67 @@ select {
 .message-text {
   white-space: pre-wrap; /* Preserve line breaks */
   word-break: break-word; /* Handle long words */
+}
+
+/* Chat Resizer Styles */
+.chat-resizer {
+  height: 12px;
+  cursor: ns-resize;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border-primary);
+  border-bottom: 1px solid var(--border-primary);
+  user-select: none;
+  position: relative;
+}
+
+.chat-resizer:hover {
+  background: var(--bg-tertiary);
+}
+
+.resizer-handle {
+  width: 40px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.resizer-dots {
+  display: flex;
+  gap: 3px;
+  align-items: center;
+}
+
+.resizer-dot {
+  width: 3px;
+  height: 3px;
+  background: var(--text-tertiary);
+  border-radius: 50%;
+  opacity: 0.6;
+}
+
+.chat-resizer:hover .resizer-dot {
+  opacity: 1;
+  background: var(--text-secondary);
+}
+
+/* Chat layout adjustments for resizing */
+#chatPage {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+#chatMessages {
+  flex: 1;
+  min-height: 200px;
+  overflow-y: auto;
+}
+
+#chatInputSection {
+  flex-shrink: 0;
+  min-height: 140px;
 }

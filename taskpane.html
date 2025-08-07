@@ -427,7 +427,18 @@
                 <!-- Messages will be dynamically added here -->
             </div>
             
-            <div class="chat-input-section">
+            <!-- Chat Resizer -->
+            <div class="chat-resizer" id="chatResizer">
+                <div class="resizer-handle">
+                    <div class="resizer-dots">
+                        <div class="resizer-dot"></div>
+                        <div class="resizer-dot"></div>
+                        <div class="resizer-dot"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chat-input-section" id="chatInputSection">
                 <div class="input-tabs">
                     <button class="input-tab active" data-tab="basic">Basic</button>
                     <button class="input-tab" data-tab="maxai">Max AI</button>
@@ -567,7 +578,7 @@
         let isReadingExcelFiles = false;
 
         function initializeChatSystem() {
-            console.log('🤖 Initializing chat system...');
+            console.log('Initializing chat system...');
             
             const sendButton = document.getElementById('sendMessage');
             const chatInput = document.getElementById('chatInput');
@@ -583,10 +594,74 @@
                     }
                 });
                 
-                console.log('✅ Chat system initialized');
+                console.log('Chat system initialized');
             } else {
-                console.error('❌ Chat elements not found');
+                console.error('Chat elements not found');
             }
+            
+            // Initialize chat resizer
+            initializeChatResizer();
+        }
+
+        function initializeChatResizer() {
+            const resizer = document.getElementById('chatResizer');
+            const chatMessages = document.getElementById('chatMessages');
+            const chatInputSection = document.getElementById('chatInputSection');
+            
+            if (!resizer || !chatMessages || !chatInputSection) {
+                console.error('Resizer elements not found');
+                return;
+            }
+            
+            let isResizing = false;
+            let startY = 0;
+            let startInputHeight = 0;
+            let startMessagesHeight = 0;
+            
+            resizer.addEventListener('mousedown', function(e) {
+                isResizing = true;
+                startY = e.clientY;
+                startInputHeight = chatInputSection.offsetHeight;
+                startMessagesHeight = chatMessages.offsetHeight;
+                
+                document.body.style.cursor = 'ns-resize';
+                document.body.style.userSelect = 'none';
+                
+                e.preventDefault();
+            });
+            
+            document.addEventListener('mousemove', function(e) {
+                if (!isResizing) return;
+                
+                const deltaY = e.clientY - startY;
+                const newInputHeight = startInputHeight - deltaY;
+                const newMessagesHeight = startMessagesHeight + deltaY;
+                
+                // Set minimum and maximum heights
+                const minInputHeight = 140;
+                const maxInputHeight = 400;
+                const minMessagesHeight = 200;
+                
+                if (newInputHeight >= minInputHeight && 
+                    newInputHeight <= maxInputHeight && 
+                    newMessagesHeight >= minMessagesHeight) {
+                    
+                    chatInputSection.style.height = newInputHeight + 'px';
+                    chatMessages.style.height = newMessagesHeight + 'px';
+                }
+                
+                e.preventDefault();
+            });
+            
+            document.addEventListener('mouseup', function() {
+                if (isResizing) {
+                    isResizing = false;
+                    document.body.style.cursor = '';
+                    document.body.style.userSelect = '';
+                }
+            });
+            
+            console.log('Chat resizer initialized');
         }
 
         async function handleSendMessage() {
@@ -885,12 +960,9 @@
                     messageClass = 'user-message-content';
                     break;
                 case 'assistant':
-                    avatar = '<div class="message-avatar assistant-avatar">AI</div>';
-                    messageClass = 'assistant-message-content';
-                    break;
                 case 'system':
-                    avatar = '<div class="message-avatar system-avatar">SYS</div>';
-                    messageClass = 'system-message-content';
+                    avatar = '<div class="message-avatar arcadeus-avatar"><img src="assets/Arcadeus.svg" alt="Arcadeus" class="avatar-logo"></div>';
+                    messageClass = 'assistant-message-content';
                     break;
             }
             
@@ -928,7 +1000,7 @@
             messageDiv.className = 'chat-message loading-message';
             
             messageDiv.innerHTML = `
-                <div class="message-avatar system-avatar">SYS</div>
+                <div class="message-avatar arcadeus-avatar"><img src="assets/Arcadeus.svg" alt="Arcadeus" class="avatar-logo"></div>
                 <div class="loading-message-content">
                     <div class="message-text" id="loadingText">${text}</div>
                     <div class="loading-progress">
