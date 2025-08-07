@@ -714,25 +714,38 @@
                         
                         // Get used range
                         const usedRange = worksheet.getUsedRangeOrNullObject();
-                        usedRange.load(['values', 'formulas', 'address']);
+                        usedRange.load(['values', 'formulas', 'address', 'text']);
                         
                         await context.sync();
                         
                         if (usedRange.isNullObject) {
-                            resolve({});
+                            resolve({
+                                sheetName: sheetName,
+                                status: 'empty',
+                                message: 'Sheet exists but has no data'
+                            });
                             return;
                         }
                         
-                        // Process the data
+                        // Process the data comprehensively
                         const values = usedRange.values;
                         const formulas = usedRange.formulas;
+                        const text = usedRange.text;
+                        
+                        // Extract meaningful data structure
+                        const dataStructure = analyzeSheetStructure(values, text, sheetName);
                         
                         const processedData = {
+                            sheetName: sheetName,
                             range: usedRange.address,
                             rowCount: values.length,
                             columnCount: values[0] ? values[0].length : 0,
-                            sampleData: values.slice(0, 10), // First 10 rows as sample
-                            hasFormulas: formulas.some(row => row.some(cell => cell && cell.startsWith('=')))
+                            rawData: values, // Complete data for AI analysis
+                            textData: text, // Formatted text values
+                            dataStructure: dataStructure, // Structured interpretation
+                            hasFormulas: formulas.some(row => row.some(cell => cell && cell.startsWith('='))),
+                            keyMetrics: extractKeyMetrics(values, text, sheetName),
+                            status: 'success'
                         };
                         
                         resolve(processedData);
@@ -741,6 +754,65 @@
                     reject(error);
                 }
             });
+        }
+
+        function analyzeSheetStructure(values, text, sheetName) {
+            // Analyze the structure based on sheet type
+            const structure = {
+                headers: [],
+                dataRows: [],
+                summary: `${sheetName} contains ${values.length} rows and ${values[0]?.length || 0} columns`
+            };
+
+            if (values.length > 0) {
+                // First row often contains headers
+                structure.headers = text[0] || values[0] || [];
+                
+                // Analyze data patterns
+                if (values.length > 1) {
+                    structure.dataRows = text.slice(1, Math.min(11, text.length)); // First 10 data rows
+                }
+            }
+
+            return structure;
+        }
+
+        function extractKeyMetrics(values, text, sheetName) {
+            const metrics = [];
+            
+            // Look for common financial metrics based on sheet name
+            const searchPatterns = {
+                'Assumptions': ['Deal Value', 'LTV', 'Transaction Fee', 'Discount Rate', 'WACC'],
+                'P&L Statement': ['Revenue', 'EBITDA', 'Net Income', 'Gross Profit'],
+                'Free Cash Flow': ['FCF', 'Cash Flow', 'NPV', 'IRR', 'MOIC'],
+                'Debt Model': ['Interest Rate', 'Debt Amount', 'Principal', 'Interest Payment'],
+                'Valuation Summary': ['Enterprise Value', 'Equity Value', 'Multiple', 'Valuation']
+            };
+
+            const patterns = searchPatterns[sheetName] || [];
+            
+            // Search through the data for these patterns
+            for (let i = 0; i < values.length && i < 50; i++) { // Search first 50 rows
+                for (let j = 0; j < (values[i]?.length || 0); j++) {
+                    const cellValue = String(text[i]?.[j] || values[i]?.[j] || '').toLowerCase();
+                    
+                    for (const pattern of patterns) {
+                        if (cellValue.includes(pattern.toLowerCase())) {
+                            // Try to find the corresponding value
+                            const value = values[i]?.[j + 1] || values[i + 1]?.[j];
+                            if (value !== null && value !== undefined && value !== '') {
+                                metrics.push({
+                                    label: pattern,
+                                    value: value,
+                                    location: `Row ${i + 1}, Col ${j + 1}`
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+
+            return metrics;
         }
 
         async function sendMessageToOpenAI(userMessage) {

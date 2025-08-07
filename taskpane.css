@@ -2490,16 +2490,17 @@ select {
 }
 
 /* User messages aligned right */
-.user-message {
+.chat-message.user-message {
   justify-content: flex-end;
   flex-direction: row-reverse;
 }
 
 /* Assistant and system messages aligned left */
-.assistant-message,
-.system-message,
-.loading-message {
+.chat-message.assistant-message,
+.chat-message.system-message,
+.chat-message.loading-message {
   justify-content: flex-start;
+  flex-direction: row;
 }
 
 .message-avatar {
@@ -2613,32 +2614,32 @@ select {
 .progress-bar-container {
   flex: 1;
   height: 4px;
-  background: var(--bg-accent);
+  background: var(--border-secondary); /* Lighter gray background for contrast */
   border-radius: 2px;
   overflow: hidden;
 }
 
 .progress-bar-fill {
   height: 100%;
-  background: var(--accent-primary);
+  background: var(--text-primary); /* Black progress bar */
   border-radius: 2px;
   transition: width 0.3s ease;
 }
 
 .progress-text {
   font-size: var(--font-size-xs);
-  color: var(--text-tertiary);
-  font-weight: 500;
+  color: var(--text-primary); /* Black percentage text */
+  font-weight: 600; /* Slightly bolder for better visibility */
   min-width: 32px;
   text-align: right;
 }
 
 .loading-message.completed .progress-bar-fill {
-  background: var(--accent-secondary);
+  background: var(--text-primary); /* Keep black when completed */
 }
 
 .loading-message.completed .progress-text {
-  color: var(--accent-secondary);
+  color: var(--text-primary); /* Keep black when completed */
 }
 
 /* Chat input enhancements for better UX */
@@ -2683,7 +2684,7 @@ select {
 #chatMessages::after {
   content: '';
   display: block;
-  height: 80px; /* Extra space at bottom */
+  height: 160px; /* Double the extra space at bottom */
 }
 
 /* Improved message tail styling for better visual hierarchy */
