@@ -325,11 +325,12 @@ function initializeProfileMenu() {
 }
 
 // Initialize on page load
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initializeProfileMenu);
-} else {
-    initializeProfileMenu();
-}
+// DISABLED: Profile menu initialization to remove Google profile image from header
+// if (document.readyState === 'loading') {
+//     document.addEventListener('DOMContentLoaded', initializeProfileMenu);
+// } else {
+//     initializeProfileMenu();
+// }
 
 // Export functions for use in other scripts
 window.arcadeusAuth = {
