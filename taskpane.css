@@ -632,6 +632,7 @@ body {
   display: flex;
   flex-direction: column;
   height: calc(100vh - 80px);
+  overflow: hidden;
 }
 
 /* Chat Toolbar */
@@ -642,6 +643,7 @@ body {
   padding: 12px 16px;
   background: var(--bg-secondary);
   border-bottom: 1px solid var(--border-primary);
+  flex-shrink: 0;
 }
 
 .toolbar-left, .toolbar-right {
@@ -682,6 +684,7 @@ body {
   flex-direction: column;
   padding: 16px;
   min-height: 0;
+  overflow: hidden;
 }
 
 .chat-tip-section {
@@ -728,7 +731,6 @@ body {
   background: var(--bg-secondary);
   border-radius: 8px;
   min-height: 0;
-  max-height: 100%;
 }
 
 .chat-message {
