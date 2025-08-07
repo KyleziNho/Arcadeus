@@ -1264,6 +1264,33 @@
         
         // Setup watcher after DOM is ready
         setTimeout(setupTabsWatcher, 1000);
+        
+        // Additional aggressive protection - check every 2 seconds
+        setInterval(() => {
+            const tabsContainer = document.querySelector('.assumptions-tabs');
+            if (tabsContainer) {
+                const isVisible = tabsContainer.offsetHeight > 0 && 
+                                 tabsContainer.offsetWidth > 0 && 
+                                 window.getComputedStyle(tabsContainer).display !== 'none' &&
+                                 window.getComputedStyle(tabsContainer).visibility !== 'hidden';
+                
+                if (!isVisible) {
+                    console.warn('🚨 Tabs became invisible! Forcing visibility...');
+                    tabsContainer.style.display = 'flex';
+                    tabsContainer.style.visibility = 'visible';
+                    tabsContainer.style.opacity = '1';
+                    tabsContainer.style.position = 'relative';
+                    tabsContainer.style.zIndex = '10';
+                    tabsContainer.style.minHeight = '48px';
+                    
+                    // Also ensure parent container is visible
+                    const assumptionsPage = document.getElementById('assumptionsPage');
+                    if (assumptionsPage && assumptionsPage.style.display === 'block') {
+                        console.log('✅ Tabs visibility restored');
+                    }
+                }
+            }
+        }, 2000);
 
         function initializeProgressTracking() {
             const sections = [
