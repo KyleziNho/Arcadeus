@@ -542,6 +542,29 @@ body {
   border-color: #1e6b41;
 }
 
+/* Completed section tabs */
+.assumption-tab.completed {
+  background: #d1fae5;
+  border-color: #a7f3d0;
+  color: #065f46;
+}
+
+.assumption-tab.completed:hover {
+  background: #a7f3d0;
+  border-color: #6ee7b7;
+}
+
+.assumption-tab.completed.active {
+  background: #217346;
+  border-color: #217346;
+  color: #ffffff;
+}
+
+.assumption-tab.completed.active:hover {
+  background: #1e6b41;
+  border-color: #1e6b41;
+}
+
 /* Tab Content */
 .assumptions-content {
   flex: 1;

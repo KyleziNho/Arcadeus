@@ -833,6 +833,16 @@
                     }
                 }
                 
+                // Update tab visual state based on completion
+                const tabElement = document.querySelector(`.assumption-tab[data-tab="${section.id}"]`);
+                if (tabElement) {
+                    if (sectionComplete) {
+                        tabElement.classList.add('completed');
+                    } else {
+                        tabElement.classList.remove('completed');
+                    }
+                }
+                
                 if (sectionComplete) {
                     completedSections++;
                     console.log(`✅ Section ${section.id} completed`);
