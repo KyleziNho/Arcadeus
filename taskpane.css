@@ -2486,6 +2486,20 @@ select {
   gap: 12px;
   margin-bottom: 20px;
   align-items: flex-start;
+  width: 100%;
+}
+
+/* User messages aligned right */
+.user-message {
+  justify-content: flex-end;
+  flex-direction: row-reverse;
+}
+
+/* Assistant and system messages aligned left */
+.assistant-message,
+.system-message,
+.loading-message {
+  justify-content: flex-start;
 }
 
 .message-avatar {
@@ -2522,23 +2536,25 @@ select {
 .assistant-message-content,
 .system-message-content,
 .loading-message-content {
-  flex: 1;
-  max-width: calc(100% - 40px);
+  max-width: 70%; /* Limit maximum width */
+  min-width: 100px; /* Ensure minimum readable width */
+  width: fit-content; /* Proportional to content */
+  flex-shrink: 1;
 }
 
 .user-message-content {
   background: var(--text-primary);
   color: white;
-  border-radius: 12px;
-  padding: 14px 16px;
+  border-radius: 16px 16px 4px 16px;
+  padding: 12px 16px;
 }
 
 .assistant-message-content {
   background: var(--bg-secondary);
   color: var(--text-primary);
   border: 1px solid var(--border-primary);
-  border-radius: 12px;
-  padding: 14px 16px;
+  border-radius: 16px 16px 16px 4px;
+  padding: 12px 16px;
 }
 
 .system-message-content {
@@ -2548,6 +2564,7 @@ select {
   border-radius: 8px;
   padding: 10px 12px;
   font-size: var(--font-size-sm);
+  max-width: 85%; /* System messages can be wider */
 }
 
 .loading-message-content {
@@ -2556,6 +2573,7 @@ select {
   border: 1px solid var(--border-primary);
   border-radius: 12px;
   padding: 14px 16px;
+  max-width: 85%; /* Loading messages can be wider */
 }
 
 .message-text {
@@ -2659,4 +2677,26 @@ select {
 
 #chatMessages::-webkit-scrollbar-thumb:hover {
   background: var(--border-accent);
+}
+
+/* Add bottom spacing for better scrolling */
+#chatMessages::after {
+  content: '';
+  display: block;
+  height: 80px; /* Extra space at bottom */
+}
+
+/* Improved message tail styling for better visual hierarchy */
+.user-message-content {
+  border-radius: 16px 16px 4px 16px; /* Tail pointing right */
+}
+
+.assistant-message-content {
+  border-radius: 16px 16px 16px 4px; /* Tail pointing left */
+}
+
+/* Special handling for short messages to ensure proper proportional width */
+.message-text {
+  white-space: pre-wrap; /* Preserve line breaks */
+  word-break: break-word; /* Handle long words */
 }

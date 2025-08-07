@@ -595,10 +595,13 @@
             
             if (!message || isReadingExcelFiles) return;
             
-            console.log('📤 Sending message:', message);
+            console.log('Sending message:', message);
             
             // Clear input
             chatInput.value = '';
+            
+            // Remove tip section and upgrade card on first message
+            removeTipAndUpgradeElements();
             
             // Add user message to chat
             addMessageToChat('user', message);
@@ -610,6 +613,33 @@
             
             // Send message to OpenAI
             await sendMessageToOpenAI(message);
+        }
+
+        function removeTipAndUpgradeElements() {
+            const tipSection = document.querySelector('.chat-tip-section');
+            const upgradeCard = document.querySelector('.upgrade-card');
+            
+            if (tipSection) {
+                tipSection.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+                tipSection.style.opacity = '0';
+                tipSection.style.transform = 'translateY(-10px)';
+                setTimeout(() => {
+                    if (tipSection.parentNode) {
+                        tipSection.parentNode.removeChild(tipSection);
+                    }
+                }, 300);
+            }
+            
+            if (upgradeCard) {
+                upgradeCard.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+                upgradeCard.style.opacity = '0';
+                upgradeCard.style.transform = 'translateY(-10px)';
+                setTimeout(() => {
+                    if (upgradeCard.parentNode) {
+                        upgradeCard.parentNode.removeChild(upgradeCard);
+                    }
+                }, 300);
+            }
         }
 
         async function readExcelFilesWithAnimation() {
@@ -792,17 +822,29 @@
                     break;
             }
             
-            messageDiv.innerHTML = `
-                ${avatar}
-                <div class="${messageClass}">
-                    <div class="message-text">${content}</div>
-                    <div class="message-time">${new Date().toLocaleTimeString()}</div>
-                </div>
-            `;
+            if (type === 'user') {
+                // User messages on the right
+                messageDiv.innerHTML = `
+                    <div class="${messageClass}">
+                        <div class="message-text">${content}</div>
+                        <div class="message-time">${new Date().toLocaleTimeString()}</div>
+                    </div>
+                    ${avatar}
+                `;
+            } else {
+                // Assistant and system messages on the left
+                messageDiv.innerHTML = `
+                    ${avatar}
+                    <div class="${messageClass}">
+                        <div class="message-text">${content}</div>
+                        <div class="message-time">${new Date().toLocaleTimeString()}</div>
+                    </div>
+                `;
+            }
             
             chatMessages.appendChild(messageDiv);
             
-            // Scroll to bottom
+            // Scroll to bottom with extra space
             chatMessages.scrollTop = chatMessages.scrollHeight;
             
             return messageDiv;
@@ -828,6 +870,8 @@
             `;
             
             chatMessages.appendChild(messageDiv);
+            
+            // Scroll to bottom with extra space
             chatMessages.scrollTop = chatMessages.scrollHeight;
             
             return messageDiv;
