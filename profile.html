@@ -12,123 +12,76 @@
     <link rel="stylesheet" href="taskpane.css">
     
     <style>
-        :root {
-            --primary-gradient: linear-gradient(135deg, #217346 0%, #185132 100%);
-            --text-primary: #0f172a;
-            --text-secondary: #475569;
-            --text-tertiary: #64748b;
-            --bg-white: #ffffff;
-            --bg-gray: #f8fafc;
-            --bg-light: #f1f5f9;
-            --border-color: #e2e8f0;
-            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-            --success-color: #10b981;
-            --warning-color: #f59e0b;
-            --error-color: #ef4444;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
+        /* Profile Page Specific Styles */
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: var(--bg-gray);
-            color: var(--text-primary);
-            min-height: 100vh;
-        }
-
-        /* Profile page specific overrides */
-        body {
-            background: white;
+            background: #f9fafb;
         }
         
-        .app-header {
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            margin-bottom: 0;
-        }
-
-        /* Main Content */
-        .container {
+        .profile-container {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 40px 24px;
+            padding: 20px;
             height: calc(100vh - 80px);
             overflow-y: auto;
         }
 
-        /* Profile Header Section */
-        .profile-header {
-            background: var(--bg-white);
-            border-radius: 16px;
-            padding: 40px;
-            margin-bottom: 32px;
-            box-shadow: var(--shadow-md);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .profile-header::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 120px;
-            background: var(--primary-gradient);
-            opacity: 0.1;
-        }
-
-        .profile-info {
+        /* Profile Content Area */
+        .profile-content {
             display: flex;
-            align-items: center;
-            gap: 32px;
-            position: relative;
-            z-index: 1;
+            flex-direction: column;
+            gap: 20px;
         }
 
-
-        .profile-details h1 {
-            font-size: 32px;
-            font-weight: 700;
-            margin-bottom: 8px;
-            color: var(--text-primary);
+        /* Profile Overview Card */
+        .profile-overview {
+            background: #ffffff;
+            border: 1px solid #e1e5e9;
+            border-radius: 8px;
+            padding: 24px;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
         }
 
-        .profile-role {
-            font-size: 18px;
-            color: var(--text-secondary);
+        .profile-header {
+            border-bottom: 1px solid #e1e5e9;
+            padding-bottom: 20px;
+            margin-bottom: 20px;
+        }
+
+        .profile-name {
+            font-size: 24px;
+            font-weight: 600;
+            color: #1a202c;
             margin-bottom: 4px;
         }
 
-        .profile-company {
+        .profile-role {
             font-size: 16px;
-            color: var(--text-tertiary);
+            color: #64748b;
+            margin-bottom: 4px;
+        }
+
+        .profile-org {
+            font-size: 14px;
+            color: #94a3b8;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
         }
 
         .profile-badges {
             display: flex;
-            gap: 12px;
+            gap: 8px;
             margin-top: 16px;
         }
 
         .badge {
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 14px;
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-size: 13px;
             font-weight: 500;
-            background: var(--bg-light);
-            color: var(--text-secondary);
-            border: 1px solid var(--border-color);
+            background: #f1f5f9;
+            color: #475569;
+            border: 1px solid #e2e8f0;
         }
 
         .badge.primary {
@@ -137,46 +90,34 @@
             border-color: rgba(33, 115, 70, 0.2);
         }
 
-        /* Stats Grid */
-        .stats-grid {
+        /* Stats Section */
+        .stats-section {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 24px;
-            margin-bottom: 32px;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 16px;
         }
 
         .stat-card {
-            background: var(--bg-white);
-            border-radius: 12px;
-            padding: 24px;
-            box-shadow: var(--shadow-sm);
-            border: 1px solid var(--border-color);
+            background: #ffffff;
+            border: 1px solid #e1e5e9;
+            border-radius: 8px;
+            padding: 20px;
             transition: all 0.2s ease;
         }
 
         .stat-card:hover {
-            box-shadow: var(--shadow-md);
-            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            transform: translateY(-1px);
         }
 
         .stat-icon {
-            width: 40px;
-            height: 40px;
+            width: 36px;
+            height: 36px;
             border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin-bottom: 16px;
-        }
-
-        .stat-icon.blue {
-            background: rgba(59, 130, 246, 0.1);
-            color: #3b82f6;
-        }
-
-        .stat-icon.green {
-            background: rgba(16, 185, 129, 0.1);
-            color: #10b981;
+            margin-bottom: 12px;
         }
 
         .stat-icon.green {
@@ -184,131 +125,143 @@
             color: #217346;
         }
 
+        .stat-icon.blue {
+            background: rgba(59, 130, 246, 0.1);
+            color: #3b82f6;
+        }
+
+        .stat-icon.purple {
+            background: rgba(139, 92, 246, 0.1);
+            color: #8b5cf6;
+        }
+
         .stat-icon.orange {
-            background: rgba(245, 158, 11, 0.1);
-            color: #f59e0b;
+            background: rgba(251, 146, 60, 0.1);
+            color: #fb923c;
         }
 
         .stat-value {
-            font-size: 28px;
-            font-weight: 700;
-            color: var(--text-primary);
+            font-size: 24px;
+            font-weight: 600;
+            color: #1a202c;
             margin-bottom: 4px;
         }
 
         .stat-label {
             font-size: 14px;
-            color: var(--text-secondary);
+            color: #64748b;
         }
 
-        /* Content Sections */
-        .content-section {
-            background: var(--bg-white);
-            border-radius: 12px;
-            padding: 32px;
-            margin-bottom: 24px;
-            box-shadow: var(--shadow-sm);
-            border: 1px solid var(--border-color);
+        /* Info Sections */
+        .info-section {
+            background: #ffffff;
+            border: 1px solid #e1e5e9;
+            border-radius: 8px;
+            padding: 24px;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
         }
 
-        .section-title {
-            font-size: 20px;
+        .section-header {
+            font-size: 18px;
             font-weight: 600;
-            margin-bottom: 24px;
+            color: #1a202c;
+            margin-bottom: 20px;
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 8px;
+        }
+
+        .section-header svg {
+            width: 20px;
+            height: 20px;
+            color: #64748b;
         }
 
         .info-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 24px;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
         }
 
         .info-item {
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 6px;
         }
 
         .info-label {
-            font-size: 14px;
-            color: var(--text-tertiary);
+            font-size: 13px;
+            color: #94a3b8;
             font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .info-value {
-            font-size: 16px;
-            color: var(--text-primary);
+            font-size: 15px;
+            color: #334155;
             font-weight: 500;
         }
 
-        /* Property Types */
+        /* Property Types Grid */
         .property-types {
-            display: flex;
-            flex-wrap: wrap;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
             gap: 12px;
         }
 
-        .property-tag {
-            padding: 8px 16px;
-            background: var(--bg-light);
-            border-radius: 8px;
+        .property-item {
+            padding: 12px 16px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
             font-size: 14px;
             font-weight: 500;
-            color: var(--text-secondary);
-            border: 1px solid var(--border-color);
+            color: #475569;
             display: flex;
             align-items: center;
             gap: 8px;
+            transition: all 0.2s ease;
         }
 
-        .property-tag svg {
+        .property-item:hover {
+            background: #f1f5f9;
+            border-color: #cbd5e1;
+        }
+
+        .property-item svg {
             width: 16px;
             height: 16px;
             color: #217346;
+            flex-shrink: 0;
         }
 
-        /* Edit Button */
-        .edit-button {
-            position: absolute;
-            top: 24px;
-            right: 24px;
-            padding: 10px 20px;
-            background: var(--bg-white);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 500;
-            color: var(--text-secondary);
-            cursor: pointer;
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .edit-button:hover {
-            border-color: #667eea;
-            color: #217346;
-            background: rgba(102, 126, 234, 0.05);
-        }
-
-        /* Back Button */
-        .back-button {
+        /* Edit Profile Button */
+        .edit-profile-btn {
             display: inline-flex;
             align-items: center;
-            gap: 8px;
-            color: var(--text-secondary);
-            text-decoration: none;
+            gap: 6px;
+            padding: 8px 16px;
+            background: #217346;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
             font-weight: 500;
-            margin-bottom: 24px;
-            transition: color 0.2s ease;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
         }
 
-        .back-button:hover {
-            color: var(--text-primary);
+        .edit-profile-btn:hover {
+            background: #1e6b41;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(33, 115, 70, 0.3);
+        }
+
+        .edit-profile-btn svg {
+            width: 16px;
+            height: 16px;
         }
 
         /* Loading State */
@@ -317,74 +270,42 @@
             align-items: center;
             justify-content: center;
             height: 400px;
-            color: var(--text-secondary);
+            color: #64748b;
         }
 
         .loading-spinner {
-            width: 50px;
-            height: 50px;
-            position: relative;
-        }
-
-        .loading-spinner::before {
-            content: '';
-            position: absolute;
-            width: 100%;
-            height: 100%;
+            width: 40px;
+            height: 40px;
+            border: 3px solid #f3f4f6;
+            border-top-color: #217346;
             border-radius: 50%;
-            background: conic-gradient(from 0deg, transparent, #217346, #185132, transparent);
-            animation: modernSpin 1.5s linear infinite;
-            mask: radial-gradient(circle at center, transparent 65%, black 65%);
-            -webkit-mask: radial-gradient(circle at center, transparent 65%, black 65%);
+            animation: spin 0.8s linear infinite;
         }
 
-        .loading-spinner::after {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 8px;
-            height: 8px;
-            background: #217346;
-            border-radius: 50%;
-            transform: translate(-50%, -50%);
-            box-shadow: 0 0 10px rgba(102, 126, 234, 0.5);
-            animation: pulse 2s ease-in-out infinite;
-        }
-
-        @keyframes modernSpin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        @keyframes pulse {
-            0%, 100% { 
-                opacity: 1; 
-                transform: translate(-50%, -50%) scale(1);
-            }
-            50% { 
-                opacity: 0.6; 
-                transform: translate(-50%, -50%) scale(1.2);
-            }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
         }
 
         /* Responsive */
         @media (max-width: 768px) {
-            .profile-info {
-                flex-direction: column;
-                text-align: center;
+            .profile-container {
+                padding: 16px;
             }
 
-            .stats-grid {
+            .stats-section {
                 grid-template-columns: 1fr;
             }
 
-            .nav-links {
-                gap: 16px;
+            .info-grid {
+                grid-template-columns: 1fr;
             }
 
-            .header-container {
-                padding: 0 16px;
+            .property-types {
+                grid-template-columns: 1fr;
+            }
+
+            .profile-name {
+                font-size: 20px;
             }
         }
     </style>
@@ -416,7 +337,7 @@
     </header>
 
     <!-- Main Content -->
-    <main class="container">
+    <main class="profile-container">
         <div id="profileContent">
             <div class="loading">
                 <div class="loading-spinner"></div>
@@ -555,130 +476,135 @@
             const daysSince = Math.floor((new Date() - memberSince) / (1000 * 60 * 60 * 24));
 
             container.innerHTML = `
-                <!-- Profile Header -->
-                <div class="profile-header">
-                    <div class="profile-info">
-                        <div class="profile-details">
-                            <h1>${currentUser.displayName || 'User'}</h1>
-                            <p class="profile-role">${profileData.userRole || 'Real Estate Professional'}</p>
-                            <p class="profile-company">
+                <div class="profile-content">
+                    <!-- Profile Overview -->
+                    <div class="profile-overview">
+                        <div class="profile-header">
+                            <div class="profile-name">${currentUser.displayName || 'User'}</div>
+                            <div class="profile-role">${profileData.userRole || 'Real Estate Professional'}</div>
+                            <div class="profile-org">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M20 7h-9l-2-2H4c-1.1 0-1.99.9-1.99 2L2 17c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V9c0-1.1-.9-2-2-2z"/>
+                                    <path d="M3 21h18m-2 0v-8m-6 8v-12m-6 12V9m14-4H11l-2-2H3a2 2 0 00-2 2v12a2 2 0 002 2h16a2 2 0 002-2V7a2 2 0 00-2-2z"/>
                                 </svg>
                                 ${profileData.organizationName || 'Independent'}
-                            </p>
+                            </div>
                             <div class="profile-badges">
                                 <span class="badge primary">${getUserTypeLabel(profileData.userType)}</span>
-                                ${profileData.teamSize ? `<span class="badge">Team: ${profileData.teamSize}</span>` : ''}
+                                ${profileData.teamSize ? `<span class="badge">Team Size: ${profileData.teamSize}</span>` : ''}
                             </div>
                         </div>
+                        <a href="edit-profile.html" class="edit-profile-btn">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                            </svg>
+                            Edit Profile
+                        </a>
                     </div>
-                </div>
 
-                <!-- Stats Grid -->
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-icon blue">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                                <line x1="3" y1="9" x2="21" y2="9"></line>
-                                <line x1="9" y1="21" x2="9" y2="9"></line>
-                            </svg>
-                        </div>
-                        <div class="stat-value">0</div>
-                        <div class="stat-label">Models Created</div>
-                    </div>
-                    
-                    <div class="stat-card">
-                        <div class="stat-icon green">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
-                                <path d="m2 17 10 5 10-5"></path>
-                                <path d="m2 12 10 5 10-5"></path>
-                            </svg>
-                        </div>
-                        <div class="stat-value">${profileData.propertyTypes?.length || 0}</div>
-                        <div class="stat-label">Property Types</div>
-                    </div>
-                    
-                    <div class="stat-card">
-                        <div class="stat-icon green">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <circle cx="12" cy="12" r="10"></circle>
-                                <polyline points="12 6 12 12 16 14"></polyline>
-                            </svg>
-                        </div>
-                        <div class="stat-value">${daysSince}</div>
-                        <div class="stat-label">Days Active</div>
-                    </div>
-                    
-                    <div class="stat-card">
-                        <div class="stat-icon orange">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                                <polyline points="22 4 12 14.01 9 11.01"></polyline>
-                            </svg>
-                        </div>
-                        <div class="stat-value">100%</div>
-                        <div class="stat-label">Profile Complete</div>
-                    </div>
-                </div>
-
-                <!-- Account Information -->
-                <div class="content-section">
-                    <h2 class="section-title">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="12" cy="12" r="3"></circle>
-                            <path d="M12 1v6m0 6v6m11-11h-6m-6 0H1"></path>
-                        </svg>
-                        Account Information
-                    </h2>
-                    <div class="info-grid">
-                        <div class="info-item">
-                            <span class="info-label">Email</span>
-                            <span class="info-value">${currentUser.email}</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="info-label">Account Type</span>
-                            <span class="info-value">${getUserTypeLabel(profileData.userType)}</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="info-label">Organisation</span>
-                            <span class="info-value">${profileData.organizationName || 'Not specified'}</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="info-label">Role</span>
-                            <span class="info-value">${profileData.userRole || 'Not specified'}</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="info-label">Team Size</span>
-                            <span class="info-value">${profileData.teamSize || 'Not specified'}</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="info-label">Member Since</span>
-                            <span class="info-value">${memberSince.toLocaleDateString()}</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Investment Focus -->
-                <div class="content-section">
-                    <h2 class="section-title">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
-                        </svg>
-                        Investment Focus
-                    </h2>
-                    <div class="property-types">
-                        ${(profileData.propertyTypes || []).map(type => `
-                            <div class="property-tag">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M9 11l3 3L22 4"></path>
-                                    <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"></path>
+                    <!-- Stats Section -->
+                    <div class="stats-section">
+                        <div class="stat-card">
+                            <div class="stat-icon green">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                    <line x1="3" y1="9" x2="21" y2="9"></line>
+                                    <line x1="9" y1="21" x2="9" y2="9"></line>
                                 </svg>
-                                ${getPropertyTypeLabel(type)}
                             </div>
-                        `).join('')}
+                            <div class="stat-value">12</div>
+                            <div class="stat-label">Models Created</div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-icon blue">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+                                    <path d="m2 17 10 5 10-5"></path>
+                                    <path d="m2 12 10 5 10-5"></path>
+                                </svg>
+                            </div>
+                            <div class="stat-value">${profileData.propertyTypes?.length || 0}</div>
+                            <div class="stat-label">Property Types</div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-icon purple">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <polyline points="12 6 12 12 16 14"></polyline>
+                                </svg>
+                            </div>
+                            <div class="stat-value">${daysSince}</div>
+                            <div class="stat-label">Days Active</div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-icon orange">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                                </svg>
+                            </div>
+                            <div class="stat-value">100%</div>
+                            <div class="stat-label">Profile Complete</div>
+                        </div>
+                    </div>
+
+                    <!-- Account Information -->
+                    <div class="info-section">
+                        <h2 class="section-header">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="3"></circle>
+                                <path d="M12 1v6m0 6v6m11-11h-6m-6 0H1"></path>
+                            </svg>
+                            Account Information
+                        </h2>
+                        <div class="info-grid">
+                            <div class="info-item">
+                                <span class="info-label">Email Address</span>
+                                <span class="info-value">${currentUser.email}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Account Type</span>
+                                <span class="info-value">${getUserTypeLabel(profileData.userType)}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Organization</span>
+                                <span class="info-value">${profileData.organizationName || 'Not specified'}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Current Role</span>
+                                <span class="info-value">${profileData.userRole || 'Not specified'}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Team Size</span>
+                                <span class="info-value">${profileData.teamSize || 'Not specified'}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Member Since</span>
+                                <span class="info-value">${memberSince.toLocaleDateString()}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Investment Focus -->
+                    <div class="info-section">
+                        <h2 class="section-header">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                            </svg>
+                            Investment Focus Areas
+                        </h2>
+                        <div class="property-types">
+                            ${(profileData.propertyTypes || []).map(type => `
+                                <div class="property-item">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M20 6L9 17l-5-5"></path>
+                                    </svg>
+                                    ${getPropertyTypeLabel(type)}
+                                </div>
+                            `).join('')}
+                        </div>
                     </div>
                 </div>
             `;
