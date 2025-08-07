@@ -4590,9 +4590,9 @@ You MUST create a P&L Statement with this EXACT structure:
       
       const leveredCashflowsRow = currentRow;
       // Store row numbers for correct formula references (adjusted for empty row)
-      const debtUpfrontCostsRow = currentRow - 4;
-      const debtExpenseRow = currentRow - 3;
-      const loanProceedsRow = currentRow - 2;
+      const debtUpfrontCostsRow = currentRow - 3;
+      const debtExpenseRow = currentRow - 2;
+      const loanProceedsRow = currentRow - 1;
       
       for (let i = 0; i <= periods; i++) {
         const colLetter = this.getColumnLetter(i + 1);
