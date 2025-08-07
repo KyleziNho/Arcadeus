@@ -1043,11 +1043,7 @@
 
         // Input tab functionality
         document.addEventListener('DOMContentLoaded', function() {
-            // Initialize assumption tabs on page load
-            console.log('🚀 DOM loaded - initializing assumption tabs');
-            setTimeout(() => {
-                initializeAssumptionTabs();
-            }, 500);
+            console.log('🚀 DOM loaded - assumption tabs will be initialized by main app class');
 
             const inputTabs = document.querySelectorAll('.input-tab');
             inputTabs.forEach(tab => {
@@ -1104,8 +1100,7 @@
                 });
             }
 
-            // Initialize assumption tabs
-            initializeAssumptionTabs();
+            // Assumption tabs will be initialized by main app class
             
             // Initialize progress tracking
             initializeProgressTracking();
@@ -1184,6 +1179,9 @@
             
             console.log('Tab event listener attached to container');
         }
+        
+        // Make function globally available
+        window.initializeAssumptionTabs = initializeAssumptionTabs;
 
         function initializeProgressTracking() {
             const sections = [
@@ -1845,7 +1843,7 @@ Generate a company in technology, manufacturing, healthcare, or business service
             toast.className = 'ai-toast loading';
             toast.innerHTML = `
                 <div class="toast-content">
-                    <div class="toast-spinner"></div>
+                    <img src="assets/Arcadeus.svg" alt="Loading" class="toast-spinner">
                     <span>${message}</span>
                 </div>
             `;

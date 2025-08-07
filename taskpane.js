@@ -122,6 +122,9 @@ class MAModelingAddin {
     // Set up main event listeners
     this.setupMainEventListeners();
     
+    // Initialize assumption tabs explicitly
+    this.initializeAssumptionTabs();
+    
     // Restore collapsed states
     this.restoreCollapsedStates();
     
@@ -231,6 +234,18 @@ class MAModelingAddin {
     // Auto-load saved data
     if (this.dataManager) {
       this.dataManager.autoLoadSavedData();
+    }
+  }
+
+  initializeAssumptionTabs() {
+    console.log('🔧 Initializing assumption tabs from main class...');
+    
+    // Call the global function if it exists
+    if (typeof window.initializeAssumptionTabs === 'function') {
+      window.initializeAssumptionTabs();
+      console.log('✅ Assumption tabs initialized via global function');
+    } else {
+      console.warn('⚠️ Global initializeAssumptionTabs function not found');
     }
   }
 
