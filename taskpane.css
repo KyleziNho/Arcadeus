@@ -88,10 +88,12 @@
 }
 
 .loading-logo {
-    max-width: 600px;
-    width: 100%;
+    max-width: 800px; /* Increased from 600px for bigger logo */
+    width: 90%; /* Slightly reduced from 100% to maintain padding */
     height: auto;
     animation: pulseOpacity 3s ease-in-out infinite;
+    margin: 0 auto;
+    display: block;
 }
 
 @keyframes pulseOpacity {
@@ -205,6 +207,13 @@ body {
 .header-logo {
   height: 40px;
   width: auto;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.header-logo:hover {
+  transform: scale(1.05);
+  opacity: 0.8;
 }
 
 .nav-tabs {
@@ -1714,6 +1723,13 @@ select {
 
   .header-logo {
     height: 32px;
+    transition: all 0.3s ease;
+    cursor: pointer;
+  }
+  
+  .header-logo:hover {
+    transform: scale(1.05);
+    opacity: 0.8;
   }
 
   .nav-tabs {
@@ -2371,4 +2387,95 @@ select {
 @keyframes toastSpin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
+}
+
+/* Generate Model Button - Black with Rainbow Underline Animation */
+.progress-generate-button {
+  position: relative;
+  background: #1a1a1a !important; /* Black background */
+  color: #ffffff !important;
+  border: none !important;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-family: var(--font-system);
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.progress-generate-button:hover {
+  background: #333333 !important;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+}
+
+.progress-generate-button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.progress-generate-button svg {
+  color: #ffffff;
+  fill: none;
+  stroke: currentColor;
+}
+
+/* Rainbow underline animation */
+.progress-generate-button::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(
+    90deg,
+    #ff0000,
+    #ff8c00,
+    #ffd700,
+    #32cd32,
+    #00bfff,
+    #4169e1,
+    #8a2be2
+  );
+  background-size: 400% 100%;
+  animation: rainbow-slide 3s ease-in-out infinite;
+  border-radius: 0 0 8px 8px;
+}
+
+@keyframes rainbow-slide {
+  0% {
+    background-position: 0% 50%;
+    opacity: 0.7;
+  }
+  50% {
+    background-position: 100% 50%;
+    opacity: 1;
+  }
+  100% {
+    background-position: 0% 50%;
+    opacity: 0.7;
+  }
+}
+
+/* Subtle pulse effect on the rainbow underline */
+.progress-generate-button:hover::after {
+  animation: rainbow-slide 2s ease-in-out infinite, rainbow-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes rainbow-pulse {
+  0%, 100% {
+    height: 3px;
+    opacity: 0.7;
+  }
+  50% {
+    height: 4px;
+    opacity: 1;
+  }
 }

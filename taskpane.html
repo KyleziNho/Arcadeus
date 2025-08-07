@@ -83,7 +83,7 @@
         <!-- Clean Header -->
         <div class="app-header">
             <div class="brand-container">
-                <img src="assets/Arcadeus.svg" alt="Arcadeus" class="header-logo">
+                <img src="assets/Arcadeus.svg" alt="Arcadeus" class="header-logo" onclick="showAssumptions()" style="cursor: pointer;">
             </div>
             <div class="nav-tabs">
                 <button class="nav-tab active" id="assumptionsTab" onclick="showAssumptions()">Assumptions</button>
@@ -993,28 +993,28 @@
   },
   "dealAssumptions": {
     "dealName": "realistic company name (e.g., TechFlow Solutions, MidAtlantic Manufacturing, etc.)",
-    "dealValue": "number between 150-800 (million USD - realistic PE deal sizes)",
+    "dealValue": "number between 150000000-800000000 (EXACT NUMBERS: 150 million to 800 million USD)",
     "transactionFee": "number between 1.8-3.2",
     "dealLTV": "number between 55-70"
   },
   "revenueItems": [
     {
       "name": "Primary Revenue Stream (e.g., Product Sales, Service Revenue, Subscription Revenue)",
-      "value": "large number in millions (50-200M typically)",
+      "value": "EXACT NUMBERS: between 50000000-200000000 (50 million to 200 million USD)",
       "growthRate": "number between 8-25 (realistic growth rates)"
     }
   ],
   "operatingExpenses": [
     {
       "name": "Major expense category (e.g., Personnel Costs, R&D, Sales & Marketing)",
-      "value": "realistic expense amount in millions",
+      "value": "EXACT NUMBERS: between 25000000-150000000 (25 million to 150 million USD)",
       "growthRate": "number between 3-12"
     }
   ],
   "capEx": [
     {
       "name": "Capital expenditure (e.g., Equipment Upgrades, Facility Expansion, Technology Infrastructure)",
-      "value": "realistic capex amount in millions",
+      "value": "EXACT NUMBERS: between 5000000-25000000 (5 million to 25 million USD)",
       "growthRate": "number between 2-8"
     }
   ],
@@ -1034,13 +1034,18 @@ CRITICAL REQUIREMENTS:
 1. Generate 2-5 revenue items with varying realistic names and substantial values
 2. Generate 3-6 operating expense items covering major cost categories
 3. Generate 2-4 capex items with realistic infrastructure/equipment investments
-4. Deal values should be 150M+ (realistic PE deal sizes)
-5. Revenue items should total 80-300M annually (realistic for PE targets)
+4. ALL NUMBERS MUST BE EXACT NUMERIC VALUES (no text like "M" or "million"):
+   - Deal values: 150000000 to 800000000 (150-800 million)
+   - Revenue items: 50000000 to 200000000 each (50-200 million each)
+   - Operating expenses: 25000000 to 150000000 each (25-150 million each)
+   - CapEx items: 5000000 to 25000000 each (5-25 million each)
+5. Revenue items should total 100000000-400000000 annually (100-400M total)
 6. Operating expenses should be 60-80% of revenues (realistic margins)
 7. CapEx should be 3-8% of revenues annually
 8. Use real business terminology and realistic company names
-9. Include WACC in debt model
+9. Include WACC in debt model (9.5-14.5 range)
 10. Ensure profitable deal structure with realistic multiples
+11. RETURN ONLY NUMERIC VALUES - NO CURRENCY SYMBOLS OR TEXT
 
 Generate a company in technology, manufacturing, healthcare, or business services sector with realistic financial metrics.`;
 
@@ -1112,11 +1117,23 @@ Generate a company in technology, manufacturing, healthcare, or business service
         }
 
         function ensureDebtModelSectionVisible() {
+            console.log('🏦 Ensuring debt model section is visible...');
+            
             // Find the debt model section and ensure it's expanded
             const debtModelSection = document.getElementById('debtModel');
             if (debtModelSection) {
                 // Remove collapsed state if present
                 debtModelSection.classList.remove('collapsed');
+                
+                // Make sure the tab panel is visible
+                debtModelSection.style.display = 'block';
+                
+                // Find and activate the debt model tab button
+                const debtModelTab = document.querySelector('button[data-tab="debtModel"]');
+                if (debtModelTab) {
+                    debtModelTab.classList.add('active');
+                    console.log('📋 Debt model tab activated');
+                }
                 
                 // Find the minimize button and ensure it shows correct state
                 const minimizeBtn = debtModelSection.querySelector('.minimize-btn');
@@ -1124,7 +1141,9 @@ Generate a company in technology, manufacturing, healthcare, or business service
                     minimizeBtn.innerHTML = '−'; // Show minimize symbol
                 }
                 
-                console.log('Debt model section ensured visible');
+                console.log('🏦 Debt model section is now visible and accessible');
+            } else {
+                console.error('❌ Debt model section not found');
             }
         }
 
@@ -1165,19 +1184,40 @@ Generate a company in technology, manufacturing, healthcare, or business service
             document.getElementById('terminalCapRate').value = data.exitAssumptions.terminalCapRate;
             
             // Fill Debt Model
-            document.getElementById('loanIssuanceFees').value = data.debtModel.loanIssuanceFees;
-            if (data.debtModel.interestRateType) {
-                const interestRateTypeElement = document.querySelector('input[name="interestRateType"][value="' + data.debtModel.interestRateType + '"]');
-                if (interestRateTypeElement) {
-                    interestRateTypeElement.checked = true;
+            console.log('🏦 Filling Debt Model section...', data.debtModel);
+            if (data.debtModel) {
+                if (data.debtModel.loanIssuanceFees) {
+                    document.getElementById('loanIssuanceFees').value = data.debtModel.loanIssuanceFees;
+                    console.log('✅ Loan issuance fees filled:', data.debtModel.loanIssuanceFees);
                 }
-            }
-            document.getElementById('fixedRate').value = data.debtModel.fixedRate;
-            if (data.debtModel.wacc) {
-                const waccElement = document.getElementById('wacc');
-                if (waccElement) {
-                    waccElement.value = data.debtModel.wacc;
+                
+                if (data.debtModel.interestRateType) {
+                    const interestRateTypeElement = document.querySelector('input[name="interestRateType"][value="' + data.debtModel.interestRateType + '"]');
+                    if (interestRateTypeElement) {
+                        interestRateTypeElement.checked = true;
+                        console.log('✅ Interest rate type set:', data.debtModel.interestRateType);
+                    }
                 }
+                
+                if (data.debtModel.fixedRate) {
+                    document.getElementById('fixedRate').value = data.debtModel.fixedRate;
+                    console.log('✅ Fixed rate filled:', data.debtModel.fixedRate);
+                }
+                
+                // Fill WACC (discountRate field in exit assumptions section)
+                if (data.debtModel.wacc) {
+                    const waccElement = document.getElementById('discountRate');
+                    if (waccElement) {
+                        console.log('✅ Filling WACC/Discount Rate:', data.debtModel.wacc);
+                        waccElement.value = data.debtModel.wacc;
+                    } else {
+                        console.error('❌ discountRate field not found');
+                    }
+                } else {
+                    console.error('❌ WACC value missing from AI data');
+                }
+            } else {
+                console.error('❌ Debt model data missing from AI response');
             }
         }
 
