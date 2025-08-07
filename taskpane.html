@@ -616,10 +616,10 @@
             if (isReadingExcelFiles) return;
             
             isReadingExcelFiles = true;
-            console.log('📊 Starting Excel file reading animation...');
+            console.log('Starting Excel file reading...');
             
-            // Add system message about reading files
-            addMessageToChat('system', '🔍 Reading your Excel model files to understand the context...');
+            // Add system message with loading bar
+            const loadingMessage = addLoadingMessageToChat('Reading your Excel model files to understand the context...');
             
             const sheetsToRead = [
                 { name: 'Assumptions', delay: 1000 },
@@ -630,11 +630,15 @@
             ];
             
             let contextData = {};
+            const totalSheets = sheetsToRead.length;
             
             try {
-                for (const sheet of sheetsToRead) {
-                    // Show reading animation
-                    const readingMessage = addMessageToChat('system', `📈 Reading ${sheet.name}...`);
+                for (let i = 0; i < sheetsToRead.length; i++) {
+                    const sheet = sheetsToRead[i];
+                    const progress = ((i + 1) / totalSheets) * 100;
+                    
+                    // Update loading message
+                    updateLoadingMessage(loadingMessage, `Reading ${sheet.name}...`, progress);
                     
                     // Simulate reading delay
                     await new Promise(resolve => setTimeout(resolve, sheet.delay));
@@ -643,24 +647,21 @@
                     try {
                         const sheetData = await readExcelSheet(sheet.name);
                         contextData[sheet.name] = sheetData;
-                        
-                        // Update message to show completion
-                        updateSystemMessage(readingMessage, `✅ ${sheet.name} analyzed (${sheetData ? Object.keys(sheetData).length : 0} data points)`);
                     } catch (error) {
                         console.warn(`Could not read ${sheet.name}:`, error);
-                        updateSystemMessage(readingMessage, `⚠️ ${sheet.name} not found or empty`);
+                        contextData[sheet.name] = { error: error.message };
                     }
                 }
                 
                 // Store context
                 chatContext = contextData;
                 
-                // Final summary message
-                addMessageToChat('system', `🎯 Analysis complete! I now have context from your M&A model. You can ask me anything about your deal, assumptions, projections, or valuation.`);
+                // Final update to show completion
+                updateLoadingMessage(loadingMessage, 'Analysis complete. Your model context is now available.', 100, true);
                 
             } catch (error) {
                 console.error('Error reading Excel files:', error);
-                addMessageToChat('system', '❌ Error reading Excel files. I\'ll still try to help based on your input.');
+                updateLoadingMessage(loadingMessage, 'Error reading Excel files. I\'ll still try to help based on your input.', 100, true);
             }
             
             isReadingExcelFiles = false;
@@ -715,7 +716,7 @@
         async function sendMessageToOpenAI(userMessage) {
             try {
                 // Show thinking message
-                const thinkingMessage = addMessageToChat('assistant', '🤔 Thinking...');
+                const thinkingMessage = addMessageToChat('assistant', 'Analyzing...');
                 
                 // Prepare context for OpenAI
                 const contextPrompt = chatContext ? 
@@ -765,7 +766,7 @@
                 
             } catch (error) {
                 console.error('Chat error:', error);
-                addMessageToChat('system', '❌ Sorry, I encountered an error. Please try again.');
+                addMessageToChat('system', 'Sorry, I encountered an error. Please try again.');
             }
         }
 
@@ -778,15 +779,15 @@
             
             switch(type) {
                 case 'user':
-                    avatar = '<div class="message-avatar user-avatar">👤</div>';
+                    avatar = '<div class="message-avatar user-avatar">U</div>';
                     messageClass = 'user-message-content';
                     break;
                 case 'assistant':
-                    avatar = '<div class="message-avatar assistant-avatar">🤖</div>';
+                    avatar = '<div class="message-avatar assistant-avatar">AI</div>';
                     messageClass = 'assistant-message-content';
                     break;
                 case 'system':
-                    avatar = '<div class="message-avatar system-avatar">⚙️</div>';
+                    avatar = '<div class="message-avatar system-avatar">SYS</div>';
                     messageClass = 'system-message-content';
                     break;
             }
@@ -805,6 +806,49 @@
             chatMessages.scrollTop = chatMessages.scrollHeight;
             
             return messageDiv;
+        }
+
+        function addLoadingMessageToChat(text) {
+            const chatMessages = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'chat-message loading-message';
+            
+            messageDiv.innerHTML = `
+                <div class="message-avatar system-avatar">SYS</div>
+                <div class="loading-message-content">
+                    <div class="message-text" id="loadingText">${text}</div>
+                    <div class="loading-progress">
+                        <div class="progress-bar-container">
+                            <div class="progress-bar-fill" id="progressBarFill" style="width: 0%"></div>
+                        </div>
+                        <div class="progress-text" id="progressText">0%</div>
+                    </div>
+                    <div class="message-time">${new Date().toLocaleTimeString()}</div>
+                </div>
+            `;
+            
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            
+            return messageDiv;
+        }
+
+        function updateLoadingMessage(messageElement, text, progress, isComplete = false) {
+            if (!messageElement) return;
+            
+            const textElement = messageElement.querySelector('#loadingText');
+            const progressFill = messageElement.querySelector('#progressBarFill');
+            const progressText = messageElement.querySelector('#progressText');
+            
+            if (textElement) textElement.textContent = text;
+            if (progressFill) progressFill.style.width = `${progress}%`;
+            if (progressText) progressText.textContent = `${Math.round(progress)}%`;
+            
+            if (isComplete) {
+                setTimeout(() => {
+                    messageElement.classList.add('completed');
+                }, 300);
+            }
         }
 
         function updateSystemMessage(messageElement, newContent) {
