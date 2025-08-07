@@ -503,7 +503,7 @@ class ExcelGenerator {
 
 **EXACT CELL REFERENCES IN ASSUMPTIONS SHEET:**
 
-**High-Level Parameters:**
+**Deal Profile:**
 - Currency: ${this.cellTracker.getCellReference('currency')}
 - Project Start Date: ${this.cellTracker.getCellReference('projectStartDate')}
 - Project End Date: ${this.cellTracker.getCellReference('projectEndDate')}
@@ -1762,7 +1762,7 @@ Provide the COMPLETE Free Cash Flow model with exact Excel formulas for every ce
             } else {
               // Reference debt expense from Debt Model: Period 1 is in column C
               const debtModelCol = this.getColumnLetter(col + 1); // FCF col 1 -> Debt Model col C (col+1)
-              debtExpenseFormula = `=-'Debt Model'!${debtModelCol}6`;
+              debtExpenseFormula = `=-'Debt Financing'!${debtModelCol}6`;
             }
             
             fcfSheet.getRange(`${colLetter}${currentRow}`).formulas = [[debtExpenseFormula]];
@@ -2719,7 +2719,7 @@ You MUST create a Free Cash Flow Statement with this EXACT structure:
 2. **Purchase price** - Deal Value in Period 0 only (negative)
 3. **Transaction costs** - Transaction fees in Period 0 only (negative)
 4. **EBITDA** - Reference NOI from P&L (all operating periods)
-5. **CapEx** - Reference Total CapEx from CapEx sheet using ='CapEx'!C${safeCapExStructure?.totalRow || 'X'} format (all periods, negative values)
+5. **CapEx** - Reference Total CapEx from CapEx sheet using ='Capital Expenses'!C${safeCapExStructure?.totalRow || 'X'} format (all periods, negative values)
 6. **Sale Price** - Terminal value in final period only (positive)
 7. **Disposal Costs** - Disposal costs in final period only (negative)
 8. **Unlevered Cashflows** - Sum of all above items per period
@@ -2812,7 +2812,7 @@ If any critical P&L references are missing, clearly state what assumptions you'r
     
     let output = `CapEx sheet 'CapEx' exists with:\n`;
     output += `- Total CapEx row: ${capExStructure?.totalRow}\n`;
-    output += `- Reference format: ='CapEx'!C${capExStructure?.totalRow} (for period 1)\n`;
+    output += `- Reference format: ='Capital Expenses'!C${capExStructure?.totalRow} (for period 1)\n`;
     output += `- Use columns C through ${this.getColumnLetter(maxPeriods + 2)} for all periods\n`;
     output += `- IMPORTANT: CapEx should be NEGATIVE in FCF (cash outflow)\n`;
     
@@ -3889,7 +3889,7 @@ You MUST create a P&L Statement with this EXACT structure:
     return Excel.run(async (context) => {
       try {
         const sheets = context.workbook.worksheets;
-        const capExSheet = sheets.getItemOrNullObject('CapEx');
+        const capExSheet = sheets.getItemOrNullObject('Capital Expenses');
         capExSheet.load('name');
         await context.sync();
         
@@ -3935,7 +3935,7 @@ You MUST create a P&L Statement with this EXACT structure:
       
       // Delete existing CapEx sheet if it exists
       try {
-        const existingSheet = sheets.getItemOrNullObject('CapEx');
+        const existingSheet = sheets.getItemOrNullObject('Capital Expenses');
         existingSheet.load('name');
         await context.sync();
         
@@ -3949,7 +3949,7 @@ You MUST create a P&L Statement with this EXACT structure:
       }
       
       // Create new CapEx sheet
-      const capExSheet = sheets.add('CapEx');
+      const capExSheet = sheets.add('Capital Expenses');
       capExSheet.position = 2; // After P&L
       capExSheet.activate();
       
@@ -4374,7 +4374,7 @@ You MUST create a P&L Statement with this EXACT structure:
         for (let i = 0; i <= periods; i++) {
           const colLetter = this.getColumnLetter(i + 1); // FCF column (B, C, D, E...)
           const capExCol = this.getColumnLetter(i + 1); // CapEx column (B, C, D, E...) - same mapping now
-          fcfSheet.getRange(colLetter + currentRow).formulas = [[`='CapEx'!${capExCol}${capExStructure?.totalRow}`]];
+          fcfSheet.getRange(colLetter + currentRow).formulas = [[`='Capital Expenses'!${capExCol}${capExStructure?.totalRow}`]];
           ExcelFormatter.applyNumberFormat(fcfSheet.getRange(colLetter + currentRow));
         }
       }
@@ -4512,7 +4512,7 @@ You MUST create a P&L Statement with this EXACT structure:
           } else {
             // Reference debt expense from Debt Model: Period 1 is column C, Period 2 is column D, etc.
             const debtModelCol = this.getColumnLetter(i + 1); // FCF Period i maps to Debt Model column (i+1)
-            fcfSheet.getRange(colLetter + currentRow).formulas = [[`=-'Debt Model'!${debtModelCol}6`]];
+            fcfSheet.getRange(colLetter + currentRow).formulas = [[`=-'Debt Financing'!${debtModelCol}6`]];
             ExcelFormatter.applyNumberFormat(fcfSheet.getRange(colLetter + currentRow));
           }
         }
@@ -4721,7 +4721,7 @@ You MUST create a P&L Statement with this EXACT structure:
       
       // Delete existing sheet if it exists
       try {
-        const existingSheet = sheets.getItemOrNullObject('Debt Model');
+        const existingSheet = sheets.getItemOrNullObject('Debt Financing');
         existingSheet.load('name');
         await context.sync();
         
@@ -4734,7 +4734,7 @@ You MUST create a P&L Statement with this EXACT structure:
       }
       
       // Create new sheet
-      const debtSheet = sheets.add('Debt Model');
+      const debtSheet = sheets.add('Debt Financing');
       await context.sync();
       
       // Hide gridlines
@@ -4745,7 +4745,7 @@ You MUST create a P&L Statement with this EXACT structure:
       
       if (!hasDebt) {
         // Title for no debt scenario
-        debtSheet.getRange('A1').values = [['Debt Model']];
+        debtSheet.getRange('A1').values = [['Debt Financing']];
         const titleRange = debtSheet.getRange('A1:F1');
         titleRange.merge();
         titleRange.format.font.name = 'Times New Roman';

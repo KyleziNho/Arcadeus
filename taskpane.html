@@ -121,18 +121,18 @@
             
             <!-- Horizontal Tab Navigation -->
             <div class="assumptions-tabs">
-                <button class="assumption-tab active" data-tab="highLevelParameters">High Level Parameters</button>
+                <button class="assumption-tab active" data-tab="highLevelParameters">Deal Profile</button>
                 <button class="assumption-tab" data-tab="dealAssumptions">Deal Assumptions</button>
                 <button class="assumption-tab" data-tab="revenueItems">Revenue Items</button>
                 <button class="assumption-tab" data-tab="operatingExpenses">Operating Expenses</button>
-                <button class="assumption-tab" data-tab="capEx">Capital Expenditures</button>
+                <button class="assumption-tab" data-tab="capEx">Capital Expenses</button>
                 <button class="assumption-tab" data-tab="exitAssumptions">Exit Assumptions</button>
-                <button class="assumption-tab" data-tab="debtModel">Debt Model</button>
+                <button class="assumption-tab" data-tab="debtModel">Debt Financing</button>
             </div>
             
             <!-- Tab Content Container -->
             <div class="assumptions-content">
-                <!-- High Level Parameters Tab Panel -->
+                <!-- Deal Profile Tab Panel -->
                 <div class="tab-panel active" id="highLevelParameters">
                     <div class="tab-content">
                         <div class="form-group">
@@ -295,7 +295,7 @@
                     </div>
                 </div>
 
-                <!-- Capital Expenditures Tab Panel -->
+                <!-- Capital Expenses Tab Panel -->
                 <div class="tab-panel" id="capEx">
                     <div class="tab-content">
                         <p style="margin-bottom: 15px; color: #666; font-size: 14px;">
@@ -361,7 +361,7 @@
                     </div>
                 </div>
 
-                <!-- Debt Model Tab Panel -->
+                <!-- Debt Financing Tab Panel -->
                 <div class="tab-panel" id="debtModel">
                     <div class="tab-content">
                         <!-- Debt Configuration -->
@@ -1706,8 +1706,8 @@ Generate a company in technology, manufacturing, healthcare, or business service
                 return;
             }
             
-            // Fill High Level Parameters
-            console.log('📝 Filling High Level Parameters...');
+            // Fill Deal Profile
+            console.log('📝 Filling Deal Profile...');
             document.getElementById('currency').value = data.highLevelParameters.currency;
             document.getElementById('projectStartDate').value = data.highLevelParameters.projectStartDate;
             document.getElementById('projectEndDate').value = data.highLevelParameters.projectEndDate;

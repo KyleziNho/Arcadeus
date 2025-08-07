@@ -635,12 +635,12 @@ class MAModelingAddin {
           }
           
           if (this.uiController) {
-            this.uiController.showMessage('Debt Model created! You can now generate the Free Cash Flow.', 'success');
+            this.uiController.showMessage('Debt Financing created! You can now generate the Free Cash Flow.', 'success');
           }
         } else {
           console.error('Debt Model generation failed');
           if (this.uiController) {
-            this.uiController.showMessage('Error generating Debt Model sheet', 'error');
+            this.uiController.showMessage('Error generating Debt Financing sheet', 'error');
           }
         }
       } else {
