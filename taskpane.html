@@ -691,8 +691,33 @@
         
         // Function to generate model from progress button
         async function generateFullModelFromProgress() {
-            if (!window.taskpaneApp || !window.taskpaneApp.generateFullModel) {
-                console.error('Taskpane app not available');
+            // Wait for MAModelingAddin to be available
+            let attempts = 0;
+            const maxAttempts = 50; // 5 seconds max wait time
+            
+            while ((!window.maModelingAddin || !window.maModelingAddin.generateFullModelWithProgress) && attempts < maxAttempts) {
+                console.log(`Waiting for MAModelingAddin to initialize... (attempt ${attempts + 1}/${maxAttempts})`);
+                await new Promise(resolve => setTimeout(resolve, 100));
+                attempts++;
+            }
+            
+            if (!window.maModelingAddin || !window.maModelingAddin.generateFullModelWithProgress) {
+                console.error('Taskpane app not available - maModelingAddin instance not found after waiting');
+                console.log('Available window properties:', Object.keys(window));
+                console.log('maModelingAddin:', window.maModelingAddin);
+                
+                // Show user-friendly error message
+                const progressBarWrapper = document.querySelector('.progress-bar-wrapper');
+                if (progressBarWrapper) {
+                    progressBarWrapper.innerHTML = `
+                        <div style="text-align: center; color: #dc3545; padding: 20px;">
+                            <p>⚠️ Add-in not fully loaded. Please refresh the page and try again.</p>
+                            <button onclick="window.location.reload()" style="margin-top: 10px; padding: 8px 16px; background: #217346; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                                Refresh Page
+                            </button>
+                        </div>
+                    `;
+                }
                 return;
             }
             
@@ -713,7 +738,7 @@
             }
             
             try {
-                await window.taskpaneApp.generateFullModelWithProgress();
+                await window.maModelingAddin.generateFullModelWithProgress();
                 
                 // Show success and change to refresh model
                 if (progressBarWrapper) {
