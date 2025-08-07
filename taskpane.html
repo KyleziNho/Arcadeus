@@ -932,6 +932,10 @@
         }
 
         async function autoFillWithAI() {
+            console.log('🤖 AutoFill with AI function called - using new enhanced prompt with realistic values');
+            console.log('🔥 AI AUTOFILL FUNCTION STARTED - NO HARDCODED VALUES');
+            console.log('⚠️ If you see test data being filled, the hardcoded function is still running');
+            
             // Close the dropdown
             const menuDropdown = document.getElementById('menuDropdown');
             if (menuDropdown) {
@@ -943,9 +947,19 @@
             
             try {
                 // Call OpenAI to generate comprehensive M&A data
+                console.log('🤖 Calling generateAIData()...');
                 const aiData = await generateAIData();
+                console.log('✅ generateAIData() returned:', aiData);
+                console.log('🔍 AI Data type:', typeof aiData);
+                
+                if (!aiData) {
+                    console.error('❌ generateAIData() returned null/undefined');
+                    showErrorToast('AI failed to generate data');
+                    return;
+                }
                 
                 // Fill all sections with the generated data
+                console.log('📝 About to call fillAllSections with AI data...');
                 await fillAllSections(aiData);
                 
                 // Ensure debt model section is visible if it was filled
@@ -967,6 +981,7 @@
         }
 
         async function generateAIData() {
+            console.log('🎯 generateAIData called - using enhanced institutional-grade prompt');
             const prompt = `Generate realistic M&A transaction data for a REAL private equity deal with institutional-grade valuations. This should reflect actual deal sizes and financial metrics from the market. Return valid JSON only with this structure:
 
 {
@@ -1114,7 +1129,17 @@ Generate a company in technology, manufacturing, healthcare, or business service
         }
 
         async function fillAllSections(data) {
+            console.log('🔧 fillAllSections() called with data:', data);
+            console.log('📊 Data type:', typeof data);
+            console.log('📊 Data keys:', data ? Object.keys(data) : 'null');
+            
+            if (!data) {
+                console.error('❌ No data provided to fillAllSections');
+                return;
+            }
+            
             // Fill High Level Parameters
+            console.log('📝 Filling High Level Parameters...');
             document.getElementById('currency').value = data.highLevelParameters.currency;
             document.getElementById('projectStartDate').value = data.highLevelParameters.projectStartDate;
             document.getElementById('projectEndDate').value = data.highLevelParameters.projectEndDate;
@@ -1157,8 +1182,19 @@ Generate a company in technology, manufacturing, healthcare, or business service
         }
 
         async function fillDynamicItems(type, items, containerId) {
+            console.log(`🔧 fillDynamicItems called for ${type}, items:`, items, `containerId: ${containerId}`);
             const container = document.getElementById(containerId);
-            if (!container) return;
+            if (!container) {
+                console.error(`❌ Container not found: ${containerId}`);
+                return;
+            }
+            
+            if (!items || !Array.isArray(items)) {
+                console.error(`❌ Items is not an array for ${type}:`, items);
+                return;
+            }
+            
+            console.log(`📝 Processing ${items.length} items for ${type}`);
             
             // Clear existing items except the first one
             const existingItems = container.querySelectorAll(`.${type === 'revenue' ? 'revenue' : 'cost'}-item`);

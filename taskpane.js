@@ -282,16 +282,12 @@ class MAModelingAddin {
     // IRR & MOIC are now calculated automatically in FCF sheet
     // No separate button needed
     
-    // Auto-fill Test Data button
+    // Auto-fill Test Data button - DISABLED to prevent conflict with AI autofill
     const autoFillTestDataBtn = document.getElementById('autoFillTestDataBtn');
     if (autoFillTestDataBtn) {
-      autoFillTestDataBtn.addEventListener('click', () => {
-        const confirmed = confirm('This will delete all current inputs and replace them with test data. Are you sure you want to continue?');
-        if (confirmed) {
-          this.autoFillTestData();
-        }
-      });
-      console.log('Auto-fill test data button listener added');
+      console.log('⚠️ AutoFillTestDataBtn found but disabled - use AI AutoFill instead');
+      // Remove the button to prevent hardcoded values from being used
+      autoFillTestDataBtn.style.display = 'none';
     }
     
     // Validate Model button (if exists)
@@ -1094,7 +1090,9 @@ class MAModelingAddin {
   }
 
   autoFillTestData() {
-    console.log('🎲 Auto-filling test data...');
+    console.log('⚠️ autoFillTestData() function disabled - hardcoded values not allowed');
+    console.log('🤖 Please use the AI AutoFill functionality instead');
+    return;
     
     try {
       // Helper function to generate random numbers within a range
