@@ -370,7 +370,8 @@ class FormHandler {
 
   initializeRevenueItems() {
     const addRevenueBtn = document.getElementById('addRevenueItem');
-    if (addRevenueBtn) {
+    if (addRevenueBtn && !addRevenueBtn.hasAttribute('data-initialized')) {
+      addRevenueBtn.setAttribute('data-initialized', 'true');
       addRevenueBtn.addEventListener('click', () => this.addRevenueItem());
     }
   }
@@ -379,11 +380,13 @@ class FormHandler {
     const addOpExBtn = document.getElementById('addOperatingExpense');
     const addCapExBtn = document.getElementById('addCapExItem');
     
-    if (addOpExBtn) {
+    if (addOpExBtn && !addOpExBtn.hasAttribute('data-initialized')) {
+      addOpExBtn.setAttribute('data-initialized', 'true');
       addOpExBtn.addEventListener('click', () => this.addOperatingExpense());
     }
     
-    if (addCapExBtn) {
+    if (addCapExBtn && !addCapExBtn.hasAttribute('data-initialized')) {
+      addCapExBtn.setAttribute('data-initialized', 'true');
       addCapExBtn.addEventListener('click', () => this.addCapEx());
     }
   }
@@ -421,7 +424,7 @@ class FormHandler {
       <div class="revenue-item" id="revenueItem_${itemCount}">
         <div class="revenue-item-header">
           <span class="revenue-item-title">Revenue Item ${itemCount}</span>
-          <button class="remove-revenue-item" onclick="this.parentElement.parentElement.remove()">Remove</button>
+          <button class="remove-revenue-item" onclick="window.formHandler?.removeRevenueItem?.(this.parentElement.parentElement)">Remove</button>
         </div>
         
         <div class="form-group">
@@ -467,7 +470,7 @@ class FormHandler {
       <div class="cost-item" id="opExItem_${itemCount}">
         <div class="cost-item-header">
           <span class="cost-item-title">Operating Expense ${itemCount}</span>
-          <button class="remove-cost-item" onclick="this.parentElement.parentElement.remove()">Remove</button>
+          <button class="remove-cost-item" onclick="window.formHandler?.removeOperatingExpense?.(this.parentElement.parentElement)">Remove</button>
         </div>
         
         <div class="form-group">
@@ -513,7 +516,7 @@ class FormHandler {
       <div class="cost-item" id="capExItem_${itemCount}">
         <div class="cost-item-header">
           <span class="cost-item-title">CapEx ${itemCount}</span>
-          <button class="remove-cost-item" onclick="this.parentElement.parentElement.remove()">Remove</button>
+          <button class="remove-cost-item" onclick="window.formHandler?.removeCapExItem?.(this.parentElement.parentElement)">Remove</button>
         </div>
         
         <div class="form-group">
@@ -548,6 +551,158 @@ class FormHandler {
     }
   }
 
+  renumberRevenueItems() {
+    const container = document.getElementById('revenueItemsContainer');
+    if (!container) return;
+    
+    const items = container.querySelectorAll('.revenue-item');
+    items.forEach((item, index) => {
+      const newNumber = index + 1;
+      
+      // Update the item ID
+      item.id = `revenueItem_${newNumber}`;
+      
+      // Update the title
+      const title = item.querySelector('.revenue-item-title');
+      if (title) title.textContent = `Revenue Item ${newNumber}`;
+      
+      // Update all input IDs and labels
+      const nameInput = item.querySelector('input[id^="revenueName_"]');
+      const valueInput = item.querySelector('input[id^="revenueValue_"]');
+      const growthInput = item.querySelector('input[id^="revenueGrowthRate_"]');
+      
+      if (nameInput) {
+        nameInput.id = `revenueName_${newNumber}`;
+        const nameLabel = item.querySelector('label[for^="revenueName_"]');
+        if (nameLabel) nameLabel.setAttribute('for', `revenueName_${newNumber}`);
+      }
+      
+      if (valueInput) {
+        valueInput.id = `revenueValue_${newNumber}`;
+        const valueLabel = item.querySelector('label[for^="revenueValue_"]');
+        if (valueLabel) valueLabel.setAttribute('for', `revenueValue_${newNumber}`);
+      }
+      
+      if (growthInput) {
+        growthInput.id = `revenueGrowthRate_${newNumber}`;
+        const growthLabel = item.querySelector('label[for^="revenueGrowthRate_"]');
+        if (growthLabel) growthLabel.setAttribute('for', `revenueGrowthRate_${newNumber}`);
+      }
+    });
+  }
+
+  renumberOperatingExpenses() {
+    const container = document.getElementById('operatingExpensesContainer');
+    if (!container) return;
+    
+    const items = container.querySelectorAll('.cost-item');
+    items.forEach((item, index) => {
+      const newNumber = index + 1;
+      
+      // Update the item ID
+      item.id = `opExItem_${newNumber}`;
+      
+      // Update the title
+      const title = item.querySelector('.cost-item-title');
+      if (title) title.textContent = `Operating Expense ${newNumber}`;
+      
+      // Update all input IDs and labels
+      const nameInput = item.querySelector('input[id^="opExName_"]');
+      const valueInput = item.querySelector('input[id^="opExValue_"]');
+      const growthInput = item.querySelector('input[id^="opExGrowthRate_"]');
+      
+      if (nameInput) {
+        nameInput.id = `opExName_${newNumber}`;
+        const nameLabel = item.querySelector('label[for^="opExName_"]');
+        if (nameLabel) nameLabel.setAttribute('for', `opExName_${newNumber}`);
+      }
+      
+      if (valueInput) {
+        valueInput.id = `opExValue_${newNumber}`;
+        const valueLabel = item.querySelector('label[for^="opExValue_"]');
+        if (valueLabel) valueLabel.setAttribute('for', `opExValue_${newNumber}`);
+      }
+      
+      if (growthInput) {
+        growthInput.id = `opExGrowthRate_${newNumber}`;
+        const growthLabel = item.querySelector('label[for^="opExGrowthRate_"]');
+        if (growthLabel) growthLabel.setAttribute('for', `opExGrowthRate_${newNumber}`);
+      }
+    });
+  }
+
+  renumberCapExItems() {
+    const container = document.getElementById('capExContainer');
+    if (!container) return;
+    
+    const items = container.querySelectorAll('.cost-item');
+    items.forEach((item, index) => {
+      const newNumber = index + 1;
+      
+      // Update the item ID
+      item.id = `capExItem_${newNumber}`;
+      
+      // Update the title
+      const title = item.querySelector('.cost-item-title');
+      if (title) title.textContent = `CapEx ${newNumber}`;
+      
+      // Update all input IDs and labels
+      const nameInput = item.querySelector('input[id^="capExName_"]');
+      const valueInput = item.querySelector('input[id^="capExValue_"]');
+      const growthInput = item.querySelector('input[id^="capExGrowthRate_"]');
+      
+      if (nameInput) {
+        nameInput.id = `capExName_${newNumber}`;
+        const nameLabel = item.querySelector('label[for^="capExName_"]');
+        if (nameLabel) nameLabel.setAttribute('for', `capExName_${newNumber}`);
+      }
+      
+      if (valueInput) {
+        valueInput.id = `capExValue_${newNumber}`;
+        const valueLabel = item.querySelector('label[for^="capExValue_"]');
+        if (valueLabel) valueLabel.setAttribute('for', `capExValue_${newNumber}`);
+      }
+      
+      if (growthInput) {
+        growthInput.id = `capExGrowthRate_${newNumber}`;
+        const growthLabel = item.querySelector('label[for^="capExGrowthRate_"]');
+        if (growthLabel) growthLabel.setAttribute('for', `capExGrowthRate_${newNumber}`);
+      }
+    });
+  }
+
+  removeRevenueItem(item) {
+    if (item && item.parentElement) {
+      item.remove();
+      this.renumberRevenueItems();
+      // Update progress tracking
+      if (typeof updateProgress === 'function') {
+        updateProgress();
+      }
+    }
+  }
+
+  removeOperatingExpense(item) {
+    if (item && item.parentElement) {
+      item.remove();
+      this.renumberOperatingExpenses();
+      // Update progress tracking
+      if (typeof updateProgress === 'function') {
+        updateProgress();
+      }
+    }
+  }
+
+  removeCapExItem(item) {
+    if (item && item.parentElement) {
+      item.remove();
+      this.renumberCapExItems();
+      // Update progress tracking
+      if (typeof updateProgress === 'function') {
+        updateProgress();
+      }
+    }
+  }
 
   formatCurrency(value) {
     return new Intl.NumberFormat('en-US', {

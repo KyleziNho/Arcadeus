@@ -227,7 +227,7 @@
                             <div class="revenue-item" id="revenueItem_1">
                                 <div class="revenue-item-header">
                                     <span class="revenue-item-title">Revenue Item 1</span>
-                                    <button class="remove-revenue-item" onclick="this.parentElement.parentElement.remove()">Remove</button>
+                                    <button class="remove-revenue-item" onclick="window.formHandler?.removeRevenueItem?.(this.parentElement.parentElement)">Remove</button>
                                 </div>
                                 
                                 <div class="form-group">
@@ -267,7 +267,7 @@
                             <div class="cost-item" id="opExItem_1">
                                 <div class="cost-item-header">
                                     <span class="cost-item-title">Operating Expense 1</span>
-                                    <button class="remove-cost-item" onclick="this.parentElement.parentElement.remove()">Remove</button>
+                                    <button class="remove-cost-item" onclick="window.formHandler?.removeOperatingExpense?.(this.parentElement.parentElement)">Remove</button>
                                 </div>
                                 
                                 <div class="form-group">
@@ -310,7 +310,7 @@
                             <div class="cost-item" id="capExItem_1">
                                 <div class="cost-item-header">
                                     <span class="cost-item-title">CapEx 1</span>
-                                    <button class="remove-cost-item" onclick="this.parentElement.parentElement.remove()">Remove</button>
+                                    <button class="remove-cost-item" onclick="window.formHandler?.removeCapExItem?.(this.parentElement.parentElement)">Remove</button>
                                 </div>
                                 
                                 <div class="form-group">
@@ -569,14 +569,9 @@
                         targetPanel.classList.add('active');
                     }
                     
-                    // Reinitialize FormHandler for newly visible elements
-                    if (window.formHandler && targetId === 'revenueItems') {
-                        console.log('🔧 Reinitializing revenue items');
-                        window.formHandler.initializeRevenueItems();
-                    }
-                    if (window.formHandler && (targetId === 'operatingExpenses' || targetId === 'capEx')) {
-                        console.log('🔧 Reinitializing cost items');
-                        window.formHandler.initializeCostItems();
+                    // Update progress tracking
+                    if (typeof updateProgress === 'function') {
+                        updateProgress();
                     }
                 });
             });
