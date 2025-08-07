@@ -90,13 +90,36 @@
                 <button class="nav-tab" id="chatTab" onclick="showChat()">Chat</button>
             </div>
             <div class="profile-section">
-                <button class="menu-icon" id="menuIcon" onclick="window.location.href='profile.html'">
+                <button class="menu-icon" id="menuIcon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
                         <line x1="3" y1="6" x2="21" y2="6"></line>
                         <line x1="3" y1="12" x2="21" y2="12"></line>
                         <line x1="3" y1="18" x2="21" y2="18"></line>
                     </svg>
                 </button>
+                <div class="menu-dropdown" id="menuDropdown">
+                    <a href="profile.html" class="menu-item">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                        View Profile
+                    </a>
+                    <button class="menu-item" onclick="autoFillWithAI()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+                        </svg>
+                        Auto Fill with AI
+                    </button>
+                    <button class="menu-item" id="signOutButton">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                            <polyline points="16 17 21 12 16 7"></polyline>
+                            <line x1="21" y1="12" x2="9" y2="12"></line>
+                        </svg>
+                        Log Out
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -504,6 +527,41 @@
             });
 
 
+            // Menu dropdown functionality
+            const menuIcon = document.getElementById('menuIcon');
+            const menuDropdown = document.getElementById('menuDropdown');
+            
+            if (menuIcon && menuDropdown) {
+                menuIcon.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    menuDropdown.classList.toggle('show');
+                });
+
+                // Close dropdown when clicking outside
+                document.addEventListener('click', function() {
+                    menuDropdown.classList.remove('show');
+                });
+
+                menuDropdown.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                });
+            }
+
+            // Sign out functionality
+            const signOutButton = document.getElementById('signOutButton');
+            if (signOutButton) {
+                signOutButton.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    // Clear localStorage
+                    localStorage.removeItem('arcadeusUser');
+                    localStorage.removeItem('arcadeusUserProfile');
+                    localStorage.removeItem('arcadeusOnboarding');
+                    
+                    // Redirect to login
+                    window.location.href = 'login.html';
+                });
+            }
+
             // Upgrade button functionality
             const upgradeButton = document.getElementById('upgradeButton');
             if (upgradeButton) {
@@ -807,6 +865,17 @@
             }
             
             console.log(`📊 Progress: ${completedSections}/${sections.length} sections completed`);
+        }
+
+        function autoFillWithAI() {
+            // Close the dropdown
+            const menuDropdown = document.getElementById('menuDropdown');
+            if (menuDropdown) {
+                menuDropdown.classList.remove('show');
+            }
+            
+            // Show auto fill functionality (placeholder for future implementation)
+            alert('Auto Fill with AI functionality will be available soon!');
         }
     </script>
 </body>
