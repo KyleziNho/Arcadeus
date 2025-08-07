@@ -4596,9 +4596,9 @@ You MUST create a P&L Statement with this EXACT structure:
       
       for (let i = 0; i <= periods; i++) {
         const colLetter = this.getColumnLetter(i + 1);
-        // Levered CF = SUM of all components: Unlevered CF + Debt upfront costs + Debt Expense + Loan proceeds
-        // Use single range from unlevered cashflows to loan proceeds to include all rows
-        fcfSheet.getRange(colLetter + currentRow).formulas = [[`=SUM(${colLetter}${unlevereCashflowsRow}:${colLetter}${loanProceedsRow})`]];
+        // Levered CF = SUM of all components: Unlevered CF + Debt items
+        // Use SUM format but exclude the empty row by summing unlevered CF + debt items separately
+        fcfSheet.getRange(colLetter + currentRow).formulas = [[`=SUM(${colLetter}${unlevereCashflowsRow}:${colLetter}${unlevereCashflowsRow})+SUM(${colLetter}${debtUpfrontCostsRow}:${colLetter}${loanProceedsRow})`]];
         ExcelFormatter.applyNumberFormat(fcfSheet.getRange(colLetter + currentRow));
       }
       currentRow += 2;
@@ -4610,11 +4610,12 @@ You MUST create a P&L Statement with this EXACT structure:
       equityContribRange.format.font.size = 12;
       equityContribRange.format.font.color = ExcelFormatter.colors.black;
       
+      const equityContributionsRow = currentRow;
       for (let i = 0; i <= periods; i++) {
         const colLetter = this.getColumnLetter(i + 1);
         if (i === 0) {
-          // Period 0: Show the initial equity investment (negative value from levered cash flow)
-          fcfSheet.getRange(colLetter + currentRow).formulas = [[`=${colLetter}${leveredCashflowsRow}`]];
+          // Period 0: Show the positive value of initial equity investment (absolute value of negative levered cash flow)
+          fcfSheet.getRange(colLetter + currentRow).formulas = [[`=ABS(${colLetter}${leveredCashflowsRow})`]];
         } else {
           // Other periods: Show dash (no additional equity contributions)
           const dashRange = fcfSheet.getRange(colLetter + currentRow);
@@ -4632,6 +4633,7 @@ You MUST create a P&L Statement with this EXACT structure:
       equityDistRange.format.font.size = 12;
       equityDistRange.format.font.color = ExcelFormatter.colors.black;
       
+      const equityDistributionsRow = currentRow;
       for (let i = 0; i <= periods; i++) {
         const colLetter = this.getColumnLetter(i + 1);
         if (i === 0) {
@@ -4690,8 +4692,8 @@ You MUST create a P&L Statement with this EXACT structure:
       moicLabelRange.format.font.color = ExcelFormatter.colors.white;
       moicLabelRange.format.fill.color = ExcelFormatter.colors.darkBlue;
       
-      // MOIC: Sum of levered cash inflows / Initial equity investment
-      fcfSheet.getRange('B' + currentRow).formulas = [[`=SUM(C${leveredCashflowsRow}:${finalCol}${leveredCashflowsRow})/ABS(B${leveredCashflowsRow})`]];
+      // MOIC: Sum of equity distributions / Sum of equity contributions
+      fcfSheet.getRange('B' + currentRow).formulas = [[`=SUM(B${equityDistributionsRow}:${finalCol}${equityDistributionsRow})/SUM(B${equityContributionsRow}:${finalCol}${equityContributionsRow})`]];
       fcfSheet.getRange('B' + currentRow).numberFormat = [['0.0"x"']];
       fcfSheet.getRange('B' + currentRow).format.font.bold = true;
       
