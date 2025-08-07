@@ -601,21 +601,20 @@ class FormHandler {
   }
 
   initializeNumberFormatting() {
-    // Fields that should have comma formatting for large numbers
+    // Fields that should have comma formatting for large numbers (only text inputs)
     const numberFields = [
-      'dealValue',
       'equityContribution', 
       'debtFinancing'
     ];
 
     numberFields.forEach(fieldId => {
       const field = document.getElementById(fieldId);
-      if (field) {
+      if (field && field.type === 'text') {
         this.setupNumberFormatting(field);
       }
     });
 
-    // Also format any existing revenue/opex/capex value fields
+    // Also format any existing text input value fields that need formatting
     this.formatAllExistingValueFields();
 
     // Use MutationObserver for better performance (replaces deprecated DOMNodeInserted)
@@ -626,16 +625,16 @@ class FormHandler {
             // Check if the added node itself is a revenue/opex/capex item
             if (node.classList && (node.classList.contains('revenue-item') || 
                 node.classList.contains('cost-item'))) {
-              const valueInputs = node.querySelectorAll('input[type="number"]');
-              valueInputs.forEach(input => {
+              const textInputs = node.querySelectorAll('input[type="text"]');
+              textInputs.forEach(input => {
                 if (input.id.includes('Value') || input.id.includes('value')) {
                   this.setupNumberFormatting(input);
                 }
               });
             }
-            // Also check for any number inputs within the added node
-            const numberInputs = node.querySelectorAll ? node.querySelectorAll('input[type="number"]') : [];
-            numberInputs.forEach(input => {
+            // Also check for any text inputs within the added node that need formatting
+            const textInputs = node.querySelectorAll ? node.querySelectorAll('input[type="text"]') : [];
+            textInputs.forEach(input => {
               if (input.id.includes('Value') || input.id.includes('value')) {
                 this.setupNumberFormatting(input);
               }
@@ -653,8 +652,15 @@ class FormHandler {
   }
 
   setupNumberFormatting(field) {
+    // Skip number formatting entirely for type="number" inputs
+    if (field.type === 'number') {
+      console.log('⏭️ Skipping number formatting for number input:', field.id);
+      return;
+    }
+    
     if (field.hasAttribute('data-formatted')) return; // Already set up
     field.setAttribute('data-formatted', 'true');
+    console.log('🔧 Setting up number formatting for:', field.id);
 
     // Format existing value immediately if it exists
     if (field.value && !isNaN(field.value) && field.value.trim() !== '') {
@@ -678,29 +684,25 @@ class FormHandler {
       }
     });
 
-    // Only add input validation for text fields that need numeric formatting
-    // Skip for number inputs as they have built-in browser validation
-    if (field.type !== 'number') {
-      field.addEventListener('input', (e) => {
-        // Remove any non-numeric characters except decimal point and minus sign
-        let value = e.target.value.replace(/[^0-9.-]/g, '');
-        // Ensure only one decimal point
-        const decimalCount = (value.match(/\./g) || []).length;
-        if (decimalCount > 1) {
-          const parts = value.split('.');
-          value = parts[0] + '.' + parts.slice(1).join('');
-        }
-        // Only update if the value actually changed to avoid cursor jumping
-        if (e.target.value !== value) {
-          e.target.value = value;
-        }
-      });
-    }
+    field.addEventListener('input', (e) => {
+      // Remove any non-numeric characters except decimal point and minus sign
+      let value = e.target.value.replace(/[^0-9.-]/g, '');
+      // Ensure only one decimal point
+      const decimalCount = (value.match(/\./g) || []).length;
+      if (decimalCount > 1) {
+        const parts = value.split('.');
+        value = parts[0] + '.' + parts.slice(1).join('');
+      }
+      // Only update if the value actually changed to avoid cursor jumping
+      if (e.target.value !== value) {
+        e.target.value = value;
+      }
+    });
   }
 
   formatAllExistingValueFields() {
-    // Find all revenue, opex, and capex value fields
-    const valueFields = document.querySelectorAll('input[type="number"]');
+    // Find all text input fields that need number formatting (skip type="number" inputs)
+    const valueFields = document.querySelectorAll('input[type="text"]');
     valueFields.forEach(field => {
       if (field.id.includes('Value') || field.id.includes('value')) {
         this.setupNumberFormatting(field);

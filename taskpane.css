@@ -368,19 +368,18 @@ body {
   white-space: nowrap;
 }
 
-/* Excel-style Tab Navigation */
+/* Modern Tab Navigation */
 .assumptions-tabs {
   display: flex;
-  background: #e1e1e1;
-  border-bottom: 1px solid #c0c0c0;
-  padding: 2px 0 0 20px;
+  background: transparent;
+  padding: 20px 20px 0 20px;
   margin: 0 0 20px 0;
   overflow-x: auto;
   overflow-y: hidden;
   white-space: nowrap;
   scrollbar-width: none; /* Firefox */
   -ms-overflow-style: none; /* Internet Explorer 10+ */
-  min-height: 32px;
+  gap: 8px;
 }
 
 .assumptions-tabs::-webkit-scrollbar {
@@ -388,49 +387,38 @@ body {
 }
 
 .assumption-tab {
-  background: linear-gradient(to bottom, #f0f0f0 0%, #e0e0e0 50%, #d0d0d0 51%, #c8c8c8 100%);
-  border: 1px solid #a0a0a0;
-  border-bottom: none;
-  border-radius: 4px 4px 0 0;
-  padding: 6px 16px 8px 16px;
-  font-size: 12px;
-  font-weight: 400;
-  color: #333333;
+  background: #ffffff;
+  border: 1px solid #e1e5e9;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.2s ease;
   white-space: nowrap;
   flex-shrink: 0;
-  margin-right: 2px;
-  margin-top: 2px;
   position: relative;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.5);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .assumption-tab:hover {
-  background: linear-gradient(to bottom, #f8f8f8 0%, #e8e8e8 50%, #d8d8d8 51%, #d0d0d0 100%);
-  border-color: #909090;
+  background: #f9fafb;
+  border-color: #d1d5db;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .assumption-tab.active {
-  background: linear-gradient(to bottom, #ffffff 0%, #f8f8f8 50%, #f0f0f0 51%, #e8e8e8 100%);
-  border-color: #707070;
-  color: #000000;
-  font-weight: 500;
-  margin-top: 0px;
-  padding-top: 8px;
-  padding-bottom: 10px;
-  z-index: 10;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.8), 0 0 3px rgba(0,0,0,0.1);
+  background: #217346;
+  border-color: #217346;
+  color: #ffffff;
+  font-weight: 600;
+  box-shadow: 0 2px 4px rgba(33, 115, 70, 0.2);
 }
 
-.assumption-tab.active::after {
-  content: '';
-  position: absolute;
-  bottom: -1px;
-  left: -1px;
-  right: -1px;
-  height: 1px;
-  background: #ffffff;
+.assumption-tab.active:hover {
+  background: #1e6b41;
+  border-color: #1e6b41;
 }
 
 /* Tab Content */

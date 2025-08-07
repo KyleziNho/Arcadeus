@@ -696,12 +696,21 @@
                             items.forEach(item => {
                                 const nameInput = item.querySelector('input[id*="Name"]');
                                 const valueInput = item.querySelector('input[id*="Value"]');
+                                console.log(`🔍 Checking item:`, {
+                                    name: nameInput?.value,
+                                    value: valueInput?.value,
+                                    nameId: nameInput?.id,
+                                    valueId: valueInput?.id
+                                });
                                 if (nameInput?.value.trim() && valueInput?.value.trim()) {
                                     hasCompleteItem = true;
                                 }
                             });
                             if (!hasCompleteItem) {
                                 sectionComplete = false;
+                                console.log(`❌ ${section.id}: No complete items found`);
+                            } else {
+                                console.log(`✅ ${section.id}: Has complete items`);
                             }
                         }
                     }
