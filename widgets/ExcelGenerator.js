@@ -4879,11 +4879,11 @@ You MUST create a P&L Statement with this EXACT structure:
         const colLetter = this.getColumnLetter(i + 1); // C, D, E, etc.
         if (i === periods) {
           // Final period: show full loan amount (referencing assumptions tab)
-          debtSheet.getRange(colLetter + '4').formulas = [[`=${dealValueRef}*${dealLTVRef}/100`]];
+          debtSheet.getRange(colLetter + '4').formulas = [[`=${dealValueRef}*${dealLTVRef}`]];
           ExcelFormatter.applyNumberFormat(debtSheet.getRange(colLetter + '4'));
         } else {
           // Operating periods: debt balance remains the same (also reference assumptions)
-          debtSheet.getRange(colLetter + '4').formulas = [[`=${dealValueRef}*${dealLTVRef}/100`]];
+          debtSheet.getRange(colLetter + '4').formulas = [[`=${dealValueRef}*${dealLTVRef}`]];
           ExcelFormatter.applyNumberFormat(debtSheet.getRange(colLetter + '4'));
         }
       }
