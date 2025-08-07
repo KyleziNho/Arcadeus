@@ -489,6 +489,24 @@
             document.getElementById('chatPage').style.display = 'none';
             document.getElementById('assumptionsTab').classList.add('active');
             document.getElementById('chatTab').classList.remove('active');
+            
+            // Force visibility of assumptions tabs and re-initialize if needed
+            setTimeout(() => {
+                const tabsContainer = document.querySelector('.assumptions-tabs');
+                if (tabsContainer) {
+                    console.log('🔧 Ensuring assumptions tabs are visible...');
+                    // Force visibility with CSS
+                    tabsContainer.style.display = 'flex';
+                    tabsContainer.style.visibility = 'visible';
+                    tabsContainer.style.opacity = '1';
+                    
+                    // Re-initialize tab functionality if not already initialized
+                    if (!tabsContainer.hasAttribute('data-tabs-initialized')) {
+                        initializeAssumptionTabs();
+                        tabsContainer.setAttribute('data-tabs-initialized', 'true');
+                    }
+                }
+            }, 100);
         }
 
         function showChat() {
@@ -498,8 +516,314 @@
             document.getElementById('chatTab').classList.add('active');
         }
 
+        function initializeAssumptionTabs() {
+            console.log('🔧 Initializing assumption tabs...');
+            
+            const tabsContainer = document.querySelector('.assumptions-tabs');
+            if (!tabsContainer) {
+                console.error('❌ Tabs container not found');
+                return;
+            }
+
+            // Add click event listener to tabs container using event delegation
+            function handleTabClick(e) {
+                const clickedTab = e.target.closest('.assumption-tab');
+                if (!clickedTab) return;
+
+                const targetTabId = clickedTab.getAttribute('data-tab');
+                if (!targetTabId) return;
+
+                console.log('🎯 Tab clicked:', targetTabId);
+
+                // Remove active class from all tabs and panels
+                document.querySelectorAll('.assumption-tab').forEach(tab => {
+                    tab.classList.remove('active');
+                });
+                document.querySelectorAll('.tab-panel').forEach(panel => {
+                    panel.classList.remove('active');
+                });
+
+                // Add active class to clicked tab and corresponding panel
+                clickedTab.classList.add('active');
+                const targetPanel = document.getElementById(targetTabId);
+                if (targetPanel) {
+                    targetPanel.classList.add('active');
+                } else {
+                    console.error('❌ Target panel not found:', targetTabId);
+                }
+            }
+
+            // Remove existing listeners to avoid duplicates
+            tabsContainer.removeEventListener('click', handleTabClick);
+            // Add the event listener
+            tabsContainer.addEventListener('click', handleTabClick);
+            
+            console.log('✅ Assumption tabs initialized successfully');
+        }
+
+        // Chat System - Global variables
+        let chatContext = null;
+        let conversationHistory = [];
+        let isReadingExcelFiles = false;
+
+        function initializeChatSystem() {
+            console.log('🤖 Initializing chat system...');
+            
+            const sendButton = document.getElementById('sendMessage');
+            const chatInput = document.getElementById('chatInput');
+            
+            if (sendButton && chatInput) {
+                sendButton.addEventListener('click', handleSendMessage);
+                
+                // Handle Enter key in textarea (Shift+Enter for new line)
+                chatInput.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        handleSendMessage();
+                    }
+                });
+                
+                console.log('✅ Chat system initialized');
+            } else {
+                console.error('❌ Chat elements not found');
+            }
+        }
+
+        async function handleSendMessage() {
+            const chatInput = document.getElementById('chatInput');
+            const message = chatInput.value.trim();
+            
+            if (!message || isReadingExcelFiles) return;
+            
+            console.log('📤 Sending message:', message);
+            
+            // Clear input
+            chatInput.value = '';
+            
+            // Add user message to chat
+            addMessageToChat('user', message);
+            
+            // If this is the first message, read Excel files first
+            if (!chatContext) {
+                await readExcelFilesWithAnimation();
+            }
+            
+            // Send message to OpenAI
+            await sendMessageToOpenAI(message);
+        }
+
+        async function readExcelFilesWithAnimation() {
+            if (isReadingExcelFiles) return;
+            
+            isReadingExcelFiles = true;
+            console.log('📊 Starting Excel file reading animation...');
+            
+            // Add system message about reading files
+            addMessageToChat('system', '🔍 Reading your Excel model files to understand the context...');
+            
+            const sheetsToRead = [
+                { name: 'Assumptions', delay: 1000 },
+                { name: 'P&L Statement', delay: 1500 },
+                { name: 'Free Cash Flow', delay: 1200 },
+                { name: 'Debt Model', delay: 1000 },
+                { name: 'Valuation Summary', delay: 800 }
+            ];
+            
+            let contextData = {};
+            
+            try {
+                for (const sheet of sheetsToRead) {
+                    // Show reading animation
+                    const readingMessage = addMessageToChat('system', `📈 Reading ${sheet.name}...`);
+                    
+                    // Simulate reading delay
+                    await new Promise(resolve => setTimeout(resolve, sheet.delay));
+                    
+                    // Try to read the actual Excel data
+                    try {
+                        const sheetData = await readExcelSheet(sheet.name);
+                        contextData[sheet.name] = sheetData;
+                        
+                        // Update message to show completion
+                        updateSystemMessage(readingMessage, `✅ ${sheet.name} analyzed (${sheetData ? Object.keys(sheetData).length : 0} data points)`);
+                    } catch (error) {
+                        console.warn(`Could not read ${sheet.name}:`, error);
+                        updateSystemMessage(readingMessage, `⚠️ ${sheet.name} not found or empty`);
+                    }
+                }
+                
+                // Store context
+                chatContext = contextData;
+                
+                // Final summary message
+                addMessageToChat('system', `🎯 Analysis complete! I now have context from your M&A model. You can ask me anything about your deal, assumptions, projections, or valuation.`);
+                
+            } catch (error) {
+                console.error('Error reading Excel files:', error);
+                addMessageToChat('system', '❌ Error reading Excel files. I\'ll still try to help based on your input.');
+            }
+            
+            isReadingExcelFiles = false;
+        }
+
+        async function readExcelSheet(sheetName) {
+            return new Promise(async (resolve, reject) => {
+                try {
+                    await Excel.run(async (context) => {
+                        // Try to access the worksheet
+                        const worksheet = context.workbook.worksheets.getItemOrNullObject(sheetName);
+                        worksheet.load(['name']);
+                        
+                        await context.sync();
+                        
+                        if (worksheet.isNullObject) {
+                            reject(new Error(`Sheet ${sheetName} not found`));
+                            return;
+                        }
+                        
+                        // Get used range
+                        const usedRange = worksheet.getUsedRangeOrNullObject();
+                        usedRange.load(['values', 'formulas', 'address']);
+                        
+                        await context.sync();
+                        
+                        if (usedRange.isNullObject) {
+                            resolve({});
+                            return;
+                        }
+                        
+                        // Process the data
+                        const values = usedRange.values;
+                        const formulas = usedRange.formulas;
+                        
+                        const processedData = {
+                            range: usedRange.address,
+                            rowCount: values.length,
+                            columnCount: values[0] ? values[0].length : 0,
+                            sampleData: values.slice(0, 10), // First 10 rows as sample
+                            hasFormulas: formulas.some(row => row.some(cell => cell && cell.startsWith('=')))
+                        };
+                        
+                        resolve(processedData);
+                    });
+                } catch (error) {
+                    reject(error);
+                }
+            });
+        }
+
+        async function sendMessageToOpenAI(userMessage) {
+            try {
+                // Show thinking message
+                const thinkingMessage = addMessageToChat('assistant', '🤔 Thinking...');
+                
+                // Prepare context for OpenAI
+                const contextPrompt = chatContext ? 
+                    `\n\nCONTEXT FROM EXCEL MODEL:\n${JSON.stringify(chatContext, null, 2)}\n\nCONVERSATION HISTORY:\n${conversationHistory.map(msg => `${msg.role}: ${msg.content}`).join('\n')}\n\n` : 
+                    '\n\nNote: No Excel model context available yet.\n\n';
+                
+                const fullPrompt = `You are an expert M&A financial analyst helping with an Excel-based deal model. ${contextPrompt}USER MESSAGE: ${userMessage}`;
+                
+                // Use the same Netlify Functions endpoint
+                const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+                const apiEndpoint = isLocal ? 'http://localhost:8888/.netlify/functions/chat' : '/.netlify/functions/chat';
+                
+                const response = await fetch(apiEndpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message: fullPrompt,
+                        autoFillMode: false,
+                        batchType: 'chat_response',
+                        systemPrompt: 'You are an expert M&A financial analyst. Provide clear, actionable insights about the deal model. Reference specific data from the Excel sheets when available.',
+                        temperature: 0.7,
+                        maxTokens: 2000
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API error: ${response.status}`);
+                }
+
+                const result = await response.json();
+                let content = result.content || result.response || 'No response received';
+                
+                // Remove the thinking message and add the actual response
+                thinkingMessage.remove();
+                addMessageToChat('assistant', content);
+                
+                // Add to conversation history
+                conversationHistory.push({ role: 'user', content: userMessage });
+                conversationHistory.push({ role: 'assistant', content: content });
+                
+                // Keep conversation history reasonable size
+                if (conversationHistory.length > 20) {
+                    conversationHistory = conversationHistory.slice(-20);
+                }
+                
+            } catch (error) {
+                console.error('Chat error:', error);
+                addMessageToChat('system', '❌ Sorry, I encountered an error. Please try again.');
+            }
+        }
+
+        function addMessageToChat(type, content) {
+            const chatMessages = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `chat-message ${type}-message`;
+            
+            let avatar, messageClass;
+            
+            switch(type) {
+                case 'user':
+                    avatar = '<div class="message-avatar user-avatar">👤</div>';
+                    messageClass = 'user-message-content';
+                    break;
+                case 'assistant':
+                    avatar = '<div class="message-avatar assistant-avatar">🤖</div>';
+                    messageClass = 'assistant-message-content';
+                    break;
+                case 'system':
+                    avatar = '<div class="message-avatar system-avatar">⚙️</div>';
+                    messageClass = 'system-message-content';
+                    break;
+            }
+            
+            messageDiv.innerHTML = `
+                ${avatar}
+                <div class="${messageClass}">
+                    <div class="message-text">${content}</div>
+                    <div class="message-time">${new Date().toLocaleTimeString()}</div>
+                </div>
+            `;
+            
+            chatMessages.appendChild(messageDiv);
+            
+            // Scroll to bottom
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            
+            return messageDiv;
+        }
+
+        function updateSystemMessage(messageElement, newContent) {
+            if (messageElement) {
+                const textElement = messageElement.querySelector('.message-text');
+                if (textElement) {
+                    textElement.textContent = newContent;
+                }
+            }
+        }
+
         // Input tab functionality
         document.addEventListener('DOMContentLoaded', function() {
+            // Initialize assumption tabs on page load
+            console.log('🚀 DOM loaded - initializing assumption tabs');
+            setTimeout(() => {
+                initializeAssumptionTabs();
+            }, 500);
+
             const inputTabs = document.querySelectorAll('.input-tab');
             inputTabs.forEach(tab => {
                 tab.addEventListener('click', function() {
@@ -508,6 +832,8 @@
                 });
             });
 
+            // Initialize Chat System
+            initializeChatSystem();
 
             // Menu dropdown functionality
             const menuIcon = document.getElementById('menuIcon');
@@ -971,7 +1297,7 @@
                 }
                 
                 hideLoadingToast(loadingToast);
-                showSuccessToast('Successfully auto-filled all sections with AI-generated data!');
+                console.log('✅ Auto-fill completed successfully');
                 
             } catch (error) {
                 console.error('AI Auto-fill error:', error);
