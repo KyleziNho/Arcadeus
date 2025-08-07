@@ -491,8 +491,8 @@ body {
 .assumptions-tabs {
   display: flex;
   background: transparent;
-  padding: 20px 20px 0 20px;
-  margin: 0 0 20px 0;
+  padding: 16px 20px 0 20px;
+  margin: 0 0 16px 0;
   overflow-x: auto;
   overflow-y: hidden;
   white-space: nowrap;
@@ -932,50 +932,6 @@ body {
   background-clip: text;
 }
 
-/* Profile Section */
-.profile-section {
-  position: relative;
-  margin-left: auto;
-}
-
-.profile-button {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  border: 2px solid transparent;
-  background: transparent;
-  cursor: pointer;
-  padding: 0;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.profile-button:hover {
-  border-color: var(--accent-primary);
-  transform: scale(1.05);
-}
-
-.profile-avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  object-fit: cover;
-}
-
-.profile-avatar-placeholder {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 600;
-  font-size: 14px;
-}
 
 .profile-dropdown {
   position: absolute;
