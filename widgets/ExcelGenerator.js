@@ -4596,9 +4596,9 @@ You MUST create a P&L Statement with this EXACT structure:
       
       for (let i = 0; i <= periods; i++) {
         const colLetter = this.getColumnLetter(i + 1);
-        // Levered CF = SUM of all components: Unlevered CF + Debt items
-        // Use SUM format but exclude the empty row by summing unlevered CF + debt items separately
-        fcfSheet.getRange(colLetter + currentRow).formulas = [[`=SUM(${colLetter}${unlevereCashflowsRow}:${colLetter}${unlevereCashflowsRow})+SUM(${colLetter}${debtUpfrontCostsRow}:${colLetter}${loanProceedsRow})`]];
+        // Levered CF = SUM of all components from unlevered CF to loan proceeds (B11:B15 format)
+        // Include ALL rows from unlevered cashflows through loan proceeds
+        fcfSheet.getRange(colLetter + currentRow).formulas = [[`=SUM(${colLetter}${unlevereCashflowsRow}:${colLetter}${loanProceedsRow})`]];
         ExcelFormatter.applyNumberFormat(fcfSheet.getRange(colLetter + currentRow));
       }
       currentRow += 2;
