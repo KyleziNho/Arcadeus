@@ -840,9 +840,8 @@ class MAModelingAddin {
       }
       
       // Show success message
-      if (this.uiController) {
-        this.uiController.showMessage('🎉 Complete M&A financial model generated successfully! All sheets created with formulas and calculations.', 'success');
-      }
+      // Complete model generated successfully - no popup needed
+      console.log('🎉 Complete M&A financial model generated successfully!');
       
     } catch (error) {
       console.error('❌ Error in generateFullModel:', error);
@@ -942,9 +941,8 @@ class MAModelingAddin {
       console.log('🎉 Full model generation with progress completed successfully!');
       
       // Show success message
-      if (this.uiController) {
-        this.uiController.showMessage('🎉 Complete M&A financial model generated successfully! All sheets created with formulas and calculations.', 'success');
-      }
+      // Complete model generated successfully - no popup needed
+      console.log('🎉 Complete M&A financial model generated successfully!');
       
     } catch (error) {
       console.error('❌ Error in generateFullModelWithProgress:', error);
@@ -995,14 +993,8 @@ class MAModelingAddin {
         
         if (result.success) {
           console.log('Model generated successfully');
-          if (this.uiController) {
-            this.uiController.showMessage('Excel model generated successfully!', 'success');
-          } else {
-            console.log('Excel model generated successfully!');
-            if (this.uiController) {
-              this.uiController.showMessage('Excel model generated successfully!', 'success');
-            }
-          }
+          // Excel model generated successfully - no popup needed
+          console.log('Excel model generated successfully!');
         } else {
           console.error('Model generation failed:', result.error);
           if (this.uiController) {
