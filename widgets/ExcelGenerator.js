@@ -4940,7 +4940,7 @@ You MUST create a P&L Statement with this EXACT structure:
           ExcelFormatter.applyNumberFormat(debtSheet.getRange(colLetter + '6'));
         } else {
           // Interest-only periods: just interest
-          // Interest = Current Balance * Rate
+          // Interest = Current Balance * Rate (rate already in decimal format)
           debtSheet.getRange(colLetter + '6').formulas = [[`=${currentBalanceCol}4*${currentBalanceCol}5`]];
           ExcelFormatter.applyNumberFormat(debtSheet.getRange(colLetter + '6'));
         }

@@ -2,12 +2,14 @@ class DataManager {
   constructor() {
     this.storageKey = 'maModelingData';
     this.isInitialized = false;
+    this.autoSaveTimeout = null;
+    this.autoSaveDelay = 2000; // 2 seconds delay after last change
   }
 
   initialize() {
     if (this.isInitialized) return;
     
-    console.log('Initializing data manager...');
+    console.log('Initializing data manager with auto-caching...');
     
     // Set up save/load button event listeners
     const saveDataBtn = document.getElementById('saveDataBtn');
@@ -23,8 +25,16 @@ class DataManager {
       console.log('Load data button listener added');
     }
     
+    // Set up automatic saving on form changes
+    this.setupAutoSave();
+    
+    // Auto-load saved data immediately after setup
+    setTimeout(() => {
+      this.autoLoadSavedData();
+    }, 500);
+    
     this.isInitialized = true;
-    console.log('✅ Data manager initialized');
+    console.log('✅ Data manager initialized with auto-caching');
   }
 
   async saveData() {
@@ -439,42 +449,161 @@ class DataManager {
     });
   }
 
-  autoLoadSavedData() {
-    console.log('Checking for saved data to auto-load...');
+  setupAutoSave() {
+    console.log('Setting up automatic saving...');
     
-    setTimeout(() => {
-      try {
-        const savedData = localStorage.getItem(this.storageKey);
-        
-        if (savedData) {
-          const formData = JSON.parse(savedData);
-          console.log('Found saved data, auto-loading...');
-          
-          // Only auto-load basic fields, not dynamic items (user can manually load those)
-          Object.keys(formData).forEach(key => {
-            const element = document.getElementById(key);
-            if (element && !['revenueItems', 'operatingExpenses', 'capitalExpenses', 'savedAt', 'version'].includes(key)) {
-              if (element.type === 'checkbox' || element.type === 'radio') {
-                element.checked = formData[key];
-              } else {
-                element.value = formData[key];
-              }
+    // Debounced auto-save function
+    const debouncedAutoSave = () => {
+      clearTimeout(this.autoSaveTimeout);
+      this.autoSaveTimeout = setTimeout(() => {
+        this.autoSaveData();
+      }, this.autoSaveDelay);
+    };
+    
+    // Listen to all form changes
+    document.addEventListener('input', debouncedAutoSave);
+    document.addEventListener('change', debouncedAutoSave);
+    
+    // Also listen for dynamic item additions/removals
+    const observer = new MutationObserver((mutations) => {
+      let hasRelevantChange = false;
+      
+      mutations.forEach((mutation) => {
+        if (mutation.type === 'childList') {
+          // Check if revenue, operating expense, or capital expense items were added/removed
+          mutation.addedNodes.forEach((node) => {
+            if (node.nodeType === 1 && (
+              node.classList?.contains('revenue-item') ||
+              node.classList?.contains('cost-item') ||
+              node.querySelector?.('.revenue-item') ||
+              node.querySelector?.('.cost-item')
+            )) {
+              hasRelevantChange = true;
             }
           });
           
-          // Trigger recalculations
-          if (window.formHandler) {
-            window.formHandler.triggerCalculations();
-          }
-          
-          console.log('Auto-load completed');
-        } else {
-          console.log('No saved data found');
+          mutation.removedNodes.forEach((node) => {
+            if (node.nodeType === 1 && (
+              node.classList?.contains('revenue-item') ||
+              node.classList?.contains('cost-item') ||
+              node.querySelector?.('.revenue-item') ||
+              node.querySelector?.('.cost-item')
+            )) {
+              hasRelevantChange = true;
+            }
+          });
         }
-      } catch (error) {
-        console.warn('Error auto-loading saved data:', error);
+      });
+      
+      if (hasRelevantChange) {
+        debouncedAutoSave();
       }
-    }, 1500); // Load after all other initialization is complete
+    });
+    
+    // Observe the entire document for dynamic changes
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
+    });
+    
+    console.log('✅ Auto-save listeners established');
+  }
+  
+  async autoSaveData() {
+    try {
+      const formData = this.collectAllFormData();
+      localStorage.setItem(this.storageKey, JSON.stringify(formData));
+      console.log('📦 Data auto-saved');
+      
+      // Show subtle notification
+      this.showAutoSaveStatus();
+      
+      return { success: true, data: formData };
+    } catch (error) {
+      console.warn('Auto-save failed:', error);
+      return { success: false, error: error.message };
+    }
+  }
+  
+  showAutoSaveStatus() {
+    // Create or update auto-save indicator
+    let indicator = document.getElementById('autoSaveIndicator');
+    if (!indicator) {
+      indicator = document.createElement('div');
+      indicator.id = 'autoSaveIndicator';
+      indicator.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: #28a745;
+        color: white;
+        padding: 8px 12px;
+        border-radius: 4px;
+        font-size: 12px;
+        z-index: 10000;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        pointer-events: none;
+      `;
+      indicator.textContent = '✓ Saved';
+      document.body.appendChild(indicator);
+    }
+    
+    // Show and hide the indicator
+    indicator.style.opacity = '1';
+    setTimeout(() => {
+      indicator.style.opacity = '0';
+    }, 1500);
+  }
+
+  autoLoadSavedData() {
+    console.log('Checking for saved data to auto-load...');
+    
+    try {
+      const savedData = localStorage.getItem(this.storageKey);
+      
+      if (savedData) {
+        const formData = JSON.parse(savedData);
+        console.log('Found saved data, auto-loading...');
+        
+        // Load ALL data including dynamic items
+        this.populateAllFormData(formData);
+        
+        // Trigger recalculations
+        if (window.formHandler) {
+          window.formHandler.triggerCalculations();
+        }
+        
+        console.log('✅ Auto-load completed - all form data restored');
+        
+        // Show restoration notification
+        const notification = document.createElement('div');
+        notification.style.cssText = `
+          position: fixed;
+          top: 20px;
+          left: 50%;
+          transform: translateX(-50%);
+          background: #17a2b8;
+          color: white;
+          padding: 12px 20px;
+          border-radius: 6px;
+          font-size: 14px;
+          z-index: 10000;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        `;
+        notification.textContent = '📋 Previous form data restored';
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+          notification.remove();
+        }, 3000);
+        
+      } else {
+        console.log('No saved data found');
+      }
+    } catch (error) {
+      console.warn('Error auto-loading saved data:', error);
+    }
   }
 
   getSavedDataInfo() {

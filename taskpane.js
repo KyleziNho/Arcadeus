@@ -231,10 +231,7 @@ class MAModelingAddin {
     //   console.log('✅ AutoFillIntegrator initialization started');
     // }
     
-    // Auto-load saved data
-    if (this.dataManager) {
-      this.dataManager.autoLoadSavedData();
-    }
+    // DataManager now handles auto-loading internally during initialization
   }
 
   initializeAssumptionTabs() {
