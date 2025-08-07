@@ -112,320 +112,234 @@
 
         <!-- Assumptions Page -->
         <div id="assumptionsPage" class="page-content">
-            <!-- Top Toolbar -->
-            <div class="assumptions-toolbar">
-                <button class="toolbar-btn autofill-ai-btn" id="autofillAIBtn">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
-                        <path d="m2 17 10 5 10-5"></path>
-                        <path d="m2 12 10 5 10-5"></path>
-                    </svg>
-                    Autofill with AI
-                </button>
-                <button class="toolbar-btn" id="toggleAllBtn">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M10 6h4"></path>
-                        <path d="M10 12h4"></path>
-                        <path d="M10 18h4"></path>
-                    </svg>
-                    Collapse All
-                </button>
+            <!-- Progress Bar -->
+            <div class="progress-container">
+                <div class="progress-bar-wrapper">
+                    <div class="progress-bar" id="assumptionsProgress">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <div class="progress-text">
+                        <span id="progressText">1 of 7 sections completed</span>
+                    </div>
+                </div>
             </div>
             
+            <!-- Horizontal Tab Navigation -->
+            <div class="assumptions-tabs">
+                <button class="assumption-tab active" data-tab="highLevelParameters">High Level Parameters</button>
+                <button class="assumption-tab" data-tab="dealAssumptions">Deal Assumptions</button>
+                <button class="assumption-tab" data-tab="revenueItems">Revenue Items</button>
+                <button class="assumption-tab" data-tab="operatingExpenses">Operating Expenses</button>
+                <button class="assumption-tab" data-tab="capEx">Capital Expenditures</button>
+                <button class="assumption-tab" data-tab="exitAssumptions">Exit Assumptions</button>
+                <button class="assumption-tab" data-tab="debtModel">Debt Model</button>
+            </div>
+            
+            <!-- Tab Content Container -->
             <div class="assumptions-content">
-                <div class="section collapsible-section" id="highLevelParametersSection">
-            <div class="section-header" id="minimizeHighLevel">
-                <div class="section-title">
-                    <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M12 2L12 22"></path>
-                        <path d="M2 12L22 12"></path>
-                        <circle cx="12" cy="7" r="2"></circle>
-                        <circle cx="12" cy="17" r="2"></circle>
-                        <circle cx="7" cy="12" r="2"></circle>
-                        <circle cx="17" cy="12" r="2"></circle>
-                    </svg>
-                    <span class="section-label">High-Level Parameters</span>
-                </div>
-                <svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="6,9 12,15 18,9"></polyline>
-                </svg>
-            </div>
-            <div class="section-content" id="highLevelContent">
-                <div class="form-group">
-                    <label>Currency</label>
-                    <select id="currency">
-                        <option value="USD">USD - US Dollar</option>
-                        <option value="EUR">EUR - Euro</option>
-                        <option value="GBP">GBP - British Pound</option>
-                        <option value="JPY">JPY - Japanese Yen</option>
-                        <option value="CAD">CAD - Canadian Dollar</option>
-                        <option value="AUD">AUD - Australian Dollar</option>
-                        <option value="CHF">CHF - Swiss Franc</option>
-                        <option value="CNY">CNY - Chinese Yuan</option>
-                        <option value="SEK">SEK - Swedish Krona</option>
-                        <option value="NOK">NOK - Norwegian Krone</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label>Project Start Date</label>
-                    <input type="date" id="projectStartDate" />
-                </div>
-                
-                <div class="form-group">
-                    <label>Model Periods</label>
-                    <select id="modelPeriods">
-                        <option value="daily">Daily</option>
-                        <option value="monthly" selected>Monthly</option>
-                        <option value="quarterly">Quarterly</option>
-                        <option value="yearly">Yearly</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label>Project End Date</label>
-                    <input type="date" id="projectEndDate" />
-                </div>
-                
-                <div class="form-group">
-                    <label>Holding Periods (Calculated)</label>
-                    <input type="text" id="holdingPeriodsCalculated" readonly placeholder="Select dates and period type to calculate" />
-                    <small class="help-text">Automatically calculated based on start/end dates and period type</small>
-                </div>
-            </div>
-        </div>
-
-        <div class="section collapsible-section" id="dealAssumptionsSection">
-            <div class="section-header" id="minimizeAssumptions">
-                <div class="section-title">
-                    <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
-                        <path d="m2 17 10 5 10-5"></path>
-                        <path d="m2 12 10 5 10-5"></path>
-                    </svg>
-                    <span class="section-label">Deal Assumptions</span>
-                </div>
-                <svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="6,9 12,15 18,9"></polyline>
-                </svg>
-            </div>
-            <div class="section-content" id="assumptionsContent">
-            <div class="form-group">
-                <label>Deal Name</label>
-                <input type="text" id="dealName" placeholder="e.g., TechCo Acquisition"/>
-                <small class="help-text">Name or identifier for this transaction</small>
-            </div>
-            <div class="form-group">
-                <label>Deal Value</label>
-                <input type="number" id="dealValue" placeholder="e.g., 100000000" step="1000000"/>
-                <small class="help-text">Enter the total transaction value in your selected currency</small>
-            </div>
-            <div class="form-group">
-                <label>Transaction Fee (%)</label>
-                <input type="number" id="transactionFee" placeholder="e.g., 2.5" step="0.1" value="2.5"/>
-                <small class="help-text">Investment banking and advisory fees as percentage of deal value</small>
-            </div>
-            <div class="form-group">
-                <label>Deal LTV (%)</label>
-                <input type="number" id="dealLTV" placeholder="e.g., 70" step="1" value="70"/>
-                <small class="help-text">Loan-to-Value ratio for debt financing</small>
-            </div>
-            <div class="form-group">
-                <label>Acquisition Equity Contribution (Calculated)</label>
-                <input type="text" id="equityContribution" readonly placeholder="Will calculate based on Deal Value and LTV"/>
-                <small class="help-text">Equity required to acquire the company: Deal Value × (100% - LTV%)</small>
-            </div>
-            <div class="form-group">
-                <label>Debt Financing (Calculated)</label>
-                <input type="text" id="debtFinancing" readonly placeholder="Will calculate based on Deal Value and LTV"/>
-                <small class="help-text">Debt portion of acquisition: Deal Value × LTV%</small>
-            </div>
-            </div>
-        </div>
-
-        <div class="section collapsible-section" id="revenueItemsSection">
-            <div class="section-header" id="minimizeRevenue">
-                <div class="section-title">
-                    <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="12" y1="1" x2="12" y2="23"></line>
-                        <path d="m17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
-                    </svg>
-                    <span class="section-label">Revenue Items</span>
-                </div>
-                <svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="6,9 12,15 18,9"></polyline>
-                </svg>
-            </div>
-            <div class="section-content" id="revenueContent">
-                <div class="revenue-items-container" id="revenueItemsContainer">
-                    <!-- Revenue items will be dynamically added here -->
-                </div>
-                <div class="revenue-actions">
-                    <button class="button button-secondary" id="addRevenueItem">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="12" cy="12" r="10"></circle>
-                            <line x1="12" y1="8" x2="12" y2="16"></line>
-                            <line x1="8" y1="12" x2="16" y2="12"></line>
-                        </svg>
-                        Add Revenue Item
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <div class="section collapsible-section" id="operatingExpensesSection">
-            <div class="section-header" id="minimizeOpEx">
-                <div class="section-title">
-                    <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M3 3v18h18"></path>
-                        <path d="m19 9-5 5-4-4-3 3"></path>
-                    </svg>
-                    <span class="section-label">Operating Expenses</span>
-                </div>
-                <svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="6,9 12,15 18,9"></polyline>
-                </svg>
-            </div>
-            <div class="section-content" id="opExContent">
-                <div class="cost-items-container" id="operatingExpensesContainer">
-                    <!-- Operating expenses will be dynamically added here -->
-                </div>
-                <div class="cost-actions">
-                    <button class="button button-secondary" id="addOperatingExpense">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="12" cy="12" r="10"></circle>
-                            <line x1="12" y1="8" x2="12" y2="16"></line>
-                            <line x1="8" y1="12" x2="16" y2="12"></line>
-                        </svg>
-                        Add Operating Expense
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <div class="section collapsible-section" id="capExSection">
-            <div class="section-header" id="minimizeCapEx">
-                <div class="section-title">
-                    <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
-                        <polyline points="7.5,4.21 12,6.81 16.5,4.21"></polyline>
-                        <polyline points="7.5,19.79 7.5,14.6 3,12"></polyline>
-                        <polyline points="21,12 16.5,14.6 16.5,19.79"></polyline>
-                        <polyline points="3.27,6.96 12,12.01 20.73,6.96"></polyline>
-                        <line x1="12" y1="22.08" x2="12" y2="12"></line>
-                    </svg>
-                    <span class="section-label">Capital Expenditures</span>
-                </div>
-                <svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="6,9 12,15 18,9"></polyline>
-                </svg>
-            </div>
-            <div class="section-content" id="capExContent">
-                <p style="margin-bottom: 15px; color: #666; font-size: 14px;">
-                    Ongoing capital expenditures for property improvements, maintenance, and upgrades
-                </p>
-                <div class="cost-items-container" id="capExContainer">
-                    <!-- CapEx items will be dynamically added here -->
-                </div>
-                <div class="cost-actions">
-                    <button class="button button-secondary" id="addCapExItem">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="12" cy="12" r="10"></circle>
-                            <line x1="12" y1="8" x2="12" y2="16"></line>
-                            <line x1="8" y1="12" x2="16" y2="12"></line>
-                        </svg>
-                        Add CapEx Item
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <div class="section collapsible-section" id="exitAssumptionsSection">
-            <div class="section-header" id="minimizeExit">
-                <div class="section-title">
-                    <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                        <polyline points="16,17 21,12 16,7"></polyline>
-                        <line x1="21" y1="12" x2="9" y2="12"></line>
-                    </svg>
-                    <span class="section-label">Exit Assumptions</span>
-                </div>
-                <svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="6,9 12,15 18,9"></polyline>
-                </svg>
-            </div>
-            <div class="section-content" id="exitContent">
-                <div class="form-group">
-                    <label>Disposal Cost (%)</label>
-                    <input type="number" id="disposalCost" placeholder="e.g., 2.5" step="0.1" value="2.5"/>
-                    <small class="help-text">Transaction costs for selling the investment (legal, banking, advisory fees)</small>
-                </div>
-                
-                <div class="form-group">
-                    <label>Terminal Cap Rate (%)</label>
-                    <input type="number" id="terminalCapRate" placeholder="e.g., 8.5" step="0.1" value="8.5"/>
-                    <small class="help-text">Capitalization rate used to determine terminal value at exit</small>
-                </div>
-                
-                <div class="form-group">
-                    <label>Discount Rate - WACC (%)</label>
-                    <input type="number" id="discountRate" placeholder="e.g., 10.0" step="0.1" value="10.0"/>
-                    <small class="help-text">Weighted Average Cost of Capital used for NPV calculations</small>
-                </div>
-            </div>
-        </div>
-
-        <div class="section collapsible-section" id="debtModelSection">
-            <div class="section-header" id="minimizeDebtModel">
-                <div class="section-title">
-                    <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <rect x="1" y="3" width="15" height="13"></rect>
-                        <path d="m16 8 2 0 0 8-2 0"></path>
-                        <path d="m21 9-3 0 0 6 3 0"></path>
-                    </svg>
-                    <span class="section-label">Debt Model</span>
-                </div>
-                <svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="6,9 12,15 18,9"></polyline>
-                </svg>
-            </div>
-            <div class="section-content" id="debtModelContent">
-                
-                <!-- Debt Configuration -->
-                <div class="debt-config-group">
-                    <div class="form-group">
-                        <label>Debt Financing Status</label>
-                        <div class="debt-status" id="debtStatus">
-                            <div class="status-message" id="debtStatusMessage">
-                                Please input a higher LTV to access debt financing options
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="debt-settings" id="debtSettings" style="display: none;">
+                <!-- High Level Parameters Tab Panel -->
+                <div class="tab-panel active" id="highLevelParameters">
+                    <div class="tab-content">
                         <div class="form-group">
-                            <label>Loan Issuance Fees (%)</label>
-                            <input type="number" id="loanIssuanceFees" placeholder="e.g., 1.5" step="0.1" value="1.5">
-                            <small class="help-text">Fees for arranging and issuing the debt financing</small>
+                            <label>Currency</label>
+                            <select id="currency">
+                                <option value="USD">USD - US Dollar</option>
+                                <option value="EUR">EUR - Euro</option>
+                                <option value="GBP">GBP - British Pound</option>
+                                <option value="JPY">JPY - Japanese Yen</option>
+                                <option value="CAD">CAD - Canadian Dollar</option>
+                                <option value="AUD">AUD - Australian Dollar</option>
+                                <option value="CHF">CHF - Swiss Franc</option>
+                                <option value="CNY">CNY - Chinese Yuan</option>
+                                <option value="SEK">SEK - Swedish Krona</option>
+                                <option value="NOK">NOK - Norwegian Krone</option>
+                            </select>
                         </div>
                         
                         <div class="form-group">
-                            <label>Interest Rate (%)</label>
-                            <input type="number" id="fixedRate" placeholder="e.g., 5.5" step="0.1" value="5.5">
-                            <small class="help-text">Annual interest rate for the debt financing</small>
+                            <label>Project Start Date</label>
+                            <input type="date" id="projectStartDate" />
                         </div>
-
+                        
+                        <div class="form-group">
+                            <label>Model Periods</label>
+                            <select id="modelPeriods">
+                                <option value="daily">Daily</option>
+                                <option value="monthly" selected>Monthly</option>
+                                <option value="quarterly">Quarterly</option>
+                                <option value="yearly">Yearly</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Project End Date</label>
+                            <input type="date" id="projectEndDate" />
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Holding Periods (Calculated)</label>
+                            <input type="text" id="holdingPeriodsCalculated" readonly placeholder="Select dates and period type to calculate" />
+                            <small class="help-text">Automatically calculated based on start/end dates and period type</small>
+                        </div>
                     </div>
                 </div>
 
+                <!-- Deal Assumptions Tab Panel -->
+                <div class="tab-panel" id="dealAssumptions">
+                    <div class="tab-content">
+                        <div class="form-group">
+                            <label>Deal Name</label>
+                            <input type="text" id="dealName" placeholder="e.g., TechCo Acquisition"/>
+                            <small class="help-text">Name or identifier for this transaction</small>
+                        </div>
+                        <div class="form-group">
+                            <label>Deal Value</label>
+                            <input type="number" id="dealValue" placeholder="e.g., 100000000" step="1000000"/>
+                            <small class="help-text">Enter the total transaction value in your selected currency</small>
+                        </div>
+                        <div class="form-group">
+                            <label>Transaction Fee (%)</label>
+                            <input type="number" id="transactionFee" placeholder="e.g., 2.5" step="0.1" value="2.5"/>
+                            <small class="help-text">Investment banking and advisory fees as percentage of deal value</small>
+                        </div>
+                        <div class="form-group">
+                            <label>Deal LTV (%)</label>
+                            <input type="number" id="dealLTV" placeholder="e.g., 70" step="1" value="70"/>
+                            <small class="help-text">Loan-to-Value ratio for debt financing</small>
+                        </div>
+                        <div class="form-group">
+                            <label>Acquisition Equity Contribution (Calculated)</label>
+                            <input type="text" id="equityContribution" readonly placeholder="Will calculate based on Deal Value and LTV"/>
+                            <small class="help-text">Equity required to acquire the company: Deal Value × (100% - LTV%)</small>
+                        </div>
+                        <div class="form-group">
+                            <label>Debt Financing (Calculated)</label>
+                            <input type="text" id="debtFinancing" readonly placeholder="Will calculate based on Deal Value and LTV"/>
+                            <small class="help-text">Debt portion of acquisition: Deal Value × LTV%</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Revenue Items Tab Panel -->
+                <div class="tab-panel" id="revenueItems">
+                    <div class="tab-content">
+                        <div class="revenue-items-container" id="revenueItemsContainer">
+                            <!-- Revenue items will be dynamically added here -->
+                        </div>
+                        <div class="revenue-actions">
+                            <button class="button button-secondary" id="addRevenueItem">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <line x1="12" y1="8" x2="12" y2="16"></line>
+                                    <line x1="8" y1="12" x2="16" y2="12"></line>
+                                </svg>
+                                Add Revenue Item
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Operating Expenses Tab Panel -->
+                <div class="tab-panel" id="operatingExpenses">
+                    <div class="tab-content">
+                        <div class="cost-items-container" id="operatingExpensesContainer">
+                            <!-- Operating expenses will be dynamically added here -->
+                        </div>
+                        <div class="cost-actions">
+                            <button class="button button-secondary" id="addOperatingExpense">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <line x1="12" y1="8" x2="12" y2="16"></line>
+                                    <line x1="8" y1="12" x2="16" y2="12"></line>
+                                </svg>
+                                Add Operating Expense
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Capital Expenditures Tab Panel -->
+                <div class="tab-panel" id="capEx">
+                    <div class="tab-content">
+                        <p style="margin-bottom: 15px; color: #666; font-size: 14px;">
+                            Ongoing capital expenditures for property improvements, maintenance, and upgrades
+                        </p>
+                        <div class="cost-items-container" id="capExContainer">
+                            <!-- CapEx items will be dynamically added here -->
+                        </div>
+                        <div class="cost-actions">
+                            <button class="button button-secondary" id="addCapExItem">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <line x1="12" y1="8" x2="12" y2="16"></line>
+                                    <line x1="8" y1="12" x2="16" y2="12"></line>
+                                </svg>
+                                Add CapEx Item
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Exit Assumptions Tab Panel -->
+                <div class="tab-panel" id="exitAssumptions">
+                    <div class="tab-content">
+                        <div class="form-group">
+                            <label>Disposal Cost (%)</label>
+                            <input type="number" id="disposalCost" placeholder="e.g., 2.5" step="0.1" value="2.5"/>
+                            <small class="help-text">Transaction costs for selling the investment (legal, banking, advisory fees)</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Terminal Cap Rate (%)</label>
+                            <input type="number" id="terminalCapRate" placeholder="e.g., 8.5" step="0.1" value="8.5"/>
+                            <small class="help-text">Capitalization rate used to determine terminal value at exit</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Discount Rate - WACC (%)</label>
+                            <input type="number" id="discountRate" placeholder="e.g., 10.0" step="0.1" value="10.0"/>
+                            <small class="help-text">Weighted Average Cost of Capital used for NPV calculations</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Debt Model Tab Panel -->
+                <div class="tab-panel" id="debtModel">
+                    <div class="tab-content">
+                        <!-- Debt Configuration -->
+                        <div class="debt-config-group">
+                            <div class="form-group">
+                                <label>Debt Financing Status</label>
+                                <div class="debt-status" id="debtStatus">
+                                    <div class="status-message" id="debtStatusMessage">
+                                        Please input a higher LTV to access debt financing options
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="debt-settings" id="debtSettings" style="display: none;">
+                                <div class="form-group">
+                                    <label>Loan Issuance Fees (%)</label>
+                                    <input type="number" id="loanIssuanceFees" placeholder="e.g., 1.5" step="0.1" value="1.5">
+                                    <small class="help-text">Fees for arranging and issuing the debt financing</small>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label>Interest Rate (%)</label>
+                                    <input type="number" id="fixedRate" placeholder="e.g., 5.5" step="0.1" value="5.5">
+                                    <small class="help-text">Annual interest rate for the debt financing</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-        </div>
 
-
-        <!-- Action Section -->
-        <div class="action-section">
-            <div class="save-status" id="saveStatus"></div>
-            <div class="generate-button-container">
+            <!-- Action Section -->
+            <div class="action-section-wrapper">
+                <div class="action-section">
+                    <div class="save-status" id="saveStatus"></div>
+                    <div class="generate-button-container">
                 <!-- Unified Generation Button -->
                 <button class="button button-primary generate-model-btn" id="generateFullModelBtn">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -636,34 +550,41 @@
                 });
             }
 
-            // Toggle all sections functionality
-            const toggleAllBtn = document.getElementById('toggleAllBtn');
-            if (toggleAllBtn) {
-                toggleAllBtn.addEventListener('click', function() {
-                    const sections = document.querySelectorAll('.collapsible-section');
-                    const allCollapsed = Array.from(sections).every(section => section.classList.contains('collapsed'));
-                    
-                    sections.forEach(section => {
-                        if (allCollapsed) {
-                            section.classList.remove('collapsed');
-                        } else {
-                            section.classList.add('collapsed');
-                        }
-                    });
-                    
-                    // Update button text
-                    const buttonText = allCollapsed ? 'Collapse All' : 'Expand All';
-                    toggleAllBtn.innerHTML = `
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M10 6h4"></path>
-                            <path d="M10 12h4"></path>
-                            <path d="M10 18h4"></path>
-                        </svg>
-                        ${buttonText}
-                    `;
-                });
-            }
+            // Initialize assumption tabs
+            initializeAssumptionTabs();
         });
+
+        function initializeAssumptionTabs() {
+            const tabs = document.querySelectorAll('.assumption-tab');
+            const panels = document.querySelectorAll('.tab-panel');
+            
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const targetId = tab.getAttribute('data-tab');
+                    
+                    // Remove active class from all tabs and panels
+                    tabs.forEach(t => t.classList.remove('active'));
+                    panels.forEach(p => p.classList.remove('active'));
+                    
+                    // Add active class to clicked tab and corresponding panel
+                    tab.classList.add('active');
+                    const targetPanel = document.getElementById(targetId);
+                    if (targetPanel) {
+                        targetPanel.classList.add('active');
+                    }
+                    
+                    // Reinitialize FormHandler for newly visible elements
+                    if (window.formHandler && targetId === 'revenueItems') {
+                        console.log('🔧 Reinitializing revenue items');
+                        window.formHandler.initializeRevenueItems();
+                    }
+                    if (window.formHandler && (targetId === 'operatingExpenses' || targetId === 'capEx')) {
+                        console.log('🔧 Reinitializing cost items');
+                        window.formHandler.initializeCostItems();
+                    }
+                });
+            });
+        }
     </script>
 </body>
 </html>
