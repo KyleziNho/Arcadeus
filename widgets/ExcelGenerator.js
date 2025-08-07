@@ -1844,12 +1844,12 @@ Provide the COMPLETE Free Cash Flow model with exact Excel formulas for every ce
         fcfStructure.leveredFCF = currentRow;
         for (let col = 1; col <= periodColumns; col++) {
           const colLetter = this.getColumnLetter(col);
-          // Include loan proceeds in levered cash flow calculation using SUM range
-          // If we have debt-related items, sum them together
-          if (fcfStructure.interestPayments && fcfStructure.assetDisposal) {
-            const startRow = Math.min(fcfStructure.interestPayments, fcfStructure.loanProceeds, fcfStructure.assetDisposal);
-            const endRow = Math.max(fcfStructure.interestPayments, fcfStructure.loanProceeds, fcfStructure.assetDisposal);
-            fcfSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${colLetter}${fcfStructure.unleveredFCF}+SUM(${colLetter}${startRow}:${colLetter}${endRow})`]];
+          // Include loan proceeds in levered cash flow calculation using single SUM range
+          // Include unlevered FCF in the range to get SUM(B11:B15) format
+          if (fcfStructure.interestPayments && fcfStructure.assetDisposal && fcfStructure.loanProceeds) {
+            const startRow = Math.min(fcfStructure.unleveredFCF, fcfStructure.interestPayments, fcfStructure.loanProceeds, fcfStructure.assetDisposal);
+            const endRow = Math.max(fcfStructure.unleveredFCF, fcfStructure.interestPayments, fcfStructure.loanProceeds, fcfStructure.assetDisposal);
+            fcfSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=SUM(${colLetter}${startRow}:${colLetter}${endRow})`]];
           } else {
             // Fallback to just unlevered FCF if no debt items
             fcfSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${colLetter}${fcfStructure.unleveredFCF}`]];
@@ -4597,8 +4597,8 @@ You MUST create a P&L Statement with this EXACT structure:
       for (let i = 0; i <= periods; i++) {
         const colLetter = this.getColumnLetter(i + 1);
         // Levered CF = SUM of all components: Unlevered CF + Debt upfront costs + Debt Expense + Loan proceeds
-        // Use range from debtUpfrontCostsRow to loanProceedsRow to ensure all rows are included
-        fcfSheet.getRange(colLetter + currentRow).formulas = [[`=SUM(${colLetter}${unlevereCashflowsRow},${colLetter}${debtUpfrontCostsRow}:${colLetter}${loanProceedsRow})`]];
+        // Use single range from unlevered cashflows to loan proceeds to include all rows
+        fcfSheet.getRange(colLetter + currentRow).formulas = [[`=SUM(${colLetter}${unlevereCashflowsRow}:${colLetter}${loanProceedsRow})`]];
         ExcelFormatter.applyNumberFormat(fcfSheet.getRange(colLetter + currentRow));
       }
       currentRow += 2;
