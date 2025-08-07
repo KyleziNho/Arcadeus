@@ -527,50 +527,7 @@
             document.getElementById('chatTab').classList.add('active');
         }
 
-        function initializeAssumptionTabs() {
-            console.log('🔧 Initializing assumption tabs...');
-            
-            const tabsContainer = document.querySelector('.assumptions-tabs');
-            if (!tabsContainer) {
-                console.error('❌ Tabs container not found');
-                return;
-            }
-
-            // Add click event listener to tabs container using event delegation
-            function handleTabClick(e) {
-                const clickedTab = e.target.closest('.assumption-tab');
-                if (!clickedTab) return;
-
-                const targetTabId = clickedTab.getAttribute('data-tab');
-                if (!targetTabId) return;
-
-                console.log('🎯 Tab clicked:', targetTabId);
-
-                // Remove active class from all tabs and panels
-                document.querySelectorAll('.assumption-tab').forEach(tab => {
-                    tab.classList.remove('active');
-                });
-                document.querySelectorAll('.tab-panel').forEach(panel => {
-                    panel.classList.remove('active');
-                });
-
-                // Add active class to clicked tab and corresponding panel
-                clickedTab.classList.add('active');
-                const targetPanel = document.getElementById(targetTabId);
-                if (targetPanel) {
-                    targetPanel.classList.add('active');
-                } else {
-                    console.error('❌ Target panel not found:', targetTabId);
-                }
-            }
-
-            // Remove existing listeners to avoid duplicates
-            tabsContainer.removeEventListener('click', handleTabClick);
-            // Add the event listener
-            tabsContainer.addEventListener('click', handleTabClick);
-            
-            console.log('✅ Assumption tabs initialized successfully');
-        }
+        // Removed duplicate function - using cleaner implementation below
 
         // Chat System - Global variables
         let chatContext = null;
@@ -1174,27 +1131,6 @@
             }
         });
 
-        function initializeAssumptionTabs() {
-            // Use event delegation on the parent container instead of individual tabs
-            const tabsContainer = document.querySelector('.assumptions-tabs');
-            
-            if (!tabsContainer) {
-                console.error('Tabs container not found');
-                return;
-            }
-            
-            // Remove any existing listeners
-            tabsContainer.removeEventListener('click', handleTabClick);
-            
-            // Add the event listener to the container
-            tabsContainer.addEventListener('click', handleTabClick);
-            
-            // Mark as initialized
-            tabsContainer.setAttribute('data-initialized', 'true');
-            
-            console.log('Tab event listener attached to container');
-        }
-        
         function handleTabClick(e) {
             // Check if clicked element is a tab button
             const tab = e.target.closest('.assumption-tab');
@@ -1226,6 +1162,27 @@
             if (typeof updateProgress === 'function') {
                 updateProgress();
             }
+        }
+
+        function initializeAssumptionTabs() {
+            // Use event delegation on the parent container instead of individual tabs
+            const tabsContainer = document.querySelector('.assumptions-tabs');
+            
+            if (!tabsContainer) {
+                console.error('Tabs container not found');
+                return;
+            }
+            
+            // Remove any existing listeners
+            tabsContainer.removeEventListener('click', handleTabClick);
+            
+            // Add the event listener to the container
+            tabsContainer.addEventListener('click', handleTabClick);
+            
+            // Mark as initialized
+            tabsContainer.setAttribute('data-initialized', 'true');
+            
+            console.log('Tab event listener attached to container');
         }
 
         function initializeProgressTracking() {

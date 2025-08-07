@@ -88,8 +88,8 @@
 }
 
 .loading-logo {
-    max-width: 800px; /* Increased from 600px for bigger logo */
-    width: 90%; /* Slightly reduced from 100% to maintain padding */
+    max-width: 1200px; /* Much bigger logo */
+    width: 95%; /* Increased width */
     height: auto;
     animation: pulseOpacity 3s ease-in-out infinite;
     margin: 0 auto;
