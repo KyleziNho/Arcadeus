@@ -1,0 +1,713 @@
+<!-- Enhanced Chat Interface Template -->
+<div id="enhancedChatPage" class="enhanced-chat-page">
+  <!-- Chat Header -->
+  <div class="chat-header">
+    <div class="chat-header-left">
+      <h3>AI Assistant</h3>
+      <span id="selectionIndicator" class="selection-indicator">No cell selected</span>
+    </div>
+    
+    <div class="chat-header-right">
+      <!-- Model Selector -->
+      <div class="model-selector-wrapper">
+        <label for="modelSelector">Model:</label>
+        <select id="modelSelector" class="model-selector">
+          <option value="claude-sonnet" selected>Claude Sonnet 3.5</option>
+          <option value="claude-opus">Claude Opus 3</option>
+          <option value="gpt-4">ChatGPT 4</option>
+          <option value="gemini-pro">Gemini 1.5 Pro</option>
+        </select>
+      </div>
+      
+      <!-- Action Buttons -->
+      <div class="header-actions">
+        <button id="undoBtn" class="icon-btn" title="Undo (Ctrl+Z)" disabled>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 7v6h6"/>
+            <path d="M21 17a9 9 0 00-9-9 9 9 0 00-6 2.3L3 13"/>
+          </svg>
+        </button>
+        
+        <button id="redoBtn" class="icon-btn" title="Redo (Ctrl+Y)" disabled>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 7v6h-6"/>
+            <path d="M3 17a9 9 0 019-9 9 9 0 016 2.3L21 13"/>
+          </svg>
+        </button>
+        
+        <button id="clearChatBtn" class="icon-btn" title="Clear Chat">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 6h18"/>
+            <path d="M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+            <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/>
+          </svg>
+        </button>
+        
+        <button id="settingsBtn" class="icon-btn" title="Settings">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M12 1v6m0 6v6m4.22-13.22l4.24 4.24M1.54 9.96l4.24 4.24M7.78 7.78L3.54 3.54M20.46 20.46l-4.24-4.24M16.22 16.22l4.24 4.24M3.54 20.46l4.24-4.24"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Excel Context Bar -->
+  <div class="excel-context-bar">
+    <div class="context-item">
+      <span class="context-label">Workbook:</span>
+      <span id="workbookName" class="context-value">Loading...</span>
+    </div>
+    <div class="context-item">
+      <span class="context-label">Sheet:</span>
+      <span id="activeSheet" class="context-value">Loading...</span>
+    </div>
+    <div class="context-item">
+      <span class="context-label">Selection:</span>
+      <span id="selectedRange" class="context-value">Loading...</span>
+    </div>
+    <div class="context-item">
+      <button id="refreshContextBtn" class="small-btn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M23 4v6h-6"/>
+          <path d="M1 20v-6h6"/>
+          <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
+        </svg>
+        Refresh
+      </button>
+    </div>
+  </div>
+  
+  <!-- Chat Messages Area -->
+  <div id="chatMessages" class="chat-messages enhanced">
+    <!-- Welcome Message -->
+    <div class="welcome-message">
+      <div class="welcome-icon">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+          <path d="M2 17l10 5 10-5"/>
+          <path d="M2 12l10 5 10-5"/>
+        </svg>
+      </div>
+      <h3>Welcome to Arcadeus AI Assistant</h3>
+      <p>I can help you with:</p>
+      <div class="capability-cards">
+        <div class="capability-card">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+            <polyline points="10 9 9 9 8 9"/>
+          </svg>
+          <span>Generate financial models</span>
+        </div>
+        <div class="capability-card">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/>
+            <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+            <line x1="12" y1="22.08" x2="12" y2="12"/>
+          </svg>
+          <span>Analyze Excel data</span>
+        </div>
+        <div class="capability-card">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 20h9"/>
+            <path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/>
+          </svg>
+          <span>Create & edit formulas</span>
+        </div>
+        <div class="capability-card">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/>
+            <path d="m21 21-4.35-4.35"/>
+          </svg>
+          <span>Validate models</span>
+        </div>
+      </div>
+      <p class="quick-tips">
+        <strong>Quick tips:</strong> Select cells to provide context • Use Ctrl+Z to undo changes • Switch AI models anytime
+      </p>
+    </div>
+  </div>
+  
+  <!-- Chat Input Area -->
+  <div class="chat-input-area">
+    <!-- Quick Actions Bar -->
+    <div class="quick-actions-bar">
+      <button class="quick-action-btn" onclick="window.enhancedChat.validateFinancialModel()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="9 11 12 14 22 4"/>
+          <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+        </svg>
+        Validate Model
+      </button>
+      <button class="quick-action-btn" onclick="window.enhancedChat.generateExcelPage({name: 'Dashboard'})">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+          <line x1="9" y1="9" x2="15" y2="9"/>
+          <line x1="9" y1="15" x2="15" y2="15"/>
+        </svg>
+        Generate Dashboard
+      </button>
+      <button class="quick-action-btn" onclick="window.enhancedChat.suggestFormulas()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="4" y1="9" x2="20" y2="9"/>
+          <line x1="4" y1="15" x2="20" y2="15"/>
+          <line x1="10" y1="3" x2="8" y2="21"/>
+          <line x1="16" y1="3" x2="14" y2="21"/>
+        </svg>
+        Suggest Formulas
+      </button>
+    </div>
+    
+    <!-- Input Container -->
+    <div class="input-container">
+      <textarea 
+        id="chatInput" 
+        class="chat-input enhanced" 
+        placeholder="Ask me anything about your Excel model, or describe what you'd like to create..."
+        rows="3"
+      ></textarea>
+      
+      <div class="input-actions">
+        <div class="input-info">
+          <span id="charCount">0</span> / 4000
+        </div>
+        
+        <button id="sendMessage" class="send-btn primary">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="22" y1="2" x2="11" y2="13"/>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+          </svg>
+          <span>Send</span>
+        </button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Settings Modal -->
+  <div id="chatSettingsModal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Chat Settings</h3>
+        <button class="close-btn" onclick="this.closest('.modal').style.display='none'">×</button>
+      </div>
+      
+      <div class="modal-body">
+        <div class="setting-group">
+          <label>API Keys</label>
+          <div class="api-key-inputs">
+            <input type="password" id="openaiKey" placeholder="OpenAI API Key">
+            <input type="password" id="anthropicKey" placeholder="Anthropic API Key">
+            <input type="password" id="googleKey" placeholder="Google API Key">
+          </div>
+        </div>
+        
+        <div class="setting-group">
+          <label>
+            <input type="checkbox" id="autoReadExcel" checked>
+            Automatically read Excel context
+          </label>
+        </div>
+        
+        <div class="setting-group">
+          <label>
+            <input type="checkbox" id="streamResponses" checked>
+            Stream responses
+          </label>
+        </div>
+        
+        <div class="setting-group">
+          <label>Max conversation history</label>
+          <input type="number" id="maxHistory" value="20" min="5" max="100">
+        </div>
+      </div>
+      
+      <div class="modal-footer">
+        <button class="btn secondary" onclick="this.closest('.modal').style.display='none'">Cancel</button>
+        <button class="btn primary" onclick="window.enhancedChat.saveSettings()">Save Settings</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+/* Enhanced Chat Styles */
+.enhanced-chat-page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #f8f9fa;
+}
+
+.chat-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background: white;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.chat-header-left h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  color: #1a1a1a;
+}
+
+.selection-indicator {
+  font-size: 0.85rem;
+  color: #666;
+  margin-left: 1rem;
+}
+
+.chat-header-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.model-selector-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.model-selector {
+  padding: 0.4rem 0.8rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background: white;
+  font-size: 0.9rem;
+}
+
+.header-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.icon-btn {
+  padding: 0.5rem;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.icon-btn:hover:not(:disabled) {
+  background: #f0f0f0;
+  border-color: #999;
+}
+
+.icon-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.excel-context-bar {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  padding: 0.75rem 1rem;
+  background: #f0f4f8;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.context-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.context-label {
+  font-size: 0.85rem;
+  color: #666;
+  font-weight: 500;
+}
+
+.context-value {
+  font-size: 0.9rem;
+  color: #1a1a1a;
+  font-family: 'Monaco', 'Courier New', monospace;
+}
+
+.chat-messages.enhanced {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.5rem;
+  background: #f8f9fa;
+}
+
+.welcome-message {
+  text-align: center;
+  padding: 2rem;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.welcome-icon {
+  margin-bottom: 1rem;
+  color: #0066ff;
+}
+
+.capability-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+
+.capability-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+}
+
+.capability-card svg {
+  color: #0066ff;
+}
+
+.capability-card span {
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.chat-message {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.message-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #0066ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.message-avatar img {
+  width: 20px;
+  height: 20px;
+  filter: brightness(0) invert(1);
+}
+
+.user-message .message-avatar {
+  background: #28a745;
+}
+
+.message-content {
+  flex: 1;
+  background: white;
+  border-radius: 8px;
+  padding: 1rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.message-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.model-name {
+  font-size: 0.85rem;
+  color: #666;
+  font-weight: 500;
+}
+
+.typing-indicator {
+  font-size: 0.85rem;
+  color: #0066ff;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.message-text {
+  line-height: 1.6;
+  color: #1a1a1a;
+}
+
+.message-text code {
+  background: #f4f4f4;
+  padding: 0.2rem 0.4rem;
+  border-radius: 3px;
+  font-family: 'Monaco', 'Courier New', monospace;
+  font-size: 0.9em;
+}
+
+.message-text pre {
+  background: #282c34;
+  color: #abb2bf;
+  padding: 1rem;
+  border-radius: 6px;
+  overflow-x: auto;
+  margin: 1rem 0;
+}
+
+.message-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.3rem 0.6rem;
+  background: transparent;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.action-btn:hover {
+  background: #f0f0f0;
+  border-color: #999;
+  color: #333;
+}
+
+.chat-input-area {
+  background: white;
+  border-top: 1px solid #e0e0e0;
+  padding: 1rem;
+}
+
+.quick-actions-bar {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.quick-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.8rem;
+  background: #f8f9fa;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.quick-action-btn:hover {
+  background: #e8ecef;
+  border-color: #0066ff;
+  color: #0066ff;
+}
+
+.input-container {
+  position: relative;
+}
+
+.chat-input.enhanced {
+  width: 100%;
+  padding: 0.75rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  resize: vertical;
+  min-height: 60px;
+  max-height: 150px;
+  transition: border-color 0.2s;
+}
+
+.chat-input.enhanced:focus {
+  outline: none;
+  border-color: #0066ff;
+}
+
+.input-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 0.75rem;
+}
+
+.input-info {
+  font-size: 0.85rem;
+  color: #999;
+}
+
+.send-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1.2rem;
+  background: #0066ff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.send-btn:hover {
+  background: #0052cc;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0,102,255,0.3);
+}
+
+.send-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Modal Styles */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 500px;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.modal-body {
+  padding: 1.5rem;
+}
+
+.setting-group {
+  margin-bottom: 1.5rem;
+}
+
+.setting-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: #333;
+}
+
+.api-key-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.api-key-inputs input {
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 1.5rem;
+  border-top: 1px solid #e0e0e0;
+}
+
+.btn {
+  padding: 0.6rem 1.2rem;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn.primary {
+  background: #0066ff;
+  color: white;
+  border: none;
+}
+
+.btn.secondary {
+  background: white;
+  color: #666;
+  border: 1px solid #ddd;
+}
+
+.chat-notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: 0.75rem 1.5rem;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  font-size: 0.9rem;
+  z-index: 1001;
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+.chat-notification.success {
+  background: #d4edda;
+  color: #155724;
+  border-left: 4px solid #28a745;
+}
+
+.chat-notification.error {
+  background: #f8d7da;
+  color: #721c24;
+  border-left: 4px solid #dc3545;
+}
+
+.chat-notification.info {
+  background: #d1ecf1;
+  color: #0c5460;
+  border-left: 4px solid #17a2b8;
+}
+</style>
