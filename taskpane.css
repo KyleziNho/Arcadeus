@@ -3283,3 +3283,52 @@ select {
   color: #0c5460;
   border-left: 4px solid #17a2b8;
 }
+
+/* Streaming Message Styles */
+.chat-message.streaming {
+  opacity: 1;
+}
+
+.message-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.streaming .typing-indicator {
+  display: inline-block;
+  animation: pulse 1.5s infinite;
+}
+
+.streaming .message-text {
+  position: relative;
+}
+
+.streaming .message-text::after {
+  content: '|';
+  animation: blink 1s infinite;
+  color: #0066ff;
+  margin-left: 2px;
+}
+
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+/* Enhanced message styling */
+.assistant-message-content,
+.user-message-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.message-time {
+  font-size: 0.75rem;
+  color: #999;
+  margin-top: 0.5rem;
+}

@@ -816,64 +816,88 @@
                 
                 if (typeof Excel === 'undefined') {
                     console.log('Excel API not available');
+                    chatContext = { error: 'Excel API not available' };
                     return;
                 }
 
                 const contextData = await Excel.run(async (context) => {
-                    // Get current workbook and worksheet
-                    const workbook = context.workbook;
-                    const worksheet = workbook.worksheets.getActiveWorksheet();
-                    const selectedRange = workbook.getSelectedRange();
-                    
-                    // Load workbook properties
-                    workbook.load('name');
-                    worksheet.load('name');
-                    selectedRange.load(['address', 'values', 'formulas']);
-                    
-                    // Get all worksheets
-                    const worksheets = workbook.worksheets;
-                    worksheets.load('items');
-                    
-                    await context.sync();
-                    
-                    const allSheetsData = {};
-                    
-                    // Read data from each worksheet (limit to prevent overload)
-                    for (let i = 0; i < Math.min(worksheets.items.length, 5); i++) {
-                        const sheet = worksheets.items[i];
-                        sheet.load('name');
+                    try {
+                        // Get current workbook and worksheet
+                        const workbook = context.workbook;
+                        const worksheet = workbook.worksheets.getActiveWorksheet();
+                        const selectedRange = workbook.getSelectedRange();
                         
-                        const usedRange = sheet.getUsedRangeOrNullObject();
-                        usedRange.load(['address', 'values', 'formulas']);
+                        // Load properties in batches
+                        workbook.load('name');
+                        worksheet.load('name');
+                        selectedRange.load(['address', 'values', 'formulas']);
                         
                         await context.sync();
                         
-                        if (!usedRange.isNullObject) {
-                            // Limit data size to prevent API limits
-                            const values = usedRange.values;
-                            const formulas = usedRange.formulas;
-                            
-                            allSheetsData[sheet.name] = {
-                                address: usedRange.address,
-                                values: values.slice(0, 50), // First 50 rows only
-                                formulas: formulas.slice(0, 50),
-                                rowCount: values.length,
-                                columnCount: values[0]?.length || 0
-                            };
-                        }
-                    }
-                    
-                    return {
-                        workbook: workbook.name,
-                        activeSheet: worksheet.name,
-                        selectedRange: {
+                        const workbookName = workbook.name;
+                        const worksheetName = worksheet.name;
+                        const selectionInfo = {
                             address: selectedRange.address,
                             values: selectedRange.values,
                             formulas: selectedRange.formulas
-                        },
-                        sheets: allSheetsData,
-                        timestamp: new Date().toISOString()
-                    };
+                        };
+                        
+                        // Get all worksheets
+                        const worksheets = workbook.worksheets;
+                        worksheets.load('items/name');
+                        
+                        await context.sync();
+                        
+                        const allSheetsData = {};
+                        
+                        // Read data from each worksheet (limit to prevent overload)
+                        const maxSheets = Math.min(worksheets.items.length, 3); // Reduce to 3 sheets
+                        
+                        for (let i = 0; i < maxSheets; i++) {
+                            const sheet = worksheets.items[i];
+                            const sheetName = sheet.name;
+                            
+                            try {
+                                const usedRange = sheet.getUsedRangeOrNullObject();
+                                usedRange.load(['address', 'values', 'formulas']);
+                                
+                                await context.sync();
+                                
+                                if (!usedRange.isNullObject) {
+                                    // Limit data size significantly
+                                    const values = usedRange.values;
+                                    const formulas = usedRange.formulas;
+                                    
+                                    // Only take first 20 rows and 10 columns
+                                    const limitedValues = values.slice(0, 20).map(row => row.slice(0, 10));
+                                    const limitedFormulas = formulas.slice(0, 20).map(row => row.slice(0, 10));
+                                    
+                                    allSheetsData[sheetName] = {
+                                        address: usedRange.address,
+                                        values: limitedValues,
+                                        formulas: limitedFormulas,
+                                        rowCount: values.length,
+                                        columnCount: values[0]?.length || 0
+                                    };
+                                }
+                            } catch (sheetError) {
+                                console.warn(`Could not read sheet ${sheetName}:`, sheetError);
+                                allSheetsData[sheetName] = { error: 'Could not read sheet data' };
+                            }
+                        }
+                        
+                        return {
+                            workbook: workbookName,
+                            activeSheet: worksheetName,
+                            selectedRange: selectionInfo,
+                            sheets: allSheetsData,
+                            timestamp: new Date().toISOString()
+                        };
+                        
+                    } catch (innerError) {
+                        console.error('Inner Excel API error:', innerError);
+                        throw innerError;
+                    }
                 });
                 
                 chatContext = contextData;
@@ -884,7 +908,19 @@
                 
             } catch (error) {
                 console.error('❌ Error reading Excel context:', error);
-                chatContext = { error: error.message };
+                chatContext = { 
+                    error: error.message || 'Failed to read Excel context',
+                    fallbackData: {
+                        workbook: 'Unknown',
+                        activeSheet: 'Unknown',
+                        selectedRange: { address: 'Unknown', values: [], formulas: [] },
+                        sheets: {},
+                        timestamp: new Date().toISOString()
+                    }
+                };
+                
+                // Still update UI with fallback data
+                updateExcelContextDisplay(chatContext.fallbackData);
             }
         }
 
@@ -1402,8 +1438,14 @@
 
         async function sendMessageToOpenAI(userMessage) {
             try {
-                // Show thinking message
-                const thinkingMessage = addMessageToChat('assistant', 'Analyzing your Excel model...');
+                // Remove thinking message and create streaming message
+                const existingThinking = document.querySelector('.chat-message.assistant-message .message-text');
+                if (existingThinking && existingThinking.textContent === 'Analyzing your Excel model...') {
+                    existingThinking.closest('.chat-message').remove();
+                }
+                
+                // Create streaming message container
+                const streamingMessage = createStreamingMessageContainer();
                 
                 // Analyze the user message for specific financial metrics
                 const searchedData = analyzeExcelDataForQuery(userMessage, chatContext);
@@ -1421,15 +1463,25 @@
 RELEVANT DATA FOUND:
 ${searchedData.summary}
 
-DETAILED SHEET DATA:
-${JSON.stringify(searchedData.detailedData, null, 2)}
-
 CONVERSATION HISTORY:
 ${conversationHistory.map(msg => `${msg.role}: ${msg.content}`).join('\n')}
 
 `;
                 } else {
-                    contextPrompt = '\n\nNote: Unable to read Excel model context. Please ensure Excel is open and the add-in has permissions.\n\n';
+                    const errorMsg = chatContext?.error || 'Unknown error';
+                    contextPrompt = `\n\nNote: Unable to read Excel model context (${errorMsg}). 
+
+I'll do my best to help with general M&A financial modeling questions, but I can't see specific data from your Excel model right now.
+
+For specific questions about your model (like MOIC values, IRR calculations, etc.), please:
+1. Make sure you're in Excel (not just the web browser)
+2. Check that the add-in has proper permissions
+3. Try describing specific cell values or formulas in your question
+
+CONVERSATION HISTORY:
+${conversationHistory.map(msg => `${msg.role}: ${msg.content}`).join('\n')}
+
+`;
                 }
                 
                 const fullPrompt = `You are an expert M&A financial analyst helping with an Excel-based deal model. 
@@ -1445,49 +1497,207 @@ IMPORTANT INSTRUCTIONS:
 
 USER MESSAGE: ${userMessage}`;
                 
-                // Use the same Netlify Functions endpoint
-                const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-                const apiEndpoint = isLocal ? 'http://localhost:8888/.netlify/functions/chat' : '/.netlify/functions/chat';
+                console.log('Sending prompt to API:', fullPrompt.substring(0, 200) + '...');
                 
-                const response = await fetch(apiEndpoint, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        message: fullPrompt,
-                        autoFillMode: false,
-                        batchType: 'chat_response',
-                        systemPrompt: 'You are an expert M&A financial analyst. Provide clear, actionable insights about the deal model. Reference specific data from the Excel sheets when available.',
-                        temperature: 0.7,
-                        maxTokens: 2000
-                    })
-                });
+                // Try streaming first, fall back to regular response
+                let fullResponse = '';
+                let success = false;
+                
+                try {
+                    // Try streaming API
+                    fullResponse = await sendStreamingRequest(fullPrompt, streamingMessage);
+                    success = true;
+                } catch (streamError) {
+                    console.log('Streaming failed, trying regular API:', streamError);
+                    
+                    try {
+                        // Fallback to regular API
+                        const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+                        const apiEndpoint = isLocal ? 'http://localhost:8888/.netlify/functions/chat' : '/.netlify/functions/chat';
+                        
+                        const response = await fetch(apiEndpoint, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                message: fullPrompt,
+                                autoFillMode: false,
+                                batchType: 'chat_response',
+                                systemPrompt: 'You are an expert M&A financial analyst. Provide clear, actionable insights about the deal model. Reference specific data from the Excel sheets when available.',
+                                temperature: 0.7,
+                                maxTokens: 2000
+                            })
+                        });
 
-                if (!response.ok) {
-                    throw new Error(`API error: ${response.status}`);
+                        if (!response.ok) {
+                            throw new Error(`API error: ${response.status} - ${await response.text()}`);
+                        }
+
+                        const result = await response.json();
+                        fullResponse = result.content || result.response || 'No response received';
+                        
+                        // Update streaming message with full response
+                        updateStreamingMessage(streamingMessage, fullResponse, true);
+                        success = true;
+                        
+                    } catch (apiError) {
+                        console.error('Both streaming and regular API failed:', apiError);
+                        throw apiError;
+                    }
                 }
-
-                const result = await response.json();
-                let content = result.content || result.response || 'No response received';
                 
-                // Remove the thinking message and add the actual response
-                thinkingMessage.remove();
-                addMessageToChat('assistant', content);
-                
-                // Add to conversation history
-                conversationHistory.push({ role: 'user', content: userMessage });
-                conversationHistory.push({ role: 'assistant', content: content });
-                
-                // Keep conversation history reasonable size
-                if (conversationHistory.length > 20) {
-                    conversationHistory = conversationHistory.slice(-20);
+                if (success && fullResponse) {
+                    // Add to conversation history
+                    conversationHistory.push({ role: 'user', content: userMessage });
+                    conversationHistory.push({ role: 'assistant', content: fullResponse });
+                    
+                    // Keep conversation history reasonable size
+                    if (conversationHistory.length > 20) {
+                        conversationHistory = conversationHistory.slice(-20);
+                    }
+                    
+                    console.log('✅ Chat response completed');
+                } else {
+                    throw new Error('No response received from API');
                 }
                 
             } catch (error) {
                 console.error('Chat error:', error);
-                addMessageToChat('system', 'Sorry, I encountered an error. Please try again.');
+                // Update streaming message with error
+                if (streamingMessage) {
+                    updateStreamingMessage(streamingMessage, `Sorry, I encountered an error: ${error.message}. Please try again.`, true);
+                } else {
+                    addMessageToChat('system', `Sorry, I encountered an error: ${error.message}. Please try again.`);
+                }
             }
+        }
+
+        function createStreamingMessageContainer() {
+            const chatMessages = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'chat-message assistant-message streaming';
+            
+            const avatar = '<div class="message-avatar arcadeus-avatar"><img src="assets/Arcadeus.svg" alt="Arcadeus" class="avatar-logo"></div>';
+            
+            messageDiv.innerHTML = `
+                ${avatar}
+                <div class="assistant-message-content">
+                    <div class="message-header">
+                        <span class="model-name">AI Assistant</span>
+                        <span class="typing-indicator">Thinking...</span>
+                    </div>
+                    <div class="message-text"></div>
+                    <div class="message-time">${new Date().toLocaleTimeString()}</div>
+                </div>
+            `;
+            
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            
+            return messageDiv;
+        }
+
+        function updateStreamingMessage(messageDiv, content, isComplete = false) {
+            const textElement = messageDiv.querySelector('.message-text');
+            const typingIndicator = messageDiv.querySelector('.typing-indicator');
+            
+            if (textElement) {
+                textElement.textContent = content;
+            }
+            
+            if (isComplete && typingIndicator) {
+                typingIndicator.style.display = 'none';
+                messageDiv.classList.remove('streaming');
+            }
+            
+            // Scroll to bottom
+            const chatMessages = document.getElementById('chatMessages');
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        async function sendStreamingRequest(prompt, messageContainer) {
+            // This is a placeholder for streaming API - you would implement actual streaming here
+            // For now, we'll simulate streaming with a delayed response
+            
+            const typingIndicator = messageContainer.querySelector('.typing-indicator');
+            if (typingIndicator) {
+                typingIndicator.textContent = 'Typing...';
+            }
+            
+            // Simulate streaming by updating the message periodically
+            return new Promise((resolve, reject) => {
+                setTimeout(async () => {
+                    try {
+                        // Call the regular API but simulate streaming
+                        const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+                        const apiEndpoint = isLocal ? 'http://localhost:8888/.netlify/functions/chat' : '/.netlify/functions/chat';
+                        
+                        const response = await fetch(apiEndpoint, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                message: prompt,
+                                autoFillMode: false,
+                                batchType: 'chat_response',
+                                systemPrompt: 'You are an expert M&A financial analyst. Provide clear, actionable insights about the deal model. Reference specific data from the Excel sheets when available.',
+                                temperature: 0.7,
+                                maxTokens: 2000,
+                                stream: true
+                            })
+                        });
+
+                        if (!response.ok) {
+                            throw new Error(`API error: ${response.status}`);
+                        }
+
+                        const result = await response.json();
+                        const fullContent = result.content || result.response || 'No response received';
+                        
+                        // Simulate typing effect
+                        await simulateTypingEffect(messageContainer, fullContent);
+                        
+                        resolve(fullContent);
+                        
+                    } catch (error) {
+                        reject(error);
+                    }
+                }, 500); // Small delay before starting
+            });
+        }
+
+        async function simulateTypingEffect(messageContainer, fullText) {
+            const textElement = messageContainer.querySelector('.message-text');
+            const typingIndicator = messageContainer.querySelector('.typing-indicator');
+            
+            if (!textElement) return;
+            
+            // Clear any existing text
+            textElement.textContent = '';
+            
+            // Type out the message character by character
+            for (let i = 0; i < fullText.length; i++) {
+                textElement.textContent += fullText[i];
+                
+                // Scroll to bottom
+                const chatMessages = document.getElementById('chatMessages');
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+                
+                // Add small delay between characters (faster for spaces and punctuation)
+                const char = fullText[i];
+                const delay = char === ' ' ? 5 : char.match(/[.!?]/) ? 100 : 20;
+                
+                await new Promise(resolve => setTimeout(resolve, delay));
+            }
+            
+            // Hide typing indicator when done
+            if (typingIndicator) {
+                typingIndicator.style.display = 'none';
+            }
+            
+            messageContainer.classList.remove('streaming');
         }
 
         function addMessageToChat(type, content) {
