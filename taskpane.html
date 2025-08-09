@@ -562,14 +562,14 @@
             <div class="chat-input-section chat-input-area" id="chatInputSection">
                 <!-- Quick Actions Bar -->
                 <div class="quick-actions-bar">
-                    <button class="quick-action-btn" onclick="window.enhancedChat.validateFinancialModel()">
+                    <button class="quick-action-btn" onclick="sendQuickMessage('Please validate my financial model and check for any errors or inconsistencies in the calculations.')">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <polyline points="9 11 12 14 22 4"/>
                             <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
                         </svg>
                         Validate Model
                     </button>
-                    <button class="quick-action-btn" onclick="window.enhancedChat.generateExcelPage({name: 'Dashboard'})">
+                    <button class="quick-action-btn" onclick="sendQuickMessage('Can you create a dashboard with key financial metrics from my model? Include IRR, MOIC, NPV, and cash flow charts.')">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
                             <line x1="9" y1="9" x2="15" y2="9"/>
@@ -577,7 +577,7 @@
                         </svg>
                         Generate Dashboard
                     </button>
-                    <button class="quick-action-btn" onclick="window.enhancedChat.suggestFormulas()">
+                    <button class="quick-action-btn" onclick="sendQuickMessage('Can you suggest formulas to improve my financial model? Look at my current calculations and recommend better approaches.')">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <line x1="4" y1="9" x2="20" y2="9"/>
                             <line x1="4" y1="15" x2="20" y2="15"/>
@@ -586,7 +586,7 @@
                         </svg>
                         Suggest Formulas
                     </button>
-                    <button class="action-btn" id="newChatBtn">
+                    <button class="action-btn" id="newChatBtn" onclick="clearChatHistory()">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M12 5v14M5 12h14"/>
                         </svg>
@@ -736,30 +736,381 @@
             return null;
         }
 
-        function initializeChatSystem() {
-            console.log('Initializing chat system...');
+        function initializeEnhancedChatSystem() {
+            console.log('Initializing enhanced chat system...');
+            
+            // Initialize the enhanced chat handler if available
+            if (window.enhancedChat) {
+                window.enhancedChat.initialize().then(() => {
+                    console.log('✅ Enhanced chat handler initialized');
+                }).catch(error => {
+                    console.error('❌ Failed to initialize enhanced chat handler:', error);
+                    // Fallback to basic chat
+                    initializeBasicChatSystem();
+                });
+            } else {
+                console.log('Enhanced chat not available, initializing basic chat...');
+                initializeBasicChatSystem();
+            }
+            
+            // Initialize chat resizer
+            initializeChatResizer();
+        }
+
+        function initializeBasicChatSystem() {
+            console.log('Initializing basic chat system...');
             
             const sendButton = document.getElementById('sendMessage');
             const chatInput = document.getElementById('chatInput');
             
             if (sendButton && chatInput) {
-                sendButton.addEventListener('click', handleSendMessage);
+                // Remove any existing listeners
+                sendButton.replaceWith(sendButton.cloneNode(true));
+                const newSendButton = document.getElementById('sendMessage');
+                
+                newSendButton.addEventListener('click', handleSendMessageWithExcelContext);
                 
                 // Handle Enter key in textarea (Shift+Enter for new line)
                 chatInput.addEventListener('keydown', function(e) {
                     if (e.key === 'Enter' && !e.shiftKey) {
                         e.preventDefault();
-                        handleSendMessage();
+                        handleSendMessageWithExcelContext();
                     }
                 });
                 
-                console.log('Chat system initialized');
+                console.log('Basic chat system initialized');
             } else {
                 console.error('Chat elements not found');
             }
+        }
+
+        async function handleSendMessageWithExcelContext() {
+            const chatInput = document.getElementById('chatInput');
+            const message = chatInput.value.trim();
             
-            // Initialize chat resizer
-            initializeChatResizer();
+            if (!message || isReadingExcelFiles) return;
+            
+            console.log('Sending message with Excel context:', message);
+            
+            // Clear input
+            chatInput.value = '';
+            
+            // Remove tip section and upgrade card on first message
+            removeTipAndUpgradeElements();
+            
+            // Add user message to chat
+            addMessageToChat('user', message);
+            
+            // Always read Excel context for each message
+            console.log('🔍 Reading Excel context...');
+            await readExcelContextForMessage();
+            console.log('📊 Excel context:', chatContext);
+            
+            // Send message to AI with context
+            await sendMessageToOpenAI(message);
+        }
+
+        async function readExcelContextForMessage() {
+            try {
+                console.log('Reading Excel context for message...');
+                
+                if (typeof Excel === 'undefined') {
+                    console.log('Excel API not available');
+                    return;
+                }
+
+                const contextData = await Excel.run(async (context) => {
+                    // Get current workbook and worksheet
+                    const workbook = context.workbook;
+                    const worksheet = workbook.worksheets.getActiveWorksheet();
+                    const selectedRange = workbook.getSelectedRange();
+                    
+                    // Load workbook properties
+                    workbook.load('name');
+                    worksheet.load('name');
+                    selectedRange.load(['address', 'values', 'formulas']);
+                    
+                    // Get all worksheets
+                    const worksheets = workbook.worksheets;
+                    worksheets.load('items');
+                    
+                    await context.sync();
+                    
+                    const allSheetsData = {};
+                    
+                    // Read data from each worksheet (limit to prevent overload)
+                    for (let i = 0; i < Math.min(worksheets.items.length, 5); i++) {
+                        const sheet = worksheets.items[i];
+                        sheet.load('name');
+                        
+                        const usedRange = sheet.getUsedRangeOrNullObject();
+                        usedRange.load(['address', 'values', 'formulas']);
+                        
+                        await context.sync();
+                        
+                        if (!usedRange.isNullObject) {
+                            // Limit data size to prevent API limits
+                            const values = usedRange.values;
+                            const formulas = usedRange.formulas;
+                            
+                            allSheetsData[sheet.name] = {
+                                address: usedRange.address,
+                                values: values.slice(0, 50), // First 50 rows only
+                                formulas: formulas.slice(0, 50),
+                                rowCount: values.length,
+                                columnCount: values[0]?.length || 0
+                            };
+                        }
+                    }
+                    
+                    return {
+                        workbook: workbook.name,
+                        activeSheet: worksheet.name,
+                        selectedRange: {
+                            address: selectedRange.address,
+                            values: selectedRange.values,
+                            formulas: selectedRange.formulas
+                        },
+                        sheets: allSheetsData,
+                        timestamp: new Date().toISOString()
+                    };
+                });
+                
+                chatContext = contextData;
+                console.log('✅ Excel context updated:', chatContext);
+                
+                // Update UI context display
+                updateExcelContextDisplay(contextData);
+                
+            } catch (error) {
+                console.error('❌ Error reading Excel context:', error);
+                chatContext = { error: error.message };
+            }
+        }
+
+        function updateExcelContextDisplay(context) {
+            const workbookName = document.getElementById('workbookName');
+            const activeSheet = document.getElementById('activeSheet');
+            const selectedRange = document.getElementById('selectedRange');
+            const selectionIndicator = document.getElementById('selectionIndicator');
+            
+            if (workbookName) workbookName.textContent = context.workbook || 'N/A';
+            if (activeSheet) activeSheet.textContent = context.activeSheet || 'N/A';
+            if (selectedRange) selectedRange.textContent = context.selectedRange?.address || 'N/A';
+            if (selectionIndicator) selectionIndicator.textContent = `Selected: ${context.selectedRange?.address || 'None'}`;
+        }
+
+        function analyzeExcelDataForQuery(userMessage, context) {
+            if (!context || !context.sheets) {
+                return {
+                    summary: 'No Excel data available to analyze.',
+                    detailedData: {}
+                };
+            }
+
+            const query = userMessage.toLowerCase();
+            const searchTerms = {
+                moic: ['moic', 'multiple', 'money on invested capital', 'cash on cash'],
+                irr: ['irr', 'internal rate', 'return'],
+                npv: ['npv', 'net present value', 'present value'],
+                revenue: ['revenue', 'sales', 'income', 'turnover'],
+                ebitda: ['ebitda', 'earnings', 'operating income'],
+                debt: ['debt', 'loan', 'borrowing', 'financing'],
+                equity: ['equity', 'investment', 'capital'],
+                valuation: ['valuation', 'value', 'enterprise value', 'ev'],
+                exit: ['exit', 'sale', 'disposal', 'terminal'],
+                assumptions: ['assumption', 'input', 'parameter'],
+                cashflow: ['cash flow', 'fcf', 'free cash', 'cash']
+            };
+
+            const relevantData = {
+                foundMetrics: {},
+                relevantCells: [],
+                sheetSummary: {}
+            };
+
+            // Search through all sheets for relevant data
+            Object.entries(context.sheets).forEach(([sheetName, sheetData]) => {
+                const sheetSummary = {
+                    name: sheetName,
+                    relevantCells: [],
+                    keyMetrics: []
+                };
+
+                if (sheetData.values && sheetData.formulas) {
+                    // Search through cells for relevant terms and values
+                    for (let row = 0; row < Math.min(sheetData.values.length, 50); row++) {
+                        for (let col = 0; col < Math.min(sheetData.values[row]?.length || 0, 20); col++) {
+                            const cellValue = sheetData.values[row][col];
+                            const cellFormula = sheetData.formulas[row][col];
+                            
+                            if (cellValue !== null && cellValue !== '') {
+                                const cellText = String(cellValue).toLowerCase();
+                                const formulaText = String(cellFormula).toLowerCase();
+                                
+                                // Check if cell contains searched terms
+                                Object.entries(searchTerms).forEach(([metric, terms]) => {
+                                    terms.forEach(term => {
+                                        if (query.includes(term) && (cellText.includes(term) || formulaText.includes(term) || cellText.includes(metric))) {
+                                            const cellAddress = `${sheetName}!${String.fromCharCode(65 + col)}${row + 1}`;
+                                            const cellInfo = {
+                                                address: cellAddress,
+                                                value: cellValue,
+                                                formula: cellFormula,
+                                                metric: metric,
+                                                matchedTerm: term
+                                            };
+                                            
+                                            sheetSummary.relevantCells.push(cellInfo);
+                                            relevantData.relevantCells.push(cellInfo);
+                                            
+                                            if (!relevantData.foundMetrics[metric]) {
+                                                relevantData.foundMetrics[metric] = [];
+                                            }
+                                            relevantData.foundMetrics[metric].push(cellInfo);
+                                        }
+                                    });
+                                });
+                                
+                                // Look for numeric values that might be financial metrics
+                                if (typeof cellValue === 'number') {
+                                    // Potential MOIC values (typically 1-10x)
+                                    if (query.includes('moic') && cellValue > 0.5 && cellValue < 50) {
+                                        const cellAddress = `${sheetName}!${String.fromCharCode(65 + col)}${row + 1}`;
+                                        sheetSummary.keyMetrics.push({
+                                            address: cellAddress,
+                                            value: cellValue,
+                                            formula: cellFormula,
+                                            possibleMetric: 'MOIC',
+                                            reason: 'Numeric value in typical MOIC range'
+                                        });
+                                    }
+                                    
+                                    // Potential IRR values (typically 10-50%)
+                                    if (query.includes('irr') && cellValue > 0.05 && cellValue < 2) {
+                                        const cellAddress = `${sheetName}!${String.fromCharCode(65 + col)}${row + 1}`;
+                                        sheetSummary.keyMetrics.push({
+                                            address: cellAddress,
+                                            value: cellValue,
+                                            formula: cellFormula,
+                                            possibleMetric: 'IRR',
+                                            reason: 'Percentage value in typical IRR range'
+                                        });
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (sheetSummary.relevantCells.length > 0 || sheetSummary.keyMetrics.length > 0) {
+                    relevantData.sheetSummary[sheetName] = sheetSummary;
+                }
+            });
+
+            // Generate summary
+            let summary = `Searched Excel model for terms related to: "${userMessage}"\n\n`;
+            
+            if (Object.keys(relevantData.foundMetrics).length > 0) {
+                summary += 'FOUND RELEVANT METRICS:\n';
+                Object.entries(relevantData.foundMetrics).forEach(([metric, cells]) => {
+                    summary += `${metric.toUpperCase()}: ${cells.length} cells found\n`;
+                    cells.slice(0, 3).forEach(cell => {
+                        summary += `  - ${cell.address}: ${cell.value} ${cell.formula ? `(Formula: ${cell.formula})` : ''}\n`;
+                    });
+                });
+                summary += '\n';
+            }
+
+            if (Object.keys(relevantData.sheetSummary).length > 0) {
+                summary += 'RELEVANT SHEETS:\n';
+                Object.entries(relevantData.sheetSummary).forEach(([sheetName, data]) => {
+                    summary += `${sheetName}: ${data.relevantCells.length} relevant cells, ${data.keyMetrics.length} potential metrics\n`;
+                });
+                summary += '\n';
+            }
+
+            if (relevantData.relevantCells.length === 0) {
+                summary += `No cells found matching the query "${userMessage}". This could indicate:\n`;
+                summary += '- The metric might be calculated differently\n';
+                summary += '- The data might be on a sheet not currently loaded\n';
+                summary += '- Different terminology might be used\n';
+                summary += '\nAvailable sheets: ' + Object.keys(context.sheets).join(', ');
+            }
+
+            return {
+                summary: summary,
+                detailedData: relevantData
+            };
+        }
+
+        function sendQuickMessage(message) {
+            const chatInput = document.getElementById('chatInput');
+            if (chatInput) {
+                chatInput.value = message;
+                handleSendMessageWithExcelContext();
+            }
+        }
+
+        function clearChatHistory() {
+            const chatMessages = document.getElementById('chatMessages');
+            if (chatMessages) {
+                chatMessages.innerHTML = '';
+                // Add back the welcome message
+                chatMessages.innerHTML = `
+                    <div class="chat-tip-section">
+                        <div class="welcome-icon">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                                <path d="M2 17l10 5 10-5"/>
+                                <path d="M2 12l10 5 10-5"/>
+                            </svg>
+                        </div>
+                        <h3>Welcome to Arcadeus AI Assistant</h3>
+                        <p>I can help you with:</p>
+                        <div class="capability-cards">
+                            <div class="capability-card">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+                                    <polyline points="14 2 14 8 20 8"/>
+                                    <line x1="16" y1="13" x2="8" y2="13"/>
+                                    <line x1="16" y1="17" x2="8" y2="17"/>
+                                    <polyline points="10 9 9 9 8 9"/>
+                                </svg>
+                                <span>Generate financial models</span>
+                            </div>
+                            <div class="capability-card">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/>
+                                    <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+                                    <line x1="12" y1="22.08" x2="12" y2="12"/>
+                                </svg>
+                                <span>Analyze Excel data</span>
+                            </div>
+                            <div class="capability-card">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M12 20h9"/>
+                                    <path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                                </svg>
+                                <span>Create & edit formulas</span>
+                            </div>
+                            <div class="capability-card">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="11" cy="11" r="8"/>
+                                    <path d="m21 21-4.35-4.35"/>
+                                </svg>
+                                <span>Validate models</span>
+                            </div>
+                        </div>
+                        <p class="quick-tips">
+                            <strong>Quick tips:</strong> Select cells to provide context • Use Ctrl+Z to undo changes • Switch AI models anytime
+                        </p>
+                    </div>
+                `;
+            }
+            conversationHistory = [];
+            chatContext = null;
+            console.log('Chat history cleared');
         }
 
         function initializeChatResizer() {
@@ -1052,14 +1403,47 @@
         async function sendMessageToOpenAI(userMessage) {
             try {
                 // Show thinking message
-                const thinkingMessage = addMessageToChat('assistant', 'Analyzing...');
+                const thinkingMessage = addMessageToChat('assistant', 'Analyzing your Excel model...');
                 
-                // Prepare context for OpenAI
-                const contextPrompt = chatContext ? 
-                    `\n\nCONTEXT FROM EXCEL MODEL:\n${JSON.stringify(chatContext, null, 2)}\n\nCONVERSATION HISTORY:\n${conversationHistory.map(msg => `${msg.role}: ${msg.content}`).join('\n')}\n\n` : 
-                    '\n\nNote: No Excel model context available yet.\n\n';
+                // Analyze the user message for specific financial metrics
+                const searchedData = analyzeExcelDataForQuery(userMessage, chatContext);
                 
-                const fullPrompt = `You are an expert M&A financial analyst helping with an Excel-based deal model. ${contextPrompt}USER MESSAGE: ${userMessage}`;
+                // Prepare enhanced context for OpenAI
+                let contextPrompt = '';
+                
+                if (chatContext && !chatContext.error) {
+                    contextPrompt = `\n\nEXCEL MODEL CONTEXT:
+- Workbook: ${chatContext.workbook}
+- Active Sheet: ${chatContext.activeSheet}
+- Selected Range: ${chatContext.selectedRange?.address || 'None'}
+- Available Sheets: ${Object.keys(chatContext.sheets || {}).join(', ')}
+
+RELEVANT DATA FOUND:
+${searchedData.summary}
+
+DETAILED SHEET DATA:
+${JSON.stringify(searchedData.detailedData, null, 2)}
+
+CONVERSATION HISTORY:
+${conversationHistory.map(msg => `${msg.role}: ${msg.content}`).join('\n')}
+
+`;
+                } else {
+                    contextPrompt = '\n\nNote: Unable to read Excel model context. Please ensure Excel is open and the add-in has permissions.\n\n';
+                }
+                
+                const fullPrompt = `You are an expert M&A financial analyst helping with an Excel-based deal model. 
+
+${contextPrompt}
+
+IMPORTANT INSTRUCTIONS:
+- Always reference specific cells, sheets, and values when discussing the model
+- If the user asks about metrics like MOIC, IRR, NPV, etc., look for those values in the Excel data
+- Explain calculations by referencing the actual formulas and cell references
+- Point out any issues or recommendations based on the actual data
+- Be specific about which cells contain the metrics being discussed
+
+USER MESSAGE: ${userMessage}`;
                 
                 // Use the same Netlify Functions endpoint
                 const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
@@ -1224,8 +1608,8 @@
                 });
             });
 
-            // Initialize Chat System
-            initializeChatSystem();
+            // Initialize Enhanced Chat System
+            initializeEnhancedChatSystem();
 
             // Menu dropdown functionality
             const menuIcon = document.getElementById('menuIcon');
