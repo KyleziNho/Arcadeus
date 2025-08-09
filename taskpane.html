@@ -1498,7 +1498,11 @@ IMPORTANT INSTRUCTIONS:
 
 USER MESSAGE: ${userMessage}`;
                 
-                console.log('Sending prompt to API:', fullPrompt.substring(0, 200) + '...');
+                console.log('=== CHAT DEBUG INFO ===');
+                console.log('User message:', userMessage);
+                console.log('Excel context available:', !!(chatContext && !chatContext.error));
+                console.log('Sending prompt to API (first 300 chars):', fullPrompt.substring(0, 300) + '...');
+                console.log('Full prompt length:', fullPrompt.length);
                 
                 // Try streaming first, fall back to regular response
                 let fullResponse = '';
@@ -1537,7 +1541,29 @@ USER MESSAGE: ${userMessage}`;
                         }
 
                         const result = await response.json();
-                        fullResponse = result.content || result.response || 'No response received';
+                        console.log('Fallback API Response:', result);
+                        
+                        // Try different response formats
+                        if (result.content) {
+                            fullResponse = result.content;
+                        } else if (result.response) {
+                            fullResponse = result.response;
+                        } else if (result.choices && result.choices[0] && result.choices[0].message) {
+                            fullResponse = result.choices[0].message.content;
+                        } else if (result.choices && result.choices[0] && result.choices[0].text) {
+                            fullResponse = result.choices[0].text;
+                        } else if (result.message) {
+                            fullResponse = result.message;
+                        } else {
+                            console.error('Unexpected fallback API response format:', result);
+                            fullResponse = 'I received your message but the API response format was unexpected. Please check your API configuration and console for details.';
+                        }
+                        
+                        if (!fullResponse || fullResponse.trim() === '') {
+                            fullResponse = 'The API returned an empty response. Please check your OpenAI API key configuration in Settings.';
+                        }
+                        
+                        console.log('Fallback processed content:', fullResponse);
                         
                         // Update streaming message with full response
                         updateStreamingMessage(streamingMessage, fullResponse, true);
@@ -1545,7 +1571,11 @@ USER MESSAGE: ${userMessage}`;
                         
                     } catch (apiError) {
                         console.error('Both streaming and regular API failed:', apiError);
-                        throw apiError;
+                        
+                        // Last resort: provide a helpful response based on the query
+                        fullResponse = generateFallbackResponse(userMessage, chatContext);
+                        updateStreamingMessage(streamingMessage, fullResponse, true);
+                        success = true;
                     }
                 }
                 
@@ -1657,7 +1687,30 @@ USER MESSAGE: ${userMessage}`;
                         }
 
                         const result = await response.json();
-                        const fullContent = result.content || result.response || 'No response received';
+                        console.log('API Response:', result);
+                        
+                        // Try different response formats
+                        let fullContent = '';
+                        if (result.content) {
+                            fullContent = result.content;
+                        } else if (result.response) {
+                            fullContent = result.response;
+                        } else if (result.choices && result.choices[0] && result.choices[0].message) {
+                            fullContent = result.choices[0].message.content;
+                        } else if (result.choices && result.choices[0] && result.choices[0].text) {
+                            fullContent = result.choices[0].text;
+                        } else if (result.message) {
+                            fullContent = result.message;
+                        } else {
+                            console.error('Unexpected API response format:', result);
+                            fullContent = 'I received your message but the API response format was unexpected. Please check the console for details.';
+                        }
+                        
+                        if (!fullContent || fullContent.trim() === '') {
+                            fullContent = 'The API returned an empty response. This might indicate an issue with the API key or request format.';
+                        }
+                        
+                        console.log('Processed content:', fullContent);
                         
                         // Simulate typing effect
                         await simulateTypingEffect(messageContainer, fullContent);
@@ -1701,6 +1754,56 @@ USER MESSAGE: ${userMessage}`;
             }
             
             messageContainer.classList.remove('streaming');
+        }
+
+        function generateFallbackResponse(userMessage, context) {
+            const query = userMessage.toLowerCase();
+            
+            // Check if we have Excel context
+            if (context && !context.error && context.sheets) {
+                const availableSheets = Object.keys(context.sheets).join(', ');
+                let response = `I can see you're asking about "${userMessage}" in your Excel model.\n\n`;
+                
+                response += `📊 **Current Excel Context:**\n`;
+                response += `- Workbook: ${context.workbook}\n`;
+                response += `- Active Sheet: ${context.activeSheet}\n`;
+                response += `- Available Sheets: ${availableSheets}\n\n`;
+                
+                if (query.includes('moic')) {
+                    response += `**About MOIC (Multiple on Invested Capital):**\n`;
+                    response += `MOIC could be low due to several factors:\n`;
+                    response += `1. **Low Exit Value**: The terminal valuation may be conservative\n`;
+                    response += `2. **High Initial Investment**: Large upfront capital requirement\n`;
+                    response += `3. **Poor Operational Performance**: Lower than expected cash flows\n`;
+                    response += `4. **Market Conditions**: Industry-specific challenges\n\n`;
+                    response += `📍 **To help you better, please:**\n`;
+                    response += `- Check your exit assumptions and terminal multiples\n`;
+                    response += `- Review your revenue and EBITDA projections\n`;
+                    response += `- Verify your initial equity investment calculation\n\n`;
+                } else if (query.includes('irr')) {
+                    response += `**About IRR (Internal Rate of Return):**\n`;
+                    response += `IRR issues typically stem from:\n`;
+                    response += `1. **Cash Flow Timing**: Delayed positive cash flows\n`;
+                    response += `2. **Exit Timing**: Longer holding period\n`;
+                    response += `3. **Operating Performance**: Lower margins or growth\n\n`;
+                } else {
+                    response += `**I can help you analyze:**\n`;
+                    response += `- Financial metrics and calculations\n`;
+                    response += `- Model structure and formulas\n`;
+                    response += `- Assumptions and sensitivities\n\n`;
+                }
+                
+                response += `⚠️ **Note**: The AI service is currently unavailable, so I'm providing this analysis based on the Excel data I can see. For detailed analysis of your specific calculations, please check your API configuration in Settings.`;
+                
+                return response;
+            } else {
+                return `I received your question "${userMessage}" but I'm currently unable to access the AI service or read your Excel model data.\n\n` +
+                       `🔧 **Troubleshooting:**\n` +
+                       `1. Check your OpenAI API key in Settings\n` +
+                       `2. Ensure you're working in Excel (not just the browser)\n` +
+                       `3. Verify the add-in has proper permissions\n\n` +
+                       `💡 **In the meantime**, I'd be happy to help with general M&A modeling questions if you describe your specific situation or numbers.`;
+            }
         }
 
         function addMessageToChat(type, content) {
