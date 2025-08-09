@@ -43,7 +43,7 @@ class ModelProviderManager {
       }
     };
     
-    this.currentProvider = 'claude-sonnet';
+    this.currentProvider = 'gpt-4';
     this.apiKeys = this.loadApiKeys();
   }
 

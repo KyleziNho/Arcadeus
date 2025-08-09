@@ -416,10 +416,10 @@
                     <div class="model-selector-wrapper">
                         <label for="modelSelector">Model:</label>
                         <select id="modelSelector" class="model-selector">
-                            <option value="claude-sonnet" selected>Claude Sonnet 3.5</option>
-                            <option value="claude-opus">Claude Opus 3</option>
-                            <option value="gpt-4">ChatGPT 4</option>
-                            <option value="gemini-pro">Gemini 1.5 Pro</option>
+                            <option value="gpt-4" selected>ChatGPT 4</option>
+                            <option value="claude-sonnet" disabled>Claude Sonnet 3.5 (Not Configured)</option>
+                            <option value="claude-opus" disabled>Claude Opus 3 (Not Configured)</option>
+                            <option value="gemini-pro" disabled>Gemini 1.5 Pro (Not Configured)</option>
                         </select>
                     </div>
                     
@@ -630,9 +630,10 @@
                 <div class="setting-group">
                     <label>API Keys</label>
                     <div class="api-key-inputs">
-                        <input type="password" id="openaiKey" placeholder="OpenAI API Key">
-                        <input type="password" id="anthropicKey" placeholder="Anthropic API Key">
-                        <input type="password" id="googleKey" placeholder="Google API Key">
+                        <input type="password" id="openaiKey" placeholder="OpenAI API Key (Required)">
+                        <small style="color: #666; font-size: 0.85rem; margin-top: 0.5rem; display: block;">
+                            Only ChatGPT 4 is currently configured. Other models will be available once API keys are added.
+                        </small>
                     </div>
                 </div>
                 
@@ -1526,7 +1527,8 @@ USER MESSAGE: ${userMessage}`;
                                 batchType: 'chat_response',
                                 systemPrompt: 'You are an expert M&A financial analyst. Provide clear, actionable insights about the deal model. Reference specific data from the Excel sheets when available.',
                                 temperature: 0.7,
-                                maxTokens: 2000
+                                maxTokens: 2000,
+                                model: 'gpt-4'
                             })
                         });
 
@@ -1584,7 +1586,7 @@ USER MESSAGE: ${userMessage}`;
                 ${avatar}
                 <div class="assistant-message-content">
                     <div class="message-header">
-                        <span class="model-name">AI Assistant</span>
+                        <span class="model-name">ChatGPT 4</span>
                         <span class="typing-indicator">Thinking...</span>
                     </div>
                     <div class="message-text"></div>
@@ -1645,6 +1647,7 @@ USER MESSAGE: ${userMessage}`;
                                 systemPrompt: 'You are an expert M&A financial analyst. Provide clear, actionable insights about the deal model. Reference specific data from the Excel sheets when available.',
                                 temperature: 0.7,
                                 maxTokens: 2000,
+                                model: 'gpt-4',
                                 stream: true
                             })
                         });

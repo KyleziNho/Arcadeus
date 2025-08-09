@@ -2861,6 +2861,11 @@ select {
   font-size: 0.9rem;
 }
 
+.model-selector option:disabled {
+  color: #999;
+  font-style: italic;
+}
+
 .header-actions {
   display: flex;
   gap: 0.5rem;
