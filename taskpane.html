@@ -483,74 +483,53 @@
                 </div>
             </div>
             
-            <!-- Chat Messages Area -->
-            <div class="chat-main-content chat-messages enhanced" id="chatMessages">
+            <!-- Modern Minimalist Chat Messages Area -->
+            <div class="chat-messages-container" id="chatMessages">
                 <!-- Messages will appear here -->
-            </div>
-            
-            <!-- Chat Resizer -->
-            <div class="chat-resizer" id="chatResizer">
-                <div class="resizer-handle">
-                    <div class="resizer-dots">
-                        <div class="resizer-dot"></div>
-                        <div class="resizer-dot"></div>
-                        <div class="resizer-dot"></div>
+                <div class="chat-welcome" id="chatWelcome">
+                    <div class="welcome-content">
+                        <div class="ai-avatar">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"/>
+                                <path d="M8 14s1.5 2 4 2 4-2 4-2"/>
+                                <line x1="9" y1="9" x2="9.01" y2="9"/>
+                                <line x1="15" y1="9" x2="15.01" y2="9"/>
+                            </svg>
+                        </div>
+                        <h3>M&A Financial Assistant</h3>
+                        <p>Ask me about your Excel model's MOIC, IRR, cash flows, or any financial metrics.</p>
+                        <div class="suggestion-chips">
+                            <button class="chip" onclick="sendQuickMessage('Why is the MOIC so high?')">Why is MOIC high?</button>
+                            <button class="chip" onclick="sendQuickMessage('What is the IRR?')">What's the IRR?</button>
+                            <button class="chip" onclick="sendQuickMessage('Validate my model')">Validate model</button>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Enhanced Chat Input Area -->
-            <div class="chat-input-section chat-input-area" id="chatInputSection">
-                <!-- Quick Actions Bar -->
-                <div class="quick-actions-bar">
-                    <button class="quick-action-btn" onclick="sendQuickMessage('Please validate my financial model and check for any errors or inconsistencies in the calculations.')">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="9 11 12 14 22 4"/>
-                            <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+            <!-- Modern Chat Input Area -->
+            <div class="chat-input-container" id="chatInputSection">
+                <div class="input-wrapper-modern">
+                    <textarea 
+                        id="chatInput" 
+                        class="chat-input-modern" 
+                        placeholder="Ask about your Excel model..."
+                        rows="1"
+                    ></textarea>
+                    <button id="sendMessage" class="send-btn-modern">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="22" y1="2" x2="11" y2="13"/>
+                            <polygon points="22 2 15 22 11 13 2 9 22 2"/>
                         </svg>
-                        Validate Model
                     </button>
-                    <button class="quick-action-btn" onclick="sendQuickMessage('Can you create a dashboard with key financial metrics from my model? Include IRR, MOIC, NPV, and cash flow charts.')">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-                            <line x1="9" y1="9" x2="15" y2="9"/>
-                            <line x1="9" y1="15" x2="15" y2="15"/>
-                        </svg>
-                        Generate Dashboard
-                    </button>
-                    <button class="quick-action-btn" onclick="sendQuickMessage('Can you suggest formulas to improve my financial model? Look at my current calculations and recommend better approaches.')">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <line x1="4" y1="9" x2="20" y2="9"/>
-                            <line x1="4" y1="15" x2="20" y2="15"/>
-                            <line x1="10" y1="3" x2="8" y2="21"/>
-                            <line x1="16" y1="3" x2="14" y2="21"/>
-                        </svg>
-                        Suggest Formulas
-                    </button>
-                    <button class="action-btn" id="newChatBtn" onclick="clearChatHistory()">
+                </div>
+                <div class="input-footer">
+                    <button class="footer-btn" onclick="clearChatHistory()">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M12 5v14M5 12h14"/>
                         </svg>
-                        <span class="btn-text">New Chat</span>
+                        New Chat
                     </button>
-                </div>
-                
-                <div class="input-container">
-                    <div class="input-wrapper">
-                        <textarea id="chatInput" class="chat-input enhanced" placeholder="Ask me anything about your Excel model, or describe what you'd like to create..." rows="3"></textarea>
-                        <div class="input-actions">
-                            <div class="input-info">
-                                <span id="charCount">0</span> / 4000
-                            </div>
-                            <button id="sendMessage" class="send-button send-btn primary">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <line x1="22" y1="2" x2="11" y2="13"/>
-                                    <polygon points="22 2 15 22 11 13 2 9 22 2"/>
-                                </svg>
-                                <span>Send</span>
-                            </button>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
@@ -839,6 +818,12 @@
                     }
                 });
                 
+                // Auto-expanding textarea
+                chatInput.addEventListener('input', function() {
+                    this.style.height = 'auto';
+                    this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+                });
+                
                 console.log('Basic chat system initialized');
             } else {
                 console.error('Chat elements not found');
@@ -1039,6 +1024,10 @@
 
             // If asking about MOIC specifically, do comprehensive MOIC analysis
             if (analysisResults.primaryMetric === 'MOIC' || query.includes('moic')) {
+                // Check if user is providing MOIC data manually
+                if (detectUserProvidedMOICData(userMessage)) {
+                    return analyzeUserProvidedMOIC(userMessage);
+                }
                 return analyzeMOICComprehensively(context, userMessage);
             }
 
@@ -1182,12 +1171,15 @@
                 analysis += `• Debt paydown reducing equity needs\n`;
                 
             } else {
-                analysis += `⚠️ Could not locate MOIC value in the Excel model.\n\n`;
-                analysis += `Suggestions to find MOIC:\n`;
-                analysis += `• Look in the Valuation, Returns, or Summary sheets\n`;
-                analysis += `• Search for cells labeled "MOIC", "Multiple", or "Cash-on-Cash Return"\n`;
-                analysis += `• Check if MOIC is calculated as Exit Value ÷ Invested Capital\n`;
-                analysis += `• Available sheets: ${Object.keys(context.sheets).join(', ')}\n`;
+                analysis += `🤔 I couldn't locate the MOIC value in your Excel model automatically.\n\n`;
+                analysis += `**Let's work together to find it!**\n\n`;
+                analysis += `Could you help me by:\n`;
+                analysis += `1️⃣ **Tell me the MOIC value** - What does your model show for MOIC? (e.g., "2.5x")\n`;
+                analysis += `2️⃣ **Share the exit value** - What's the projected exit/terminal value?\n`;
+                analysis += `3️⃣ **Share the invested capital** - How much equity was initially invested?\n\n`;
+                analysis += `💡 *Once you provide these numbers, I can analyze why the MOIC is high/low and suggest improvements!*\n\n`;
+                analysis += `📊 **Available sheets:** ${Object.keys(context.sheets).join(', ')}\n`;
+                analysis += `💬 **Just type something like:** "The MOIC is 3.2x, exit value is $150M, invested $47M"\n`;
             }
 
             return {
@@ -1206,6 +1198,130 @@
         function analyzeGeneralFinancialMetric(context, userMessage, primaryMetric) {
             let analysis = `🔍 Financial Analysis:\n\nAnalyzing ${primaryMetric || 'financial metrics'} in your model...\n`;
             return { summary: analysis, detailedData: {} };
+        }
+
+        function detectUserProvidedMOICData(message) {
+            const msg = message.toLowerCase();
+            
+            // Look for patterns where user provides MOIC data
+            const patterns = [
+                /moic.*is.*(\d+\.?\d*)x?/,
+                /(\d+\.?\d*)x.*moic/,
+                /exit.*(\d+)/,
+                /invested.*(\d+)/,
+                /terminal.*value.*(\d+)/,
+                /(\d+\.?\d*)x.*exit.*(\d+)/
+            ];
+            
+            return patterns.some(pattern => pattern.test(msg));
+        }
+
+        function analyzeUserProvidedMOIC(message) {
+            const msg = message.toLowerCase();
+            let analysis = `✅ **Great! Let me analyze the MOIC data you provided:**\n\n`;
+            
+            // Extract MOIC value
+            const moicMatch = msg.match(/(?:moic.*is.*|^.*?)(\d+\.?\d*)x?/);
+            const exitMatch = msg.match(/exit.*?(\d+(?:\.\d+)?)\s*([mb]?)/);
+            const investedMatch = msg.match(/invest.*?(\d+(?:\.\d+)?)\s*([mb]?)/);
+            
+            let moicValue = null;
+            let exitValue = null;
+            let investedValue = null;
+            
+            if (moicMatch) {
+                moicValue = parseFloat(moicMatch[1]);
+            }
+            
+            if (exitMatch) {
+                exitValue = parseFloat(exitMatch[1]);
+                const unit = exitMatch[2];
+                if (unit === 'm') exitValue *= 1000000;
+                if (unit === 'b') exitValue *= 1000000000;
+            }
+            
+            if (investedMatch) {
+                investedValue = parseFloat(investedMatch[1]);
+                const unit = investedMatch[2];
+                if (unit === 'm') investedValue *= 1000000;
+                if (unit === 'b') investedValue *= 1000000000;
+            }
+            
+            // Calculate missing values if possible
+            if (moicValue && exitValue && !investedValue) {
+                investedValue = exitValue / moicValue;
+            } else if (moicValue && investedValue && !exitValue) {
+                exitValue = moicValue * investedValue;
+            } else if (!moicValue && exitValue && investedValue) {
+                moicValue = exitValue / investedValue;
+            }
+            
+            if (moicValue) {
+                const moicText = moicValue.toFixed(2) + 'x';
+                analysis += `📊 **MOIC Analysis: ${moicText}**\n\n`;
+                
+                if (exitValue && investedValue) {
+                    analysis += `💰 **Financial Breakdown:**\n`;
+                    analysis += `• Exit Value: ${formatCurrency(exitValue)}\n`;
+                    analysis += `• Invested Capital: ${formatCurrency(investedValue)}\n`;
+                    analysis += `• Multiple: ${formatCurrency(exitValue)} ÷ ${formatCurrency(investedValue)} = ${moicText}\n\n`;
+                }
+                
+                // Analyze if MOIC is high/low
+                if (moicValue >= 3.0) {
+                    analysis += `🚀 **Why this MOIC is HIGH (${moicText}):**\n`;
+                    analysis += `• **Excellent return** - This is above typical PE/VC target returns\n`;
+                    analysis += `• **Strong value creation** - Significant multiple expansion likely\n`;
+                    analysis += `• **Key drivers probably include:**\n`;
+                    analysis += `  - Revenue growth acceleration\n`;
+                    analysis += `  - Margin expansion and operational improvements\n`;
+                    analysis += `  - Market multiple expansion\n`;
+                    analysis += `  - Successful market penetration/expansion\n\n`;
+                    
+                    analysis += `❓ **Follow-up questions for you:**\n`;
+                    analysis += `• What's driving the revenue growth in your model?\n`;
+                    analysis += `• What exit multiple are you assuming (e.g., EV/EBITDA)?\n`;
+                    analysis += `• Are there any operational improvements baked in?\n`;
+                    
+                } else if (moicValue >= 2.0) {
+                    analysis += `👍 **This MOIC is SOLID (${moicText}):**\n`;
+                    analysis += `• **Good return** - Meets typical investment thresholds\n`;
+                    analysis += `• **Reasonable expectations** - Not overly aggressive\n`;
+                    analysis += `• **Value creation through:**\n`;
+                    analysis += `  - Steady business growth\n`;
+                    analysis += `  - Some operational improvements\n`;
+                    analysis += `  - Market expansion\n\n`;
+                    
+                    analysis += `💡 **Potential upside opportunities:**\n`;
+                    analysis += `• Could you accelerate growth further?\n`;
+                    analysis += `• Any untapped operational efficiency gains?\n`;
+                    analysis += `• Market expansion possibilities?\n`;
+                    
+                } else {
+                    analysis += `⚠️ **This MOIC seems LOW (${moicText}):**\n`;
+                    analysis += `• **Below typical targets** - Most PE/VC aim for 2.5x+ MOIC\n`;
+                    analysis += `• **Consider reviewing:**\n`;
+                    analysis += `  - Growth assumptions (too conservative?)\n`;
+                    analysis += `  - Exit multiple assumptions\n`;
+                    analysis += `  - Operational improvement opportunities\n`;
+                    analysis += `  - Market expansion potential\n\n`;
+                    
+                    analysis += `🔍 **Questions to explore:**\n`;
+                    analysis += `• What's limiting the growth in your model?\n`;
+                    analysis += `• Are your exit multiples conservative?\n`;
+                    analysis += `• Any additional value creation levers?\n`;
+                }
+                
+            } else {
+                analysis += `🤔 I couldn't extract clear MOIC numbers from your message.\n\n`;
+                analysis += `Could you try again with a format like:\n`;
+                analysis += `"MOIC is 2.8x, exit value $120M, invested $43M"\n`;
+            }
+            
+            return {
+                summary: analysis,
+                detailedData: { moicValue, exitValue, investedValue }
+            };
         }
 
         function formatCurrency(value) {
@@ -1688,20 +1804,26 @@ USER MESSAGE: ${userMessage}`;
 
         function createStreamingMessageContainer() {
             const chatMessages = document.getElementById('chatMessages');
-            const messageDiv = document.createElement('div');
-            messageDiv.className = 'chat-message assistant-message streaming';
             
-            const avatar = '<div class="message-avatar arcadeus-avatar"><img src="assets/Arcadeus.svg" alt="Arcadeus" class="avatar-logo"></div>';
+            // Hide welcome screen
+            const welcome = document.getElementById('chatWelcome');
+            if (welcome) {
+                welcome.style.display = 'none';
+            }
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'chat-message-modern assistant-message';
             
             messageDiv.innerHTML = `
-                ${avatar}
-                <div class="assistant-message-content">
-                    <div class="message-header">
-                        <span class="model-name">ChatGPT 4</span>
-                        <span class="typing-indicator">Thinking...</span>
-                    </div>
-                    <div class="message-text"></div>
-                    <div class="message-time">${new Date().toLocaleTimeString()}</div>
+                <div class="message-avatar-modern ai-avatar">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <path d="M8 14s1.5 2 4 2 4-2 4-2"/>
+                        <line x1="9" y1="9" x2="9.01" y2="9"/>
+                        <line x1="15" y1="9" x2="15.01" y2="9"/>
+                    </svg>
+                </div>
+                <div class="message-content-modern streaming">
                 </div>
             `;
             
@@ -1712,16 +1834,16 @@ USER MESSAGE: ${userMessage}`;
         }
 
         function updateStreamingMessage(messageDiv, content, isComplete = false) {
-            const textElement = messageDiv.querySelector('.message-text');
-            const typingIndicator = messageDiv.querySelector('.typing-indicator');
+            const contentElement = messageDiv.querySelector('.message-content-modern');
             
-            if (textElement) {
-                textElement.textContent = content;
-            }
-            
-            if (isComplete && typingIndicator) {
-                typingIndicator.style.display = 'none';
-                messageDiv.classList.remove('streaming');
+            if (contentElement) {
+                contentElement.textContent = content;
+                
+                if (isComplete) {
+                    contentElement.classList.remove('streaming');
+                } else {
+                    contentElement.classList.add('streaming');
+                }
             }
             
             // Scroll to bottom
@@ -1819,51 +1941,46 @@ USER MESSAGE: ${userMessage}`;
 
         function addMessageToChat(type, content) {
             const chatMessages = document.getElementById('chatMessages');
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `chat-message ${type}-message`;
             
-            let avatar, messageClass;
-            
-            switch(type) {
-                case 'user':
-                    const profilePic = getUserProfilePicture();
-                    if (profilePic) {
-                        avatar = `<div class="message-avatar user-avatar profile-picture-avatar"><img src="${profilePic}" alt="User" class="user-profile-pic" onerror="this.parentElement.innerHTML='<div class=\\'generic-user-avatar\\'>U</div>'"></div>`;
-                    } else {
-                        avatar = '<div class="message-avatar user-avatar generic-user-avatar">U</div>';
-                    }
-                    messageClass = 'user-message-content';
-                    break;
-                case 'assistant':
-                case 'system':
-                    avatar = '<div class="message-avatar arcadeus-avatar"><img src="assets/Arcadeus.svg" alt="Arcadeus" class="avatar-logo"></div>';
-                    messageClass = 'assistant-message-content';
-                    break;
+            // Hide welcome screen when first message is added
+            const welcome = document.getElementById('chatWelcome');
+            if (welcome) {
+                welcome.style.display = 'none';
             }
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `chat-message-modern ${type}-message`;
+            
+            let avatar, avatarClass;
             
             if (type === 'user') {
-                // User messages on the right
-                messageDiv.innerHTML = `
-                    <div class="${messageClass}">
-                        <div class="message-text">${content}</div>
-                        <div class="message-time">${new Date().toLocaleTimeString()}</div>
-                    </div>
-                    ${avatar}
-                `;
+                avatar = 'U';
+                avatarClass = 'user-avatar';
+            } else if (type === 'assistant') {
+                avatar = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <path d="M8 14s1.5 2 4 2 4-2 4-2"/>
+                    <line x1="9" y1="9" x2="9.01" y2="9"/>
+                    <line x1="15" y1="9" x2="15.01" y2="9"/>
+                </svg>`;
+                avatarClass = 'ai-avatar';
             } else {
-                // Assistant and system messages on the left
-                messageDiv.innerHTML = `
-                    ${avatar}
-                    <div class="${messageClass}">
-                        <div class="message-text">${content}</div>
-                        <div class="message-time">${new Date().toLocaleTimeString()}</div>
-                    </div>
-                `;
+                avatar = '!';
+                avatarClass = 'system-avatar';
             }
+            
+            messageDiv.innerHTML = `
+                <div class="message-avatar-modern ${avatarClass}">
+                    ${avatar}
+                </div>
+                <div class="message-content-modern">
+                    ${content}
+                </div>
+            `;
             
             chatMessages.appendChild(messageDiv);
             
-            // Scroll to bottom with extra space
+            // Scroll to bottom with smooth animation
             chatMessages.scrollTop = chatMessages.scrollHeight;
             
             return messageDiv;

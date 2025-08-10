@@ -66,6 +66,18 @@
   --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
   --transition-normal: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   --transition-slow: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Modern Chat Colors */
+  --chat-bg: #ffffff;
+  --chat-border: #e5e7eb;
+  --message-user: #3b82f6;
+  --message-assistant: #f9fafb;
+  --message-text: #374151;
+  --input-bg: #ffffff;
+  --input-border: #d1d5db;
+  --input-focus: #3b82f6;
+  --chip-bg: #f3f4f6;
+  --chip-hover: #e5e7eb;
 }
 
 /* Auth Loading Screen */
@@ -3336,4 +3348,294 @@ select {
   font-size: 0.75rem;
   color: #999;
   margin-top: 0.5rem;
+}
+
+/* ============================================ */
+/* MODERN MINIMALIST CHAT INTERFACE */
+/* ============================================ */
+
+/* Chat Container */
+.chat-messages-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--chat-bg);
+  overflow-y: auto;
+  scroll-behavior: smooth;
+  padding: 1rem;
+  gap: 1rem;
+}
+
+/* Welcome Screen */
+.chat-welcome {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  text-align: center;
+  opacity: 0.9;
+}
+
+.welcome-content {
+  max-width: 400px;
+  padding: 2rem;
+}
+
+.ai-avatar {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1rem;
+  color: white;
+}
+
+.welcome-content h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.welcome-content p {
+  margin: 0 0 1.5rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+/* Suggestion Chips */
+.suggestion-chips {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.chip {
+  background: var(--chip-bg);
+  border: 1px solid var(--chat-border);
+  border-radius: 20px;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  border: none;
+}
+
+.chip:hover {
+  background: var(--chip-hover);
+  color: var(--text-primary);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Chat Messages */
+.chat-message-modern {
+  display: flex;
+  gap: 0.75rem;
+  max-width: 85%;
+  margin-bottom: 1rem;
+  animation: slideIn 0.3s ease-out;
+}
+
+.chat-message-modern.user-message {
+  flex-direction: row-reverse;
+  margin-left: auto;
+  margin-right: 0;
+}
+
+.chat-message-modern.assistant-message {
+  margin-right: auto;
+  margin-left: 0;
+}
+
+.message-avatar-modern {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.message-avatar-modern.user-avatar {
+  background: var(--message-user);
+  color: white;
+}
+
+.message-avatar-modern.ai-avatar {
+  background: var(--message-assistant);
+  border: 1px solid var(--chat-border);
+  color: var(--text-secondary);
+}
+
+.message-content-modern {
+  background: var(--message-assistant);
+  padding: 0.75rem 1rem;
+  border-radius: 1rem;
+  max-width: 100%;
+  word-wrap: break-word;
+  line-height: 1.5;
+  color: var(--message-text);
+  border: 1px solid var(--chat-border);
+}
+
+.user-message .message-content-modern {
+  background: var(--message-user);
+  color: white;
+  border-color: var(--message-user);
+}
+
+/* Streaming Animation */
+.message-content-modern.streaming {
+  position: relative;
+}
+
+.message-content-modern.streaming::after {
+  content: '●';
+  animation: pulse 1.5s infinite;
+  color: var(--text-tertiary);
+  margin-left: 0.25rem;
+}
+
+/* Chat Input Container */
+.chat-input-container {
+  padding: 1rem;
+  border-top: 1px solid var(--chat-border);
+  background: var(--chat-bg);
+}
+
+.input-wrapper-modern {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-end;
+  background: var(--input-bg);
+  border: 2px solid var(--input-border);
+  border-radius: 1.5rem;
+  padding: 0.75rem 1rem;
+  transition: border-color var(--transition-fast);
+}
+
+.input-wrapper-modern:focus-within {
+  border-color: var(--input-focus);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.chat-input-modern {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 1rem;
+  font-family: var(--font-system);
+  color: var(--text-primary);
+  resize: none;
+  min-height: 24px;
+  max-height: 120px;
+  line-height: 1.5;
+}
+
+.chat-input-modern::placeholder {
+  color: var(--text-muted);
+}
+
+.send-btn-modern {
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: var(--message-user);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.send-btn-modern:hover {
+  background: var(--accent-primary-hover);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.send-btn-modern:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.input-footer {
+  display: flex;
+  justify-content: center;
+  margin-top: 0.5rem;
+}
+
+.footer-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.5rem;
+  transition: all var(--transition-fast);
+}
+
+.footer-btn:hover {
+  color: var(--text-secondary);
+  background: var(--chip-bg);
+}
+
+/* Animations */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 480px) {
+  .chat-message-modern {
+    max-width: 95%;
+  }
+  
+  .suggestion-chips {
+    gap: 0.25rem;
+  }
+  
+  .chip {
+    font-size: 0.8rem;
+    padding: 0.4rem 0.8rem;
+  }
+}
+
+/* Hide welcome screen when messages exist */
+.chat-messages-container:has(.chat-message-modern) .chat-welcome {
+  display: none;
 }
