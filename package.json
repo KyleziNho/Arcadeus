@@ -1,21 +1,33 @@
 {
   "name": "excel-addin-hosting",
   "version": "1.0.0",
-  "description": "M&A Excel Add-in with AI-powered autofill",
+  "description": "M&A Excel Add-in with AI-powered autofill and MCP integration",
   "main": "index.html",
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^0.6.0",
     "firebase": "^12.0.0",
-    "node-fetch": "^2.6.12"
+    "node-fetch": "^2.6.12",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "@types/office-js": "^1.0.0",
+    "@types/uuid": "^9.0.0",
+    "typescript": "^5.3.0"
   },
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "build:mcp": "tsc --project tsconfig.mcp.json",
+    "dev:mcp": "tsc --watch --project tsconfig.mcp.json",
+    "install:mcp": "npm install"
   },
   "keywords": [
     "excel",
     "addin",
     "ma",
     "ai",
-    "autofill"
+    "autofill",
+    "mcp",
+    "model-context-protocol"
   ],
   "author": "",
   "license": "ISC"

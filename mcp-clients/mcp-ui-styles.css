@@ -1,0 +1,432 @@
+/**
+ * MCP UI Styles
+ * Styles for sampling approval, elicitation forms, and other MCP UI components
+ */
+
+/* Sampling Approval Modal */
+.sampling-approval-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+}
+
+.sampling-approval-content {
+  background: #ffffff;
+  border-radius: 8px;
+  padding: 24px;
+  max-width: 600px;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.sampling-approval-content h3 {
+  margin: 0 0 16px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.sampling-details {
+  margin: 16px 0;
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 6px;
+}
+
+.sampling-field {
+  margin-bottom: 12px;
+}
+
+.sampling-field label {
+  display: block;
+  font-weight: 500;
+  color: #555;
+  margin-bottom: 4px;
+}
+
+.sampling-field > div {
+  background: #ffffff;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 12px;
+}
+
+.sampling-messages {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.sampling-message {
+  padding: 8px;
+  margin-bottom: 4px;
+  border-radius: 4px;
+}
+
+.sampling-message.user {
+  background: #e3f2fd;
+  border-left: 3px solid #2196f3;
+}
+
+.sampling-message.assistant {
+  background: #f3e5f5;
+  border-left: 3px solid #9c27b0;
+}
+
+.sampling-message.system {
+  background: #fff3e0;
+  border-left: 3px solid #ff9800;
+}
+
+.sampling-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #eee;
+}
+
+.sampling-actions button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.approve-btn {
+  background: #4caf50;
+  color: white;
+}
+
+.approve-btn:hover {
+  background: #45a049;
+}
+
+.modify-btn {
+  background: #ff9800;
+  color: white;
+}
+
+.modify-btn:hover {
+  background: #f57c00;
+}
+
+.deny-btn {
+  background: #f44336;
+  color: white;
+}
+
+.deny-btn:hover {
+  background: #d32f2f;
+}
+
+/* Elicitation Modal */
+.elicitation-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+}
+
+.elicitation-overlay {
+  background: rgba(0, 0, 0, 0.5);
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.elicitation-content {
+  background: #ffffff;
+  border-radius: 8px;
+  max-width: 500px;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  position: relative;
+}
+
+.elicitation-header {
+  padding: 20px 20px 0 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #eee;
+  margin-bottom: 0;
+  padding-bottom: 16px;
+}
+
+.elicitation-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #666;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+}
+
+.close-btn:hover {
+  background: #f5f5f5;
+}
+
+.elicitation-body {
+  padding: 20px;
+}
+
+.elicitation-message {
+  margin: 0 0 20px 0;
+  color: #555;
+  line-height: 1.5;
+}
+
+.elicitation-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.elicitation-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.elicitation-field label {
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 6px;
+  font-size: 14px;
+}
+
+.elicitation-field input,
+.elicitation-field select,
+.elicitation-field textarea {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  transition: border-color 0.2s ease;
+}
+
+.elicitation-field input:focus,
+.elicitation-field select:focus,
+.elicitation-field textarea:focus {
+  outline: none;
+  border-color: #2196f3;
+  box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.1);
+}
+
+.elicitation-field textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.checkbox-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.checkbox-container input[type="checkbox"] {
+  margin: 0;
+  width: 18px;
+  height: 18px;
+}
+
+.checkbox-label {
+  font-size: 14px;
+  color: #555;
+  cursor: pointer;
+}
+
+.elicitation-actions {
+  padding: 16px 20px 20px 20px;
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  border-top: 1px solid #eee;
+}
+
+.elicitation-actions button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  min-width: 80px;
+}
+
+.submit-btn {
+  background: #2196f3;
+  color: white;
+}
+
+.submit-btn:hover {
+  background: #1976d2;
+}
+
+.cancel-btn {
+  background: #f5f5f5;
+  color: #666;
+}
+
+.cancel-btn:hover {
+  background: #e0e0e0;
+}
+
+/* Priority indicators */
+.elicitation-content[data-priority="high"] .elicitation-header h3 {
+  color: #f44336;
+}
+
+.elicitation-content[data-priority="normal"] .elicitation-header h3 {
+  color: #2196f3;
+}
+
+.elicitation-content[data-priority="low"] .elicitation-header h3 {
+  color: #4caf50;
+}
+
+/* Validation states */
+.elicitation-field.error input,
+.elicitation-field.error select,
+.elicitation-field.error textarea {
+  border-color: #f44336;
+  box-shadow: 0 0 0 2px rgba(244, 67, 54, 0.1);
+}
+
+.elicitation-field .error-message {
+  color: #f44336;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+/* Required field indicator */
+.elicitation-field label::after {
+  content: "";
+}
+
+.elicitation-field.required label::after {
+  content: " *";
+  color: #f44336;
+}
+
+/* Loading states */
+.elicitation-actions button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.elicitation-actions button.loading {
+  position: relative;
+  color: transparent;
+}
+
+.elicitation-actions button.loading::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  margin: -8px 0 0 -8px;
+  width: 16px;
+  height: 16px;
+  border: 2px solid transparent;
+  border-top: 2px solid currentColor;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Responsive design */
+@media (max-width: 600px) {
+  .sampling-approval-content,
+  .elicitation-content {
+    margin: 20px;
+    max-width: calc(100vw - 40px);
+    max-height: calc(100vh - 40px);
+  }
+  
+  .sampling-actions,
+  .elicitation-actions {
+    flex-direction: column;
+  }
+  
+  .sampling-actions button,
+  .elicitation-actions button {
+    width: 100%;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .sampling-approval-content,
+  .elicitation-content {
+    background: #2c3e50;
+    color: #ecf0f1;
+  }
+  
+  .sampling-details {
+    background: #34495e;
+  }
+  
+  .sampling-field > div,
+  .elicitation-field input,
+  .elicitation-field select,
+  .elicitation-field textarea {
+    background: #34495e;
+    border-color: #4a5f7a;
+    color: #ecf0f1;
+  }
+  
+  .sampling-message.user {
+    background: #2c5aa0;
+  }
+  
+  .sampling-message.assistant {
+    background: #6a1b9a;
+  }
+  
+  .sampling-message.system {
+    background: #e65100;
+  }
+}

@@ -3271,8 +3271,8 @@ Respond with analysis based on the real Excel data provided.`;
                 const requestBody = {
                     message: prompt,
                     autoFillMode: false, // Chat mode, not autofill mode
-                    batchType: 'financial_analysis',
-                    systemPrompt: 'You are an expert Excel and M&A financial modeling assistant. Analyze the provided Excel data and give specific, data-driven insights.',
+                    batchType: 'chat', // Use a different batch type for conversational mode
+                    systemPrompt: 'You are an expert Excel and M&A financial modeling assistant. Provide clear, conversational responses about the Excel data. Analyze the provided Excel data and give specific, data-driven insights in natural language.',
                     temperature: 0.7,
                     maxTokens: 3000
                 };

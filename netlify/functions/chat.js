@@ -52,6 +52,11 @@ exports.handler = async (event, context) => {
 You create Excel formulas for IRR and MOIC calculations.
 Return responses in JSON format with Excel formulas.
 Focus on accuracy and proper financial modeling practices.`;
+    } else if (batchType === 'chat') {
+      finalSystemPrompt = systemPrompt || `You are an expert Excel and M&A financial modeling assistant. 
+Provide clear, conversational responses about financial data and Excel analysis.
+Give specific, data-driven insights in natural language.
+Be helpful and analytical while maintaining a conversational tone.`;
     }
 
     // Prepare OpenAI request
@@ -67,8 +72,8 @@ Focus on accuracy and proper financial modeling practices.`;
           content: message
         }
       ],
-      temperature: temperature || 0.1,
-      max_tokens: maxTokens || 1500
+      temperature: temperature || 0.7,
+      max_tokens: maxTokens || 3000
     };
 
     console.log('🤖 Calling OpenAI API...');
