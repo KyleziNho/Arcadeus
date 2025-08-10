@@ -684,19 +684,9 @@
             // Initialize real-time Excel cell tracking
             initializeExcelCellTracking();
             
-            // Initialize the enhanced chat handler if available
-            if (window.enhancedChat) {
-                window.enhancedChat.initialize().then(() => {
-                    console.log('✅ Enhanced chat handler initialized');
-                }).catch(error => {
-                    console.error('❌ Failed to initialize enhanced chat handler:', error);
-                    // Fallback to basic chat
-                    initializeBasicChatSystem();
-                });
-            } else {
-                console.log('Enhanced chat not available, initializing basic chat...');
-                initializeBasicChatSystem();
-            }
+            // Use basic chat system that calls Netlify function (API key stored there)
+            console.log('Using basic chat system with Netlify function...');
+            initializeBasicChatSystem();
             
             // Initialize chat resizer
             initializeChatResizer();
