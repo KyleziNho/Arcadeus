@@ -3258,31 +3258,64 @@ Respond with analysis based on the real Excel data provided.`;
         // Enhanced AI API call
         async function callAIService(prompt, loadingMessage, originalQuery) {
             try {
-                const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-                const apiEndpoint = isLocal 
-                    ? 'http://localhost:8888/.netlify/functions/chat' 
-                    : '/.netlify/functions/chat';
+                console.log('🔄 Calling AI service...');
+                console.log('🌐 Current hostname:', window.location.hostname);
+                console.log('🌐 Current origin:', window.location.origin);
+                
+                // Determine the correct endpoint
+                let apiEndpoint;
+                const currentHost = window.location.hostname;
+                
+                if (currentHost === 'localhost' || currentHost === '127.0.0.1') {
+                    // Local development - try different ports
+                    apiEndpoint = window.location.origin + '/.netlify/functions/chat';
+                } else {
+                    // Production or staging
+                    apiEndpoint = '/.netlify/functions/chat';
+                }
+                
+                console.log('📡 API Endpoint:', apiEndpoint);
+                
+                const requestBody = {
+                    message: prompt,
+                    batchType: 'financial_analysis',
+                    systemPrompt: 'You are an expert Excel and M&A financial modeling assistant. Analyze the provided Excel data and give specific, data-driven insights.',
+                    temperature: 0.7,
+                    maxTokens: 3000
+                };
+                
+                console.log('📤 Request body:', requestBody);
                 
                 const response = await fetch(apiEndpoint, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        message: prompt,
-                        batchType: 'excel_analysis',
-                        systemPrompt: 'You are an expert Excel and M&A financial modeling assistant.',
-                        temperature: 0.7,
-                        maxTokens: 3000
-                    })
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(requestBody)
                 });
-
-                if (!response.ok) {
-                    throw new Error(`API error: ${response.status}`);
-                }
-
-                const result = await response.json();
                 
-                let aiResponse = result.content || result.response || 
-                    result.choices?.[0]?.message?.content || 'No response received';
+                console.log('📥 Response status:', response.status);
+                console.log('📥 Response headers:', Object.fromEntries(response.headers.entries()));
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('❌ API Error Response:', errorText);
+                    throw new Error(`API error: ${response.status} - ${errorText}`);
+                }
+                
+                const result = await response.json();
+                console.log('✅ API Response:', result);
+                
+                if (!result.success) {
+                    throw new Error(result.error || 'API request failed');
+                }
+                
+                let aiResponse = result.content || result.response || 'No response received';
+                
+                if (!aiResponse || aiResponse.trim() === '') {
+                    throw new Error('Empty response from API');
+                }
                 
                 updateStreamingMessage(loadingMessage, aiResponse, true);
                 
@@ -3290,14 +3323,32 @@ Respond with analysis based on the real Excel data provided.`;
                 conversationHistory.push({ role: 'user', content: originalQuery });
                 conversationHistory.push({ role: 'assistant', content: aiResponse });
                 
-                console.log('✅ AI response completed');
+                console.log('✅ AI response completed successfully');
                 
             } catch (error) {
                 console.error('❌ AI API failed:', error);
-                // No offline fallback - just inform user of the issue
-                updateStreamingMessage(loadingMessage, 
-                    `❌ I'm having trouble connecting to the AI service right now. Please check your internet connection and try again in a moment.`, 
-                    true);
+                console.error('❌ Error details:', {
+                    message: error.message,
+                    stack: error.stack,
+                    name: error.name
+                });
+                
+                // Detailed error message for user
+                let errorMessage = `❌ I'm having trouble connecting to the AI service right now.\n\n`;
+                errorMessage += `Error: ${error.message}\n\n`;
+                
+                if (error.message.includes('fetch')) {
+                    errorMessage += `This appears to be a network connectivity issue. Please:\n`;
+                    errorMessage += `• Check your internet connection\n`;
+                    errorMessage += `• Make sure the Netlify functions are deployed\n`;
+                    errorMessage += `• Try refreshing the page`;
+                } else if (error.message.includes('API key')) {
+                    errorMessage += `The OpenAI API key is not configured. Please check the Netlify environment variables.`;
+                } else {
+                    errorMessage += `Please try again in a moment or contact support if the issue persists.`;
+                }
+                
+                updateStreamingMessage(loadingMessage, errorMessage, true);
             }
         }
 
@@ -3369,6 +3420,32 @@ Respond with analysis based on the real Excel data provided.`;
                 });
                 
                 console.log('🚀 Enhanced Excel+AI chat system initialized');
+            }
+        }
+        
+        // Simple API test function for debugging
+        async function testAPIConnection() {
+            try {
+                const response = await fetch('/.netlify/functions/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message: 'Test connection',
+                        batchType: 'financial_analysis'
+                    })
+                });
+                
+                console.log('🧪 Test API Response Status:', response.status);
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    console.log('🧪 Test API Result:', result);
+                } else {
+                    const errorText = await response.text();
+                    console.error('🧪 Test API Error:', errorText);
+                }
+            } catch (error) {
+                console.error('🧪 Test API Connection Failed:', error);
             }
         }
 
