@@ -3262,22 +3262,15 @@ Respond with analysis based on the real Excel data provided.`;
                 console.log('🌐 Current hostname:', window.location.hostname);
                 console.log('🌐 Current origin:', window.location.origin);
                 
-                // Determine the correct endpoint
-                let apiEndpoint;
-                const currentHost = window.location.hostname;
-                
-                if (currentHost === 'localhost' || currentHost === '127.0.0.1') {
-                    // Local development - try different ports
-                    apiEndpoint = window.location.origin + '/.netlify/functions/chat';
-                } else {
-                    // Production or staging
-                    apiEndpoint = '/.netlify/functions/chat';
-                }
+                // Use the same endpoint detection as the autofill system
+                const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+                const apiEndpoint = isLocal ? 'http://localhost:8888/.netlify/functions/chat' : '/.netlify/functions/chat';
                 
                 console.log('📡 API Endpoint:', apiEndpoint);
                 
                 const requestBody = {
                     message: prompt,
+                    autoFillMode: false, // Chat mode, not autofill mode
                     batchType: 'financial_analysis',
                     systemPrompt: 'You are an expert Excel and M&A financial modeling assistant. Analyze the provided Excel data and give specific, data-driven insights.',
                     temperature: 0.7,
@@ -3307,11 +3300,11 @@ Respond with analysis based on the real Excel data provided.`;
                 const result = await response.json();
                 console.log('✅ API Response:', result);
                 
-                if (!result.success) {
-                    throw new Error(result.error || 'API request failed');
+                if (result.error) {
+                    throw new Error(result.error);
                 }
                 
-                let aiResponse = result.content || result.response || 'No response received';
+                let aiResponse = result.content || result.response || result.choices?.[0]?.message?.content || 'No response received';
                 
                 if (!aiResponse || aiResponse.trim() === '') {
                     throw new Error('Empty response from API');
