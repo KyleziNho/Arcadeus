@@ -1484,24 +1484,13 @@ RELEVANT DATA FOUND:
 ${searchedData.summary}
 
 CONVERSATION HISTORY:
-${conversationHistory.map(msg => `${msg.role}: ${msg.content}`).join('\n')}
-
-`;
+${conversationHistory.slice(-10).map(msg => `${msg.role}: ${msg.content}`).join('\n')}`;
                 } else {
-                    const errorMsg = chatContext?.error || 'Unknown error';
-                    contextPrompt = `\n\nNote: Unable to read Excel model context (${errorMsg}). 
-
-I'll do my best to help with general M&A financial modeling questions, but I can't see specific data from your Excel model right now.
-
-For specific questions about your model (like MOIC values, IRR calculations, etc.), please:
-1. Make sure you're in Excel (not just the web browser)
-2. Check that the add-in has proper permissions
-3. Try describing specific cell values or formulas in your question
+                    const errorMsg = chatContext?.error || 'Unable to access Excel context';
+                    contextPrompt = `\n\nNote: ${errorMsg}. I'll provide general M&A financial modeling assistance.
 
 CONVERSATION HISTORY:
-${conversationHistory.map(msg => `${msg.role}: ${msg.content}`).join('\n')}
-
-`;
+${conversationHistory.slice(-10).map(msg => `${msg.role}: ${msg.content}`).join('\n')}`;
                 }
                 
                 const fullPrompt = `You are an expert M&A financial analyst helping with an Excel-based deal model. 
@@ -1520,82 +1509,77 @@ USER MESSAGE: ${userMessage}`;
                 console.log('=== CHAT DEBUG INFO ===');
                 console.log('User message:', userMessage);
                 console.log('Excel context available:', !!(chatContext && !chatContext.error));
-                console.log('Sending prompt to API (first 300 chars):', fullPrompt.substring(0, 300) + '...');
-                console.log('Full prompt length:', fullPrompt.length);
+                console.log('Sending prompt to Netlify function...');
+                console.log('Prompt length:', fullPrompt.length);
                 
-                // Try streaming first, fall back to regular response
                 let fullResponse = '';
                 let success = false;
                 
                 try {
-                    // Try streaming API
-                    fullResponse = await sendStreamingRequest(fullPrompt, streamingMessage);
-                    success = true;
-                } catch (streamError) {
-                    console.log('Streaming failed, trying regular API:', streamError);
+                    // Determine the correct endpoint URL based on environment
+                    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+                    const apiEndpoint = isLocal 
+                        ? 'http://localhost:8888/.netlify/functions/chat' 
+                        : '/.netlify/functions/chat';
                     
-                    try {
-                        // Fallback to regular API
-                        const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-                        const apiEndpoint = isLocal ? 'http://localhost:8888/.netlify/functions/chat' : '/.netlify/functions/chat';
-                        
-                        const response = await fetch(apiEndpoint, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({
-                                message: fullPrompt,
-                                autoFillMode: false,
-                                batchType: 'chat_response',
-                                systemPrompt: 'You are an expert M&A financial analyst. Provide clear, actionable insights about the deal model. Reference specific data from the Excel sheets when available.',
-                                temperature: 0.7,
-                                maxTokens: 2000,
-                                model: 'gpt-4'
-                            })
-                        });
+                    console.log('Using endpoint:', apiEndpoint);
+                    
+                    // Call Netlify function which has the API key
+                    const response = await fetch(apiEndpoint, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            message: fullPrompt,
+                            autoFillMode: false,
+                            batchType: 'chat_response',
+                            systemPrompt: 'You are an expert M&A financial analyst. Provide clear, actionable insights about the deal model. Reference specific data from the Excel sheets when available.',
+                            temperature: 0.7,
+                            maxTokens: 2000
+                        })
+                    });
 
-                        if (!response.ok) {
-                            throw new Error(`API error: ${response.status} - ${await response.text()}`);
-                        }
-
-                        const result = await response.json();
-                        console.log('Fallback API Response:', result);
-                        
-                        // Try different response formats
-                        if (result.content) {
-                            fullResponse = result.content;
-                        } else if (result.response) {
-                            fullResponse = result.response;
-                        } else if (result.choices && result.choices[0] && result.choices[0].message) {
-                            fullResponse = result.choices[0].message.content;
-                        } else if (result.choices && result.choices[0] && result.choices[0].text) {
-                            fullResponse = result.choices[0].text;
-                        } else if (result.message) {
-                            fullResponse = result.message;
-                        } else {
-                            console.error('Unexpected fallback API response format:', result);
-                            fullResponse = 'I received your message but the API response format was unexpected. Please check your API configuration and console for details.';
-                        }
-                        
-                        if (!fullResponse || fullResponse.trim() === '') {
-                            fullResponse = 'The API returned an empty response. Please check your OpenAI API key configuration in Settings.';
-                        }
-                        
-                        console.log('Fallback processed content:', fullResponse);
-                        
-                        // Update streaming message with full response
-                        updateStreamingMessage(streamingMessage, fullResponse, true);
-                        success = true;
-                        
-                    } catch (apiError) {
-                        console.error('Both streaming and regular API failed:', apiError);
-                        
-                        // Last resort: provide a helpful response based on the query
-                        fullResponse = generateFallbackResponse(userMessage, chatContext);
-                        updateStreamingMessage(streamingMessage, fullResponse, true);
-                        success = true;
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        console.error('Netlify function error:', response.status, errorText);
+                        throw new Error(`API error: ${response.status} - ${errorText}`);
                     }
+
+                    const result = await response.json();
+                    console.log('Netlify function response:', result);
+                    
+                    // Extract response - the Netlify function returns content directly
+                    if (result.content) {
+                        fullResponse = result.content;
+                    } else if (result.response) {
+                        fullResponse = result.response;
+                    } else if (result.choices && result.choices[0] && result.choices[0].message) {
+                        fullResponse = result.choices[0].message.content;
+                    } else if (result.message) {
+                        fullResponse = result.message;
+                    } else {
+                        console.error('Unexpected response format:', result);
+                        throw new Error('Unexpected response format from API');
+                    }
+                    
+                    if (!fullResponse || fullResponse.trim() === '') {
+                        throw new Error('Empty response from API');
+                    }
+                    
+                    console.log('Received response:', fullResponse.substring(0, 200) + '...');
+                    
+                    // Update streaming message with full response
+                    updateStreamingMessage(streamingMessage, fullResponse, true);
+                    success = true;
+                    
+                } catch (apiError) {
+                    console.error('API call failed:', apiError);
+                    
+                    // Provide a helpful fallback response
+                    fullResponse = generateFallbackResponse(userMessage, chatContext);
+                    updateStreamingMessage(streamingMessage, fullResponse, true);
+                    success = true;
                 }
                 
                 if (success && fullResponse) {
@@ -1668,79 +1652,9 @@ USER MESSAGE: ${userMessage}`;
         }
 
         async function sendStreamingRequest(prompt, messageContainer) {
-            // This is a placeholder for streaming API - you would implement actual streaming here
-            // For now, we'll simulate streaming with a delayed response
-            
-            const typingIndicator = messageContainer.querySelector('.typing-indicator');
-            if (typingIndicator) {
-                typingIndicator.textContent = 'Typing...';
-            }
-            
-            // Simulate streaming by updating the message periodically
-            return new Promise((resolve, reject) => {
-                setTimeout(async () => {
-                    try {
-                        // Call the regular API but simulate streaming
-                        const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-                        const apiEndpoint = isLocal ? 'http://localhost:8888/.netlify/functions/chat' : '/.netlify/functions/chat';
-                        
-                        const response = await fetch(apiEndpoint, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({
-                                message: prompt,
-                                autoFillMode: false,
-                                batchType: 'chat_response',
-                                systemPrompt: 'You are an expert M&A financial analyst. Provide clear, actionable insights about the deal model. Reference specific data from the Excel sheets when available.',
-                                temperature: 0.7,
-                                maxTokens: 2000,
-                                model: 'gpt-4',
-                                stream: true
-                            })
-                        });
-
-                        if (!response.ok) {
-                            throw new Error(`API error: ${response.status}`);
-                        }
-
-                        const result = await response.json();
-                        console.log('API Response:', result);
-                        
-                        // Try different response formats
-                        let fullContent = '';
-                        if (result.content) {
-                            fullContent = result.content;
-                        } else if (result.response) {
-                            fullContent = result.response;
-                        } else if (result.choices && result.choices[0] && result.choices[0].message) {
-                            fullContent = result.choices[0].message.content;
-                        } else if (result.choices && result.choices[0] && result.choices[0].text) {
-                            fullContent = result.choices[0].text;
-                        } else if (result.message) {
-                            fullContent = result.message;
-                        } else {
-                            console.error('Unexpected API response format:', result);
-                            fullContent = 'I received your message but the API response format was unexpected. Please check the console for details.';
-                        }
-                        
-                        if (!fullContent || fullContent.trim() === '') {
-                            fullContent = 'The API returned an empty response. This might indicate an issue with the API key or request format.';
-                        }
-                        
-                        console.log('Processed content:', fullContent);
-                        
-                        // Simulate typing effect
-                        await simulateTypingEffect(messageContainer, fullContent);
-                        
-                        resolve(fullContent);
-                        
-                    } catch (error) {
-                        reject(error);
-                    }
-                }, 500); // Small delay before starting
-            });
+            // This function is deprecated - streaming is now handled directly in sendMessageToOpenAI
+            // Throwing error to trigger fallback to direct API call
+            throw new Error('Streaming not implemented - use direct API call');
         }
 
         async function simulateTypingEffect(messageContainer, fullText) {
