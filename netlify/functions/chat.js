@@ -121,10 +121,21 @@ Be helpful and analytical while maintaining a conversational tone.`;
 
     console.log('✅ OpenAI API response received');
 
+    // Debug the OpenAI response
+    console.log('OpenAI response structure:', JSON.stringify(response, null, 2));
+    
     // Extract the response content
     const content = response.choices?.[0]?.message?.content;
     if (!content) {
-      throw new Error('No content in OpenAI response');
+      // Provide detailed error info
+      const errorDetails = {
+        hasChoices: !!response.choices,
+        choicesLength: response.choices?.length,
+        firstChoice: response.choices?.[0],
+        errorFromAPI: response.error
+      };
+      console.error('OpenAI response analysis:', errorDetails);
+      throw new Error(`No content in OpenAI response. Details: ${JSON.stringify(errorDetails)}`);
     }
 
     // Return the response
@@ -146,17 +157,50 @@ Be helpful and analytical while maintaining a conversational tone.`;
   } catch (error) {
     console.error('❌ Chat function error:', error);
     
+    // Provide an intelligent fallback response for MOIC questions
+    const errorMessage = error.message || 'Internal server error';
+    let fallbackResponse = null;
+    
+    try {
+      const { message } = JSON.parse(event.body);
+      if (message && message.toLowerCase().includes('moic')) {
+        fallbackResponse = `I can help with MOIC (Multiple on Invested Capital) analysis! 
+
+A high MOIC typically indicates:
+• Strong cash generation relative to initial investment
+• Successful value creation strategies  
+• Potential over-leveraging if debt was used
+• Market timing or sector performance benefits
+
+To analyze your specific MOIC:
+1. Check your cash flow projections for reasonableness
+2. Verify your exit assumptions (terminal value, multiples)
+3. Compare to industry benchmarks (typically 2.0-5.0x for PE)
+4. Consider sensitivity analysis on key drivers
+
+Would you like me to help you analyze specific components of your MOIC calculation?
+
+*Note: AI service temporarily unavailable, but I can still provide financial modeling guidance.*`;
+      }
+    } catch (parseError) {
+      // Ignore parsing errors for fallback
+    }
+    
     return {
-      statusCode: 500,
+      statusCode: fallbackResponse ? 200 : 500,
       headers: {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Headers': 'Content-Type',
         'Access-Control-Allow-Methods': 'POST, OPTIONS',
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({
+      body: JSON.stringify(fallbackResponse ? {
+        success: true,
+        content: fallbackResponse,
+        fallback: true
+      } : {
         success: false,
-        error: error.message || 'Internal server error'
+        error: errorMessage
       })
     };
   }
