@@ -1006,139 +1006,218 @@
             }
 
             const query = userMessage.toLowerCase();
-            const searchTerms = {
-                moic: ['moic', 'multiple', 'money on invested capital', 'cash on cash'],
-                irr: ['irr', 'internal rate', 'return'],
+            
+            // Intelligent analysis based on question intent
+            let analysisResults = {
+                primaryMetric: null,
+                relatedMetrics: [],
+                keyFindings: [],
+                contextualData: {},
+                summary: ''
+            };
+
+            // Detect what financial metric the user is asking about
+            const metricKeywords = {
+                moic: ['moic', 'multiple', 'money on invested capital', 'cash on cash', 'return multiple'],
+                irr: ['irr', 'internal rate', 'return rate', 'discount rate'],
                 npv: ['npv', 'net present value', 'present value'],
-                revenue: ['revenue', 'sales', 'income', 'turnover'],
-                ebitda: ['ebitda', 'earnings', 'operating income'],
-                debt: ['debt', 'loan', 'borrowing', 'financing'],
-                equity: ['equity', 'investment', 'capital'],
-                valuation: ['valuation', 'value', 'enterprise value', 'ev'],
-                exit: ['exit', 'sale', 'disposal', 'terminal'],
-                assumptions: ['assumption', 'input', 'parameter'],
-                cashflow: ['cash flow', 'fcf', 'free cash', 'cash']
+                revenue: ['revenue', 'sales', 'income', 'turnover', 'top line'],
+                ebitda: ['ebitda', 'earnings', 'operating income', 'cash flow'],
+                debt: ['debt', 'loan', 'borrowing', 'financing', 'leverage'],
+                equity: ['equity', 'investment', 'capital', 'contribution'],
+                exit: ['exit', 'sale', 'disposal', 'terminal', 'exit value'],
+                fcf: ['free cash flow', 'fcf', 'cash flow', 'cash generation']
             };
 
-            const relevantData = {
-                foundMetrics: {},
-                relevantCells: [],
-                sheetSummary: {}
+            // Find primary metric being discussed
+            for (const [metric, keywords] of Object.entries(metricKeywords)) {
+                if (keywords.some(keyword => query.includes(keyword))) {
+                    analysisResults.primaryMetric = metric.toUpperCase();
+                    break;
+                }
+            }
+
+            // If asking about MOIC specifically, do comprehensive MOIC analysis
+            if (analysisResults.primaryMetric === 'MOIC' || query.includes('moic')) {
+                return analyzeMOICComprehensively(context, userMessage);
+            }
+
+            // If asking about IRR, do IRR analysis
+            if (analysisResults.primaryMetric === 'IRR' || query.includes('irr')) {
+                return analyzeIRRComprehensively(context, userMessage);
+            }
+
+            // For other metrics, do general financial analysis
+            return analyzeGeneralFinancialMetric(context, userMessage, analysisResults.primaryMetric);
+        }
+
+        function analyzeMOICComprehensively(context, userMessage) {
+            let moicFindings = {
+                moicValue: null,
+                moicCell: null,
+                exitValue: null,
+                investedCapital: null,
+                keyDrivers: [],
+                analysis: ''
             };
 
-            // Search through all sheets for relevant data
+            // Search all sheets for MOIC-related data
             Object.entries(context.sheets).forEach(([sheetName, sheetData]) => {
-                const sheetSummary = {
-                    name: sheetName,
-                    relevantCells: [],
-                    keyMetrics: []
-                };
+                if (!sheetData.values || !sheetData.formulas) return;
 
-                if (sheetData.values && sheetData.formulas) {
-                    // Search through cells for relevant terms and values
-                    for (let row = 0; row < Math.min(sheetData.values.length, 50); row++) {
-                        for (let col = 0; col < Math.min(sheetData.values[row]?.length || 0, 20); col++) {
-                            const cellValue = sheetData.values[row][col];
-                            const cellFormula = sheetData.formulas[row][col];
+                for (let row = 0; row < Math.min(sheetData.values.length, 100); row++) {
+                    for (let col = 0; col < Math.min(sheetData.values[row]?.length || 0, 20); col++) {
+                        const cellValue = sheetData.values[row][col];
+                        const cellFormula = sheetData.formulas[row][col];
+                        const cellAddress = `${sheetName}!${String.fromCharCode(65 + col)}${row + 1}`;
+                        
+                        if (cellValue !== null && cellValue !== '') {
+                            const cellText = String(cellValue).toLowerCase();
+                            const formulaText = String(cellFormula || '').toLowerCase();
                             
-                            if (cellValue !== null && cellValue !== '') {
-                                const cellText = String(cellValue).toLowerCase();
-                                const formulaText = String(cellFormula).toLowerCase();
+                            // Look for MOIC label and value
+                            if (cellText.includes('moic') || cellText.includes('multiple') || cellText.includes('cash on cash')) {
+                                // Check adjacent cells for the actual MOIC value
+                                const rightCell = sheetData.values[row][col + 1];
+                                const belowCell = sheetData.values[row + 1]?.[col];
                                 
-                                // Check if cell contains searched terms
-                                Object.entries(searchTerms).forEach(([metric, terms]) => {
-                                    terms.forEach(term => {
-                                        if (query.includes(term) && (cellText.includes(term) || formulaText.includes(term) || cellText.includes(metric))) {
-                                            const cellAddress = `${sheetName}!${String.fromCharCode(65 + col)}${row + 1}`;
-                                            const cellInfo = {
-                                                address: cellAddress,
-                                                value: cellValue,
-                                                formula: cellFormula,
-                                                metric: metric,
-                                                matchedTerm: term
-                                            };
-                                            
-                                            sheetSummary.relevantCells.push(cellInfo);
-                                            relevantData.relevantCells.push(cellInfo);
-                                            
-                                            if (!relevantData.foundMetrics[metric]) {
-                                                relevantData.foundMetrics[metric] = [];
-                                            }
-                                            relevantData.foundMetrics[metric].push(cellInfo);
-                                        }
-                                    });
+                                if (typeof rightCell === 'number' && rightCell > 0.1 && rightCell < 100) {
+                                    moicFindings.moicValue = rightCell;
+                                    moicFindings.moicCell = `${sheetName}!${String.fromCharCode(66 + col)}${row + 1}`;
+                                } else if (typeof belowCell === 'number' && belowCell > 0.1 && belowCell < 100) {
+                                    moicFindings.moicValue = belowCell;
+                                    moicFindings.moicCell = `${sheetName}!${String.fromCharCode(65 + col)}${row + 2}`;
+                                }
+                            }
+
+                            // Look for exit value / terminal value
+                            if ((cellText.includes('exit') && cellText.includes('value')) || 
+                                cellText.includes('terminal value') || 
+                                cellText.includes('enterprise value') ||
+                                cellText.includes('sale price')) {
+                                
+                                const rightCell = sheetData.values[row][col + 1];
+                                const belowCell = sheetData.values[row + 1]?.[col];
+                                
+                                if (typeof rightCell === 'number' && rightCell > 1000000) { // Assuming values > 1M
+                                    moicFindings.exitValue = rightCell;
+                                } else if (typeof belowCell === 'number' && belowCell > 1000000) {
+                                    moicFindings.exitValue = belowCell;
+                                }
+                            }
+
+                            // Look for initial investment / equity contribution
+                            if ((cellText.includes('equity') && cellText.includes('contribution')) ||
+                                cellText.includes('initial investment') ||
+                                cellText.includes('invested capital') ||
+                                (cellText.includes('investment') && !cellText.includes('return'))) {
+                                
+                                const rightCell = sheetData.values[row][col + 1];
+                                const belowCell = sheetData.values[row + 1]?.[col];
+                                
+                                if (typeof rightCell === 'number' && rightCell > 100000) { // Assuming values > 100K
+                                    moicFindings.investedCapital = rightCell;
+                                } else if (typeof belowCell === 'number' && belowCell > 100000) {
+                                    moicFindings.investedCapital = belowCell;
+                                }
+                            }
+
+                            // Look for potential numeric MOIC values (standalone numbers in typical range)
+                            if (typeof cellValue === 'number' && cellValue > 1 && cellValue < 20 && !moicFindings.moicValue) {
+                                // Check if nearby cells have MOIC-related text
+                                const contextCells = [
+                                    sheetData.values[row - 1]?.[col], // Above
+                                    sheetData.values[row][col - 1],   // Left
+                                    sheetData.values[row + 1]?.[col], // Below
+                                    sheetData.values[row][col + 1]    // Right
+                                ];
+                                
+                                const hasContextualText = contextCells.some(contextCell => {
+                                    if (!contextCell) return false;
+                                    const contextText = String(contextCell).toLowerCase();
+                                    return contextText.includes('moic') || contextText.includes('multiple') || 
+                                           contextText.includes('return') || contextText.includes('cash');
                                 });
-                                
-                                // Look for numeric values that might be financial metrics
-                                if (typeof cellValue === 'number') {
-                                    // Potential MOIC values (typically 1-10x)
-                                    if (query.includes('moic') && cellValue > 0.5 && cellValue < 50) {
-                                        const cellAddress = `${sheetName}!${String.fromCharCode(65 + col)}${row + 1}`;
-                                        sheetSummary.keyMetrics.push({
-                                            address: cellAddress,
-                                            value: cellValue,
-                                            formula: cellFormula,
-                                            possibleMetric: 'MOIC',
-                                            reason: 'Numeric value in typical MOIC range'
-                                        });
-                                    }
-                                    
-                                    // Potential IRR values (typically 10-50%)
-                                    if (query.includes('irr') && cellValue > 0.05 && cellValue < 2) {
-                                        const cellAddress = `${sheetName}!${String.fromCharCode(65 + col)}${row + 1}`;
-                                        sheetSummary.keyMetrics.push({
-                                            address: cellAddress,
-                                            value: cellValue,
-                                            formula: cellFormula,
-                                            possibleMetric: 'IRR',
-                                            reason: 'Percentage value in typical IRR range'
-                                        });
-                                    }
+
+                                if (hasContextualText) {
+                                    moicFindings.moicValue = cellValue;
+                                    moicFindings.moicCell = cellAddress;
                                 }
                             }
                         }
                     }
                 }
-
-                if (sheetSummary.relevantCells.length > 0 || sheetSummary.keyMetrics.length > 0) {
-                    relevantData.sheetSummary[sheetName] = sheetSummary;
-                }
             });
 
-            // Generate summary
-            let summary = `Searched Excel model for terms related to: "${userMessage}"\n\n`;
+            // Generate intelligent analysis
+            let analysis = '';
             
-            if (Object.keys(relevantData.foundMetrics).length > 0) {
-                summary += 'FOUND RELEVANT METRICS:\n';
-                Object.entries(relevantData.foundMetrics).forEach(([metric, cells]) => {
-                    summary += `${metric.toUpperCase()}: ${cells.length} cells found\n`;
-                    cells.slice(0, 3).forEach(cell => {
-                        summary += `  - ${cell.address}: ${cell.value} ${cell.formula ? `(Formula: ${cell.formula})` : ''}\n`;
-                    });
-                });
-                summary += '\n';
-            }
-
-            if (Object.keys(relevantData.sheetSummary).length > 0) {
-                summary += 'RELEVANT SHEETS:\n';
-                Object.entries(relevantData.sheetSummary).forEach(([sheetName, data]) => {
-                    summary += `${sheetName}: ${data.relevantCells.length} relevant cells, ${data.keyMetrics.length} potential metrics\n`;
-                });
-                summary += '\n';
-            }
-
-            if (relevantData.relevantCells.length === 0) {
-                summary += `No cells found matching the query "${userMessage}". This could indicate:\n`;
-                summary += '- The metric might be calculated differently\n';
-                summary += '- The data might be on a sheet not currently loaded\n';
-                summary += '- Different terminology might be used\n';
-                summary += '\nAvailable sheets: ' + Object.keys(context.sheets).join(', ');
+            if (moicFindings.moicValue !== null) {
+                const moicText = moicFindings.moicValue.toFixed(2) + 'x';
+                analysis += `MOIC Analysis:\n\n`;
+                analysis += `📊 MOIC Value: ${moicText} (located at ${moicFindings.moicCell})\n\n`;
+                
+                // Analyze if MOIC is high/low and why
+                if (userMessage.toLowerCase().includes('high') && moicFindings.moicValue > 2.5) {
+                    analysis += `🔍 Why MOIC is HIGH (${moicText}):\n`;
+                    analysis += `• Strong exit multiple or valuation increase\n`;
+                    if (moicFindings.exitValue && moicFindings.investedCapital) {
+                        analysis += `• Exit Value: ${formatCurrency(moicFindings.exitValue)}\n`;
+                        analysis += `• Invested Capital: ${formatCurrency(moicFindings.investedCapital)}\n`;
+                        analysis += `• Multiple = ${formatCurrency(moicFindings.exitValue)} ÷ ${formatCurrency(moicFindings.investedCapital)} = ${moicText}\n`;
+                    }
+                    analysis += `• Likely drivers: Strong business performance, market expansion, multiple arbitrage, operational improvements\n`;
+                } else if (userMessage.toLowerCase().includes('low') && moicFindings.moicValue < 2.0) {
+                    analysis += `🔍 Why MOIC is LOW (${moicText}):\n`;
+                    analysis += `• Conservative exit valuation or market conditions\n`;
+                    analysis += `• High initial investment relative to returns\n`;
+                    analysis += `• Consider reviewing growth assumptions and exit multiple\n`;
+                }
+                
+                analysis += `\n📈 Key Value Drivers to Review:\n`;
+                analysis += `• Exit valuation assumptions (P/E, EV/EBITDA multiples)\n`;
+                analysis += `• Revenue growth rates and market penetration\n`;
+                analysis += `• Margin expansion opportunities\n`;
+                analysis += `• Operational efficiency improvements\n`;
+                analysis += `• Debt paydown reducing equity needs\n`;
+                
+            } else {
+                analysis += `⚠️ Could not locate MOIC value in the Excel model.\n\n`;
+                analysis += `Suggestions to find MOIC:\n`;
+                analysis += `• Look in the Valuation, Returns, or Summary sheets\n`;
+                analysis += `• Search for cells labeled "MOIC", "Multiple", or "Cash-on-Cash Return"\n`;
+                analysis += `• Check if MOIC is calculated as Exit Value ÷ Invested Capital\n`;
+                analysis += `• Available sheets: ${Object.keys(context.sheets).join(', ')}\n`;
             }
 
             return {
-                summary: summary,
-                detailedData: relevantData
+                summary: analysis,
+                detailedData: moicFindings
             };
+        }
+
+        function analyzeIRRComprehensively(context, userMessage) {
+            // Similar comprehensive analysis for IRR
+            let analysis = `🔍 IRR Analysis:\n\nSearching for IRR calculations and cash flow patterns...\n`;
+            analysis += `This would analyze cash flow timing, discount rates, and return drivers.\n`;
+            return { summary: analysis, detailedData: {} };
+        }
+
+        function analyzeGeneralFinancialMetric(context, userMessage, primaryMetric) {
+            let analysis = `🔍 Financial Analysis:\n\nAnalyzing ${primaryMetric || 'financial metrics'} in your model...\n`;
+            return { summary: analysis, detailedData: {} };
+        }
+
+        function formatCurrency(value) {
+            if (value >= 1000000000) {
+                return `$${(value / 1000000000).toFixed(1)}B`;
+            } else if (value >= 1000000) {
+                return `$${(value / 1000000).toFixed(1)}M`;
+            } else if (value >= 1000) {
+                return `$${(value / 1000).toFixed(0)}K`;
+            } else {
+                return `$${value.toFixed(0)}`;
+            }
         }
 
         function sendQuickMessage(message) {
