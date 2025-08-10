@@ -664,9 +664,9 @@
             // Initialize real-time Excel cell tracking
             initializeExcelCellTracking();
             
-            // Use basic chat system that calls Netlify function (API key stored there)
-            console.log('Using basic chat system with Netlify function...');
-            initializeBasicChatSystem();
+            // Initialize the enhanced Excel+AI integration system
+            console.log('Using enhanced Excel+AI integration system...');
+            initializeEnhancedExcelChat();
             
             // Initialize chat resizer
             initializeChatResizer();
@@ -3102,9 +3102,14 @@ Generate a realistic real estate property (office, retail, industrial, mixed-use
             return context;
         }
 
-        // STEP 2: AI Processing with Excel Context
+        // STEP 2: AI Processing with Real Excel Searching
         async function processWithAI(userInput, excelContext, loadingMessage) {
             try {
+                // First, search ALL sheets for relevant financial data
+                updateStreamingMessage(loadingMessage, "🔍 Searching all Excel sheets for financial data...", false);
+                
+                const comprehensiveData = await searchAllSheetsForFinancialData(userInput.toLowerCase());
+                
                 // Build context string for AI
                 let contextString = `Active Sheet: ${excelContext.activeSheet}\n`;
                 contextString += `Available Sheets: ${excelContext.worksheetNames.join(', ')}\n`;
@@ -3121,50 +3126,133 @@ Generate a realistic real estate property (office, retail, industrial, mixed-use
                     }
                 }
                 
-                // Enhanced AI prompt
+                // Add comprehensive search results
+                if (comprehensiveData.foundData.length > 0) {
+                    contextString += `\nFOUND FINANCIAL DATA:\n`;
+                    comprehensiveData.foundData.forEach(item => {
+                        contextString += `- ${item.sheet}!${item.address}: "${item.label}" = ${item.value} ${item.formula ? `(Formula: ${item.formula})` : ''}\n`;
+                    });
+                } else {
+                    contextString += `\nNote: No specific financial metrics found in available sheets\n`;
+                }
+                
+                // Enhanced AI prompt with search results
                 const aiPrompt = `You are an expert Excel and M&A financial analyst.
 
 User Question: "${userInput}"
 
-Current Excel Context:
+Excel Context & Search Results:
 ${contextString}
 
+IMPORTANT: Based on the Excel data found above, provide specific analysis. If MOIC, IRR, or other financial metrics were found, analyze them in detail. If asking about "why MOIC is high/low", use the actual values found to explain.
+
 Instructions:
-1. Analyze the user's question in context of their Excel data
-2. Provide specific, actionable advice
-3. If suggesting formulas, make them copy-pasteable
-4. Reference specific cells/ranges when relevant
-5. For financial metrics (MOIC, IRR, NPV), provide detailed analysis
-6. Be conversational and helpful
+1. Use the ACTUAL Excel data shown above in your analysis
+2. Reference specific cells/sheets when discussing values  
+3. If financial metrics are found, explain what drives them
+4. Provide actionable recommendations
+5. Be specific and data-driven, not generic
 
-Respond with clear explanations and practical recommendations.`;
+Respond with analysis based on the real Excel data provided.`;
 
-                console.log('🚀 Calling AI with context...');
+                console.log('🚀 Calling AI with comprehensive Excel data...');
                 
-                // Try intelligent analysis first
-                const smartAnalysis = analyzeExcelDataForQuery(userInput, {
-                    sheets: excelContext.selectedRange ? {
-                        [excelContext.activeSheet]: {
-                            values: excelContext.selectedRange.values || [],
-                            formulas: excelContext.selectedRange.formulas || []
-                        }
-                    } : {},
-                    activeSheet: excelContext.activeSheet,
-                    selectedRange: excelContext.selectedRange
-                });
-                
-                if (smartAnalysis.summary.includes('MOIC Analysis:')) {
-                    // Use direct analysis for MOIC questions
-                    updateStreamingMessage(loadingMessage, smartAnalysis.summary, true);
-                } else {
-                    // Call AI API for general questions
-                    await callAIService(aiPrompt, loadingMessage, userInput);
-                }
+                // Always call AI API with the real Excel data (no offline fallback)
+                await callAIService(aiPrompt, loadingMessage, userInput);
                 
             } catch (error) {
                 console.error('❌ Error in processWithAI:', error);
                 updateStreamingMessage(loadingMessage, `Error processing query: ${error.message}`, true);
             }
+        }
+
+        // Search all Excel sheets for financial data relevant to the query
+        async function searchAllSheetsForFinancialData(query) {
+            const foundData = [];
+            const searchTerms = {
+                moic: ['moic', 'multiple', 'cash on cash', 'return multiple'],
+                irr: ['irr', 'internal rate', 'discount rate'],
+                npv: ['npv', 'net present', 'present value'],
+                exit: ['exit', 'terminal', 'sale price'],
+                equity: ['equity', 'investment', 'invested capital'],
+                revenue: ['revenue', 'sales', 'income'],
+                ebitda: ['ebitda', 'earnings']
+            };
+            
+            // Determine what we're looking for
+            let targetMetrics = [];
+            for (const [metric, terms] of Object.entries(searchTerms)) {
+                if (terms.some(term => query.includes(term))) {
+                    targetMetrics.push(metric);
+                }
+            }
+            
+            await Excel.run(async (context) => {
+                try {
+                    const worksheets = context.workbook.worksheets;
+                    worksheets.load(['name']);
+                    await context.sync();
+                    
+                    // Search each worksheet
+                    for (const worksheet of worksheets.items) {
+                        // Get a reasonable range from each sheet (first 50 rows, 20 cols)
+                        const range = worksheet.getRange('A1:T50');
+                        range.load(['values', 'formulas']);
+                        await context.sync();
+                        
+                        // Search through the data
+                        for (let row = 0; row < Math.min(range.values.length, 50); row++) {
+                            for (let col = 0; col < Math.min(range.values[row]?.length || 0, 20); col++) {
+                                const cellValue = range.values[row][col];
+                                const cellFormula = range.formulas[row][col];
+                                
+                                if (cellValue && typeof cellValue === 'string') {
+                                    const cellText = cellValue.toLowerCase();
+                                    
+                                    // Check if this cell contains a label we're looking for
+                                    for (const [metric, terms] of Object.entries(searchTerms)) {
+                                        if (terms.some(term => cellText.includes(term))) {
+                                            // Found a label! Look for the value in adjacent cells
+                                            const adjacentCells = [
+                                                { r: row, c: col + 1 }, // Right
+                                                { r: row + 1, c: col }, // Below
+                                                { r: row, c: col - 1 }, // Left  
+                                                { r: row - 1, c: col }  // Above
+                                            ];
+                                            
+                                            for (const adj of adjacentCells) {
+                                                if (adj.r >= 0 && adj.r < range.values.length && 
+                                                    adj.c >= 0 && adj.c < range.values[adj.r]?.length) {
+                                                    const adjValue = range.values[adj.r][adj.c];
+                                                    const adjFormula = range.formulas[adj.r][adj.c];
+                                                    
+                                                    if (typeof adjValue === 'number' && adjValue !== 0) {
+                                                        foundData.push({
+                                                            sheet: worksheet.name,
+                                                            address: `${String.fromCharCode(65 + adj.c)}${adj.r + 1}`,
+                                                            label: cellValue,
+                                                            value: adjValue,
+                                                            formula: adjFormula,
+                                                            metric: metric
+                                                        });
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                    console.log(`🔍 Found ${foundData.length} financial data points:`, foundData);
+                    
+                } catch (searchError) {
+                    console.error('❌ Error searching sheets:', searchError);
+                }
+            });
+            
+            return { foundData };
         }
 
         // Enhanced AI API call
@@ -3206,9 +3294,9 @@ Respond with clear explanations and practical recommendations.`;
                 
             } catch (error) {
                 console.error('❌ AI API failed:', error);
-                // Fallback response
+                // No offline fallback - just inform user of the issue
                 updateStreamingMessage(loadingMessage, 
-                    `I'm having trouble connecting to the AI service right now. However, I can see you're asking about "${originalQuery}". Please try again, or describe your specific Excel challenge and I'll do my best to help!`, 
+                    `❌ I'm having trouble connecting to the AI service right now. Please check your internet connection and try again in a moment.`, 
                     true);
             }
         }
@@ -3284,11 +3372,7 @@ Respond with clear explanations and practical recommendations.`;
             }
         }
 
-        // Initialize when Office is ready
-        Office.onReady((info) => {
-            console.log('📊 Office ready, initializing enhanced chat...');
-            initializeEnhancedExcelChat();
-        });
+        // Note: Enhanced chat is initialized in the main Office.onReady callback above
     </script>
 </body>
 </html>
