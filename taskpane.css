@@ -3358,11 +3358,12 @@ select {
 .chat-messages-container {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  height: calc(100% - 100px); /* Reserve space for input */
   background: var(--chat-bg);
   overflow-y: auto;
   scroll-behavior: smooth;
   padding: 1rem;
+  padding-bottom: 120px; /* Extra space for fixed input */
   gap: 1rem;
 }
 
@@ -3505,7 +3506,20 @@ select {
   margin-left: 0.25rem;
 }
 
-/* Chat Input Container */
+/* Chat Input Container - Fixed at Bottom */
+.chat-input-container-fixed {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 1rem;
+  border-top: 1px solid var(--chat-border);
+  background: var(--chat-bg);
+  backdrop-filter: blur(10px);
+  z-index: 1000;
+}
+
+/* Fallback for non-fixed containers */
 .chat-input-container {
   padding: 1rem;
   border-top: 1px solid var(--chat-border);
@@ -3575,8 +3589,19 @@ select {
 
 .input-footer {
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
+  align-items: center;
   margin-top: 0.5rem;
+}
+
+.model-indicator {
+  background: var(--chip-bg);
+  border: 1px solid var(--chat-border);
+  border-radius: 12px;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  font-weight: 500;
 }
 
 .footer-btn {
