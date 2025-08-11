@@ -220,7 +220,7 @@ class StructuredStreamingChat {
       }
 
       .streaming-header {
-        background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+        background: linear-gradient(135deg, #000000 0%, #333333 100%);
         color: white;
         padding: 16px 20px;
         font-weight: 600;
@@ -288,7 +288,7 @@ class StructuredStreamingChat {
         background: white;
         padding: 20px;
         border-radius: 12px;
-        border-left: 4px solid #4f46e5;
+        border-left: 4px solid #000000;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
         font-size: 16px;
         line-height: 1.6;
@@ -314,9 +314,9 @@ class StructuredStreamingChat {
       }
 
       .metric-card:hover {
-        border-color: #4f46e5;
+        border-color: #000000;
         transform: translateY(-4px);
-        box-shadow: 0 8px 25px rgba(79, 70, 229, 0.15);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
       }
 
       .metric-card.streaming {
@@ -391,7 +391,7 @@ class StructuredStreamingChat {
       }
 
       .metric-location:hover {
-        background: #4f46e5;
+        background: #000000;
         color: white;
         transform: scale(1.05);
       }

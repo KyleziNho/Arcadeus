@@ -415,7 +415,7 @@ class DirectExcelActions {
             'blue': '#3b82f6',
             'yellow': '#fbbf24',
             'orange': '#f97316',
-            'purple': '#8b5cf6',
+            'purple': '#000000',
             'pink': '#ec4899',
             'gray': '#6b7280',
             'grey': '#6b7280',
@@ -444,7 +444,7 @@ class DirectExcelActions {
      * Get contrasting text color
      */
     getContrastingColor(backgroundColor) {
-        const darkColors = ['#22c55e', '#ef4444', '#3b82f6', '#8b5cf6', '#ec4899', '#000000', '#15803d', '#1e40af'];
+        const darkColors = ['#22c55e', '#ef4444', '#3b82f6', '#000000', '#ec4899', '#000000', '#15803d', '#1e40af'];
         return darkColors.includes(backgroundColor) ? '#ffffff' : '#000000';
     }
 
@@ -458,7 +458,7 @@ class DirectExcelActions {
             '#3b82f6': 'blue',
             '#fbbf24': 'yellow',
             '#f97316': 'orange',
-            '#8b5cf6': 'purple',
+            '#000000': 'black',
             '#ec4899': 'pink',
             '#6b7280': 'gray',
             '#000000': 'black',
