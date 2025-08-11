@@ -10,6 +10,10 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Lora:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="taskpane.css">
+    <link rel="stylesheet" href="styles/multi-agent-status.css">
+    <link rel="stylesheet" href="styles/professional-chat-interface.css">
+    <link rel="stylesheet" href="styles/scenario-analysis-engine.css">
+    <link rel="stylesheet" href="styles/model-validation-dashboard.css">
     <!-- Widget Scripts -->
     <script src="widgets/ExcelGenerator.js?v=19"></script>
     <script>
@@ -38,8 +42,21 @@
     <script src="widgets/UIController.js"></script>
     
     <!-- Enhanced Chat Formatting -->
+    <script src="widgets/excel-navigator.js"></script>
     <script src="widgets/enhanced-formatting-injector.js"></script>
     <script src="widgets/direct-response-formatter.js"></script>
+    
+    <!-- Phase 1: Native Excel Integration -->
+    <script src="widgets/excel-structure-fetcher.js"></script>
+    
+    <!-- Stage 2: Multi-Agent System -->
+    <script src="widgets/multi-agent-processor.js"></script>
+    <script src="widgets/enhanced-status-indicators.js"></script>
+    
+    <!-- Stage 3: Professional Features -->
+    <script src="widgets/professional-chat-interface.js"></script>
+    <script src="widgets/scenario-analysis-engine.js"></script>
+    <script src="widgets/model-validation-dashboard.js"></script>
     
     <!-- Enhanced Chat System Components -->
     <script src="widgets/ModelProviderManager.js"></script>
@@ -632,6 +649,83 @@
         let conversationHistory = [];
         let isReadingExcelFiles = false;
         let userProfilePicture = null;
+
+        // Excel Navigation - Global function for clickable cell references
+        async function navigateToExcelCell(cellReference) {
+            console.log('🎯 Global navigation triggered for:', cellReference);
+            
+            if (window.excelNavigator) {
+                try {
+                    const result = await window.excelNavigator.navigateToCell(cellReference);
+                    if (result.success) {
+                        console.log('✅ Navigation successful:', result);
+                    } else {
+                        console.error('❌ Navigation failed:', result.error);
+                    }
+                } catch (error) {
+                    console.error('❌ Navigation error:', error);
+                }
+            } else {
+                console.error('❌ Excel Navigator not available');
+            }
+        }
+
+        // Make navigation function globally available
+        window.navigateToExcelCell = navigateToExcelCell;
+
+        // Global functions for cell preview tooltips
+        async function showCellPreview(cellReference, element) {
+            if (!window.excelNavigator) return;
+            
+            try {
+                // Create loading tooltip
+                const loadingTooltip = document.createElement('div');
+                loadingTooltip.className = 'cell-preview-tooltip loading';
+                loadingTooltip.textContent = 'Loading...';
+                element.appendChild(loadingTooltip);
+                
+                // Get cell preview data
+                const preview = await window.excelNavigator.getCellPreview(cellReference);
+                
+                // Remove loading tooltip
+                loadingTooltip.remove();
+                
+                if (preview.error) {
+                    const errorTooltip = document.createElement('div');
+                    errorTooltip.className = 'cell-preview-tooltip error';
+                    errorTooltip.textContent = preview.error;
+                    element.appendChild(errorTooltip);
+                } else {
+                    const tooltip = document.createElement('div');
+                    tooltip.className = 'cell-preview-tooltip';
+                    
+                    let content = `<strong>${preview.address}</strong><br>`;
+                    if (preview.value !== undefined) {
+                        content += `Value: ${preview.value}<br>`;
+                    }
+                    if (preview.formula && preview.formula !== preview.value) {
+                        content += `Formula: ${preview.formula}`;
+                    }
+                    
+                    tooltip.innerHTML = content;
+                    element.appendChild(tooltip);
+                }
+                
+            } catch (error) {
+                console.error('Error showing cell preview:', error);
+            }
+        }
+        
+        function hideCellPreview(element) {
+            const tooltip = element.querySelector('.cell-preview-tooltip');
+            if (tooltip) {
+                tooltip.remove();
+            }
+        }
+        
+        // Make tooltip functions globally available
+        window.showCellPreview = showCellPreview;
+        window.hideCellPreview = hideCellPreview;
 
         function getUserProfilePicture() {
             if (userProfilePicture) return userProfilePicture;

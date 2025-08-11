@@ -1,0 +1,759 @@
+/* Model Validation Dashboard Styles - Stage 3 */
+/* Professional styling for M&A model validation interface */
+
+/* Main Dashboard Container */
+.validation-dashboard {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  right: 20px;
+  bottom: 20px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 20px 80px rgba(0, 0, 0, 0.2);
+  border: 1px solid #e2e8f0;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Header */
+.validation-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  border-radius: 16px 16px 0 0;
+}
+
+.validation-header h3 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+.validation-controls {
+  display: flex;
+  gap: 12px;
+}
+
+.validation-btn {
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(10px);
+}
+
+.validation-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.validation-btn.active {
+  background: rgba(255, 255, 255, 0.4);
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
+.validation-btn.secondary {
+  padding: 6px 12px;
+  font-size: 18px;
+  min-width: auto;
+}
+
+/* Content Area */
+.validation-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Overview Section */
+.validation-overview {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
+}
+
+.overview-cards {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.overview-card {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  transition: all 0.2s ease;
+}
+
+.overview-card:hover {
+  border-color: #cbd5e0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  transform: translateY(-2px);
+}
+
+.card-icon {
+  font-size: 32px;
+  line-height: 1;
+  opacity: 0.8;
+}
+
+.card-content {
+  flex: 1;
+}
+
+.card-content h4 {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  color: #64748b;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.card-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 4px;
+}
+
+.card-value.error {
+  color: #dc2626;
+}
+
+.card-value.warning {
+  color: #d97706;
+}
+
+.card-value.info {
+  color: #2563eb;
+}
+
+.card-description {
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.card-trend {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.trend-up {
+  color: #059669;
+}
+
+.trend-down {
+  color: #dc2626;
+}
+
+.trend-stable {
+  color: #64748b;
+}
+
+/* Validation Progress */
+.validation-progress {
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid #e2e8f0;
+}
+
+.validation-progress h4 {
+  margin: 0 0 16px 0;
+  font-size: 16px;
+  color: #1e293b;
+  font-weight: 600;
+}
+
+.progress-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  background: #e2e8f0;
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #10b981, #059669);
+  border-radius: 4px;
+  transition: width 0.5s ease;
+  position: relative;
+}
+
+.progress-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+
+.progress-text {
+  font-size: 13px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+/* Validation Details */
+.validation-details {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.validation-categories {
+  display: flex;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 0;
+}
+
+.category-tab {
+  padding: 16px 20px;
+  background: none;
+  border: none;
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.category-tab:hover {
+  color: #334155;
+  background: rgba(16, 185, 129, 0.05);
+}
+
+.category-tab.active {
+  color: #10b981;
+  border-bottom-color: #10b981;
+  background: white;
+}
+
+.category-tab.active::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: #10b981;
+}
+
+.validation-results {
+  padding: 20px;
+  min-height: 300px;
+}
+
+/* No Validation State */
+.no-validation,
+.validation-success,
+.no-issues {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  text-align: center;
+  color: #64748b;
+}
+
+.no-validation-icon,
+.success-icon,
+.no-issues-icon {
+  font-size: 64px;
+  margin-bottom: 16px;
+  opacity: 0.6;
+}
+
+.validation-success {
+  color: #059669;
+}
+
+.validation-success .success-icon {
+  opacity: 1;
+}
+
+.no-validation h4,
+.validation-success h4,
+.no-issues h4 {
+  margin: 0 0 8px 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.no-validation p,
+.validation-success p,
+.no-issues p {
+  margin: 0;
+  font-size: 14px;
+  opacity: 0.8;
+}
+
+/* Validation Issues */
+.validation-issues {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.validation-issue {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 16px;
+  transition: all 0.2s ease;
+}
+
+.validation-issue.error {
+  border-left: 4px solid #dc2626;
+  background: #fef2f2;
+}
+
+.validation-issue.warning {
+  border-left: 4px solid #d97706;
+  background: #fffbeb;
+}
+
+.validation-issue.info {
+  border-left: 4px solid #2563eb;
+  background: #eff6ff;
+}
+
+.validation-issue:hover {
+  transform: translateX(4px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.issue-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.issue-icon {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.issue-title {
+  flex: 1;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.issue-severity {
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.issue-severity.error {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.issue-severity.warning {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.issue-severity.info {
+  background: #dbeafe;
+  color: #2563eb;
+}
+
+.issue-description {
+  font-size: 14px;
+  color: #4b5563;
+  line-height: 1.5;
+  margin-bottom: 8px;
+}
+
+.issue-meta {
+  display: flex;
+  gap: 16px;
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.issue-category {
+  text-transform: capitalize;
+  font-weight: 500;
+}
+
+/* Validation Insights */
+.validation-insights {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.validation-insights h4 {
+  margin: 0 0 16px 0;
+  font-size: 16px;
+  color: #1e293b;
+  font-weight: 600;
+}
+
+.insights-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.insights-placeholder {
+  text-align: center;
+  color: #64748b;
+  font-style: italic;
+  padding: 20px;
+}
+
+.insights-summary h5,
+.insights-recommendations h5 {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  color: #374151;
+  font-weight: 600;
+}
+
+.insights-summary p {
+  margin: 0;
+  font-size: 14px;
+  color: #4b5563;
+  line-height: 1.6;
+}
+
+.insights-recommendations ul {
+  margin: 0;
+  padding-left: 20px;
+  list-style-type: none;
+}
+
+.insights-recommendations li {
+  position: relative;
+  font-size: 14px;
+  color: #4b5563;
+  line-height: 1.6;
+  margin-bottom: 8px;
+}
+
+.insights-recommendations li::before {
+  content: '💡';
+  position: absolute;
+  left: -20px;
+  top: 0;
+}
+
+.ai-badge {
+  align-self: flex-start;
+  padding: 4px 8px;
+  background: #ede9fe;
+  color: #7c3aed;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Validation History */
+.validation-history {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.validation-history h4 {
+  margin: 0 0 16px 0;
+  font-size: 16px;
+  color: #1e293b;
+  font-weight: 600;
+}
+
+.history-chart {
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chart-placeholder {
+  color: #64748b;
+  font-style: italic;
+  text-align: center;
+}
+
+.history-chart-container {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 8px;
+  height: 100px;
+  width: 100%;
+}
+
+.chart-bar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 40px;
+  background: #e2e8f0;
+  border-radius: 4px 4px 0 0;
+  position: relative;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.chart-bar:hover {
+  background: #cbd5e0;
+  transform: scale(1.05);
+}
+
+.chart-bar.latest {
+  background: #10b981;
+}
+
+.chart-bar.latest:hover {
+  background: #059669;
+}
+
+.bar-value {
+  position: absolute;
+  top: -20px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.bar-time {
+  position: absolute;
+  bottom: -20px;
+  font-size: 9px;
+  color: #94a3b8;
+  transform: rotate(-45deg);
+  white-space: nowrap;
+}
+
+/* Mobile Responsive */
+@media (max-width: 1024px) {
+  .validation-dashboard {
+    top: 10px;
+    left: 10px;
+    right: 10px;
+    bottom: 10px;
+  }
+  
+  .validation-overview {
+    grid-template-columns: 1fr;
+  }
+  
+  .overview-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .validation-content {
+    padding: 16px;
+  }
+  
+  .validation-controls {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  
+  .validation-btn {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+  
+  .overview-cards {
+    grid-template-columns: 1fr;
+  }
+  
+  .overview-card {
+    padding: 16px;
+  }
+  
+  .card-value {
+    font-size: 24px;
+  }
+  
+  .validation-categories {
+    overflow-x: auto;
+    padding: 0;
+  }
+  
+  .category-tab {
+    padding: 12px 16px;
+    white-space: nowrap;
+    font-size: 13px;
+  }
+  
+  .validation-results {
+    padding: 16px;
+  }
+  
+  .issue-header {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  
+  .issue-title {
+    font-size: 14px;
+  }
+  
+  .issue-meta {
+    flex-direction: column;
+    gap: 4px;
+  }
+  
+  .history-chart-container {
+    gap: 4px;
+  }
+  
+  .chart-bar {
+    min-width: 30px;
+  }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+  .validation-dashboard {
+    background: #1e293b;
+    color: #e2e8f0;
+    border-color: #475569;
+  }
+  
+  .overview-card,
+  .validation-progress,
+  .validation-details,
+  .validation-insights,
+  .validation-history {
+    background: #334155;
+    border-color: #475569;
+  }
+  
+  .validation-categories {
+    background: #475569;
+    border-color: #64748b;
+  }
+  
+  .category-tab.active {
+    background: #334155;
+  }
+  
+  .validation-issue {
+    background: #475569;
+    border-color: #64748b;
+  }
+  
+  .validation-issue.error {
+    background: #450a0a;
+    border-left-color: #ef4444;
+  }
+  
+  .validation-issue.warning {
+    background: #451a03;
+    border-left-color: #f59e0b;
+  }
+  
+  .validation-issue.info {
+    background: #1e3a8a;
+    border-left-color: #3b82f6;
+  }
+  
+  .chart-bar {
+    background: #64748b;
+  }
+  
+  .chart-bar.latest {
+    background: #10b981;
+  }
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+  .validation-dashboard,
+  .overview-card,
+  .validation-details,
+  .validation-insights {
+    border: 2px solid #000;
+  }
+  
+  .validation-btn {
+    border: 2px solid currentColor;
+  }
+  
+  .validation-issue {
+    border: 2px solid currentColor;
+  }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  
+  .overview-card:hover,
+  .validation-issue:hover,
+  .chart-bar:hover {
+    transform: none;
+  }
+  
+  .progress-fill::after {
+    display: none;
+  }
+}

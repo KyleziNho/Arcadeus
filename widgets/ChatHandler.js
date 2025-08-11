@@ -192,15 +192,57 @@ class ChatHandler {
         systemHint: this.generateSystemHint(queryAnalysis, excelContext)
       };
 
-      // Route to appropriate processing based on query type
-      const response = await this.routeToSpecializedAgent(context);
+      // Route to multi-agent system for professional M&A analysis
+      const response = await this.processWithMultiAgentSystem(message, context);
       
       // Return formatted response for existing chat system
-      return this.enhanceResponseFormatting(response);
+      return response;
       
     } catch (error) {
       console.error('Error processing with multi-agent AI:', error);
       return 'I apologize, but I encountered an error while processing your request. Please try again or contact support if the issue persists.';
+    }
+  }
+
+  /**
+   * Process message with multi-agent system (Stage 2 implementation)
+   */
+  async processWithMultiAgentSystem(message, context) {
+    console.log('🎭 Processing with multi-agent system:', message);
+    
+    try {
+      // Check if multi-agent processor is available
+      if (typeof window.multiAgentProcessor === 'undefined') {
+        console.warn('⚠️ Multi-agent processor not available, falling back to standard processing');
+        return await this.routeToSpecializedAgent(context);
+      }
+      
+      // Process with multi-agent system
+      const result = await window.multiAgentProcessor.processQuery(message, {
+        excelContext: context.excelContext,
+        formData: context.formData,
+        chatHistory: context.chatHistory
+      });
+      
+      // Show completion status with results
+      if (window.enhancedStatusIndicators && result.metadata) {
+        window.enhancedStatusIndicators.showCompletion(result, result.metadata.processingTime);
+      }
+      
+      // Enhance response formatting for display
+      return this.enhanceResponseFormatting(result.response);
+      
+    } catch (error) {
+      console.error('❌ Multi-agent processing failed:', error);
+      
+      // Show error status
+      if (window.enhancedStatusIndicators) {
+        window.enhancedStatusIndicators.showError(error, 'fallback');
+      }
+      
+      // Fallback to original processing
+      console.log('🔄 Falling back to standard processing...');
+      return await this.routeToSpecializedAgent(context);
     }
   }
 

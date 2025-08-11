@@ -512,8 +512,8 @@ class DirectChatFormatter {
       // Convert **bold** to highlighted values (but be more specific)
       .replace(/\*\*([^*\n]+)\*\*/g, '<span class="value-highlight">$1</span>')
       
-      // Convert cell references to highlighted ranges
-      .replace(/\b([A-Z]+![A-Z]+\d+(?::[A-Z]+\d+)?)\b/g, '<span class="cell-highlight">$1</span>')
+      // Convert cell references to clickable highlighted ranges
+      .replace(/\b([A-Z]+![A-Z]+\d+(?::[A-Z]+\d+)?)\b/g, '<span class="cell-highlight clickable-cell" data-cell="$1" onclick="navigateToExcelCell(\'$1\')">$1</span>')
       
       // Convert financial figures to highlighted values
       .replace(/\$(\d{1,3}(?:,\d{3})*(?:\.\d{2})?(?:\s?million|\s?M|\s?k|\s?K)?)\b/g, '<span class="money-highlight">$$$1</span>')
