@@ -93,11 +93,14 @@ class ChatHandler {
       // Clear input
       chatInput.value = '';
       
+      // Show live search indicators (Hebbia-style)
+      this.showLiveSearchIndicators(message);
+      
       // Process message with AI
       const response = await this.processWithAI(message);
       
-      // Add assistant response
-      this.addChatMessage('assistant', response);
+      // Add assistant response with enhanced formatting
+      this.addFormattedChatMessage('assistant', response);
       
     } catch (error) {
       console.error('Error sending chat message:', error);
@@ -105,6 +108,7 @@ class ChatHandler {
     } finally {
       this.isProcessing = false;
       this.showLoading(false);
+      this.hideLiveSearchIndicators();
     }
   }
 
@@ -691,6 +695,233 @@ class ChatHandler {
     };
     
     return await this.callChatAPI(enhancedContext);
+  }
+
+  // Enhanced UI Methods for Modern Chat Interface
+
+  /**
+   * Show live search indicators (like screenshot)
+   */
+  showLiveSearchIndicators(message) {
+    const chatMessages = document.getElementById('chatMessages') || 
+                         document.getElementById('chatContainer');
+    
+    if (!chatMessages) return;
+
+    // Create live search indicators container
+    const indicatorsDiv = document.createElement('div');
+    indicatorsDiv.id = 'liveSearchIndicators';
+    indicatorsDiv.className = 'live-search-indicators';
+    
+    // Determine what the AI will search for based on query
+    const searchSteps = this.generateSearchSteps(message);
+    
+    let html = '';
+    searchSteps.forEach((step, index) => {
+      html += `
+        <div class="search-step" data-step="${index}">
+          <span class="search-icon">${step.icon}</span>
+          <span class="search-text">${step.text}</span>
+          ${step.highlight ? `<span class="search-highlight">${step.highlight}</span>` : ''}
+        </div>
+      `;
+    });
+    
+    indicatorsDiv.innerHTML = html;
+    chatMessages.appendChild(indicatorsDiv);
+    
+    // Animate search steps
+    this.animateSearchSteps(searchSteps.length);
+  }
+
+  /**
+   * Generate search steps based on query type
+   */
+  generateSearchSteps(message) {
+    const lowerMessage = message.toLowerCase();
+    const steps = [];
+
+    if (lowerMessage.includes('moic') || lowerMessage.includes('multiple')) {
+      steps.push(
+        { icon: '🔍', text: 'Search "MOIC calculation"', highlight: null },
+        { icon: '📊', text: 'Looking up precedents', highlight: 'FCF!B23' },
+        { icon: '👁️', text: 'Looking up values', highlight: 'FCF!B18:I19' }
+      );
+    } else if (lowerMessage.includes('irr')) {
+      steps.push(
+        { icon: '🔍', text: 'Search "IRR calculation"', highlight: null },
+        { icon: '📊', text: 'Looking up precedents', highlight: 'FCF!B21:B22' },
+        { icon: '👁️', text: 'Looking up cash flows', highlight: 'FCF!B19:I19' }
+      );
+    } else if (lowerMessage.includes('revenue')) {
+      steps.push(
+        { icon: '🔍', text: 'Search "total revenue"', highlight: null },
+        { icon: '📊', text: 'Looking up precedents', highlight: 'Revenue!C430:T444' },
+        { icon: '👁️', text: 'Looking up values', highlight: 'Revenue!C310:T325' }
+      );
+    } else if (lowerMessage.includes('formula') || lowerMessage.includes('calculation')) {
+      steps.push(
+        { icon: '🔍', text: 'Search "Excel formulas"', highlight: null },
+        { icon: '🔢', text: 'Analyzing calculations', highlight: null },
+        { icon: '👁️', text: 'Looking up dependencies', highlight: null }
+      );
+    } else {
+      // Generic search steps
+      steps.push(
+        { icon: '🔍', text: 'Analyzing Excel data', highlight: null },
+        { icon: '📊', text: 'Looking up relevant metrics', highlight: null },
+        { icon: '👁️', text: 'Looking up values', highlight: null }
+      );
+    }
+
+    return steps;
+  }
+
+  /**
+   * Animate search steps progressively
+   */
+  animateSearchSteps(stepCount) {
+    let currentStep = 0;
+    const interval = setInterval(() => {
+      const stepElement = document.querySelector(`[data-step="${currentStep}"]`);
+      if (stepElement) {
+        stepElement.classList.add('active');
+      }
+      
+      currentStep++;
+      if (currentStep >= stepCount) {
+        clearInterval(interval);
+      }
+    }, 800); // 800ms between each step
+  }
+
+  /**
+   * Hide live search indicators
+   */
+  hideLiveSearchIndicators() {
+    const indicators = document.getElementById('liveSearchIndicators');
+    if (indicators) {
+      indicators.style.opacity = '0';
+      setTimeout(() => {
+        indicators.remove();
+      }, 300);
+    }
+  }
+
+  /**
+   * Add formatted chat message with enhanced styling
+   */
+  addFormattedChatMessage(role, content) {
+    console.log(`${role.toUpperCase()}: ${content}`);
+    
+    // Process content for enhanced formatting
+    const formattedContent = this.enhanceResponseFormatting(content);
+    
+    this.chatMessages.push({ 
+      role, 
+      content: formattedContent, 
+      timestamp: new Date().toISOString() 
+    });
+    
+    // Update chat display
+    this.updateChatDisplay();
+    
+    // Log to console for development
+    const prefix = role === 'user' ? '👤 User:' : '🤖 Assistant:';
+    console.log(`${prefix} ${content}`);
+  }
+
+  /**
+   * Enhanced response formatting - convert markdown to modern chat styling
+   */
+  enhanceResponseFormatting(content) {
+    if (!content || typeof content !== 'string') return content;
+
+    // Remove excessive markdown formatting
+    let formatted = content
+      // Remove markdown headers and make them simple bold text
+      .replace(/### ([^#\n]+)/g, '<div class="section-header">$1</div>')
+      .replace(/## ([^#\n]+)/g, '<div class="section-header">$1</div>')
+      
+      // Convert **bold** to highlighted values
+      .replace(/\*\*([^*]+)\*\*/g, '<span class="value-highlight">$1</span>')
+      
+      // Convert cell references to highlighted ranges
+      .replace(/([A-Z]+![A-Z]+\d+(?::[A-Z]+\d+)?)/g, '<span class="cell-highlight">$1</span>')
+      
+      // Convert percentages and financial figures to highlighted values
+      .replace(/(\$[\d,]+(?:\.\d{2})?(?:\s?million|\s?M)?)/g, '<span class="money-highlight">$1</span>')
+      .replace(/(\d+(?:\.\d+)?%)/g, '<span class="percentage-highlight">$1</span>')
+      
+      // Convert numbered lists to cleaner format
+      .replace(/\d+\.\s*\*\*([^*]+)\*\*:?\s*([^\n]+)/g, '<div class="insight-item"><span class="insight-label">$1</span>$2</div>')
+      
+      // Convert bullet points to cleaner format
+      .replace(/[-•]\s*\*\*([^*]+)\*\*:?\s*([^\n]+)/g, '<div class="insight-item"><span class="insight-label">$1</span>$2</div>')
+      .replace(/[-•]\s*([^\n]+)/g, '<div class="bullet-item">$1</div>')
+      
+      // Remove LaTeX formatting
+      .replace(/\\\[[\s\S]*?\\\]/g, '')
+      .replace(/\\\([\s\S]*?\\\)/g, '')
+      
+      // Clean up excessive line breaks
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
+
+    return formatted;
+  }
+
+  /**
+   * Update chat display with enhanced formatting
+   */
+  updateChatDisplay() {
+    // Look for chat display elements
+    const chatMessages = document.getElementById('chatMessages');
+    const chatContainer = document.getElementById('chatContainer');
+    
+    if (!chatMessages && !chatContainer) {
+      // No chat interface, just log
+      return;
+    }
+
+    const displayElement = chatMessages || chatContainer;
+    
+    // Clear existing messages
+    displayElement.innerHTML = '';
+    
+    // Add all messages with enhanced formatting
+    this.chatMessages.forEach(msg => {
+      const messageDiv = document.createElement('div');
+      messageDiv.className = `chat-message ${msg.role}`;
+      
+      if (msg.role === 'user') {
+        messageDiv.innerHTML = `
+          <div class="message-content user-message">
+            ${this.escapeHtml(msg.content)}
+          </div>
+        `;
+      } else {
+        messageDiv.innerHTML = `
+          <div class="message-content assistant-message">
+            ${msg.content} <!-- Already formatted HTML -->
+          </div>
+        `;
+      }
+      
+      displayElement.appendChild(messageDiv);
+    });
+    
+    // Scroll to bottom
+    displayElement.scrollTop = displayElement.scrollHeight;
+  }
+
+  /**
+   * Escape HTML for user messages
+   */
+  escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
   }
 }
 
