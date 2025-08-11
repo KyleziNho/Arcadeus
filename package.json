@@ -4,10 +4,11 @@
   "description": "M&A Excel Add-in with AI-powered autofill and MCP integration",
   "main": "index.html",
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^0.6.0",
+    "@modelcontextprotocol/sdk": "^0.6.1",
     "firebase": "^12.0.0",
     "node-fetch": "^2.6.12",
-    "uuid": "^9.0.1"
+    "uuid": "^9.0.1",
+    "zod": "^4.0.17"
   },
   "devDependencies": {
     "@types/office-js": "^1.0.0",
