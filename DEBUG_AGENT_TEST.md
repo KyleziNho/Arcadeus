@@ -3,11 +3,22 @@
 ## Test Messages to Verify Agent Functionality
 
 ### Direct Excel Actions (should trigger DirectExcelActions.js)
-1. "Change the header colors to green"
-2. "Make the headers bold"
-3. "Change the background color to blue"
-4. "Format the cells with red background"
-5. "Highlight the selected cells"
+1. "Change the header colors to green" ✅ 
+2. "Make the headers bold" ✅
+3. "Change the background color to blue" ✅
+4. "Format the cells with red background" ✅
+5. "Highlight the selected cells" ✅
+6. "Change the header color to green" ✅
+7. "Make header bold" ✅
+8. "Format the header" ✅
+9. "Color the headers green" ✅
+10. "Change color to red" ✅
+
+### Conditional Formatting Actions
+1. "Highlight negative numbers in red" (should create cellValue conditional format)
+2. "Create a color scale from blue to red" (should create colorScale conditional format)
+3. "Highlight values greater than zero in green"
+4. "Apply conditional formatting based on value"
 
 ### Analysis Requests (should trigger EnhancedExcelAgent.js)
 1. "What data is in this spreadsheet?"
