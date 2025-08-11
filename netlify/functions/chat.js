@@ -29,7 +29,40 @@ exports.handler = async (event, context) => {
 
   try {
     // Parse request body
-    const { message, autoFillMode, batchType, systemPrompt, temperature, maxTokens } = JSON.parse(event.body);
+    let requestData;
+    try {
+      requestData = JSON.parse(event.body);
+    } catch (parseError) {
+      console.error('Failed to parse request body:', event.body);
+      throw new Error(`Invalid request body: ${parseError.message}`);
+    }
+    
+    // Handle different request formats
+    let message, autoFillMode, batchType, systemPrompt, temperature, maxTokens, context;
+    
+    // Check if this is a direct message (simple format)
+    if (typeof requestData.message === 'string') {
+      message = requestData.message;
+      autoFillMode = requestData.autoFillMode;
+      batchType = requestData.batchType;
+      systemPrompt = requestData.systemPrompt;
+      temperature = requestData.temperature;
+      maxTokens = requestData.maxTokens;
+      context = requestData.context;
+    } else {
+      // Handle ChatHandler format where everything might be nested
+      console.log('Request structure:', Object.keys(requestData));
+      message = requestData.message || 'No message found';
+      autoFillMode = requestData.autoFillMode;
+      batchType = requestData.batchType || 'chat';
+      systemPrompt = requestData.systemPrompt;
+      temperature = requestData.temperature;
+      maxTokens = requestData.maxTokens;
+      context = requestData;
+    }
+    
+    console.log('Extracted message:', message);
+    console.log('Message type:', typeof message);
     
     console.log('📝 Chat function called with:', {
       messageLength: message?.length,
@@ -59,6 +92,11 @@ Give specific, data-driven insights in natural language.
 Be helpful and analytical while maintaining a conversational tone.`;
     }
 
+    // Ensure message is a string
+    if (!message || typeof message !== 'string') {
+      throw new Error('Message is required and must be a string');
+    }
+
     // Prepare OpenAI request
     const openaiData = {
       model: "gpt-3.5-turbo",
@@ -69,18 +107,25 @@ Be helpful and analytical while maintaining a conversational tone.`;
         },
         {
           role: "user",
-          content: message
+          content: String(message) // Ensure it's a string
         }
       ],
       temperature: temperature || 0.7,
       max_tokens: maxTokens || 3000
     };
 
-    console.log('🤖 Calling OpenAI API...');
+    console.log('🤖 Calling OpenAI API with data:', JSON.stringify(openaiData, null, 2));
 
     // Make request to OpenAI
     const response = await new Promise((resolve, reject) => {
-      const data = JSON.stringify(openaiData);
+      let data;
+      try {
+        data = JSON.stringify(openaiData);
+        console.log('📦 JSON payload size:', data.length, 'characters');
+      } catch (jsonError) {
+        reject(new Error(`Failed to stringify OpenAI request: ${jsonError.message}`));
+        return;
+      }
       
       const options = {
         hostname: 'api.openai.com',
@@ -149,7 +194,8 @@ Be helpful and analytical while maintaining a conversational tone.`;
       },
       body: JSON.stringify({
         success: true,
-        content: content,
+        response: content, // ChatHandler expects 'response' field
+        content: content,  // Keep both for compatibility
         usage: response.usage
       })
     };
