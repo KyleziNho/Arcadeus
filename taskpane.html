@@ -26,6 +26,8 @@
     <script src="widgets/EnhancedExcelAgent.js"></script>
     <script src="widgets/AgentEvaluator.js"></script>
     <script src="widgets/ConversationStateManager.js"></script>
+    <script src="widgets/DirectExcelActions.js"></script>
+    <script src="widgets/SafeExcelContext.js"></script>
     <script>
         // Verify ExcelGenerator loaded
         console.log('🔧 Checking ExcelGenerator availability...');
@@ -979,8 +981,17 @@
 
         async function readExcelContextForMessage() {
             try {
-                console.log('Reading Excel context for message...');
+                console.log('Reading Excel context for message using SafeExcelContext...');
                 
+                // Use the safe Excel context reader
+                if (window.safeExcelContext) {
+                    chatContext = await window.safeExcelContext.getChatContext();
+                    console.log('✅ Got safe Excel context:', chatContext.summary);
+                    return;
+                }
+                
+                // Fallback to old method
+                console.warn('SafeExcelContext not available, using fallback');
                 if (typeof Excel === 'undefined') {
                     console.log('Excel API not available');
                     chatContext = { error: 'Excel API not available' };
@@ -1816,11 +1827,30 @@
                 // Create streaming message container
                 const streamingMessage = createStreamingMessageContainer();
                 
-                // Use Enhanced Excel Agent for all requests
-                if (window.EnhancedExcelAgent) {
-                    console.log('🚀 Using Enhanced Excel Agent for this request');
+                // Check if this is an Excel action request first
+                if (window.directExcelActions && window.directExcelActions.isExcelActionRequest(userMessage)) {
+                    console.log('🎯 Using Direct Excel Actions for this request');
                     
-                    updateStreamingMessage(streamingMessage, '🧠 Processing request with AI agent...', false);
+                    updateStreamingMessage(streamingMessage, '🔧 Performing Excel action...', false);
+                    
+                    try {
+                        const actionResult = await window.directExcelActions.executeAction(userMessage);
+                        const formattedResponse = window.directExcelActions.formatResponse(actionResult);
+                        
+                        updateStreamingMessage(streamingMessage, formattedResponse, true);
+                        return;
+                    } catch (actionError) {
+                        console.error('Direct Excel action error:', actionError);
+                        updateStreamingMessage(streamingMessage, '⚠️ Excel action failed, falling back to analysis...', false);
+                        // Continue with normal processing
+                    }
+                }
+                
+                // Try Enhanced Excel Agent for complex requests
+                else if (window.EnhancedExcelAgent && (userMessage.toLowerCase().includes('analyze') || userMessage.toLowerCase().includes('what'))) {
+                    console.log('🚀 Using Enhanced Excel Agent for analysis');
+                    
+                    updateStreamingMessage(streamingMessage, '🧠 Analyzing with AI agent...', false);
                     
                     try {
                         // Initialize enhanced agent if not already done
@@ -1831,21 +1861,12 @@
                         
                         const agentResult = await window.enhancedAgent.processRequest(userMessage, {
                             excelContext: chatContext,
-                            selectedRange: null // TODO: get actual selected range
+                            selectedRange: null
                         });
                         
                         let formattedResponse;
                         if (agentResult.success) {
-                            if (agentResult.type === 'format_cells_success') {
-                                formattedResponse = `<div class="action-success">${agentResult.message}</div>`;
-                                if (agentResult.actionsTaken) {
-                                    formattedResponse += `<h4>📍 Changes Made:</h4><ul class="action-changes-list">`;
-                                    agentResult.actionsTaken.forEach(action => {
-                                        formattedResponse += `<li>${action}</li>`;
-                                    });
-                                    formattedResponse += `</ul>`;
-                                }
-                            } else if (agentResult.type === 'analyze_data_success') {
+                            if (agentResult.type === 'analyze_data_success') {
                                 formattedResponse = `<div class="response-summary">${agentResult.message}</div>`;
                                 if (agentResult.insights && agentResult.insights.length > 0) {
                                     formattedResponse += `<h4>💡 Key Insights:</h4><ul>`;
@@ -1865,12 +1886,12 @@
                         return;
                     } catch (agentError) {
                         console.error('Enhanced agent error:', agentError);
-                        updateStreamingMessage(streamingMessage, '⚠️ Agent processing failed, falling back to analysis...', false);
-                        // Continue with normal AI processing
+                        updateStreamingMessage(streamingMessage, '⚠️ Agent analysis failed, falling back to standard analysis...', false);
+                        // Continue with normal processing
                     }
                 }
                 
-                // Fallback: Check for basic action agent if Enhanced Agent not available
+                // Fallback: Basic action agent if other systems not available
                 else if (await shouldUseActionAgent(userMessage)) {
                     console.log('🤖 Using Basic Excel Action Agent for this request');
                     
