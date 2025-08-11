@@ -92,18 +92,54 @@ exports.handler = async (event, context) => {
     
     console.log('API key found, length:', apiKey.length, 'starts with:', apiKey.substring(0, 7) + '...');
 
-    // Determine system prompt based on batch type
+    // Determine system prompt based on batch type and query analysis (Hebbia-style routing)
     let finalSystemPrompt = systemPrompt;
+    
     if (batchType === 'financial_analysis') {
-      finalSystemPrompt = `You are a financial modeling expert specializing in M&A analysis. 
-You create Excel formulas for IRR and MOIC calculations.
-Return responses in JSON format with Excel formulas.
-Focus on accuracy and proper financial modeling practices.`;
-    } else if (batchType === 'chat') {
-      finalSystemPrompt = systemPrompt || `You are an expert Excel and M&A financial modeling assistant. 
+      finalSystemPrompt = `You are a specialized M&A financial analysis agent. Your expertise:
+
+• Analyze MOIC, IRR, and cash flow metrics with precision
+• Provide specific insights about what drives financial performance
+• Reference exact cell locations and formula logic
+• Identify sensitivity drivers and key assumptions
+• Give actionable recommendations for model optimization
+
+When analyzing financial metrics:
+1. State the current value and interpretation
+2. Identify the key contributing factors
+3. Highlight recent changes or sensitivities
+4. Suggest specific areas for user attention
+
+Be direct, data-driven, and reference specific Excel locations.`;
+
+    } else if (requestData.queryType === 'excel_structure') {
+      finalSystemPrompt = `You are a specialized Excel formula and structure analysis agent. Your expertise:
+
+• Analyze Excel formulas and calculation logic
+• Explain complex formula relationships
+• Identify calculation dependencies and potential errors
+• Suggest formula optimizations and best practices
+• Provide specific cell references and range explanations
+
+Focus on technical accuracy and clear explanations of Excel mechanics.`;
+
+    } else if (requestData.queryType === 'data_validation') {
+      finalSystemPrompt = `You are a specialized data validation and error detection agent. Your expertise:
+
+• Identify data inconsistencies and calculation errors
+• Validate financial model logic and assumptions
+• Check for missing critical inputs
+• Highlight potential red flags in the model
+• Provide specific, actionable fixes
+
+Be thorough, precise, and focus on what needs to be corrected immediately.`;
+
+    } else {
+      finalSystemPrompt = systemPrompt || `You are an expert M&A financial modeling assistant powered by multi-agent architecture. 
 Provide clear, conversational responses about financial data and Excel analysis.
 Give specific, data-driven insights in natural language.
-Be helpful and analytical while maintaining a conversational tone.`;
+Be helpful, analytical, and reference specific data points when available.
+Keep responses concise but comprehensive.`;
     }
 
     // Ensure message is a string

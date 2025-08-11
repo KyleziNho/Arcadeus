@@ -2,10 +2,11 @@ class ChatHandler {
   constructor() {
     this.chatMessages = [];
     this.isProcessing = false;
+    this.excelAnalyzer = new ExcelLiveAnalyzer();
   }
 
-  initialize() {
-    console.log('Initializing chat handler...');
+  async initialize() {
+    console.log('Initializing Hebbia-inspired chat handler...');
     
     // Find chat elements
     const sendChatBtn = document.getElementById('sendChatBtn');
@@ -33,7 +34,33 @@ class ChatHandler {
       console.log('Chat input listeners added');
     }
     
-    console.log('✅ Chat handler initialized');
+    // Initialize Hebbia-style live monitoring
+    try {
+      if (this.excelAnalyzer) {
+        console.log('🔄 Starting live Excel monitoring for real-time analysis...');
+        
+        // Add change listener for proactive insights
+        this.excelAnalyzer.addChangeListener((eventType, data) => {
+          console.log(`📊 Excel change detected: ${eventType}`, data);
+          
+          // Cache invalidation and proactive analysis
+          if (eventType === 'data_change' && data.updatedData) {
+            console.log('💡 Proactive analysis: Excel data changed, updating context cache');
+          }
+        });
+        
+        // Start the monitoring system
+        await this.excelAnalyzer.startLiveMonitoring();
+        console.log('✅ Live Excel monitoring started');
+      } else {
+        console.log('⚠️ ExcelLiveAnalyzer not available, using basic mode');
+      }
+    } catch (error) {
+      console.error('❌ Failed to start live monitoring:', error);
+      console.log('📋 Continuing with basic chat functionality');
+    }
+    
+    console.log('✅ Advanced chat handler initialized with multi-agent architecture');
   }
 
   async sendChatMessage() {
@@ -82,17 +109,29 @@ class ChatHandler {
   }
 
   async processWithAI(message) {
-    console.log('Processing message with AI:', message);
+    console.log('🎯 Processing message with Hebbia-inspired multi-agent approach:', message);
     
     try {
-      // Get current Excel context if available
-      let excelContext = '';
+      // Use ExcelLiveAnalyzer for comprehensive, fast context
+      let excelContext = null;
       try {
-        if (window.excelGenerator) {
-          excelContext = await this.getExcelContext();
+        if (this.excelAnalyzer) {
+          console.log('📊 Getting optimized Excel context for AI...');
+          excelContext = await this.excelAnalyzer.getOptimizedContextForAI();
+          console.log('✅ Excel context retrieved:', {
+            structure: excelContext?.structure,
+            hasMetrics: !!excelContext?.financialMetrics,
+            hasSummary: !!excelContext?.summary
+          });
         }
       } catch (error) {
-        console.log('Could not get Excel context:', error);
+        console.log('Could not get comprehensive Excel context:', error);
+        // Fallback to basic context
+        try {
+          excelContext = await this.getExcelContext();
+        } catch (fallbackError) {
+          console.log('Fallback context also failed:', fallbackError);
+        }
       }
 
       // Get current form data
@@ -120,22 +159,29 @@ class ChatHandler {
         }
       }
 
-      // Prepare context for AI
+      // Hebbia-inspired agent coordination: Analyze query type and route accordingly
+      const queryAnalysis = this.analyzeQueryType(message);
+      console.log('🔍 Query analysis:', queryAnalysis);
+
+      // Prepare optimized context for AI (Hebbia-style: send only relevant data)
       const context = {
         message: message,
+        queryType: queryAnalysis.type,
+        priority: queryAnalysis.priority,
         excelContext: excelContext,
-        formData: formData,
-        uploadedFiles: filesInfo,
-        chatHistory: this.chatMessages.slice(-5) // Last 5 messages for context
+        formData: queryAnalysis.needsFormData ? formData : {},
+        uploadedFiles: queryAnalysis.needsFiles ? filesInfo : [],
+        chatHistory: this.chatMessages.slice(-3), // Reduced for faster processing
+        systemHint: this.generateSystemHint(queryAnalysis, excelContext)
       };
 
-      // Call chat API
-      const response = await this.callChatAPI(context);
+      // Route to appropriate processing based on query type
+      const response = await this.routeToSpecializedAgent(context);
       
       return response;
       
     } catch (error) {
-      console.error('Error processing with AI:', error);
+      console.error('Error processing with multi-agent AI:', error);
       return 'I apologize, but I encountered an error while processing your request. Please try again or contact support if the issue persists.';
     }
   }
@@ -430,6 +476,221 @@ class ChatHandler {
     ];
     
     return `Here are some suggestions to improve your model: ${suggestions.join('. ')}.`;
+  }
+
+  // Hebbia-inspired multi-agent methods
+
+  /**
+   * Analyze query type for intelligent routing (Hebbia's Decomposition Agent)
+   */
+  analyzeQueryType(message) {
+    const lowerMessage = message.toLowerCase();
+    
+    // Financial Analysis Queries (High Priority)
+    if (lowerMessage.includes('moic') || lowerMessage.includes('multiple') || 
+        lowerMessage.includes('irr') || lowerMessage.includes('return')) {
+      return {
+        type: 'financial_analysis',
+        priority: 'high',
+        needsFormData: false,
+        needsFiles: false,
+        specialization: 'financial_metrics'
+      };
+    }
+
+    // Excel Structure Queries
+    if (lowerMessage.includes('formula') || lowerMessage.includes('calculation') ||
+        lowerMessage.includes('cell') || lowerMessage.includes('range')) {
+      return {
+        type: 'excel_structure',
+        priority: 'high',
+        needsFormData: false,
+        needsFiles: false,
+        specialization: 'excel_formulas'
+      };
+    }
+
+    // Data Validation Queries
+    if (lowerMessage.includes('error') || lowerMessage.includes('wrong') ||
+        lowerMessage.includes('validate') || lowerMessage.includes('check')) {
+      return {
+        type: 'data_validation',
+        priority: 'medium',
+        needsFormData: true,
+        needsFiles: false,
+        specialization: 'validation'
+      };
+    }
+
+    // Form/Input Queries
+    if (lowerMessage.includes('revenue') || lowerMessage.includes('cost') ||
+        lowerMessage.includes('expense') || lowerMessage.includes('input')) {
+      return {
+        type: 'form_assistance',
+        priority: 'medium',
+        needsFormData: true,
+        needsFiles: false,
+        specialization: 'form_guidance'
+      };
+    }
+
+    // File Upload Queries
+    if (lowerMessage.includes('upload') || lowerMessage.includes('file') ||
+        lowerMessage.includes('extract') || lowerMessage.includes('autofill')) {
+      return {
+        type: 'file_processing',
+        priority: 'medium',
+        needsFormData: false,
+        needsFiles: true,
+        specialization: 'data_extraction'
+      };
+    }
+
+    // General/Conversational
+    return {
+      type: 'general',
+      priority: 'low',
+      needsFormData: false,
+      needsFiles: false,
+      specialization: 'conversation'
+    };
+  }
+
+  /**
+   * Generate optimized system hints (Hebbia's Meta-Prompting Agent)
+   */
+  generateSystemHint(queryAnalysis, excelContext) {
+    const baseHint = "You are an expert M&A financial modeling assistant.";
+    
+    switch (queryAnalysis.type) {
+      case 'financial_analysis':
+        return `${baseHint} You specialize in analyzing financial metrics like MOIC, IRR, and cash flows. 
+                Provide specific, data-driven insights with exact cell references and calculations. 
+                Current Excel structure: ${excelContext?.structure || 'unknown'}.
+                ${excelContext?.summary || ''}`;
+
+      case 'excel_structure':
+        return `${baseHint} You specialize in Excel formulas and cell relationships. 
+                Provide detailed formula explanations and suggest optimizations.
+                Focus on calculation logic and dependencies.`;
+
+      case 'data_validation':
+        return `${baseHint} You specialize in data validation and error detection. 
+                Identify inconsistencies and provide actionable fixes.
+                Be precise about what's wrong and how to correct it.`;
+
+      case 'form_assistance':
+        return `${baseHint} You specialize in guiding users through M&A model inputs. 
+                Provide clear guidance on what data to enter and why.
+                Reference industry standards and best practices.`;
+
+      case 'file_processing':
+        return `${baseHint} You specialize in document analysis and data extraction. 
+                Help users understand what data was extracted and how to verify it.
+                Suggest additional data that might be needed.`;
+
+      default:
+        return `${baseHint} Provide conversational, helpful responses about M&A financial modeling. 
+                Keep responses concise and actionable.`;
+    }
+  }
+
+  /**
+   * Route to specialized processing (Hebbia's Multi-Agent Orchestrator)
+   */
+  async routeToSpecializedAgent(context) {
+    console.log(`🤖 Routing to ${context.queryType} specialist agent...`);
+
+    switch (context.queryType) {
+      case 'financial_analysis':
+        return await this.processFinancialAnalysis(context);
+      
+      case 'excel_structure':
+        return await this.processExcelStructure(context);
+      
+      case 'data_validation':
+        return await this.processDataValidation(context);
+        
+      default:
+        return await this.callChatAPI(context);
+    }
+  }
+
+  /**
+   * Specialized Financial Analysis Agent (Hebbia-style)
+   */
+  async processFinancialAnalysis(context) {
+    console.log('💰 Financial Analysis Agent processing query...');
+    
+    // Pre-process financial metrics if available
+    if (context.excelContext?.financialMetrics) {
+      const metrics = context.excelContext.financialMetrics;
+      
+      // Add specific financial context to message
+      let enhancedMessage = context.message;
+      
+      if (metrics.moic) {
+        enhancedMessage += `\n\nCurrent MOIC: ${metrics.moic.value} (${metrics.moic.interpretation}) at ${metrics.moic.location}`;
+      }
+      
+      if (metrics.irr) {
+        enhancedMessage += `\nCurrent IRR: ${metrics.irr.value} (${metrics.irr.interpretation}) at ${metrics.irr.location}`;
+      }
+
+      // Create enhanced context for financial analysis
+      const enhancedContext = {
+        ...context,
+        message: enhancedMessage,
+        batchType: 'financial_analysis',
+        temperature: 0.3 // Lower temperature for more precise financial analysis
+      };
+      
+      return await this.callChatAPI(enhancedContext);
+    }
+    
+    // Fallback to regular processing if no financial metrics available
+    return await this.callChatAPI(context);
+  }
+
+  /**
+   * Specialized Excel Structure Agent
+   */
+  async processExcelStructure(context) {
+    console.log('📊 Excel Structure Agent processing query...');
+    
+    if (context.excelContext?.keyCalculations) {
+      // Add calculation details to context
+      const calculations = Object.entries(context.excelContext.keyCalculations)
+        .slice(0, 5) // Limit to top 5 calculations for performance
+        .map(([cell, data]) => `${cell}: ${data.formula}`)
+        .join('\n');
+      
+      const enhancedContext = {
+        ...context,
+        message: `${context.message}\n\nKey Calculations:\n${calculations}`,
+        temperature: 0.2 // Very precise for formula work
+      };
+      
+      return await this.callChatAPI(enhancedContext);
+    }
+    
+    return await this.callChatAPI(context);
+  }
+
+  /**
+   * Specialized Data Validation Agent
+   */
+  async processDataValidation(context) {
+    console.log('✅ Data Validation Agent processing query...');
+    
+    // Include both Excel context and form data for comprehensive validation
+    const enhancedContext = {
+      ...context,
+      systemPrompt: `You are a data validation specialist. Analyze the provided Excel data and form inputs for inconsistencies, errors, or missing critical information. Provide specific, actionable feedback.`,
+      temperature: 0.1 // Very low temperature for precise validation
+    };
+    
+    return await this.callChatAPI(enhancedContext);
   }
 }
 
