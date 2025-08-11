@@ -3664,3 +3664,162 @@ select {
 .chat-messages-container:has(.chat-message-modern) .chat-welcome {
   display: none;
 }
+
+/* Modern Minimalist Chat UI Updates */
+.enhanced-chat-page {
+  background: #ffffff !important;
+}
+
+.chat-messages-container {
+  background: #ffffff !important;
+  padding: 2rem 1rem 140px 1rem !important;
+}
+
+.chat-welcome .welcome-content {
+  text-align: center;
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 3rem 1rem;
+}
+
+.chat-welcome h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+/* Centered User Messages with Light Grey Background */
+.chat-message-modern.user-message {
+  justify-content: center !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  margin: 2rem auto 1rem auto !important;
+  max-width: 600px !important;
+}
+
+.user-message .message-content-modern {
+  background: #f3f4f6 !important;
+  color: #374151 !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 12px !important;
+  padding: 1rem 1.5rem !important;
+  font-size: 0.95rem !important;
+  line-height: 1.5 !important;
+  text-align: center !important;
+  box-shadow: none !important;
+}
+
+/* Remove user avatar */
+.user-message .message-avatar-modern {
+  display: none !important;
+}
+
+/* AI Response - Plain text underneath user message */
+.chat-message-modern.assistant-message {
+  justify-content: center !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  margin: 0 auto 2rem auto !important;
+  max-width: 600px !important;
+}
+
+.assistant-message .message-avatar-modern {
+  display: none !important;
+}
+
+.assistant-message .message-content-modern {
+  background: transparent !important;
+  border: none !important;
+  padding: 1rem 0 !important;
+  box-shadow: none !important;
+  color: #374151 !important;
+  font-size: 0.95rem !important;
+  line-height: 1.6 !important;
+  text-align: left !important;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+/* Chat Input - Excel Green Theme */
+.chat-input-container-fixed {
+  background: #ffffff !important;
+  border-top: 1px solid #e5e7eb !important;
+  padding: 1rem !important;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05) !important;
+}
+
+.input-wrapper-modern {
+  max-width: 600px !important;
+  margin: 0 auto !important;
+  background: #f9fafb !important;
+  border: 1px solid #d1d5db !important;
+  border-radius: 24px !important;
+  padding: 0.75rem 1rem !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+}
+
+.input-wrapper-modern:focus-within {
+  border-color: #16a34a !important;
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.1) !important;
+}
+
+.chat-input-modern {
+  font-size: 0.95rem !important;
+  color: #374151 !important;
+  padding: 0.25rem 0 !important;
+}
+
+.chat-input-modern::placeholder {
+  color: #9ca3af !important;
+}
+
+/* Excel Green Send Button - Rounded Rectangle */
+.send-btn-modern {
+  background: #16a34a !important;
+  border-radius: 16px !important;
+  width: 40px !important;
+  height: 32px !important;
+  margin-left: 0.75rem !important;
+}
+
+.send-btn-modern:hover {
+  background: #15803d !important;
+  transform: none !important;
+  box-shadow: 0 2px 4px rgba(22, 163, 74, 0.3) !important;
+}
+
+.send-btn-modern:disabled {
+  background: #9ca3af !important;
+  opacity: 1 !important;
+}
+
+/* Remove input footer */
+.input-footer {
+  display: none !important;
+}
+
+/* Suggestion chips styling */
+.suggestion-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+  margin-top: 1rem;
+}
+
+.chip {
+  background: #f3f4f6 !important;
+  border: 1px solid #d1d5db !important;
+  color: #374151 !important;
+  padding: 0.5rem 1rem !important;
+  border-radius: 20px !important;
+  font-size: 0.875rem !important;
+  transition: all 0.2s ease !important;
+}
+
+.chip:hover {
+  background: #e5e7eb !important;
+  border-color: #9ca3af !important;
+}
