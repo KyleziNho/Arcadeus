@@ -14,6 +14,7 @@
     <link rel="stylesheet" href="styles/professional-chat-interface.css">
     <link rel="stylesheet" href="styles/scenario-analysis-engine.css">
     <link rel="stylesheet" href="styles/model-validation-dashboard.css">
+    <link rel="stylesheet" href="styles/formatted-chat-responses.css">
     <!-- Widget Scripts -->
     <script src="widgets/ExcelGenerator.js?v=19"></script>
     <script>
@@ -431,8 +432,8 @@
 
         <!-- Chat Page -->
         <div id="chatPage" class="page-content enhanced-chat-page" style="display: none;">
-            <!-- Enhanced Chat Header -->
-            <div class="chat-header">
+            <!-- Enhanced Chat Header - Hidden for minimalist design -->
+            <div class="chat-header" style="display: none;">
                 <div class="chat-header-left">
                     <h3>AI Assistant</h3>
                     <span id="selectionIndicator" class="selection-indicator">No cell selected</span>
@@ -484,8 +485,8 @@
                 </div>
             </div>
             
-            <!-- Excel Context Bar -->
-            <div class="excel-context-bar">
+            <!-- Excel Context Bar - Hidden for minimalist design -->
+            <div class="excel-context-bar" style="display: none;">
                 <div class="context-item">
                     <span class="context-label">📊 Cell:</span>
                     <span id="selectedRange" class="context-value selected-cell">Click on Excel cell...</span>
@@ -1794,7 +1795,25 @@ CONVERSATION HISTORY:
 ${conversationHistory.slice(-10).map(msg => `${msg.role}: ${msg.content}`).join('\n')}`;
                     }
                     
-                    const fullPrompt = `You are an expert M&A financial analyst helping with an Excel-based deal model. 
+                    const fullPrompt = `You are an expert M&A financial analyst helping with an Excel-based deal model.
+
+RESPONSE FORMAT REQUIREMENT:
+For financial analysis questions about MOIC, IRR, returns, or metrics, respond with ONLY a structured JSON object:
+{
+  "summary": "Brief overview of findings",
+  "key_metrics": [
+    {"metric": "MOIC", "value": "3.2x", "location": "FCF!B23", "interpretation": "Strong", "context": "Driven by..."}
+  ],
+  "insights": [
+    {"title": "Key Finding", "content": "Details", "impact": "high", "type": "positive"}
+  ],
+  "recommendations": [
+    {"priority": "high", "action": "What to do", "rationale": "Why it matters"}
+  ]
+}
+
+For other questions, provide clear conversational responses without excessive markdown.
+Avoid using ### headers, **bold everywhere**, and LaTeX formatting.
 
 ${contextPrompt}
 
@@ -1942,7 +1961,9 @@ USER MESSAGE: ${userMessage}`;
             const contentElement = messageDiv.querySelector('.message-content-modern');
             
             if (contentElement) {
-                contentElement.textContent = content;
+                // Apply professional formatting to the content
+                const formattedContent = formatAIResponse(content);
+                contentElement.innerHTML = formattedContent;
                 
                 if (isComplete) {
                     contentElement.classList.remove('streaming');
@@ -1954,6 +1975,132 @@ USER MESSAGE: ${userMessage}`;
             // Scroll to bottom
             const chatMessages = document.getElementById('chatMessages');
             chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+        
+        function formatAIResponse(content) {
+            if (!content || typeof content !== 'string') return content;
+            
+            // Try to parse as JSON first (for structured responses)
+            try {
+                const jsonData = JSON.parse(content);
+                if (jsonData.summary || jsonData.key_metrics || jsonData.answer) {
+                    return renderStructuredResponse(jsonData);
+                }
+            } catch (e) {
+                // Not JSON, continue with text formatting
+            }
+            
+            // Apply text formatting for regular responses
+            let formatted = content
+                // Remove LaTeX completely
+                .replace(/\\text\{([^}]+)\}/g, '$1')
+                .replace(/\\times/g, '×')
+                .replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '$1/$2')
+                .replace(/\\\[[\s\S]*?\\\]/g, '')
+                .replace(/\\\([\s\S]*?\\\)/g, '')
+                
+                // Convert markdown headers to clean HTML
+                .replace(/### ([^#\n]+)/g, '<div class="response-section-header">$1</div>')
+                .replace(/## ([^#\n]+)/g, '<div class="response-section-header">$1</div>')
+                
+                // Convert **bold** to highlighted spans
+                .replace(/\*\*([^*]+)\*\*/g, '<span class="value-highlight">$1</span>')
+                
+                // Make Excel cell references clickable
+                .replace(/\b([A-Z]+![A-Z]+\d+(?::[A-Z]+\d+)?)\b/g, 
+                    '<span class="cell-reference-clickable" onclick="navigateToExcelCell(\'$1\')">$1</span>')
+                
+                // Highlight financial values
+                .replace(/\$[\d,]+(?:\.\d{2})?(?:\s*(?:million|Million|M|K|thousand))?/g, 
+                    '<span class="money-highlight">$&</span>')
+                .replace(/\b\d+(?:\.\d+)?%/g, '<span class="percentage-highlight">$&</span>')
+                
+                // Convert numbered lists
+                .replace(/^\d+\.\s+(.+)$/gm, '<div class="list-item-numbered">$1</div>')
+                
+                // Convert bullet points
+                .replace(/^[-•*]\s+(.+)$/gm, '<div class="list-item-bullet">$1</div>')
+                
+                // Convert line breaks
+                .replace(/\n\n+/g, '<br><br>')
+                .replace(/\n/g, '<br>')
+                .trim();
+            
+            return formatted;
+        }
+        
+        function renderStructuredResponse(data) {
+            let html = '<div class="structured-response">';
+            
+            // Summary
+            if (data.summary) {
+                html += `<div class="response-summary">${data.summary}</div>`;
+            }
+            
+            // Key Metrics
+            if (data.key_metrics && Array.isArray(data.key_metrics)) {
+                html += '<div class="metrics-section">';
+                html += '<div class="response-section-header">Key Metrics</div>';
+                html += '<div class="metrics-grid">';
+                
+                data.key_metrics.forEach(metric => {
+                    html += `
+                        <div class="metric-card" onclick="navigateToExcelCell('${metric.location || ''}')">
+                            <div class="metric-label">${metric.metric || metric.label}</div>
+                            <div class="metric-value">${metric.value}</div>
+                            ${metric.location ? `<div class="metric-location">${metric.location}</div>` : ''}
+                            ${metric.interpretation ? `<div class="metric-interpretation">${metric.interpretation}</div>` : ''}
+                            ${metric.context ? `<div class="metric-context">${metric.context}</div>` : ''}
+                        </div>
+                    `;
+                });
+                
+                html += '</div></div>';
+            }
+            
+            // Insights
+            if (data.insights && Array.isArray(data.insights)) {
+                html += '<div class="insights-section">';
+                html += '<div class="response-section-header">Key Insights</div>';
+                
+                data.insights.forEach(insight => {
+                    html += `
+                        <div class="insight-item ${insight.type || 'neutral'}">
+                            <div class="insight-title">${insight.title}</div>
+                            <div class="insight-content">${insight.content}</div>
+                            ${insight.impact ? `<div class="insight-impact ${insight.impact}">${insight.impact} impact</div>` : ''}
+                        </div>
+                    `;
+                });
+                
+                html += '</div>';
+            }
+            
+            // Recommendations
+            if (data.recommendations && Array.isArray(data.recommendations)) {
+                html += '<div class="recommendations-section">';
+                html += '<div class="response-section-header">Recommendations</div>';
+                
+                data.recommendations.forEach(rec => {
+                    html += `
+                        <div class="recommendation-item ${rec.priority}">
+                            <div class="rec-priority ${rec.priority}">${rec.priority} priority</div>
+                            <div class="rec-action">${rec.action}</div>
+                            <div class="rec-rationale">${rec.rationale}</div>
+                        </div>
+                    `;
+                });
+                
+                html += '</div>';
+            }
+            
+            // General answer
+            if (data.answer) {
+                html += `<div class="response-answer">${formatAIResponse(data.answer)}</div>`;
+            }
+            
+            html += '</div>';
+            return html;
         }
 
         async function sendStreamingRequest(prompt, messageContainer) {
