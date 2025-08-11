@@ -182,7 +182,8 @@ class ChatHandler {
       // Route to appropriate processing based on query type
       const response = await this.routeToSpecializedAgent(context);
       
-      return response;
+      // Return formatted response for existing chat system
+      return this.enhanceResponseFormatting(response);
       
     } catch (error) {
       console.error('Error processing with multi-agent AI:', error);
@@ -817,18 +818,60 @@ class ChatHandler {
     // Process content for enhanced formatting
     const formattedContent = this.enhanceResponseFormatting(content);
     
+    // Instead of using our internal system, directly integrate with the existing chat
+    this.addFormattedMessageToExistingChat(role, formattedContent);
+    
     this.chatMessages.push({ 
       role, 
       content: formattedContent, 
       timestamp: new Date().toISOString() 
     });
     
-    // Update chat display
-    this.updateChatDisplay();
-    
     // Log to console for development
     const prefix = role === 'user' ? '👤 User:' : '🤖 Assistant:';
     console.log(`${prefix} ${content}`);
+  }
+
+  /**
+   * Integrate with existing chat system in taskpane.html
+   */
+  addFormattedMessageToExistingChat(role, content) {
+    const chatMessages = document.getElementById('chatMessages');
+    if (!chatMessages) return;
+
+    // Remove welcome message if it exists
+    const welcomeMsg = document.getElementById('chatWelcome');
+    if (welcomeMsg) {
+      welcomeMsg.style.display = 'none';
+    }
+
+    // Create message element using the existing chat structure
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `chat-message ${role}-message`;
+    
+    if (role === 'user') {
+      messageDiv.innerHTML = `
+        <div class="message-content">
+          <div class="message-text">${this.escapeHtml(content)}</div>
+        </div>
+      `;
+    } else {
+      messageDiv.innerHTML = `
+        <div class="message-content">
+          <div class="ai-avatar">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 12l2 2 4-4"/>
+            </svg>
+          </div>
+          <div class="message-text formatted-response">${content}</div>
+        </div>
+      `;
+    }
+
+    chatMessages.appendChild(messageDiv);
+    
+    // Scroll to bottom
+    chatMessages.scrollTop = chatMessages.scrollHeight;
   }
 
   /**
