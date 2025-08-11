@@ -140,11 +140,30 @@ class EnhancedResponseFormatter {
         if (index === -1) return false;
 
         const beforeMatch = fullText.substring(0, index);
-        const afterMatch = fullText.substring(index + match.length);
 
-        // Check if we're inside a span or other HTML element
+        // Check if we're inside any HTML element
         const openTagCount = (beforeMatch.match(/<[^/][^>]*>/g) || []).length;
         const closeTagCount = (beforeMatch.match(/<\/[^>]*>/g) || []).length;
+
+        // Also specifically check for highlight classes to prevent nested highlighting
+        const highlightClassPattern = /<span[^>]*class="[^"]*(?:highlight|clickable)[^"]*"/gi;
+        let lastHighlightSpan = -1;
+        let match2;
+        
+        while ((match2 = highlightClassPattern.exec(beforeMatch)) !== null) {
+            lastHighlightSpan = match2.index;
+        }
+        
+        if (lastHighlightSpan >= 0) {
+            // Check if there's a closing span after the last highlight span
+            const afterHighlightSpan = beforeMatch.substring(lastHighlightSpan);
+            const closingSpans = (afterHighlightSpan.match(/<\/span>/g) || []).length;
+            const openingSpans = (afterHighlightSpan.match(/<span[^>]*>/g) || []).length;
+            
+            if (openingSpans > closingSpans) {
+                return true; // We're inside a highlight span
+            }
+        }
 
         return openTagCount > closeTagCount;
     }
@@ -208,26 +227,13 @@ window.navigateToCell = function(cellAddress) {
                     await context.sync();
                     console.log(`✅ Navigated to ${cellAddress} using fallback`);
                     
-                    // Visual feedback
-                    const chatMessages = document.getElementById('chatMessages');
-                    if (chatMessages) {
-                        const feedback = document.createElement('div');
-                        feedback.className = 'navigation-feedback';
-                        feedback.innerHTML = `<span style="color: #22c55e;">📍 Navigated to ${cellAddress}</span>`;
-                        feedback.style.cssText = 'position: fixed; top: 20px; right: 20px; background: white; padding: 8px 12px; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 1000; font-size: 13px;';
-                        document.body.appendChild(feedback);
-                        setTimeout(() => feedback.remove(), 2000);
-                    }
+                    // Navigation successful - no popup needed
+                    console.log(`✅ Successfully navigated to ${cellAddress}`);
                 } catch (error) {
                     console.error(`❌ Failed to navigate to ${cellAddress}:`, error);
                     
-                    // Show error feedback
-                    const errorFeedback = document.createElement('div');
-                    errorFeedback.className = 'navigation-error';
-                    errorFeedback.innerHTML = `<span style="color: #ef4444;">❌ Could not navigate to ${cellAddress}</span>`;
-                    errorFeedback.style.cssText = 'position: fixed; top: 20px; right: 20px; background: white; padding: 8px 12px; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 1000; font-size: 13px;';
-                    document.body.appendChild(errorFeedback);
-                    setTimeout(() => errorFeedback.remove(), 3000);
+                    // Navigation failed - log only, no popup
+                    console.warn(`❌ Could not navigate to ${cellAddress}`);
                 }
             });
         } else {

@@ -176,14 +176,8 @@ class ExcelNavigator {
       </div>
     `;
 
-    // Add to chat area
-    const chatContainer = document.getElementById('chatMessages') || document.body;
-    chatContainer.appendChild(notification);
-
-    // Auto-remove after 5 seconds
-    setTimeout(() => {
-      notification.remove();
-    }, 5000);
+    // Navigation successful - log only, no popup
+    console.log(`✅ Navigated to ${info.actualAddress} on ${info.worksheetName}`);
   }
 
   /**
@@ -205,12 +199,8 @@ class ExcelNavigator {
       </div>
     `;
 
-    const chatContainer = document.getElementById('chatMessages') || document.body;
-    chatContainer.appendChild(notification);
-
-    setTimeout(() => {
-      notification.remove();
-    }, 5000);
+    // Navigation failed - log only, no popup
+    console.warn(`❌ Navigation failed for ${cellReference}: ${errorMessage}`);
   }
 
   /**

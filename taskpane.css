@@ -3856,3 +3856,26 @@ select {
   background: #e5e7eb !important;
   border-color: #9ca3af !important;
 }
+
+/* Prevent nested highlighting */
+.value-highlight .value-highlight,
+.cell-reference-clickable .cell-reference-clickable,
+.percentage-highlight .percentage-highlight,
+.non-clickable-highlight .non-clickable-highlight,
+.money-highlight .money-highlight {
+  background: inherit !important;
+  color: inherit !important;
+  border: none !important;
+  padding: 0 !important;
+  font-weight: inherit !important;
+  cursor: inherit !important;
+}
+
+/* Ensure highlight elements don't nest */
+span[class*="highlight"] span[class*="highlight"] {
+  background: inherit !important;
+  color: inherit !important;
+  border: none !important;
+  padding: 0 !important;
+  display: inline !important;
+}
