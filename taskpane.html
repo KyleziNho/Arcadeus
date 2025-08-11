@@ -28,6 +28,7 @@
     <script src="widgets/ConversationStateManager.js"></script>
     <script src="widgets/DirectExcelActions.js"></script>
     <script src="widgets/SafeExcelContext.js"></script>
+    <script src="widgets/EnhancedResponseFormatter.js"></script>
     <script>
         // Verify ExcelGenerator loaded
         console.log('🔧 Checking ExcelGenerator availability...');
@@ -2113,8 +2114,14 @@ USER MESSAGE: ${userMessage}`;
             const contentElement = messageDiv.querySelector('.message-content-modern');
             
             if (contentElement) {
-                // Apply professional formatting to the content
-                const formattedContent = formatAIResponse(content);
+                // Apply professional formatting first
+                let formattedContent = formatAIResponse(content);
+                
+                // Apply enhanced response formatting to make IRR references and values clickable
+                if (window.enhancedResponseFormatter && isComplete) {
+                    formattedContent = window.enhancedResponseFormatter.formatResponse(formattedContent);
+                }
+                
                 contentElement.innerHTML = formattedContent;
                 
                 if (isComplete) {

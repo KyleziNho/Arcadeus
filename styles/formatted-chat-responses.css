@@ -42,8 +42,76 @@
   border-bottom: 2px solid #e2e8f0;
 }
 
+/* Clickable values with Excel green highlighting */
 .value-highlight {
-  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  background: #22c55e;
+  color: white;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 13px;
+  display: inline-block;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid #16a34a;
+}
+
+.value-highlight:hover {
+  background: #16a34a;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(34, 197, 94, 0.3);
+}
+
+/* Cell references - Excel green theme */
+.cell-reference-clickable {
+  background: #dcfce7;
+  color: #15803d;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+  font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+  border: 1px solid #22c55e;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-block;
+  font-size: 12px;
+}
+
+.cell-reference-clickable:hover {
+  background: #22c55e;
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(34, 197, 94, 0.3);
+}
+
+/* IRR and metric references - clickable with Excel green */
+.irr-reference-clickable,
+.metric-reference-clickable {
+  background: #dcfce7;
+  color: #15803d;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+  font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+  border: 1px solid #22c55e;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-block;
+  font-size: 12px;
+  text-decoration: none;
+}
+
+.irr-reference-clickable:hover,
+.metric-reference-clickable:hover {
+  background: #22c55e;
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(34, 197, 94, 0.3);
+}
+
+/* Non-clickable highlights - black background with white text */
+.non-clickable-highlight {
+  background: #000000;
   color: white;
   padding: 2px 6px;
   border-radius: 4px;
@@ -52,25 +120,31 @@
   display: inline-block;
 }
 
-.cell-reference-clickable {
-  background: #f0f9ff;
-  color: #0369a1;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-weight: 600;
-  font-family: 'SF Mono', Monaco, 'Courier New', monospace;
-  border: 1px solid #bae6fd;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  display: inline-block;
-  font-size: 12px;
+/* Metric callouts for structured display */
+.metric-callout {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0;
+  padding: 6px;
+  background: #f8fafc;
+  border-radius: 6px;
+  font-size: 13px;
 }
 
-.cell-reference-clickable:hover {
-  background: #0369a1;
-  color: white;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(3, 105, 161, 0.3);
+.metric-callout .metric-name {
+  font-weight: 600;
+  color: #1e293b;
+  min-width: 80px;
+}
+
+.metric-callout .cell-location {
+  font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+  font-size: 11px;
+  color: #6b7280;
+  background: #f1f5f9;
+  padding: 1px 4px;
+  border-radius: 3px;
 }
 
 .money-highlight {
