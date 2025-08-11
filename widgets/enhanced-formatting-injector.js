@@ -382,13 +382,347 @@ class EnhancedFormattingInjector {
   }
 }
 
-// Initialize enhanced formatting when DOM is ready
+/**
+ * Direct Chat Message Formatter - More reliable approach
+ */
+class DirectChatFormatter {
+  constructor() {
+    this.observer = null;
+    this.isFormatting = false;
+  }
+
+  /**
+   * Start watching for new chat messages and format them
+   */
+  startWatching() {
+    console.log('🔍 Starting direct chat message formatting...');
+
+    // Inject CSS
+    this.injectCSS();
+
+    // Watch for new messages being added to the chat
+    const chatContainer = document.getElementById('chatMessages');
+    if (!chatContainer) {
+      console.error('Chat container not found');
+      return;
+    }
+
+    // Create MutationObserver to watch for new messages
+    this.observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        mutation.addedNodes.forEach((node) => {
+          if (node.nodeType === Node.ELEMENT_NODE) {
+            // Look for assistant messages
+            if (node.classList && (node.classList.contains('assistant-message') || 
+                node.classList.contains('chat-message-modern') && node.classList.contains('assistant-message'))) {
+              this.formatAssistantMessage(node);
+            }
+            
+            // Also check child nodes for assistant messages
+            const assistantMessages = node.querySelectorAll('.assistant-message, .chat-message-modern.assistant-message');
+            assistantMessages.forEach((msg) => this.formatAssistantMessage(msg));
+          }
+        });
+      });
+    });
+
+    // Start observing
+    this.observer.observe(chatContainer, {
+      childList: true,
+      subtree: true
+    });
+
+    console.log('✅ Chat message formatting started');
+  }
+
+  /**
+   * Format an assistant message element
+   */
+  formatAssistantMessage(messageElement) {
+    if (this.isFormatting) return; // Prevent recursive formatting
+    
+    console.log('💅 Formatting assistant message...');
+    this.isFormatting = true;
+
+    try {
+      // Find the message text element
+      const textElement = messageElement.querySelector('.message-text');
+      if (!textElement) {
+        console.log('No .message-text found in message');
+        return;
+      }
+
+      // Get the raw text content
+      const rawText = textElement.textContent || textElement.innerHTML;
+      console.log('Raw text length:', rawText.length);
+
+      // Apply enhanced formatting
+      const formattedHTML = this.enhanceResponseFormatting(rawText);
+      console.log('Formatted HTML length:', formattedHTML.length);
+
+      // Replace the content with formatted HTML
+      textElement.innerHTML = formattedHTML;
+      textElement.classList.add('formatted-response');
+
+      console.log('✅ Message formatted successfully');
+
+    } catch (error) {
+      console.error('❌ Error formatting message:', error);
+    } finally {
+      this.isFormatting = false;
+    }
+  }
+
+  /**
+   * Enhanced response formatting
+   */
+  enhanceResponseFormatting(content) {
+    if (!content || typeof content !== 'string') return content;
+
+    console.log('🎨 Applying enhanced formatting...');
+
+    let formatted = content
+      // Remove markdown headers and make them clean
+      .replace(/### ([^#\n]+)/g, '<div class="section-header">$1</div>')
+      .replace(/## ([^#\n]+)/g, '<div class="section-header">$1</div>')
+      
+      // Convert **bold** to highlighted values (but be more specific)
+      .replace(/\*\*([^*\n]+)\*\*/g, '<span class="value-highlight">$1</span>')
+      
+      // Convert cell references to highlighted ranges
+      .replace(/\b([A-Z]+![A-Z]+\d+(?::[A-Z]+\d+)?)\b/g, '<span class="cell-highlight">$1</span>')
+      
+      // Convert financial figures to highlighted values
+      .replace(/\$(\d{1,3}(?:,\d{3})*(?:\.\d{2})?(?:\s?million|\s?M|\s?k|\s?K)?)\b/g, '<span class="money-highlight">$$$1</span>')
+      .replace(/\b(\d+(?:\.\d+)?x)\b/g, '<span class="percentage-highlight">$1</span>')
+      .replace(/\b(\d+(?:\.\d+)?%)\b/g, '<span class="percentage-highlight">$1</span>')
+      
+      // Clean up LaTeX and markdown formulas
+      .replace(/\\\[[\s\S]*?\\\]/g, '')
+      .replace(/\\\([\s\S]*?\\\)/g, '')
+      .replace(/\\\\ /g, ' ')
+      
+      // Convert numbered lists to better format
+      .replace(/(\d+)\.\s+\*\*([^*]+)\*\*:?\s*/g, '<div class="insight-item"><span class="insight-number">$1.</span><span class="insight-label">$2</span></div>')
+      
+      // Convert bullet points
+      .replace(/[-•]\s+\*\*([^*]+)\*\*:?\s*/g, '<div class="bullet-item"><span class="bullet-label">$1</span></div>')
+      .replace(/[-•]\s+([^\n]+)/g, '<div class="bullet-item">$1</div>')
+      
+      // Clean up multiple spaces and line breaks
+      .replace(/\n{3,}/g, '\n\n')
+      .replace(/\s{3,}/g, ' ')
+      .trim();
+
+    // Convert line breaks to HTML
+    formatted = formatted.replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>');
+    if (formatted && !formatted.startsWith('<p>')) {
+      formatted = '<p>' + formatted + '</p>';
+    }
+
+    return formatted;
+  }
+
+  /**
+   * Inject CSS styles
+   */
+  injectCSS() {
+    // Remove existing styles
+    const existing = document.getElementById('direct-chat-formatting');
+    if (existing) existing.remove();
+
+    const style = document.createElement('style');
+    style.id = 'direct-chat-formatting';
+    
+    style.textContent = `
+      /* Direct Chat Message Formatting */
+      .formatted-response {
+        line-height: 1.6 !important;
+        font-size: 15px !important;
+      }
+
+      .formatted-response p {
+        margin: 8px 0 !important;
+        padding: 0 !important;
+      }
+
+      /* Value highlighting */
+      .formatted-response .value-highlight {
+        background: #dbeafe !important;
+        color: #1e40af !important;
+        padding: 2px 6px !important;
+        border-radius: 6px !important;
+        font-weight: 600 !important;
+        font-size: 14px !important;
+        display: inline-block !important;
+        margin: 0 2px !important;
+      }
+
+      .formatted-response .cell-highlight {
+        background: #d1fae5 !important;
+        color: #065f46 !important;
+        padding: 2px 6px !important;
+        border-radius: 6px !important;
+        font-family: 'Monaco', 'Consolas', monospace !important;
+        font-size: 13px !important;
+        font-weight: 600 !important;
+        display: inline-block !important;
+        margin: 0 2px !important;
+      }
+
+      .formatted-response .money-highlight {
+        background: #fef3c7 !important;
+        color: #92400e !important;
+        padding: 2px 6px !important;
+        border-radius: 6px !important;
+        font-weight: 700 !important;
+        font-size: 14px !important;
+        display: inline-block !important;
+        margin: 0 2px !important;
+      }
+
+      .formatted-response .percentage-highlight {
+        background: #fce7f3 !important;
+        color: #be185d !important;
+        padding: 2px 6px !important;
+        border-radius: 6px !important;
+        font-weight: 600 !important;
+        font-size: 14px !important;
+        display: inline-block !important;
+        margin: 0 2px !important;
+      }
+
+      /* Section headers */
+      .formatted-response .section-header {
+        font-weight: 700 !important;
+        font-size: 16px !important;
+        color: #111827 !important;
+        margin: 16px 0 8px 0 !important;
+        padding: 8px 0 4px 0 !important;
+        border-bottom: 2px solid #e5e7eb !important;
+        display: block !important;
+      }
+
+      /* Insight items */
+      .formatted-response .insight-item {
+        margin: 8px 0 !important;
+        padding: 10px !important;
+        background: #f9fafb !important;
+        border-radius: 8px !important;
+        border-left: 3px solid #10b981 !important;
+        display: block !important;
+      }
+
+      .formatted-response .insight-number {
+        font-weight: 700 !important;
+        color: #059669 !important;
+        margin-right: 8px !important;
+      }
+
+      .formatted-response .insight-label {
+        font-weight: 600 !important;
+        color: #059669 !important;
+        margin-right: 8px !important;
+      }
+
+      .formatted-response .bullet-item {
+        margin: 6px 0 !important;
+        padding: 4px 0 4px 16px !important;
+        position: relative !important;
+        color: #4b5563 !important;
+        display: block !important;
+      }
+
+      .formatted-response .bullet-item:before {
+        content: "•" !important;
+        color: #10b981 !important;
+        font-weight: bold !important;
+        position: absolute !important;
+        left: 0 !important;
+      }
+
+      .formatted-response .bullet-label {
+        font-weight: 600 !important;
+        color: #059669 !important;
+      }
+    `;
+
+    document.head.appendChild(style);
+    console.log('✅ Direct formatting CSS injected');
+  }
+
+  /**
+   * Stop watching
+   */
+  stopWatching() {
+    if (this.observer) {
+      this.observer.disconnect();
+      this.observer = null;
+    }
+  }
+}
+
+// Initialize the direct formatter
+let directFormatter = null;
+
+function initializeDirectChatFormatter() {
+  if (directFormatter) {
+    directFormatter.stopWatching();
+  }
+  
+  directFormatter = new DirectChatFormatter();
+  directFormatter.startWatching();
+}
+
+// Initialize when DOM is ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initializeDirectChatFormatter);
+} else {
+  // DOM is already loaded, initialize immediately
+  setTimeout(initializeDirectChatFormatter, 100);
+}
+
+// Also initialize when chat page becomes visible
+function initializeWhenChatVisible() {
+  const chatPage = document.getElementById('chatPage');
+  if (chatPage) {
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
+          const isVisible = chatPage.style.display !== 'none';
+          if (isVisible && !directFormatter) {
+            setTimeout(initializeDirectChatFormatter, 100);
+          }
+        }
+      });
+    });
+    
+    observer.observe(chatPage, { attributes: true });
+    
+    // Also check if it's already visible
+    if (chatPage.style.display !== 'none') {
+      setTimeout(initializeDirectChatFormatter, 100);
+    }
+  }
+}
+
+// Start watching for chat page visibility
+setTimeout(initializeWhenChatVisible, 500);
+
+// Backup: Initialize on any chat button click
+document.addEventListener('click', function(e) {
+  if (e.target && (e.target.id === 'chatTab' || e.target.textContent === 'Chat')) {
+    setTimeout(initializeDirectChatFormatter, 200);
+  }
+});
+
+// Initialize enhanced formatting when DOM is ready - LEGACY FALLBACK
 document.addEventListener('DOMContentLoaded', function() {
   const enhancedFormatter = new EnhancedFormattingInjector();
   enhancedFormatter.inject();
 });
 
-// Also initialize if DOM is already loaded
+// Also initialize if DOM is already loaded - LEGACY FALLBACK  
 if (document.readyState === 'loading') {
   // DOM is still loading
 } else {
