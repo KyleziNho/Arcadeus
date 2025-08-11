@@ -19,6 +19,13 @@
     <!-- Widget Scripts -->
     <script src="widgets/ExcelGenerator.js?v=19"></script>
     <script src="widgets/ExcelActionAgent.js"></script>
+    
+    <!-- Enhanced Agent System -->
+    <script src="widgets/AgentTools.js"></script>
+    <script src="widgets/AgentWorkflows.js"></script>
+    <script src="widgets/EnhancedExcelAgent.js"></script>
+    <script src="widgets/AgentEvaluator.js"></script>
+    <script src="widgets/ConversationStateManager.js"></script>
     <script>
         // Verify ExcelGenerator loaded
         console.log('🔧 Checking ExcelGenerator availability...');
@@ -1809,9 +1816,63 @@
                 // Create streaming message container
                 const streamingMessage = createStreamingMessageContainer();
                 
-                // Check if this is an action request that should be handled by Excel Action Agent
-                if (await shouldUseActionAgent(userMessage)) {
-                    console.log('🤖 Using Excel Action Agent for this request');
+                // Use Enhanced Excel Agent for all requests
+                if (window.EnhancedExcelAgent) {
+                    console.log('🚀 Using Enhanced Excel Agent for this request');
+                    
+                    updateStreamingMessage(streamingMessage, '🧠 Processing request with AI agent...', false);
+                    
+                    try {
+                        // Initialize enhanced agent if not already done
+                        if (!window.enhancedAgent) {
+                            window.enhancedAgent = new window.EnhancedExcelAgent();
+                            await new Promise(resolve => setTimeout(resolve, 1000)); // Wait for initialization
+                        }
+                        
+                        const agentResult = await window.enhancedAgent.processRequest(userMessage, {
+                            excelContext: chatContext,
+                            selectedRange: null // TODO: get actual selected range
+                        });
+                        
+                        let formattedResponse;
+                        if (agentResult.success) {
+                            if (agentResult.type === 'format_cells_success') {
+                                formattedResponse = `<div class="action-success">${agentResult.message}</div>`;
+                                if (agentResult.actionsTaken) {
+                                    formattedResponse += `<h4>📍 Changes Made:</h4><ul class="action-changes-list">`;
+                                    agentResult.actionsTaken.forEach(action => {
+                                        formattedResponse += `<li>${action}</li>`;
+                                    });
+                                    formattedResponse += `</ul>`;
+                                }
+                            } else if (agentResult.type === 'analyze_data_success') {
+                                formattedResponse = `<div class="response-summary">${agentResult.message}</div>`;
+                                if (agentResult.insights && agentResult.insights.length > 0) {
+                                    formattedResponse += `<h4>💡 Key Insights:</h4><ul>`;
+                                    agentResult.insights.forEach(insight => {
+                                        formattedResponse += `<li><strong>${insight.type}:</strong> ${insight.message}</li>`;
+                                    });
+                                    formattedResponse += `</ul>`;
+                                }
+                            } else {
+                                formattedResponse = `<div class="response-summary">${agentResult.message}</div>`;
+                            }
+                        } else {
+                            formattedResponse = `<div class="action-error">${agentResult.message}</div>`;
+                        }
+                        
+                        updateStreamingMessage(streamingMessage, formattedResponse, true);
+                        return;
+                    } catch (agentError) {
+                        console.error('Enhanced agent error:', agentError);
+                        updateStreamingMessage(streamingMessage, '⚠️ Agent processing failed, falling back to analysis...', false);
+                        // Continue with normal AI processing
+                    }
+                }
+                
+                // Fallback: Check for basic action agent if Enhanced Agent not available
+                else if (await shouldUseActionAgent(userMessage)) {
+                    console.log('🤖 Using Basic Excel Action Agent for this request');
                     
                     updateStreamingMessage(streamingMessage, '🔧 Performing Excel action...', false);
                     
