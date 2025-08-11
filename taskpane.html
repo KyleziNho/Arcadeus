@@ -15,8 +15,10 @@
     <link rel="stylesheet" href="styles/scenario-analysis-engine.css">
     <link rel="stylesheet" href="styles/model-validation-dashboard.css">
     <link rel="stylesheet" href="styles/formatted-chat-responses.css">
+    <link rel="stylesheet" href="styles/excel-action-agent.css">
     <!-- Widget Scripts -->
     <script src="widgets/ExcelGenerator.js?v=19"></script>
+    <script src="widgets/ExcelActionAgent.js"></script>
     <script>
         // Verify ExcelGenerator loaded
         console.log('🔧 Checking ExcelGenerator availability...');
@@ -530,6 +532,12 @@
                             <button class="chip" onclick="sendQuickMessage('Why is the MOIC so high?')">Why is MOIC high?</button>
                             <button class="chip" onclick="sendQuickMessage('What is the IRR?')">What's the IRR?</button>
                             <button class="chip" onclick="sendQuickMessage('Validate my model')">Validate model</button>
+                        </div>
+                        <div class="suggestion-chips" style="margin-top: 12px;">
+                            <span style="font-size: 12px; color: #666; margin-right: 8px;">Try actions:</span>
+                            <button class="chip" onclick="sendQuickMessage('Change the blue headers to green')">Change blue headers to green</button>
+                            <button class="chip" onclick="sendQuickMessage('Format selected cells as bold')">Format as bold</button>
+                            <button class="chip" onclick="sendQuickMessage('Change header color to red')">Make headers red</button>
                         </div>
                     </div>
                 </div>
@@ -1747,6 +1755,49 @@
             return metrics;
         }
 
+        /**
+         * Determine if message should be handled by Excel Action Agent
+         */
+        async function shouldUseActionAgent(message) {
+            const lower = message.toLowerCase();
+            
+            // Action keywords that indicate direct Excel manipulation
+            const actionKeywords = [
+                'change color', 'change colour',
+                'format', 'style',
+                'make bold', 'make italic',
+                'add formula', 'create formula',
+                'update value', 'change value',
+                'delete', 'remove',
+                'insert', 'add row', 'add column',
+                'create chart', 'make chart',
+                'sort', 'filter'
+            ];
+            
+            // Color-specific requests
+            const colorRequests = [
+                'green', 'red', 'blue', 'yellow', 'orange', 'purple', 'pink'
+            ];
+            
+            // Check for action keywords
+            const hasActionKeyword = actionKeywords.some(keyword => lower.includes(keyword));
+            
+            // Check for imperative verbs with Excel terms
+            const imperativePatterns = [
+                /^(change|update|format|style|color|make)/,
+                /(header|cell|range|row|column|chart)/
+            ];
+            
+            const hasImperativePattern = imperativePatterns.some(pattern => pattern.test(lower));
+            
+            // Check for color requests
+            const hasColorRequest = colorRequests.some(color => 
+                lower.includes(color) && (lower.includes('change') || lower.includes('make'))
+            );
+            
+            return hasActionKeyword || hasImperativePattern || hasColorRequest;
+        }
+
         async function sendMessageToOpenAI(userMessage) {
             try {
                 // Remove thinking message and create streaming message
@@ -1757,6 +1808,25 @@
                 
                 // Create streaming message container
                 const streamingMessage = createStreamingMessageContainer();
+                
+                // Check if this is an action request that should be handled by Excel Action Agent
+                if (await shouldUseActionAgent(userMessage)) {
+                    console.log('🤖 Using Excel Action Agent for this request');
+                    
+                    updateStreamingMessage(streamingMessage, '🔧 Performing Excel action...', false);
+                    
+                    try {
+                        const actionResult = await window.excelActionAgent.processActionRequest(userMessage, chatContext);
+                        const formattedResponse = window.excelActionAgent.formatActionResponse(actionResult);
+                        
+                        updateStreamingMessage(streamingMessage, formattedResponse, true);
+                        return;
+                    } catch (actionError) {
+                        console.error('Action agent error:', actionError);
+                        updateStreamingMessage(streamingMessage, '⚠️ Action failed, falling back to analysis...', false);
+                        // Continue with normal AI processing
+                    }
+                }
                 
                 // Analyze the user message using intelligent financial analysis
                 const intelligentAnalysis = analyzeExcelDataForQuery(userMessage, chatContext);

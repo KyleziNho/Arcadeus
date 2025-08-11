@@ -1,0 +1,118 @@
+/* Excel Action Agent Styles */
+
+.action-agent-working {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    border-left: 4px solid #0ea5e9;
+    border-radius: 8px;
+    margin: 8px 0;
+    font-size: 14px;
+    color: #0369a1;
+}
+
+.action-agent-working::before {
+    content: "🔧";
+    animation: rotate 1s linear infinite;
+}
+
+@keyframes rotate {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.action-success {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+    border-left: 4px solid #22c55e;
+    border-radius: 8px;
+    margin: 8px 0;
+    font-size: 14px;
+    color: #15803d;
+}
+
+.action-success::before {
+    content: "✅";
+}
+
+.action-error {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+    border-left: 4px solid #ef4444;
+    border-radius: 8px;
+    margin: 8px 0;
+    font-size: 14px;
+    color: #dc2626;
+}
+
+.action-error::before {
+    content: "❌";
+}
+
+.action-changes-list {
+    margin: 8px 0;
+    padding: 0;
+    list-style: none;
+    background: #f8fafc;
+    border-radius: 6px;
+    padding: 12px;
+}
+
+.action-changes-list li {
+    margin: 4px 0;
+    padding: 4px 0;
+    border-bottom: 1px solid #e2e8f0;
+    font-size: 13px;
+    color: #475569;
+    font-family: 'Monaco', 'Menlo', monospace;
+}
+
+.action-changes-list li:last-child {
+    border-bottom: none;
+}
+
+.cell-address {
+    background: #e0e7ff;
+    color: #3730a3;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 600;
+    font-size: 12px;
+}
+
+.color-change {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+}
+
+.color-swatch {
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+    border: 1px solid #d1d5db;
+    display: inline-block;
+}
+
+.action-tip {
+    background: #fffbeb;
+    border: 1px solid #fed7aa;
+    border-radius: 6px;
+    padding: 8px 12px;
+    margin: 8px 0;
+    font-size: 13px;
+    color: #92400e;
+}
+
+.action-tip::before {
+    content: "💡 ";
+}
