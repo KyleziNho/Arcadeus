@@ -396,6 +396,8 @@ class DirectChatFormatter {
    */
   startWatching() {
     console.log('🔍 Starting direct chat message formatting...');
+    console.log('Current URL:', window.location.href);
+    console.log('Document ready state:', document.readyState);
 
     // Inject CSS
     this.injectCSS();
@@ -403,23 +405,44 @@ class DirectChatFormatter {
     // Watch for new messages being added to the chat
     const chatContainer = document.getElementById('chatMessages');
     if (!chatContainer) {
-      console.error('Chat container not found');
+      console.error('❌ Chat container #chatMessages not found');
+      console.log('Available elements with "chat" in ID:');
+      document.querySelectorAll('[id*="chat"], [class*="chat"]').forEach(el => {
+        console.log('- ', el.tagName, el.id || 'no-id', el.className || 'no-class');
+      });
       return;
     }
 
+    console.log('✅ Found chat container:', chatContainer);
+
     // Create MutationObserver to watch for new messages
     this.observer = new MutationObserver((mutations) => {
+      console.log('🔄 MutationObserver detected changes:', mutations.length);
+      
       mutations.forEach((mutation) => {
+        console.log('Mutation type:', mutation.type, 'Added nodes:', mutation.addedNodes.length);
+        
         mutation.addedNodes.forEach((node) => {
           if (node.nodeType === Node.ELEMENT_NODE) {
-            // Look for assistant messages
-            if (node.classList && (node.classList.contains('assistant-message') || 
-                node.classList.contains('chat-message-modern') && node.classList.contains('assistant-message'))) {
+            console.log('Added element:', node.tagName, node.className);
+            
+            // Look for assistant messages with more flexible matching
+            const isAssistantMessage = node.classList && (
+              node.classList.contains('assistant-message') || 
+              (node.classList.contains('chat-message-modern') && node.classList.contains('assistant-message')) ||
+              node.classList.contains('chat-message')
+            );
+            
+            if (isAssistantMessage) {
+              console.log('🎯 Found assistant message element!');
               this.formatAssistantMessage(node);
             }
             
             // Also check child nodes for assistant messages
-            const assistantMessages = node.querySelectorAll('.assistant-message, .chat-message-modern.assistant-message');
+            const assistantMessages = node.querySelectorAll(
+              '.assistant-message, .chat-message-modern.assistant-message, .chat-message.assistant-message'
+            );
+            console.log('Found child assistant messages:', assistantMessages.length);
             assistantMessages.forEach((msg) => this.formatAssistantMessage(msg));
           }
         });

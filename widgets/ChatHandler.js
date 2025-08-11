@@ -2,7 +2,20 @@ class ChatHandler {
   constructor() {
     this.chatMessages = [];
     this.isProcessing = false;
-    this.excelAnalyzer = new ExcelLiveAnalyzer();
+    
+    // Initialize ExcelLiveAnalyzer safely
+    try {
+      if (typeof ExcelLiveAnalyzer !== 'undefined') {
+        this.excelAnalyzer = new ExcelLiveAnalyzer();
+        console.log('✅ ExcelLiveAnalyzer initialized successfully');
+      } else {
+        console.log('⚠️ ExcelLiveAnalyzer not available, using basic mode');
+        this.excelAnalyzer = null;
+      }
+    } catch (error) {
+      console.error('❌ Failed to initialize ExcelLiveAnalyzer:', error);
+      this.excelAnalyzer = null;
+    }
   }
 
   async initialize() {
