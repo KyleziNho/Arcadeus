@@ -186,14 +186,21 @@ class SimpleStreamingChat {
       console.log('✅ Hooked into ChatHandler');
     }
 
-    // Also hook into sample question handler
+    // Override sendQuickMessage to ensure consistent behavior between pre-selected and typed messages
     window.sendQuickMessage = (message) => {
-      console.log('📝 Processing sample question:', message);
+      console.log('📝 Processing sample question with enhanced animation:', message);
       const chatInput = document.getElementById('chatInput');
       if (chatInput) {
         chatInput.value = message;
       }
-      this.processMessage(message);
+      
+      // Use the original flow for chain-of-thought animation
+      if (window.handleSendMessageWithExcelContext) {
+        window.handleSendMessageWithExcelContext();
+      } else {
+        // Fallback to our simple processing
+        this.processMessage(message);
+      }
     };
   }
 
