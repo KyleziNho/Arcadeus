@@ -525,6 +525,103 @@ class EnhancedStreamingChat {
         0% { background-position: 100% 0; }
         100% { background-position: -100% 0; }
       }
+      
+      /* Mobile responsiveness */
+      @media (max-width: 768px) {
+        .metrics-grid {
+          grid-template-columns: 1fr;
+        }
+        
+        .analysis-container {
+          margin: 8px 0;
+          border-radius: 12px;
+        }
+        
+        .analysis-step {
+          padding: 16px;
+          margin: 12px 0;
+        }
+        
+        .step-number {
+          min-width: 40px;
+          height: 40px;
+          font-size: 16px;
+        }
+        
+        .step-content {
+          font-size: 14px;
+        }
+        
+        .cell-reference-clickable {
+          display: inline-block;
+          margin: 2px;
+          padding: 4px 8px;
+          font-size: 12px;
+        }
+        
+        .final-answer-section {
+          padding: 16px;
+          margin: 16px 0;
+        }
+        
+        .final-answer-content {
+          font-size: 15px;
+          line-height: 1.6;
+        }
+        
+        .metric-value {
+          font-size: 22px;
+        }
+      }
+      
+      @media (max-width: 480px) {
+        .analysis-container {
+          margin: 4px 0;
+          border-radius: 8px;
+        }
+        
+        .analysis-header {
+          padding: 12px 16px;
+          font-size: 14px;
+        }
+        
+        .analysis-body {
+          padding: 12px;
+        }
+        
+        .metrics-grid {
+          gap: 8px;
+        }
+        
+        .metric-card {
+          padding: 12px;
+        }
+        
+        .metric-value {
+          font-size: 20px;
+        }
+        
+        .step-action {
+          font-size: 14px;
+        }
+        
+        .step-observation {
+          font-size: 13px;
+          padding: 10px;
+        }
+        
+        .step-reference {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 4px;
+        }
+        
+        .interpretation-content, 
+        .final-answer-content {
+          font-size: 14px;
+          line-height: 1.5;
+        }
+      }
     `;
 
     document.head.appendChild(style);
