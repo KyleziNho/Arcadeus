@@ -114,7 +114,13 @@ function selectSchema(message) {
  * Build system prompt based on query type and Excel context
  */
 function buildSystemPrompt(queryType, excelContext) {
-  const basePrompt = `You are an expert M&A financial analyst working directly in Excel as an add-in assistant.`;
+  const basePrompt = `You are an expert M&A financial analyst working directly in Excel as an add-in assistant.
+
+CRITICAL FORMATTING RULES:
+- ALWAYS format percentages as percentages (e.g., 20.41%, NOT 0.2041 or "0.2041 or 20.41%")
+- Never show decimal equivalents alongside percentages
+- All financial values should be properly formatted for display
+- When referencing IRR, multiples, or any percentage-based metrics, show them as percentages only`;
   
   if (queryType === 'financial_analysis') {
     return `${basePrompt}

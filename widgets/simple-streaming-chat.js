@@ -97,16 +97,11 @@ class SimpleStreamingChat {
         box-shadow: 0 2px 8px rgba(34, 197, 94, 0.3);
       }
 
-      /* Bold titles - black background, no hover effects */
+      /* Bold titles - just black text, no background or clickable styling */
       .bold-title {
-        background: #1e293b;
-        color: white;
-        padding: 3px 8px;
-        border-radius: 4px;
-        font-weight: 600;
-        font-size: 14px;
-        display: inline-block;
-        margin: 2px 1px;
+        color: #1e293b;
+        font-weight: 700;
+        font-size: 16px;
       }
 
       /* Typewriter effect for streaming */
@@ -442,17 +437,17 @@ class SimpleStreamingChat {
     highlighted = highlighted.replace(/([A-Z]+!?[A-Z]+\d+)/g, 
       '<span class="cell-ref" onclick="navigateToCell(\'$1\')">$1</span>');
 
-    // Highlight percentages
+    // Highlight percentages - make them clickable and navigable
     highlighted = highlighted.replace(/(\d+\.?\d*%)/g, 
-      '<span class="financial-value">$1</span>');
+      '<span class="financial-value" onclick="findAndNavigateToValue(\'$1\')">$1</span>');
 
-    // Highlight currency values
+    // Highlight currency values - make them clickable and navigable
     highlighted = highlighted.replace(/(\$\d+(?:,\d{3})*(?:\.\d{2})?[MB]?)/g, 
-      '<span class="financial-value">$1</span>');
+      '<span class="financial-value" onclick="findAndNavigateToValue(\'$1\')">$1</span>');
 
-    // Highlight multiples (e.g., 2.5x, 3.2x)
+    // Highlight multiples (e.g., 2.5x, 3.2x) - make them clickable and navigable
     highlighted = highlighted.replace(/(\d+\.?\d*x)/gi, 
-      '<span class="financial-value">$1</span>');
+      '<span class="financial-value" onclick="findAndNavigateToValue(\'$1\')">$1</span>');
 
     // Convert markdown formatting - use custom class for black background
     highlighted = highlighted.replace(/\*\*(.*?)\*\*/g, '<span class="bold-title">$1</span>');
@@ -599,6 +594,69 @@ window.navigateToCell = function(cellAddress) {
         console.error('❌ Navigation failed:', error);
       }
     });
+  }
+};
+
+// Global function to find and navigate to financial values
+window.findAndNavigateToValue = function(value) {
+  console.log('🔍 Searching for value:', value);
+  
+  if (typeof Excel !== 'undefined') {
+    Excel.run(async (context) => {
+      try {
+        const worksheets = context.workbook.worksheets;
+        worksheets.load('items/name');
+        await context.sync();
+        
+        // Search through all worksheets for the value
+        for (const worksheet of worksheets.items) {
+          try {
+            // Convert percentage to decimal for searching (e.g., 20.41% -> 0.2041)
+            let searchValue = value;
+            if (value.includes('%')) {
+              const numericValue = parseFloat(value.replace('%', ''));
+              const decimalValue = (numericValue / 100).toFixed(4);
+              searchValue = decimalValue;
+            }
+            
+            // Search for both the original value and converted value
+            const usedRange = worksheet.getUsedRange();
+            usedRange.load('values, formulas, address');
+            await context.sync();
+            
+            if (usedRange.values) {
+              for (let row = 0; row < usedRange.values.length; row++) {
+                for (let col = 0; col < usedRange.values[row].length; col++) {
+                  const cellValue = usedRange.values[row][col];
+                  
+                  // Check if cell contains the value (as number or formatted)
+                  if (cellValue === searchValue || 
+                      Math.abs(parseFloat(cellValue) - parseFloat(searchValue)) < 0.0001 ||
+                      String(cellValue).includes(value.replace('%', ''))) {
+                    
+                    // Found the value, navigate to it
+                    const cellAddress = `${worksheet.name}!${String.fromCharCode(65 + col)}${row + 1}`;
+                    const range = worksheet.getCell(row, col);
+                    range.select();
+                    await context.sync();
+                    console.log('✅ Found and navigated to value:', value, 'at', cellAddress);
+                    return;
+                  }
+                }
+              }
+            }
+          } catch (error) {
+            console.log('Could not search worksheet:', worksheet.name, error);
+          }
+        }
+        
+        console.log('⚠️ Value not found:', value);
+      } catch (error) {
+        console.error('❌ Search failed:', error);
+      }
+    });
+  } else {
+    console.warn('Excel API not available');
   }
 };
 
