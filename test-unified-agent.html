@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>🧠 Test Unified AI Agent</title>
+    <script src="https://appsforoffice.microsoft.com/lib/1.1/hosted/office.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .test-input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 4px; }
+        .test-button { background: #0078d4; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; }
+        .test-button:hover { background: #106ebe; }
+        .output { background: #f5f5f5; padding: 15px; margin: 10px 0; border-radius: 4px; white-space: pre-wrap; font-family: monospace; max-height: 400px; overflow-y: auto; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 4px; }
+        .status.success { background: #d1ecf1; color: #0c5460; }
+        .status.error { background: #f8d7da; color: #721c24; }
+        .api-key-input { width: 300px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧠 Unified AI Agent Test</h1>
+        
+        <div class="status" id="status">
+            ⏳ Loading...
+        </div>
+
+        <div id="apiKeySection">
+            <h3>🔑 OpenAI API Key</h3>
+            <input type="password" id="apiKeyInput" class="test-input api-key-input" placeholder="Enter your OpenAI API key">
+            <button onclick="setApiKey()" class="test-button">Set API Key</button>
+            <p><small>Get your key from: <a href="https://platform.openai.com/api-keys" target="_blank">https://platform.openai.com/api-keys</a></small></p>
+        </div>
+
+        <div id="testSection" style="display: none;">
+            <h3>💬 Test Chat</h3>
+            <input type="text" id="testInput" class="test-input" placeholder="Try: 'Change the blue headers to green' or 'What's in cell A1?'">
+            <button onclick="testChat()" class="test-button">Send Message</button>
+            
+            <h4>📋 Quick Tests:</h4>
+            <button onclick="quickTest('Get workbook structure')" class="test-button">📊 Analyze Workbook</button>
+            <button onclick="quickTest('Change the blue headers to green')" class="test-button">🎨 Format Headers</button>
+            <button onclick="quickTest('Find all cells containing revenue')" class="test-button">🔍 Find Data</button>
+            <button onclick="quickTest('Make the spreadsheet look more professional')" class="test-button">✨ Professional Style</button>
+        </div>
+
+        <div id="output" class="output"></div>
+    </div>
+
+    <!-- Load required scripts -->
+    <script src="widgets/UnifiedExcelApiLibrary.js"></script>
+    <script src="widgets/UnifiedAiAgent.js"></script>
+
+    <script>
+        let aiAgent;
+
+        function log(message) {
+            const output = document.getElementById('output');
+            const timestamp = new Date().toLocaleTimeString();
+            output.textContent += `[${timestamp}] ${message}\n`;
+            output.scrollTop = output.scrollHeight;
+            console.log(message);
+        }
+
+        function setStatus(message, type = 'success') {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = `status ${type}`;
+        }
+
+        Office.onReady(() => {
+            log('✅ Office.js ready');
+            checkComponents();
+        });
+
+        function checkComponents() {
+            log('Checking components...');
+            
+            const hasExcelApi = typeof window.UnifiedExcelApiLibrary !== 'undefined';
+            const hasAiAgent = typeof window.UnifiedAiAgent !== 'undefined';
+            const hasApiKeyManager = typeof window.ApiKeyManager !== 'undefined';
+
+            log(`- UnifiedExcelApiLibrary: ${hasExcelApi ? '✅' : '❌'}`);
+            log(`- UnifiedAiAgent: ${hasAiAgent ? '✅' : '❌'}`);  
+            log(`- ApiKeyManager: ${hasApiKeyManager ? '✅' : '❌'}`);
+
+            if (hasExcelApi && hasAiAgent && hasApiKeyManager) {
+                setStatus('🚀 Components loaded successfully! Please set your OpenAI API key to continue.');
+                
+                // Check if API key already exists
+                aiAgent = new window.UnifiedAiAgent();
+                if (aiAgent.apiKey) {
+                    setStatus('✅ API key found! Ready to test.');
+                    showTestSection();
+                }
+            } else {
+                setStatus('❌ Some components failed to load. Please check the console for errors.', 'error');
+            }
+        }
+
+        function setApiKey() {
+            const apiKeyInput = document.getElementById('apiKeyInput');
+            const apiKey = apiKeyInput.value.trim();
+            
+            if (!apiKey) {
+                alert('Please enter your OpenAI API key');
+                return;
+            }
+
+            try {
+                if (!aiAgent) {
+                    aiAgent = new window.UnifiedAiAgent();
+                }
+                
+                aiAgent.setApiKey(apiKey);
+                log('🔑 API key set successfully');
+                setStatus('✅ API key configured! Ready to test.');
+                
+                apiKeyInput.value = '';
+                showTestSection();
+            } catch (error) {
+                log(`❌ Failed to set API key: ${error.message}`);
+                setStatus('❌ Failed to configure API key', 'error');
+            }
+        }
+
+        function showTestSection() {
+            document.getElementById('apiKeySection').style.display = 'none';
+            document.getElementById('testSection').style.display = 'block';
+        }
+
+        async function testChat() {
+            const input = document.getElementById('testInput').value.trim();
+            if (!input) {
+                alert('Please enter a test message');
+                return;
+            }
+
+            await runTest(input);
+        }
+
+        async function quickTest(message) {
+            await runTest(message);
+        }
+
+        async function runTest(message) {
+            log(`\n🧪 TESTING: "${message}"`);
+            
+            try {
+                if (!aiAgent) {
+                    throw new Error('AI Agent not initialized');
+                }
+
+                log('🧠 Processing with Unified AI Agent...');
+                const startTime = Date.now();
+                
+                const result = await aiAgent.processRequest(message);
+                const duration = Date.now() - startTime;
+                
+                log(`⏱️  Processing took ${duration}ms`);
+                log(`📊 Result: ${result.success ? 'SUCCESS' : 'FAILED'}`);
+                
+                if (result.success) {
+                    log('🤖 AI Response:');
+                    log(result.response);
+                } else {
+                    log(`❌ Error: ${result.error}`);
+                }
+                
+                log('─'.repeat(80));
+
+            } catch (error) {
+                log(`❌ Test failed: ${error.message}`);
+                console.error('Full error:', error);
+            }
+        }
+
+        // Allow Enter key to send messages
+        document.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                if (document.getElementById('testInput') === document.activeElement) {
+                    testChat();
+                } else if (document.getElementById('apiKeyInput') === document.activeElement) {
+                    setApiKey();
+                }
+            }
+        });
+    </script>
+</body>
+</html>

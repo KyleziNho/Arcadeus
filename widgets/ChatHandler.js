@@ -217,29 +217,79 @@ class ChatHandler {
       return;
     }
 
-    console.log('Sending chat message via LangChain orchestrator:', message);
-    
-    // **ALWAYS use LangChain orchestrator - NO FALLBACKS**
-    if (!window.langChainOrchestrator || typeof window.langChainOrchestrator.processMessage !== 'function') {
-      console.error('❌ LangChain orchestrator not available! Cannot process message.');
-      this.showError('LangChain system not initialized. Please refresh the page and try again.');
-      return;
-    }
-    
-    console.log('🌟 Processing message with LangChain orchestrator');
+    console.log('🧠 Processing message with Unified AI Agent:', message);
     
     // Clear input immediately
     chatInput.value = '';
     
     try {
       this.isProcessing = true;
-      await window.langChainOrchestrator.processMessage(message);
+      
+      // Add user message to chat
+      this.addChatMessage('user', message);
+      
+      // Show processing indicator
+      const processingDiv = this.showProcessingIndicator();
+      
+      // **USE UNIFIED AI AGENT - Single intelligent agent**
+      let aiAgent;
+      try {
+        aiAgent = await window.ApiKeyManager.ensureApiKey();
+      } catch (error) {
+        console.error('❌ Failed to initialize AI agent:', error);
+        this.showError(error.message);
+        if (processingDiv) processingDiv.remove();
+        return;
+      }
+
+      // Process with AI agent
+      const result = await aiAgent.processRequest(message);
+      
+      // Remove processing indicator
+      if (processingDiv) processingDiv.remove();
+      
+      if (result.success) {
+        // Add AI response to chat
+        this.addFormattedChatMessage('assistant', result.response);
+      } else {
+        this.showError(`AI Agent Error: ${result.error}`);
+      }
+
     } catch (error) {
-      console.error('❌ LangChain orchestrator failed:', error);
-      this.showError(`LangChain processing failed: ${error.message}`);
+      console.error('❌ Unified AI Agent failed:', error);
+      this.showError(`AI processing failed: ${error.message}`);
     } finally {
       this.isProcessing = false;
     }
+  }
+
+  /**
+   * Show processing indicator
+   */
+  showProcessingIndicator() {
+    const chatMessages = document.getElementById('chatMessages');
+    if (!chatMessages) return null;
+    
+    const processingDiv = document.createElement('div');
+    processingDiv.className = 'chat-message assistant-message processing-message';
+    processingDiv.innerHTML = `
+      <div class="message-avatar">
+        <div class="avatar-icon">🧠</div>
+      </div>
+      <div class="message-content">
+        <div class="processing-indicator">
+          <div class="processing-dots">
+            <span></span><span></span><span></span>
+          </div>
+          <div class="processing-text">AI analyzing Excel data and preparing response...</div>
+        </div>
+      </div>
+    `;
+    
+    chatMessages.appendChild(processingDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+    
+    return processingDiv;
   }
 
   /**
