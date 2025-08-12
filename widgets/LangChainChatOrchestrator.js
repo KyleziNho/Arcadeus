@@ -317,7 +317,7 @@ FORMATTING REQUIREMENTS:
    - 💡 for key insights
    - ⚠️ for warnings or concerns
    - ✅ for recommendations
-10. When showing multiple metrics, use tables with | separators
+10. When showing multiple metrics, list them beneath each other with bullet points
 11. Always include an analysis section with actionable insights
 
 RESPONSE STRUCTURE:
@@ -472,9 +472,6 @@ Provide a comprehensive, well-formatted analysis using ONLY the actual tool resu
     // Wrap consecutive bullet points in proper lists
     formatted = formatted.replace(/(<li class="response-bullet">.*?<\/li>\s*)+/gs, '<ul class="response-list">$&</ul>');
     
-    // Convert tables (simple pipe-separated format)
-    formatted = this.formatTables(formatted);
-    
     // Convert recommendations/insights boxes
     formatted = formatted.replace(/💡 (.+?)(?=\\n\\n|$)/gs, '<div class="insight-box"><div class="insight-title">💡 Insight</div><div class="insight-content">$1</div></div>');
     formatted = formatted.replace(/⚠️ (.+?)(?=\\n\\n|$)/gs, '<div class="warning-box"><div class="warning-title">⚠️ Warning</div><div class="warning-content">$1</div></div>');
@@ -491,41 +488,6 @@ Provide a comprehensive, well-formatted analysis using ONLY the actual tool resu
     return formatted;
   }
   
-  /**
-   * Format tables in markdown to HTML
-   */
-  formatTables(text) {
-    // Simple table conversion for pipe-separated values
-    const tableRegex = /(\|[^|\n]+\|.*\n)+/g;
-    
-    return text.replace(tableRegex, (match) => {
-      const rows = match.trim().split('\n');
-      const headerRow = rows[0];
-      const dataRows = rows.slice(2); // Skip separator row
-      
-      let html = '<table class="response-table"><thead><tr>';
-      
-      // Process header
-      const headers = headerRow.split('|').filter(cell => cell.trim()).map(cell => cell.trim());
-      headers.forEach(header => {
-        html += `<th>${header}</th>`;
-      });
-      html += '</tr></thead><tbody>';
-      
-      // Process data rows
-      dataRows.forEach(row => {
-        const cells = row.split('|').filter(cell => cell.trim()).map(cell => cell.trim());
-        html += '<tr>';
-        cells.forEach(cell => {
-          html += `<td>${cell}</td>`;
-        });
-        html += '</tr>';
-      });
-      
-      html += '</tbody></table>';
-      return html;
-    });
-  }
 
   /**
    * Display formatted response in chat
