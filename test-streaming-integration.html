@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Streaming Chat Integration Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f8fafc;
+        }
+        
+        .test-container {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        
+        .status {
+            padding: 12px;
+            border-radius: 8px;
+            margin: 8px 0;
+            font-weight: 500;
+        }
+        
+        .status.success {
+            background: #dcfce7;
+            color: #166534;
+            border-left: 4px solid #22c55e;
+        }
+        
+        .status.error {
+            background: #fee2e2;
+            color: #991b1b;
+            border-left: 4px solid #ef4444;
+        }
+        
+        .status.warning {
+            background: #fef3c7;
+            color: #92400e;
+            border-left: 4px solid #f59e0b;
+        }
+        
+        button {
+            background: #10b981;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 8px;
+        }
+        
+        button:hover {
+            background: #059669;
+        }
+        
+        .mock-chat {
+            width: 100%;
+            height: 400px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 16px;
+            background: white;
+            overflow-y: auto;
+        }
+        
+        pre {
+            background: #f1f5f9;
+            padding: 16px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🚀 Streaming Chat Integration Test</h1>
+        <p>This page tests the streaming chat integration without requiring Excel.</p>
+        
+        <div id="statusContainer">
+            <div class="status warning">Initializing...</div>
+        </div>
+        
+        <button onclick="runDependencyCheck()">Check Dependencies</button>
+        <button onclick="testAPIConnection()">Test API Connection</button>
+        <button onclick="simulateStreamingResponse()">Simulate Streaming</button>
+        <button onclick="runHealthCheck()">Health Check</button>
+        
+        <h3>Mock Chat Interface</h3>
+        <div id="mockChat" class="mock-chat">
+            <div id="chatMessages">
+                <!-- Streaming responses will appear here -->
+            </div>
+        </div>
+        
+        <input type="text" id="testInput" placeholder="Enter test message..." style="width: 70%; padding: 8px; margin: 8px;">
+        <button onclick="sendTestMessage()">Send Test</button>
+        
+        <h3>Debug Information</h3>
+        <pre id="debugInfo">Loading...</pre>
+    </div>
+
+    <!-- Load required dependencies -->
+    <script>
+        // Mock Office.js for testing
+        window.Office = {
+            onReady: function(callback) {
+                setTimeout(callback, 100);
+            },
+            context: {
+                requirements: {
+                    isSetSupported: () => true
+                }
+            }
+        };
+        
+        // Mock Excel API
+        window.Excel = {
+            run: async function(callback) {
+                return await callback({
+                    workbook: {
+                        worksheets: {
+                            getActiveWorksheet: () => ({
+                                name: 'Test Sheet',
+                                load: () => {},
+                                getUsedRange: () => ({
+                                    address: 'A1:C10',
+                                    values: [
+                                        ['Deal Name', 'Value', 'Multiple'],
+                                        ['Test Deal', '100', '2.5x'],
+                                        ['MOIC', '2.8x', ''],
+                                        ['IRR', '18.5%', '']
+                                    ],
+                                    formulas: [['=A1'], ['Test Deal'], ['=B2*2.8'], ['=XIRR(...)']],
+                                    load: () => {}
+                                })
+                            })
+                        }
+                    },
+                    sync: async () => {}
+                });
+            }
+        };
+    </script>
+    
+    <!-- Load core dependencies first -->
+    <script>
+        // Mock ExcelLiveAnalyzer for testing
+        class MockExcelLiveAnalyzer {
+            async getOptimizedContextForAI() {
+                return {
+                    financialMetrics: {
+                        moic: { value: '2.8x', location: 'FCF!B23', interpretation: 'Strong' },
+                        irr: { value: '18.5%', location: 'FCF!B22', interpretation: 'Good' }
+                    },
+                    analysis: {
+                        structure: 'financial_model',
+                        financialAreas: {
+                            moic: [{ location: 'FCF!B23', text: 'MOIC' }],
+                            irr: [{ location: 'FCF!B22', text: 'IRR' }]
+                        }
+                    }
+                };
+            }
+        }
+        
+        // Mock ChatHandler
+        class MockChatHandler {
+            constructor() {
+                this.excelAnalyzer = new MockExcelLiveAnalyzer();
+            }
+            
+            async initialize() {
+                console.log('Mock ChatHandler initialized');
+            }
+            
+            async processWithAI(message) {
+                console.log('Processing with AI:', message);
+                return `Mock response for: ${message}`;
+            }
+            
+            showStatus(message) {
+                updateStatus(message, 'success');
+            }
+        }
+        
+        // Mock Excel Navigator
+        window.excelNavigator = {
+            navigateToCell: (cellRef) => {
+                console.log(`Mock navigation to: ${cellRef}`);
+                return Promise.resolve();
+            }
+        };
+        
+        // Initialize mocks
+        window.ExcelLiveAnalyzer = MockExcelLiveAnalyzer;
+        window.ChatHandler = MockChatHandler;
+        window.enhancedResponseFormatter = {
+            formatResponse: (text) => text
+        };
+    </script>
+    
+    <script src="widgets/enhanced-streaming-chat.js"></script>
+    <script src="widgets/streaming-chat-init.js"></script>
+    
+    <script>
+        function updateStatus(message, type = 'success') {
+            const container = document.getElementById('statusContainer');
+            container.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+        
+        function runDependencyCheck() {
+            const dependencies = {
+                'Office.js': typeof Office !== 'undefined',
+                'Excel API': typeof Excel !== 'undefined',
+                'Enhanced Streaming Chat': typeof window.enhancedStreamingChat !== 'undefined',
+                'Chat Handler': typeof window.ChatHandler !== 'undefined',
+                'Excel Live Analyzer': typeof window.ExcelLiveAnalyzer !== 'undefined',
+                'Excel Navigator': typeof window.excelNavigator !== 'undefined'
+            };
+            
+            const results = Object.entries(dependencies)
+                .map(([name, available]) => `${name}: ${available ? '✅' : '❌'}`)
+                .join('\n');
+            
+            const allReady = Object.values(dependencies).every(Boolean);
+            updateStatus(`Dependencies Check:\n${results}`, allReady ? 'success' : 'error');
+        }
+        
+        async function testAPIConnection() {
+            try {
+                updateStatus('Testing API connection...', 'warning');
+                
+                // Test the streaming API endpoint
+                const response = await fetch('/.netlify/functions/streaming-chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message: 'Test connection',
+                        excelContext: { test: true },
+                        streaming: false
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    updateStatus(`API Connection: ✅ Success (${response.status})`, 'success');
+                } else {
+                    updateStatus(`API Connection: ❌ Failed (${response.status})`, 'error');
+                }
+            } catch (error) {
+                updateStatus(`API Connection: ❌ Error - ${error.message}`, 'error');
+            }
+        }
+        
+        async function simulateStreamingResponse() {
+            if (!window.enhancedStreamingChat) {
+                updateStatus('Enhanced streaming chat not available', 'error');
+                return;
+            }
+            
+            try {
+                updateStatus('Simulating streaming response...', 'warning');
+                
+                // Create a mock parsed response
+                const mockResponse = {
+                    query_interpretation: "You're asking about the IRR performance in your M&A model.",
+                    analysis_steps: [
+                        {
+                            step_number: 1,
+                            action: "Locating IRR calculation",
+                            excel_reference: "FCF!B22",
+                            observation: "Found IRR formula =XIRR(B19:I19, B3:I3) showing 18.5%",
+                            reasoning: "First step is to identify where IRR is calculated"
+                        },
+                        {
+                            step_number: 2,
+                            action: "Examining cash flows",
+                            excel_reference: "FCF!B19:I19",
+                            observation: "Cash flows: -$10M (initial), $1.2M, $1.5M, $1.8M, $2.1M, $2.4M, $2.7M, $15M (exit)",
+                            reasoning: "IRR depends on timing and magnitude of cash flows"
+                        }
+                    ],
+                    key_metrics: {
+                        primary: {
+                            name: "IRR",
+                            value: "18.5%",
+                            location: "FCF!B22",
+                            formula: "=XIRR(B19:I19, B3:I3)",
+                            interpretation: "Good"
+                        },
+                        supporting: [
+                            {
+                                name: "MOIC",
+                                value: "2.8x",
+                                location: "FCF!B23",
+                                interpretation: "Strong"
+                            }
+                        ]
+                    },
+                    final_answer: "Your IRR of 18.5% represents a good return, above typical hurdle rates of 15-20% for M&A deals.",
+                    recommendations: [
+                        {
+                            action: "Consider optimizing exit timing",
+                            expected_impact: "Could improve IRR by 2-3%",
+                            cells_to_modify: ["Inputs!B4"],
+                            priority: "medium"
+                        }
+                    ]
+                };
+                
+                // Create a container for the mock streaming
+                const chatMessages = document.getElementById('chatMessages');
+                chatMessages.innerHTML = '';
+                
+                // Simulate the streaming process
+                await window.enhancedStreamingChat.simulateStreaming(mockResponse, {
+                    querySelector: (selector) => {
+                        if (selector === '.analysis-body') {
+                            return chatMessages;
+                        }
+                        return null;
+                    }
+                }, 'financial_analysis');
+                
+                updateStatus('Streaming simulation completed ✅', 'success');
+                
+            } catch (error) {
+                updateStatus(`Streaming simulation failed: ${error.message}`, 'error');
+                console.error('Simulation error:', error);
+            }
+        }
+        
+        function runHealthCheck() {
+            if (typeof window.checkStreamingChatHealth === 'function') {
+                const health = window.checkStreamingChatHealth();
+                updateStatus(`Health Check: ${health.status.toUpperCase()} (${health.healthScore}%)`, 
+                    health.status === 'healthy' ? 'success' : 
+                    health.status === 'degraded' ? 'warning' : 'error');
+            } else {
+                updateStatus('Health check function not available', 'error');
+            }
+        }
+        
+        async function sendTestMessage() {
+            const input = document.getElementById('testInput');
+            const message = input.value.trim();
+            
+            if (!message) return;
+            
+            try {
+                updateStatus(`Processing: "${message}"`, 'warning');
+                
+                if (window.enhancedStreamingChat) {
+                    const response = await window.enhancedStreamingChat.processWithStreaming(message);
+                    updateStatus('Test message processed ✅', 'success');
+                } else {
+                    updateStatus('Enhanced streaming chat not available', 'error');
+                }
+            } catch (error) {
+                updateStatus(`Test failed: ${error.message}`, 'error');
+            }
+            
+            input.value = '';
+        }
+        
+        function updateDebugInfo() {
+            const info = {
+                timestamp: new Date().toISOString(),
+                userAgent: navigator.userAgent,
+                location: window.location.href,
+                dependencies: {
+                    Office: typeof Office !== 'undefined',
+                    Excel: typeof Excel !== 'undefined',
+                    enhancedStreamingChat: typeof window.enhancedStreamingChat !== 'undefined',
+                    chatHandler: typeof window.chatHandler !== 'undefined'
+                }
+            };
+            
+            document.getElementById('debugInfo').textContent = JSON.stringify(info, null, 2);
+        }
+        
+        // Initialize the test page
+        window.addEventListener('load', () => {
+            updateDebugInfo();
+            setTimeout(() => {
+                runDependencyCheck();
+            }, 1000);
+        });
+        
+        // Listen for streaming chat ready event
+        window.addEventListener('streamingChatReady', (event) => {
+            updateStatus('Streaming chat system ready! 🚀', 'success');
+            console.log('Streaming chat ready with features:', event.detail);
+        });
+        
+        // Auto-update debug info every 5 seconds
+        setInterval(updateDebugInfo, 5000);
+    </script>
+</body>
+</html>
