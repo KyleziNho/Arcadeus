@@ -113,7 +113,8 @@ class LangChainChatOrchestrator {
       
     } catch (error) {
       console.error('❌ Error processing message:', error);
-      this.displayError('I encountered an error processing your request. Please try again.');
+      // Show error message but still try to use LangChain for error response
+      this.displayLangChainError(error.message, processingContainer);
     }
   }
 
@@ -248,22 +249,12 @@ class LangChainChatOrchestrator {
   }
 
   /**
-   * Process message through LangChain with all tools
+   * Process message through LangChain with all tools - ALWAYS use LangChain
    */
   async processWithLangChain(message, context) {
     console.log('🤖 Processing through LangChain with context:', context);
     
-    // If Excel AI Agent is available, use it
-    if (this.excelAgent) {
-      try {
-        const response = await this.excelAgent.processMessage(message);
-        return response;
-      } catch (error) {
-        console.error('Excel AI Agent error:', error);
-      }
-    }
-    
-    // Otherwise, call the API with enhanced context
+    // ALWAYS use LangChain API - no fallbacks or alternatives
     return await this.callLangChainAPI(message, context);
   }
 
@@ -313,12 +304,28 @@ ${toolContext}
 
 CRITICAL INSTRUCTIONS:
 1. Use ONLY the actual data from TOOL EXECUTION RESULTS above
-2. Always cite specific cell locations when mentioning values
+2. Always cite specific cell locations when mentioning values (e.g., "IRR of **25.3%** at B12")
 3. If a value wasn't found by tools, say "Value not found in Excel"
 4. The tool results contain the REAL Excel data - never make up numbers
-5. Format response with clear sections and highlighting
 
-Provide a comprehensive analysis using the actual tool results.`;
+FORMATTING REQUIREMENTS:
+5. Structure your response with clear sections using ## headers
+6. Use **bold** for all financial values and important metrics
+7. Use • bullet points for insights and recommendations
+8. Include cell references in format: SheetName!A1 or B12
+9. Add insight boxes using:
+   - 💡 for key insights
+   - ⚠️ for warnings or concerns
+   - ✅ for recommendations
+10. When showing multiple metrics, use tables with | separators
+11. Always include an analysis section with actionable insights
+
+RESPONSE STRUCTURE:
+- ## Key Financial Metrics (with actual values and cell locations)
+- ## Analysis (interpretation of the numbers)
+- ## Insights and Recommendations (actionable advice)
+
+Provide a comprehensive, well-formatted analysis using ONLY the actual tool results.`;
       
       const response = await fetch(apiUrl, {
         method: 'POST',
@@ -338,8 +345,9 @@ Provide a comprehensive analysis using the actual tool results.`;
       return data.response || data.parsed?.final_answer || 'No response received';
       
     } catch (error) {
-      console.error('LangChain API error:', error);
-      return this.generateFallbackResponse(message, context);
+      console.error('❌ LangChain API error:', error);
+      // NO FALLBACKS - Always retry LangChain or show proper error
+      throw new Error(`LangChain API failed: ${error.message}. Please check your connection and try again.`);
     }
   }
 
@@ -437,31 +445,86 @@ Provide a comprehensive analysis using the actual tool results.`;
   }
 
   /**
-   * Basic response formatting
+   * Enhanced response formatting for professional LangChain responses
    */
   basicFormatResponse(response) {
     let formatted = response;
     
-    // Convert markdown headers
-    formatted = formatted.replace(/### (.+)/g, '<h3 class="response-header">$1</h3>');
-    formatted = formatted.replace(/## (.+)/g, '<h3 class="response-header">$1</h3>');
+    // Convert markdown headers with better styling
+    formatted = formatted.replace(/### (.+)/g, '<h3 class="response-header">📊 $1</h3>');
+    formatted = formatted.replace(/## (.+)/g, '<h2 class="response-header">🎯 $1</h2>');
+    formatted = formatted.replace(/# (.+)/g, '<h1 class="response-header">⚡ $1</h1>');
     
-    // Convert bold text
+    // Convert bold text with enhanced highlighting
     formatted = formatted.replace(/\*\*(.+?)\*\*/g, '<strong class="highlight-value">$1</strong>');
     
-    // Convert cell references to clickable links
+    // Convert cell references to clickable links with better formatting
     formatted = formatted.replace(/([A-Z]+!?[A-Z]*\d+)/g, 
-      '<span class="cell-reference clickable" onclick="window.navigateToCell(\'$1\')">$1</span>');
+      '<span class="cell-reference clickable" onclick="window.langChainOrchestrator.navigateToCell(\'$1\')">📍 $1</span>');
     
-    // Convert bullet points
+    // Convert financial values (numbers with % or $ or x)
+    formatted = formatted.replace(/(\\$?[\d,]+\.?\d*%?x?)/g, '<span class="financial-value">$1</span>');
+    
+    // Convert bullet points with better icons
     formatted = formatted.replace(/^• (.+)$/gm, '<li class="response-bullet">$1</li>');
-    formatted = formatted.replace(/(<li.*<\/li>\n?)+/g, '<ul class="response-list">$&</ul>');
+    formatted = formatted.replace(/^- (.+)$/gm, '<li class="response-bullet">$1</li>');
     
-    // Convert line breaks
+    // Wrap consecutive bullet points in proper lists
+    formatted = formatted.replace(/(<li class="response-bullet">.*?<\/li>\s*)+/gs, '<ul class="response-list">$&</ul>');
+    
+    // Convert tables (simple pipe-separated format)
+    formatted = this.formatTables(formatted);
+    
+    // Convert recommendations/insights boxes
+    formatted = formatted.replace(/💡 (.+?)(?=\\n\\n|$)/gs, '<div class="insight-box"><div class="insight-title">💡 Insight</div><div class="insight-content">$1</div></div>');
+    formatted = formatted.replace(/⚠️ (.+?)(?=\\n\\n|$)/gs, '<div class="warning-box"><div class="warning-title">⚠️ Warning</div><div class="warning-content">$1</div></div>');
+    formatted = formatted.replace(/✅ (.+?)(?=\\n\\n|$)/gs, '<div class="success-box"><div class="success-title">✅ Recommendation</div><div class="success-content">$1</div></div>');
+    
+    // Convert line breaks properly
     formatted = formatted.replace(/\n\n/g, '</p><p class="response-paragraph">');
-    formatted = `<p class="response-paragraph">${formatted}</p>`;
+    
+    // Wrap in paragraph tags if not already wrapped
+    if (!formatted.includes('<p') && !formatted.includes('<h') && !formatted.includes('<div')) {
+      formatted = `<p class="response-paragraph">${formatted}</p>`;
+    }
     
     return formatted;
+  }
+  
+  /**
+   * Format tables in markdown to HTML
+   */
+  formatTables(text) {
+    // Simple table conversion for pipe-separated values
+    const tableRegex = /(\|[^|\n]+\|.*\n)+/g;
+    
+    return text.replace(tableRegex, (match) => {
+      const rows = match.trim().split('\n');
+      const headerRow = rows[0];
+      const dataRows = rows.slice(2); // Skip separator row
+      
+      let html = '<table class="response-table"><thead><tr>';
+      
+      // Process header
+      const headers = headerRow.split('|').filter(cell => cell.trim()).map(cell => cell.trim());
+      headers.forEach(header => {
+        html += `<th>${header}</th>`;
+      });
+      html += '</tr></thead><tbody>';
+      
+      // Process data rows
+      dataRows.forEach(row => {
+        const cells = row.split('|').filter(cell => cell.trim()).map(cell => cell.trim());
+        html += '<tr>';
+        cells.forEach(cell => {
+          html += `<td>${cell}</td>`;
+        });
+        html += '</tr>';
+      });
+      
+      html += '</tbody></table>';
+      return html;
+    });
   }
 
   /**
@@ -619,74 +682,56 @@ Provide a comprehensive analysis using the actual tool results.`;
   }
 
   /**
-   * Generate fallback response when API fails
+   * Display LangChain error with retry option - NO fallbacks
    */
-  async generateFallbackResponse(message, context) {
-    console.log('📋 Generating fallback response with tool execution...');
+  displayLangChainError(errorMessage, processingContainer) {
+    if (processingContainer) {
+      processingContainer.remove();
+    }
     
-    try {
-      // Try to execute tools even for fallback
-      const toolsToUse = this.determineRequiredTools(message);
-      const toolResults = await this.executeTools(toolsToUse, message);
-      
-      let response = "I'll analyze your Excel model using the actual data found:\n\n";
-      
-      // Process tool results for fallback
-      if (toolResults.search_financial_metrics && !toolResults.search_financial_metrics.error) {
-        const metrics = toolResults.search_financial_metrics;
-        
-        response += "**Financial Metrics Found:**\n";
-        
-        for (const [metricName, data] of Object.entries(metrics)) {
-          if (data.value && data.location) {
-            response += `• **${metricName}**: ${data.value} (Cell: ${data.location})\n`;
-            
-            if (data.formula) {
-              response += `  Formula: ${data.formula}\n`;
-            }
-          }
-        }
-        
-        response += "\n**Analysis:**\n";
-        
-        // Add specific insights based on actual values
-        if (metrics.IRR) {
-          const irrValue = metrics.IRR.rawValue || parseFloat(metrics.IRR.value);
-          response += `• Your IRR of ${metrics.IRR.value} `;
-          response += irrValue > 0.15 ? "exceeds typical target returns\n" : "may need optimization\n";
-        }
-        
-        if (metrics.MOIC) {
-          const moicValue = metrics.MOIC.rawValue || parseFloat(metrics.MOIC.value);
-          response += `• Your MOIC of ${metrics.MOIC.value} `;
-          response += moicValue > 2.0 ? "shows strong value creation\n" : "has room for improvement\n";
-        }
-        
-        if (metrics.Revenue) {
-          response += `• Revenue projection: ${metrics.Revenue.value} at ${metrics.Revenue.location}\n`;
-        }
-        
-      } else {
-        response += "I wasn't able to find specific financial metrics in your Excel model. ";
-        response += "Please ensure your model contains clearly labeled metrics like IRR, MOIC, Revenue, etc.";
-      }
-      
-      // Add worksheet summary if available
-      if (toolResults.get_worksheet_summary && !toolResults.get_worksheet_summary.error) {
-        const summary = toolResults.get_worksheet_summary;
-        response += `\n\n**Worksheet Info:**\n`;
-        response += `• Active Sheet: ${summary.worksheetName}\n`;
-        if (summary.usedRange) {
-          response += `• Data Range: ${summary.usedRange.address}\n`;
-          response += `• Non-empty Cells: ${summary.nonEmptyCells || 'Unknown'}\n`;
-        }
-      }
-      
-      return response;
-      
-    } catch (error) {
-      console.error('Fallback response generation failed:', error);
-      return "I encountered an error while analyzing your Excel model. Please try again or check that your Excel workbook contains financial data.";
+    const chatMessages = document.getElementById('chatMessages');
+    if (!chatMessages) return;
+    
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'chat-message assistant-message langchain-error';
+    
+    messageDiv.innerHTML = `
+      <div class="message-avatar">
+        <div class="avatar-icon">⚠️</div>
+      </div>
+      <div class="message-content">
+        <div class="message-header">
+          <span class="message-role">LangChain Error</span>
+          <span class="message-badge error-badge">Connection Issue</span>
+        </div>
+        <div class="message-text error-content">
+          <div class="error-title">Unable to process through LangChain</div>
+          <div class="error-message">${errorMessage}</div>
+          <div class="error-actions">
+            <button class="retry-btn" onclick="window.langChainOrchestrator.retryLastMessage()">
+              🔄 Retry with LangChain
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    chatMessages.appendChild(messageDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  }
+  
+  /**
+   * Retry the last message
+   */
+  async retryLastMessage() {
+    const lastUserMessage = this.chatHistory
+      .slice()
+      .reverse()
+      .find(msg => msg.role === 'user');
+    
+    if (lastUserMessage) {
+      console.log('🔄 Retrying last message with LangChain...');
+      await this.processMessage(lastUserMessage.content);
     }
   }
 
