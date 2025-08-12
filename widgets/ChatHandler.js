@@ -234,8 +234,17 @@ class ChatHandler {
       // **USE DEEP AGENT - Intelligent multi-step reasoning with planning**
       let aiAgent;
       try {
+        // Debug: Check what agents are available
+        console.log('🔍 Checking available agents:');
+        console.log('- window.DeepExcelAgent:', typeof window.DeepExcelAgent);
+        console.log('- window.HybridExcelAgent:', typeof window.HybridExcelAgent);
+        console.log('- window.UnifiedAiAgent:', typeof window.UnifiedAiAgent);
+        console.log('- window.ApiKeyManager:', typeof window.ApiKeyManager);
+        
         // Check for Deep Agent first (most intelligent)
-        if (window.DeepExcelAgent) {
+        if (typeof window.DeepExcelAgent === 'function') {
+          console.log('🧠 Deep Agent class found, initializing...');
+          
           const apiKey = localStorage.getItem('openai_api_key') || 
                          sessionStorage.getItem('openai_api_key') ||
                          await this.promptForApiKey();
@@ -244,17 +253,24 @@ class ChatHandler {
             throw new Error('OpenAI API key required for Deep Agent');
           }
           
+          console.log('🔑 API key found, creating Deep Agent instance...');
           aiAgent = new window.DeepExcelAgent(apiKey);
+          console.log('✅ Deep Excel Agent instance created successfully');
           console.log('🧠 Using Deep Excel Agent with planning, sub-agents, and persistence');
           
-        } else if (window.HybridExcelAgent && localStorage.getItem('useComplexWorkflows') === 'true') {
-          const baseAgent = await window.ApiKeyManager.ensureApiKey();
-          aiAgent = new window.HybridExcelAgent(baseAgent.apiKey);
-          console.log('🔄 Using Hybrid Excel Agent');
-          
         } else {
-          aiAgent = await window.ApiKeyManager.ensureApiKey();
-          console.log('⚡ Using simple Unified AI Agent');
+          console.warn('⚠️ window.DeepExcelAgent not available, checking alternatives...');
+          
+          if (window.HybridExcelAgent && localStorage.getItem('useComplexWorkflows') === 'true') {
+            const baseAgent = await window.ApiKeyManager.ensureApiKey();
+            aiAgent = new window.HybridExcelAgent(baseAgent.apiKey);
+            console.log('🔄 Using Hybrid Excel Agent');
+            
+          } else {
+            console.warn('⚠️ Using fallback: simple Unified AI Agent');
+            aiAgent = await window.ApiKeyManager.ensureApiKey();
+            console.log('⚡ Using simple Unified AI Agent');
+          }
         }
       } catch (error) {
         console.error('❌ Failed to initialize AI agent:', error);

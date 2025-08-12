@@ -555,5 +555,55 @@ class VirtualFileSystem {
 if (typeof window !== 'undefined') {
   window.DeepExcelAgent = DeepExcelAgent;
   window.VirtualFileSystem = VirtualFileSystem;
-  console.log('✅ Deep Excel Agent initialized with planning, sub-agents, and file system');
+  
+  // Test instantiation to make sure it works
+  try {
+    const testAgent = new DeepExcelAgent('test-key');
+    console.log('✅ Deep Excel Agent initialized with planning, sub-agents, and file system');
+    console.log('🧠 Deep Agent features:');
+    console.log('  - Planning tool (todo_write)');
+    console.log('  - File system (write_file, read_file, edit_file, ls)');
+    console.log('  - Sub-agents:', Array.from(testAgent.subAgents.keys()));
+    console.log('  - Tools available:', Object.keys(testAgent.tools));
+    
+    // Make it globally available for immediate testing
+    window.testDeepAgent = testAgent;
+    
+    // Add a simple test function
+    window.testDeepAgentNow = async function(testMessage = "Analyze this Excel workbook and create a plan") {
+      console.log('🧪 Testing Deep Agent with message:', testMessage);
+      
+      try {
+        const apiKey = localStorage.getItem('openai_api_key') || 
+                      prompt('Enter OpenAI API key for testing:');
+        
+        if (!apiKey) {
+          console.error('❌ No API key provided');
+          return;
+        }
+        
+        const agent = new DeepExcelAgent(apiKey);
+        console.log('🧠 Deep Agent created, processing request...');
+        
+        const result = await agent.processRequest(testMessage);
+        
+        console.log('📊 Deep Agent Result:');
+        console.log('Success:', result.success);
+        console.log('Response:', result.response);
+        console.log('Todo List:', result.todoList);
+        console.log('Files:', result.files);
+        
+        return result;
+        
+      } catch (error) {
+        console.error('❌ Test failed:', error);
+        return { success: false, error: error.message };
+      }
+    };
+    
+    console.log('🧪 Test function available: window.testDeepAgentNow()');
+    console.log('   Usage: testDeepAgentNow("Analyze this workbook")');}
+  } catch (error) {
+    console.error('❌ Failed to initialize Deep Excel Agent:', error);
+  }
 }
