@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>🔍 Agent Debug</title>
+    <style>
+        body { font-family: monospace; margin: 20px; line-height: 1.6; }
+        .debug-section { background: #f5f5f5; padding: 15px; margin: 10px 0; border-radius: 5px; }
+        .success { color: #22c55e; font-weight: bold; }
+        .error { color: #ef4444; font-weight: bold; }
+        .warning { color: #f59e0b; font-weight: bold; }
+        button { padding: 10px 20px; margin: 5px; background: #3b82f6; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #2563eb; }
+        .output { background: white; border: 1px solid #ccc; padding: 10px; margin: 10px 0; white-space: pre-wrap; max-height: 400px; overflow-y: auto; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Agent Availability Debug</h1>
+    
+    <div class="debug-section">
+        <h3>1. Check Script Loading</h3>
+        <div id="scriptCheck"></div>
+        <button onclick="checkScripts()">Check Scripts</button>
+    </div>
+
+    <div class="debug-section">
+        <h3>2. Check Agent Classes</h3>
+        <div id="agentCheck"></div>
+        <button onclick="checkAgents()">Check Agents</button>
+    </div>
+
+    <div class="debug-section">
+        <h3>3. Test Deep Agent</h3>
+        <input type="password" id="apiKey" placeholder="OpenAI API Key" style="width: 300px; padding: 8px;">
+        <button onclick="testDeepAgent()">Test Deep Agent</button>
+        <div id="testResult"></div>
+    </div>
+
+    <div class="debug-section">
+        <h3>4. Console Output</h3>
+        <div class="output" id="consoleOutput"></div>
+        <button onclick="clearOutput()">Clear Output</button>
+    </div>
+
+    <!-- Load scripts in the same order as taskpane.html -->
+    <script src="widgets/UnifiedExcelApiLibrary.js"></script>
+    <script src="widgets/UnifiedAiAgent.js"></script>
+    <script src="widgets/HybridExcelAgent.js"></script>
+    <script src="widgets/DeepExcelAgent.js"></script>
+
+    <script>
+        // Capture console logs
+        const originalLog = console.log;
+        const originalError = console.error;
+        const originalWarn = console.warn;
+        
+        function addToOutput(message, type = 'log') {
+            const output = document.getElementById('consoleOutput');
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type === 'error' ? 'error' : type === 'warn' ? 'warning' : '';
+            output.innerHTML += `<span class="${className}">[${timestamp}] ${message}</span>\n`;
+            output.scrollTop = output.scrollHeight;
+        }
+        
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            addToOutput(args.join(' '), 'log');
+        };
+        
+        console.error = function(...args) {
+            originalError.apply(console, args);
+            addToOutput('ERROR: ' + args.join(' '), 'error');
+        };
+        
+        console.warn = function(...args) {
+            originalWarn.apply(console, args);
+            addToOutput('WARN: ' + args.join(' '), 'warn');
+        };
+
+        function checkScripts() {
+            const scriptCheck = document.getElementById('scriptCheck');
+            let html = '<h4>Script Loading Status:</h4>';
+            
+            const scripts = [
+                'UnifiedExcelApiLibrary',
+                'UnifiedAiAgent', 
+                'HybridExcelAgent',
+                'DeepExcelAgent',
+                'VirtualFileSystem'
+            ];
+            
+            scripts.forEach(script => {
+                const available = typeof window[script] !== 'undefined';
+                const status = available ? '<span class="success">✅ Loaded</span>' : '<span class="error">❌ Missing</span>';
+                html += `<div>${script}: ${status}</div>`;
+            });
+            
+            scriptCheck.innerHTML = html;
+        }
+
+        function checkAgents() {
+            const agentCheck = document.getElementById('agentCheck');
+            let html = '<h4>Agent Class Availability:</h4>';
+            
+            // Check Deep Agent
+            const deepAgentType = typeof window.DeepExcelAgent;
+            html += `<div>window.DeepExcelAgent: <strong>${deepAgentType}</strong>`;
+            
+            if (deepAgentType === 'function') {
+                html += ' <span class="success">✅ Available</span>';
+                
+                // Try to create instance
+                try {
+                    const testAgent = new window.DeepExcelAgent('test-key');
+                    html += '<br>  - Instance creation: <span class="success">✅ Success</span>';
+                    html += `<br>  - Sub-agents: ${Array.from(testAgent.subAgents.keys()).join(', ')}`;
+                    html += `<br>  - Tools: ${Object.keys(testAgent.tools).length} available`;
+                } catch (error) {
+                    html += `<br>  - Instance creation: <span class="error">❌ Failed: ${error.message}</span>`;
+                }
+            } else {
+                html += ' <span class="error">❌ Not Available</span>';
+            }
+            html += '</div>';
+            
+            // Check other agents
+            const otherAgents = [
+                'UnifiedAiAgent',
+                'HybridExcelAgent', 
+                'ApiKeyManager'
+            ];
+            
+            otherAgents.forEach(agent => {
+                const type = typeof window[agent];
+                const status = type === 'function' ? '<span class="success">✅</span>' : '<span class="error">❌</span>';
+                html += `<div>window.${agent}: <strong>${type}</strong> ${status}</div>`;
+            });
+            
+            agentCheck.innerHTML = html;
+        }
+
+        async function testDeepAgent() {
+            const testResult = document.getElementById('testResult');
+            const apiKey = document.getElementById('apiKey').value.trim();
+            
+            if (!apiKey) {
+                testResult.innerHTML = '<span class="error">❌ Please enter API key</span>';
+                return;
+            }
+            
+            testResult.innerHTML = '⏳ Testing Deep Agent...';
+            
+            try {
+                if (typeof window.DeepExcelAgent !== 'function') {
+                    throw new Error('DeepExcelAgent class not available');
+                }
+                
+                console.log('🧪 Creating Deep Agent instance...');
+                const agent = new window.DeepExcelAgent(apiKey);
+                
+                console.log('🧪 Testing simple planning...');
+                const testMessage = "Create a plan to analyze this workbook";
+                
+                // This will test the planning tool without calling OpenAI
+                const planResult = await agent.todoWrite({
+                    todos: [
+                        { id: 1, task: "Test planning functionality", status: "completed" },
+                        { id: 2, task: "Verify file system works", status: "in_progress" },
+                        { id: 3, task: "Check tool availability", status: "pending" }
+                    ]
+                });
+                
+                console.log('📋 Planning test result:', planResult);
+                
+                // Test file system
+                const fileResult = await agent.writeFile({
+                    filename: "test.txt",
+                    content: "Deep Agent test file"
+                });
+                
+                console.log('💾 File system test:', fileResult);
+                
+                const listResult = await agent.listFiles();
+                console.log('📁 File list:', listResult);
+                
+                testResult.innerHTML = `
+                    <div class="success">✅ Deep Agent Test Successful!</div>
+                    <div>Planning: ${planResult.success ? '✅' : '❌'}</div>
+                    <div>File System: ${fileResult.success ? '✅' : '❌'}</div>
+                    <div>Available Tools: ${Object.keys(agent.tools).length}</div>
+                    <div>Sub-agents: ${agent.subAgents.size}</div>
+                `;
+                
+            } catch (error) {
+                console.error('❌ Deep Agent test failed:', error);
+                testResult.innerHTML = `<span class="error">❌ Test Failed: ${error.message}</span>`;
+            }
+        }
+
+        function clearOutput() {
+            document.getElementById('consoleOutput').innerHTML = '';
+        }
+
+        // Auto-run checks on load
+        setTimeout(() => {
+            checkScripts();
+            checkAgents();
+        }, 1000);
+    </script>
+</body>
+</html>

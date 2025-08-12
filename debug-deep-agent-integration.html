@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>🔧 Deep Agent Integration Debug</title>
+    <style>
+        body { font-family: monospace; margin: 20px; background: #1a1a1a; color: #fff; }
+        .section { background: #2d2d2d; padding: 15px; margin: 10px 0; border-radius: 8px; border-left: 4px solid #4f46e5; }
+        .success { color: #22c55e; font-weight: bold; }
+        .error { color: #ef4444; font-weight: bold; }
+        .warning { color: #f59e0b; font-weight: bold; }
+        .log { background: #111; padding: 10px; margin: 10px 0; border-radius: 4px; white-space: pre-wrap; font-family: 'Courier New', monospace; font-size: 12px; max-height: 400px; overflow-y: auto; }
+        button { padding: 8px 16px; margin: 5px; background: #4f46e5; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #4338ca; }
+        .status-bar { position: fixed; bottom: 0; left: 0; right: 0; background: #111; padding: 10px; font-size: 14px; }
+    </style>
+</head>
+<body>
+    <h1>🔧 Deep Agent Integration Diagnostic</h1>
+    <p>This will test the exact same integration path that ChatHandler uses.</p>
+    
+    <div class="section">
+        <h3>📋 Step 1: Script Loading Check</h3>
+        <div id="scriptStatus"></div>
+        <button onclick="checkScripts()">Check Scripts</button>
+    </div>
+    
+    <div class="section">
+        <h3>🧠 Step 2: Deep Agent Availability</h3>
+        <div id="agentStatus"></div>
+        <button onclick="checkDeepAgent()">Check Deep Agent</button>
+    </div>
+    
+    <div class="section">
+        <h3>🔑 Step 3: API Key Setup</h3>
+        <input type="password" id="apiKeyInput" placeholder="OpenAI API Key" style="width: 300px; padding: 8px; margin: 5px;">
+        <button onclick="setTestApiKey()">Set Test Key</button>
+        <div id="keyStatus"></div>
+    </div>
+    
+    <div class="section">
+        <h3>🎯 Step 4: Integration Test (Same as ChatHandler)</h3>
+        <div id="integrationStatus"></div>
+        <button onclick="runIntegrationTest()">Test Integration</button>
+    </div>
+    
+    <div class="section">
+        <h3>💬 Step 5: Full ChatHandler Test</h3>
+        <input type="text" id="testMessage" placeholder="Test message..." style="width: 400px; padding: 8px; margin: 5px;">
+        <button onclick="testChatHandler()">Test ChatHandler</button>
+        <div id="chatStatus"></div>
+    </div>
+    
+    <div class="log" id="logOutput">Console log will appear here...\n</div>
+    
+    <div class="status-bar" id="statusBar">Ready for diagnostic</div>
+
+    <!-- Load same scripts as taskpane.html in exact same order -->
+    <script src="widgets/UnifiedExcelApiLibrary.js"></script>
+    <script src="widgets/UnifiedAiAgent.js"></script>
+    <script src="widgets/HybridExcelAgent.js"></script>
+    <script src="widgets/DeepExcelAgent.js"></script>
+    <script src="widgets/ChatHandler.js"></script>
+
+    <script>
+        // Capture all console output
+        const originalLog = console.log;
+        const originalError = console.error;
+        const originalWarn = console.warn;
+        
+        function addLog(message, type = 'log') {
+            const logOutput = document.getElementById('logOutput');
+            const timestamp = new Date().toLocaleTimeString();
+            const color = type === 'error' ? '#ef4444' : type === 'warn' ? '#f59e0b' : '#22c55e';
+            logOutput.innerHTML += `<span style="color: ${color}">[${timestamp}] ${message}</span>\n`;
+            logOutput.scrollTop = logOutput.scrollHeight;
+        }
+        
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            addLog(args.join(' '), 'log');
+        };
+        
+        console.error = function(...args) {
+            originalError.apply(console, args);
+            addLog('ERROR: ' + args.join(' '), 'error');
+        };
+        
+        console.warn = function(...args) {
+            originalWarn.apply(console, args);
+            addLog('WARN: ' + args.join(' '), 'warn');
+        };
+
+        let testChatHandler;
+
+        function setStatus(message) {
+            document.getElementById('statusBar').textContent = message;
+        }
+
+        function checkScripts() {
+            const scriptStatus = document.getElementById('scriptStatus');
+            console.log('🔍 Checking script availability...');
+            
+            const scripts = [
+                'UnifiedExcelApiLibrary',
+                'UnifiedAiAgent', 
+                'HybridExcelAgent',
+                'DeepExcelAgent',
+                'VirtualFileSystem',
+                'ChatHandler'
+            ];
+            
+            let html = '';
+            let allLoaded = true;
+            
+            scripts.forEach(script => {
+                const available = typeof window[script] !== 'undefined';
+                if (!available) allLoaded = false;
+                const status = available ? '<span class="success">✅ Loaded</span>' : '<span class="error">❌ Missing</span>';
+                html += `<div>${script}: ${status}</div>`;
+                console.log(`- ${script}: ${available ? 'Available' : 'Missing'}`);
+            });
+            
+            scriptStatus.innerHTML = html;
+            setStatus(allLoaded ? 'All scripts loaded successfully' : 'Some scripts missing');
+        }
+
+        function checkDeepAgent() {
+            const agentStatus = document.getElementById('agentStatus');
+            console.log('🧠 Checking Deep Agent class...');
+            
+            let html = '';
+            const deepAgentType = typeof window.DeepExcelAgent;
+            
+            html += `<div>window.DeepExcelAgent: <strong>${deepAgentType}</strong>`;
+            
+            if (deepAgentType === 'function') {
+                html += ' <span class="success">✅ Available</span>';
+                console.log('✅ Deep Agent class is available');
+                
+                try {
+                    const testAgent = new window.DeepExcelAgent('test-key');
+                    html += '<br>  - Instance creation: <span class="success">✅ Success</span>';
+                    html += `<br>  - Sub-agents: ${Array.from(testAgent.subAgents.keys()).join(', ')}`;
+                    html += `<br>  - Tools: ${Object.keys(testAgent.tools).length} available`;
+                    console.log(`🔧 Deep Agent created with ${Object.keys(testAgent.tools).length} tools`);
+                } catch (error) {
+                    html += `<br>  - Instance creation: <span class="error">❌ Failed: ${error.message}</span>`;
+                    console.error('❌ Deep Agent instantiation failed:', error);
+                }
+            } else {
+                html += ' <span class="error">❌ Not Available</span>';
+                console.error('❌ Deep Agent class not found');
+            }
+            html += '</div>';
+            
+            agentStatus.innerHTML = html;
+            setStatus(deepAgentType === 'function' ? 'Deep Agent ready' : 'Deep Agent not available');
+        }
+
+        function setTestApiKey() {
+            const apiKey = document.getElementById('apiKeyInput').value.trim();
+            const keyStatus = document.getElementById('keyStatus');
+            
+            if (!apiKey) {
+                keyStatus.innerHTML = '<span class="error">❌ Please enter API key</span>';
+                return;
+            }
+            
+            localStorage.setItem('openai_api_key', apiKey);
+            keyStatus.innerHTML = '<span class="success">✅ API key set</span>';
+            console.log('🔑 API key configured');
+            setStatus('API key configured for testing');
+        }
+
+        async function runIntegrationTest() {
+            const integrationStatus = document.getElementById('integrationStatus');
+            console.log('🎯 Running integration test - EXACT SAME LOGIC AS CHATHANDLER...');
+            
+            try {
+                // This is the EXACT same logic from ChatHandler.sendChatMessage()
+                let aiAgent;
+                
+                console.log('🔍 Checking available agents:');
+                console.log('- window.DeepExcelAgent:', typeof window.DeepExcelAgent);
+                console.log('- window.HybridExcelAgent:', typeof window.HybridExcelAgent);
+                console.log('- window.UnifiedAiAgent:', typeof window.UnifiedAiAgent);
+                console.log('- window.ApiKeyManager:', typeof window.ApiKeyManager);
+                
+                // Check for Deep Agent first (most intelligent)
+                if (typeof window.DeepExcelAgent === 'function') {
+                    console.log('🧠 Deep Agent class found, initializing...');
+                    
+                    const apiKey = localStorage.getItem('openai_api_key') || 
+                                   sessionStorage.getItem('openai_api_key');
+                    
+                    if (!apiKey) {
+                        throw new Error('OpenAI API key required for Deep Agent');
+                    }
+                    
+                    console.log('🔑 API key found, creating Deep Agent instance...');
+                    aiAgent = new window.DeepExcelAgent(apiKey);
+                    console.log('✅ Deep Excel Agent instance created successfully');
+                    console.log('🧠 Using Deep Excel Agent with planning, sub-agents, and persistence');
+                    
+                    integrationStatus.innerHTML = '<span class="success">✅ Deep Agent integration working!</span>';
+                    setStatus('Deep Agent integration successful');
+                    
+                } else {
+                    console.warn('⚠️ window.DeepExcelAgent not available, checking alternatives...');
+                    integrationStatus.innerHTML = '<span class="error">❌ Deep Agent not available - would fallback</span>';
+                    setStatus('Deep Agent not available - integration failed');
+                }
+                
+            } catch (error) {
+                console.error('❌ Integration test failed:', error);
+                integrationStatus.innerHTML = `<span class="error">❌ Integration failed: ${error.message}</span>`;
+                setStatus('Integration test failed');
+            }
+        }
+
+        async function testChatHandler() {
+            const chatStatus = document.getElementById('chatStatus');
+            const testMessage = document.getElementById('testMessage').value.trim() || 'Test Deep Agent integration';
+            
+            console.log('💬 Testing ChatHandler with message:', testMessage);
+            
+            try {
+                if (!testChatHandler) {
+                    testChatHandler = new window.ChatHandler();
+                    console.log('📋 ChatHandler instance created');
+                }
+                
+                // Simulate the sendChatMessage flow
+                console.log('🎯 Simulating ChatHandler.sendChatMessage()...');
+                
+                // The key part - check what the ChatHandler sees
+                console.log('🔍 ChatHandler checking available agents:');
+                console.log('- window.DeepExcelAgent:', typeof window.DeepExcelAgent);
+                
+                if (typeof window.DeepExcelAgent === 'function') {
+                    console.log('🧠 ChatHandler found Deep Agent class');
+                    
+                    const apiKey = localStorage.getItem('openai_api_key');
+                    if (apiKey) {
+                        const agent = new window.DeepExcelAgent(apiKey);
+                        console.log('✅ ChatHandler successfully created Deep Agent');
+                        chatStatus.innerHTML = '<span class="success">✅ ChatHandler Deep Agent integration working!</span>';
+                        setStatus('ChatHandler integration successful');
+                    } else {
+                        console.warn('⚠️ No API key available for ChatHandler');
+                        chatStatus.innerHTML = '<span class="warning">⚠️ ChatHandler needs API key</span>';
+                        setStatus('ChatHandler needs API key');
+                    }
+                } else {
+                    console.error('❌ ChatHandler cannot find Deep Agent class');
+                    chatStatus.innerHTML = '<span class="error">❌ ChatHandler cannot find Deep Agent</span>';
+                    setStatus('ChatHandler Deep Agent integration failed');
+                }
+                
+            } catch (error) {
+                console.error('❌ ChatHandler test failed:', error);
+                chatStatus.innerHTML = `<span class="error">❌ ChatHandler test failed: ${error.message}</span>`;
+                setStatus('ChatHandler test failed');
+            }
+        }
+
+        // Auto-run initial checks
+        setTimeout(() => {
+            console.log('🚀 Starting automatic diagnostic...');
+            checkScripts();
+            setTimeout(() => checkDeepAgent(), 500);
+        }, 1000);
+    </script>
+</body>
+</html>
