@@ -138,28 +138,48 @@ class LangChainChatOrchestrator {
       // Show processing indicator
       const processingContainer = this.showProcessingIndicator();
       
-      // Use ReAct Agent if available, otherwise fall back to previous method
-      if (this.agentExecutor) {
-        const result = await this.agentExecutor.invoke({
-          input: userMessage
-        });
-        
-        // Display step-by-step reasoning
-        if (result.intermediate_steps && result.intermediate_steps.length > 0) {
-          this.displayIntermediateSteps(result.intermediate_steps, processingContainer);
-        }
-        
-        // Format and display final response
-        const formattedResponse = await this.formatResponse(result.output);
-        this.displayResponse(formattedResponse, processingContainer);
-        
-        // Save memory to session storage
-        sessionStorage.setItem("langchain_chat_memory", JSON.stringify(this.memory.chatHistory));
-        
+      // ALWAYS use ReAct Agent - NO FALLBACKS
+      if (!this.agentExecutor) {
+        console.error('❌ ReAct Agent not initialized!');
+        console.log('Available components:');
+        console.log('- window.LangChainProperTools:', typeof window.LangChainProperTools);
+        console.log('- window.LangChainReActAgent:', typeof window.LangChainReActAgent);
+        console.log('- this.properTools:', this.properTools.length);
+        console.log('- this.memory:', !!this.memory);
+        throw new Error("ReAct Agent not initialized. Cannot process message without proper LangChain tools.");
+      }
+      
+      console.log('🤖 Using ReAct Agent for processing...');
+      console.log('Agent executor available tools:', this.properTools.map(t => t.name));
+      
+      const result = await this.agentExecutor.invoke({
+        input: userMessage
+      });
+      
+      console.log('🧠 ReAct Agent result:', result);
+      console.log('🧠 Result has intermediate_steps:', !!result.intermediate_steps);
+      console.log('🧠 Intermediate steps count:', result.intermediate_steps ? result.intermediate_steps.length : 0);
+      
+      // ALWAYS display step-by-step reasoning
+      if (result.intermediate_steps && result.intermediate_steps.length > 0) {
+        console.log('📝 Displaying', result.intermediate_steps.length, 'thinking steps');
+        this.displayIntermediateSteps(result.intermediate_steps, processingContainer);
       } else {
-        // Fallback to previous implementation
-        console.log('⚠️ ReAct Agent not available, using fallback method');
-        await this.processMessageFallback(userMessage, processingContainer);
+        console.log('⚠️ No intermediate steps found in result');
+        // Remove processing indicator since no steps to show
+        if (processingContainer) {
+          processingContainer.remove();
+        }
+      }
+      
+      // Format and display final response
+      const formattedResponse = await this.formatResponse(result.output);
+      this.displayResponse(formattedResponse, null); // null since we handled processingContainer above
+      
+      // Save memory to session storage
+      if (this.memory) {
+        sessionStorage.setItem("langchain_chat_memory", JSON.stringify(this.memory.chatHistory));
+        console.log('💾 Saved memory with', this.memory.chatHistory.length, 'messages');
       }
       
     } catch (error) {
@@ -168,36 +188,6 @@ class LangChainChatOrchestrator {
     }
   }
 
-  /**
-   * Fallback message processing (previous implementation)
-   */
-  async processMessageFallback(userMessage, processingContainer) {
-    // Add to history
-    this.chatHistory.push({ role: 'user', content: userMessage, timestamp: new Date().toISOString() });
-    
-    // Step 1: Search Excel for relevant data
-    const excelData = await this.searchExcelData(userMessage);
-    
-    // Step 2: Build comprehensive context
-    const context = await this.buildContext(userMessage, excelData);
-    
-    // Step 3: Process through LangChain with tools
-    const response = await this.processWithLangChain(userMessage, context);
-    
-    // Step 4: Format response
-    const formattedResponse = await this.formatResponse(response);
-    
-    // Step 5: Display formatted response
-    this.displayResponse(formattedResponse, processingContainer);
-    
-    // Add to history
-    this.chatHistory.push({ role: 'assistant', content: formattedResponse, timestamp: new Date().toISOString() });
-    
-    // Trim history if needed
-    if (this.chatHistory.length > this.maxHistoryLength) {
-      this.chatHistory = this.chatHistory.slice(-this.maxHistoryLength);
-    }
-  }
 
   /**
    * Display intermediate steps for transparency (following expert plan)

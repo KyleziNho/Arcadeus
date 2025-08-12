@@ -213,23 +213,46 @@ class ReActAgent {
       }
     }
     
-    // If we have previous steps, analyze and provide final answer
-    if (previousSteps.length > 0) {
+    // Always try at least one tool before final answer
+    if (previousSteps.length === 0) {
+      // First iteration - always try to find financial metrics
+      return {
+        action: 'find_financial_metric',
+        actionInput: {
+          metricName: 'IRR', // Start with most common metric
+          searchAllSheets: true
+        }
+      };
+    } else if (previousSteps.length === 1) {
+      // Second iteration - try to get more data or evaluate formula
+      const firstStep = previousSteps[0];
+      if (firstStep.observation.success && firstStep.observation.metric) {
+        // We found a metric, now try to get worksheet summary for context
+        return {
+          action: 'read_range',
+          actionInput: {
+            sheetName: 'Sheet1', // Could be smarter about this
+            range: 'A1:Z50' // Read a reasonable range for context
+          }
+        };
+      } else {
+        // First tool failed, try a different approach
+        return {
+          action: 'read_range',
+          actionInput: {
+            sheetName: 'Sheet1',
+            range: 'A1:Z50'
+          }
+        };
+      }
+    } else {
+      // We have enough data, provide final answer
       const analysisData = this.analyzeSteps(previousSteps);
       return {
         action: 'Final Answer',
         answer: this.formatFinalAnswer(userInput, analysisData)
       };
     }
-    
-    // Default: try to find relevant financial metrics
-    return {
-      action: 'find_financial_metric',
-      actionInput: {
-        metricName: 'All',
-        searchAllSheets: true
-      }
-    };
   }
 
   analyzeSteps(steps) {
