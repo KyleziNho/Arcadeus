@@ -344,6 +344,16 @@
             color: var(--text-primary);
             cursor: pointer;
         }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .button:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
     </style>
     
     <!-- Firebase SDK - Load before page scripts -->
@@ -695,6 +705,17 @@
             saveStepData(currentStep);
             console.log('User data:', userData);
             
+            // Show loading state on button
+            const completeBtn = event.target || document.querySelector('.button-primary');
+            const originalContent = completeBtn.innerHTML;
+            completeBtn.disabled = true;
+            completeBtn.innerHTML = `
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation: spin 1s linear infinite;">
+                    <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+                </svg>
+                Setting up your workspace...
+            `;
+            
             // Add timestamp
             userData.onboardingCompleted = new Date().toISOString();
             
@@ -725,9 +746,12 @@
                 console.log('Firebase not available or user not authenticated');
             }
             
-            // Redirect to main app
-            console.log('Redirecting to taskpane.html...');
-            window.location.href = 'taskpane.html';
+            // Short delay for better UX before redirect
+            setTimeout(() => {
+                console.log('Redirecting to assumptions page (taskpane.html)...');
+                // Navigate to the main app assumptions page
+                window.location.href = 'taskpane.html';
+            }, 500);
         }
 
         // Check if user is authenticated
