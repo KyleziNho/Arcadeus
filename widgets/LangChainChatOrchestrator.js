@@ -268,60 +268,65 @@ class LangChainChatOrchestrator {
   }
 
   /**
-   * Call LangChain API endpoint
+   * Call LangChain API endpoint with proper tool calling
    */
   async callLangChainAPI(message, context) {
+    console.log('🤖 Calling LangChain API with tool calling...');
+    
     const isLocal = window.location.hostname === 'localhost';
     const apiUrl = isLocal 
       ? 'http://localhost:8888/.netlify/functions/streaming-chat' 
       : '/.netlify/functions/streaming-chat';
     
-    // Prepare the prompt with Excel data
-    let excelContext = '';
-    
-    if (context.excel.metrics && Object.keys(context.excel.metrics).length > 0) {
-      excelContext = '\n\nACTUAL EXCEL VALUES (from your workbook):\n';
+    try {
+      // Step 1: Determine what Excel tools to use based on the query
+      const toolsToUse = this.determineRequiredTools(message);
+      console.log('📋 Tools to use:', toolsToUse);
       
-      for (const [metric, data] of Object.entries(context.excel.metrics)) {
-        excelContext += `\n${metric}:`;
-        excelContext += `\n  • Value: ${data.value}`;
-        excelContext += `\n  • Location: ${data.location}`;
-        if (data.formula) {
-          excelContext += `\n  • Formula: ${data.formula}`;
+      // Step 2: Execute tools to get actual data
+      const toolResults = await this.executeTools(toolsToUse, message);
+      console.log('🔧 Tool results:', toolResults);
+      
+      // Step 3: Build enhanced context with tool results
+      let toolContext = '';
+      if (Object.keys(toolResults).length > 0) {
+        toolContext = '\n\nTOOL EXECUTION RESULTS (ACTUAL EXCEL DATA):\n';
+        
+        for (const [toolName, result] of Object.entries(toolResults)) {
+          toolContext += `\n${toolName.toUpperCase()}:\n`;
+          
+          if (typeof result === 'object') {
+            toolContext += JSON.stringify(result, null, 2);
+          } else {
+            toolContext += result;
+          }
+          toolContext += '\n';
         }
       }
-    }
-    
-    if (context.excel.searchResults && context.excel.searchResults.length > 0) {
-      excelContext += '\n\nSEARCH RESULTS:\n';
-      context.excel.searchResults.slice(0, 10).forEach(result => {
-        excelContext += `\n• ${result.worksheet}!${result.address}: ${result.value}`;
-      });
-    }
-    
-    const enhancedMessage = `
-You are an expert M&A financial analyst helping with Excel modeling.
+      
+      const enhancedMessage = `
+You are an expert M&A financial analyst with access to live Excel data.
 
 User Question: ${message}
 
-${excelContext}
+${toolContext}
 
-Instructions:
-1. Use ONLY the actual Excel values provided above
-2. Always cite specific cell locations when referencing values
-3. If a value is not provided, say "Value not found in Excel"
-4. Provide actionable insights based on the real data
-5. Format your response with clear sections and highlights
+CRITICAL INSTRUCTIONS:
+1. Use ONLY the actual data from TOOL EXECUTION RESULTS above
+2. Always cite specific cell locations when mentioning values
+3. If a value wasn't found by tools, say "Value not found in Excel"
+4. The tool results contain the REAL Excel data - never make up numbers
+5. Format response with clear sections and highlighting
 
-Please provide a comprehensive analysis.`;
-    
-    try {
+Provide a comprehensive analysis using the actual tool results.`;
+      
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: enhancedMessage,
-          streaming: false
+          streaming: false,
+          toolResults: toolResults // Include tool results for reference
         })
       });
       
@@ -336,6 +341,87 @@ Please provide a comprehensive analysis.`;
       console.error('LangChain API error:', error);
       return this.generateFallbackResponse(message, context);
     }
+  }
+
+  /**
+   * Determine which Excel tools to use based on the user's query
+   */
+  determineRequiredTools(message) {
+    const tools = [];
+    const lowerMessage = message.toLowerCase();
+    
+    // Check for financial metric queries
+    const metricKeywords = ['irr', 'moic', 'revenue', 'ebitda', 'debt', 'equity', 'exit', 'deal', 'value'];
+    const mentionedMetrics = metricKeywords.filter(keyword => lowerMessage.includes(keyword));
+    
+    if (mentionedMetrics.length > 0) {
+      // If specific metrics mentioned, search for them
+      tools.push({ name: 'search_financial_metrics', args: { metricType: 'All' } });
+      
+      // If asking about relationships between metrics
+      if (mentionedMetrics.length > 1) {
+        tools.push({ 
+          name: 'calculate_metric_relationships', 
+          args: { 
+            metric1: mentionedMetrics[0].toUpperCase(), 
+            metric2: mentionedMetrics[1].toUpperCase() 
+          } 
+        });
+      }
+    }
+    
+    // Check for cell references
+    const cellRefPattern = /[A-Z]+!?[A-Z]*\d+/gi;
+    const cellRefs = message.match(cellRefPattern);
+    if (cellRefs) {
+      cellRefs.forEach(cellRef => {
+        tools.push({ name: 'read_cell_value', args: { cellAddress: cellRef } });
+      });
+    }
+    
+    // Check for value search queries
+    const numberPattern = /\d+\.?\d*/g;
+    const numbers = message.match(numberPattern);
+    if (numbers && (lowerMessage.includes('find') || lowerMessage.includes('search') || lowerMessage.includes('where'))) {
+      tools.push({ 
+        name: 'search_value_in_workbook', 
+        args: { searchTerm: numbers[0], maxResults: 5 } 
+      });
+    }
+    
+    // Always get worksheet summary for context
+    tools.push({ name: 'get_worksheet_summary', args: {} });
+    
+    return tools;
+  }
+
+  /**
+   * Execute the determined tools to get actual Excel data
+   */
+  async executeTools(toolsToUse, originalMessage) {
+    const results = {};
+    
+    // Check if LangChainExcelTools is available
+    if (!window.langChainExcelTools) {
+      console.warn('⚠️ LangChainExcelTools not available');
+      return results;
+    }
+    
+    for (const toolSpec of toolsToUse) {
+      try {
+        console.log(`🔧 Executing tool: ${toolSpec.name}`, toolSpec.args);
+        
+        const result = await window.langChainExcelTools.executeTool(toolSpec.name, toolSpec.args);
+        results[toolSpec.name] = JSON.parse(result);
+        
+        console.log(`✅ Tool ${toolSpec.name} completed`);
+      } catch (error) {
+        console.error(`❌ Tool ${toolSpec.name} failed:`, error);
+        results[toolSpec.name] = { error: error.message };
+      }
+    }
+    
+    return results;
   }
 
   /**
@@ -535,37 +621,73 @@ Please provide a comprehensive analysis.`;
   /**
    * Generate fallback response when API fails
    */
-  generateFallbackResponse(message, context) {
-    let response = "I'll help you analyze your Excel model.\n\n";
+  async generateFallbackResponse(message, context) {
+    console.log('📋 Generating fallback response with tool execution...');
     
-    if (context.excel.metrics && Object.keys(context.excel.metrics).length > 0) {
-      response += "**Key Metrics Found:**\n";
+    try {
+      // Try to execute tools even for fallback
+      const toolsToUse = this.determineRequiredTools(message);
+      const toolResults = await this.executeTools(toolsToUse, message);
       
-      for (const [metric, data] of Object.entries(context.excel.metrics)) {
-        response += `• ${metric}: ${data.value} (Cell: ${data.location})\n`;
+      let response = "I'll analyze your Excel model using the actual data found:\n\n";
+      
+      // Process tool results for fallback
+      if (toolResults.search_financial_metrics && !toolResults.search_financial_metrics.error) {
+        const metrics = toolResults.search_financial_metrics;
+        
+        response += "**Financial Metrics Found:**\n";
+        
+        for (const [metricName, data] of Object.entries(metrics)) {
+          if (data.value && data.location) {
+            response += `• **${metricName}**: ${data.value} (Cell: ${data.location})\n`;
+            
+            if (data.formula) {
+              response += `  Formula: ${data.formula}\n`;
+            }
+          }
+        }
+        
+        response += "\n**Analysis:**\n";
+        
+        // Add specific insights based on actual values
+        if (metrics.IRR) {
+          const irrValue = metrics.IRR.rawValue || parseFloat(metrics.IRR.value);
+          response += `• Your IRR of ${metrics.IRR.value} `;
+          response += irrValue > 0.15 ? "exceeds typical target returns\n" : "may need optimization\n";
+        }
+        
+        if (metrics.MOIC) {
+          const moicValue = metrics.MOIC.rawValue || parseFloat(metrics.MOIC.value);
+          response += `• Your MOIC of ${metrics.MOIC.value} `;
+          response += moicValue > 2.0 ? "shows strong value creation\n" : "has room for improvement\n";
+        }
+        
+        if (metrics.Revenue) {
+          response += `• Revenue projection: ${metrics.Revenue.value} at ${metrics.Revenue.location}\n`;
+        }
+        
+      } else {
+        response += "I wasn't able to find specific financial metrics in your Excel model. ";
+        response += "Please ensure your model contains clearly labeled metrics like IRR, MOIC, Revenue, etc.";
       }
       
-      response += "\n**Analysis:**\n";
-      response += "Based on the data in your Excel model, here are the key insights:\n";
-      
-      // Add specific insights based on metrics
-      if (context.excel.metrics.IRR) {
-        const irrValue = context.excel.metrics.IRR.rawValue;
-        response += `• Your IRR of ${context.excel.metrics.IRR.value} `;
-        response += irrValue > 0.15 ? "exceeds typical target returns\n" : "may need optimization\n";
+      // Add worksheet summary if available
+      if (toolResults.get_worksheet_summary && !toolResults.get_worksheet_summary.error) {
+        const summary = toolResults.get_worksheet_summary;
+        response += `\n\n**Worksheet Info:**\n`;
+        response += `• Active Sheet: ${summary.worksheetName}\n`;
+        if (summary.usedRange) {
+          response += `• Data Range: ${summary.usedRange.address}\n`;
+          response += `• Non-empty Cells: ${summary.nonEmptyCells || 'Unknown'}\n`;
+        }
       }
       
-      if (context.excel.metrics.MOIC) {
-        const moicValue = context.excel.metrics.MOIC.rawValue;
-        response += `• Your MOIC of ${context.excel.metrics.MOIC.value} `;
-        response += moicValue > 2.0 ? "shows strong value creation\n" : "has room for improvement\n";
-      }
-    } else {
-      response += "I couldn't find specific metrics in your Excel model. ";
-      response += "Please ensure your model contains labeled financial metrics.";
+      return response;
+      
+    } catch (error) {
+      console.error('Fallback response generation failed:', error);
+      return "I encountered an error while analyzing your Excel model. Please try again or check that your Excel workbook contains financial data.";
     }
-    
-    return response;
   }
 
   /**

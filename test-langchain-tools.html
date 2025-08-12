@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test LangChain Tools</title>
+    <script src="https://appsforoffice.microsoft.com/lib/1.1/hosted/office.js"></script>
+</head>
+<body>
+    <h2>LangChain Tools Test</h2>
+    <div id="results"></div>
+    
+    <script src="widgets/AccurateExcelValueFinder.js"></script>
+    <script src="widgets/LangChainExcelTools.js"></script>
+    <script src="widgets/LangChainChatOrchestrator.js"></script>
+    
+    <script>
+    Office.onReady(() => {
+        console.log('🚀 Testing LangChain Excel Tools...');
+        
+        // Test 1: Verify tools are initialized
+        setTimeout(() => {
+            console.log('📋 Checking tool availability...');
+            console.log('LangChainExcelTools:', typeof window.LangChainExcelTools);
+            console.log('langChainExcelTools instance:', window.langChainExcelTools);
+            console.log('LangChainChatOrchestrator:', typeof window.LangChainChatOrchestrator);
+            console.log('langChainOrchestrator instance:', window.langChainOrchestrator);
+            
+            if (window.langChainExcelTools) {
+                console.log('✅ Tools available:', window.langChainExcelTools.getAllTools().map(t => t.name));
+                
+                // Test tool execution
+                testToolExecution();
+            } else {
+                console.error('❌ LangChain Excel Tools not available');
+            }
+        }, 1000);
+    });
+    
+    async function testToolExecution() {
+        console.log('🧪 Testing tool execution...');
+        
+        try {
+            // Test get_worksheet_summary
+            const summaryResult = await window.langChainExcelTools.executeTool('get_worksheet_summary', {});
+            console.log('📊 Worksheet Summary Result:', JSON.parse(summaryResult));
+            
+            // Test search_financial_metrics 
+            const metricsResult = await window.langChainExcelTools.executeTool('search_financial_metrics', { metricType: 'All' });
+            console.log('💰 Financial Metrics Result:', JSON.parse(metricsResult));
+            
+            updateResults('✅ Tool execution test completed - check console for results');
+            
+        } catch (error) {
+            console.error('❌ Tool execution failed:', error);
+            updateResults('❌ Tool execution failed: ' + error.message);
+        }
+    }
+    
+    function updateResults(message) {
+        document.getElementById('results').innerHTML = message;
+    }
+    </script>
+</body>
+</html>
