@@ -13,6 +13,11 @@ class LangChainChatOrchestrator {
     this.chatHistory = [];
     this.maxHistoryLength = 10;
     
+    // New ReAct Agent components
+    this.agentExecutor = null;
+    this.memory = null;
+    this.properTools = [];
+    
     this.initialize();
   }
 
@@ -38,6 +43,9 @@ class LangChainChatOrchestrator {
         console.log('✅ Enhanced Response Formatter initialized');
       }
       
+      // Initialize new ReAct Agent system
+      await this.initializeReActAgent();
+      
       this.isInitialized = true;
       console.log('✅ LangChain Chat Orchestrator ready');
       
@@ -46,6 +54,51 @@ class LangChainChatOrchestrator {
       
     } catch (error) {
       console.error('❌ Failed to initialize LangChain Chat Orchestrator:', error);
+    }
+  }
+
+  /**
+   * Initialize ReAct Agent system following expert implementation
+   */
+  async initializeReActAgent() {
+    console.log('🤖 Initializing ReAct Agent system...');
+    
+    try {
+      // Initialize proper tools
+      if (window.LangChainProperTools) {
+        this.properTools = window.LangChainProperTools.excelTools;
+        console.log('✅ Loaded', this.properTools.length, 'proper LangChain tools');
+      }
+      
+      // Initialize memory with session storage
+      if (window.LangChainReActAgent) {
+        this.memory = new window.LangChainReActAgent.BufferMemory({
+          returnMessages: true,
+          memoryKey: "chat_history",
+          maxMessages: 20
+        });
+        
+        // Load saved memory from session storage
+        const savedMemory = sessionStorage.getItem("langchain_chat_memory");
+        if (savedMemory) {
+          this.memory.chatHistory = JSON.parse(savedMemory);
+          console.log('📚 Loaded chat memory:', this.memory.chatHistory.length, 'messages');
+        }
+        
+        // Initialize agent executor
+        this.agentExecutor = new window.LangChainReActAgent.LangChainAgentExecutor({
+          llm: null, // We'll use our API instead
+          tools: this.properTools,
+          memory: this.memory,
+          verbose: true,
+          maxIterations: 5
+        });
+        
+        console.log('✅ ReAct Agent system initialized');
+      }
+      
+    } catch (error) {
+      console.error('❌ Failed to initialize ReAct Agent:', error);
     }
   }
 
@@ -73,49 +126,163 @@ class LangChainChatOrchestrator {
   }
 
   /**
-   * Main entry point for processing messages through LangChain
+   * Main entry point for processing messages through ReAct Agent
    */
   async processMessage(userMessage) {
-    console.log('🎯 Processing message through LangChain:', userMessage);
+    console.log('🎯 Processing message through ReAct Agent:', userMessage);
     
     try {
       // Show user message in chat
       this.addUserMessage(userMessage);
       
-      // Add to history
-      this.chatHistory.push({ role: 'user', content: userMessage, timestamp: new Date().toISOString() });
-      
       // Show processing indicator
       const processingContainer = this.showProcessingIndicator();
       
-      // Step 1: Search Excel for relevant data
-      const excelData = await this.searchExcelData(userMessage);
-      
-      // Step 2: Build comprehensive context
-      const context = await this.buildContext(userMessage, excelData);
-      
-      // Step 3: Process through LangChain with tools
-      const response = await this.processWithLangChain(userMessage, context);
-      
-      // Step 4: Format response
-      const formattedResponse = await this.formatResponse(response);
-      
-      // Step 5: Display formatted response
-      this.displayResponse(formattedResponse, processingContainer);
-      
-      // Add to history
-      this.chatHistory.push({ role: 'assistant', content: formattedResponse, timestamp: new Date().toISOString() });
-      
-      // Trim history if needed
-      if (this.chatHistory.length > this.maxHistoryLength) {
-        this.chatHistory = this.chatHistory.slice(-this.maxHistoryLength);
+      // Use ReAct Agent if available, otherwise fall back to previous method
+      if (this.agentExecutor) {
+        const result = await this.agentExecutor.invoke({
+          input: userMessage
+        });
+        
+        // Display step-by-step reasoning
+        if (result.intermediate_steps && result.intermediate_steps.length > 0) {
+          this.displayIntermediateSteps(result.intermediate_steps, processingContainer);
+        }
+        
+        // Format and display final response
+        const formattedResponse = await this.formatResponse(result.output);
+        this.displayResponse(formattedResponse, processingContainer);
+        
+        // Save memory to session storage
+        sessionStorage.setItem("langchain_chat_memory", JSON.stringify(this.memory.chatHistory));
+        
+      } else {
+        // Fallback to previous implementation
+        console.log('⚠️ ReAct Agent not available, using fallback method');
+        await this.processMessageFallback(userMessage, processingContainer);
       }
       
     } catch (error) {
       console.error('❌ Error processing message:', error);
-      // Show error message but still try to use LangChain for error response
       this.displayLangChainError(error.message, processingContainer);
     }
+  }
+
+  /**
+   * Fallback message processing (previous implementation)
+   */
+  async processMessageFallback(userMessage, processingContainer) {
+    // Add to history
+    this.chatHistory.push({ role: 'user', content: userMessage, timestamp: new Date().toISOString() });
+    
+    // Step 1: Search Excel for relevant data
+    const excelData = await this.searchExcelData(userMessage);
+    
+    // Step 2: Build comprehensive context
+    const context = await this.buildContext(userMessage, excelData);
+    
+    // Step 3: Process through LangChain with tools
+    const response = await this.processWithLangChain(userMessage, context);
+    
+    // Step 4: Format response
+    const formattedResponse = await this.formatResponse(response);
+    
+    // Step 5: Display formatted response
+    this.displayResponse(formattedResponse, processingContainer);
+    
+    // Add to history
+    this.chatHistory.push({ role: 'assistant', content: formattedResponse, timestamp: new Date().toISOString() });
+    
+    // Trim history if needed
+    if (this.chatHistory.length > this.maxHistoryLength) {
+      this.chatHistory = this.chatHistory.slice(-this.maxHistoryLength);
+    }
+  }
+
+  /**
+   * Display intermediate steps for transparency (following expert plan)
+   */
+  displayIntermediateSteps(steps, processingContainer) {
+    // Remove processing indicator first
+    if (processingContainer) {
+      processingContainer.remove();
+    }
+    
+    const chatMessages = document.getElementById('chatMessages');
+    if (!chatMessages) return;
+    
+    // Create thinking steps container
+    const stepsDiv = document.createElement('div');
+    stepsDiv.className = 'chat-message assistant-message thinking-steps';
+    
+    let stepsHTML = `
+      <div class="message-avatar">
+        <div class="avatar-icon">🧠</div>
+      </div>
+      <div class="message-content">
+        <div class="message-header">
+          <span class="message-role">AI Thinking</span>
+          <span class="message-badge thinking-badge">Step-by-Step</span>
+        </div>
+        <div class="thinking-container">
+          <h4>🔍 Analysis Process:</h4>
+    `;
+    
+    steps.forEach((step, index) => {
+      stepsHTML += `
+        <div class="thinking-step">
+          <div class="step-number">${index + 1}</div>
+          <div class="step-content">
+            <div class="step-action">
+              <strong>🔧 Action:</strong> ${step.action.tool}
+            </div>
+            <div class="step-input">
+              <strong>📝 Input:</strong> <code>${JSON.stringify(step.action.toolInput)}</code>
+            </div>
+            <div class="step-observation">
+              <strong>👀 Result:</strong> 
+              <div class="observation-content">
+                ${this.formatObservation(step.observation)}
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    });
+    
+    stepsHTML += `
+        </div>
+        <div class="message-footer">
+          <span class="message-time">${new Date().toLocaleTimeString()}</span>
+        </div>
+      </div>
+    `;
+    
+    stepsDiv.innerHTML = stepsHTML;
+    chatMessages.appendChild(stepsDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  }
+
+  /**
+   * Format observation results for display
+   */
+  formatObservation(observation) {
+    if (observation.success) {
+      if (observation.metric && observation.value) {
+        return `✅ Found <strong>${observation.metric}: ${observation.value}</strong> at ${observation.location}`;
+      } else if (observation.formattedValue) {
+        return `✅ Formula result: <strong>${observation.formattedValue}</strong>`;
+      } else if (observation.data && observation.data.values) {
+        return `✅ Read ${observation.data.values.length} rows from ${observation.data.address}`;
+      } else if (observation.message) {
+        return `✅ ${observation.message}`;
+      }
+    } else if (observation.error) {
+      return `❌ ${observation.error}`;
+    }
+    
+    // Fallback: show raw JSON for debugging
+    return `<pre>${JSON.stringify(observation, null, 2)}</pre>`;
   }
 
   /**

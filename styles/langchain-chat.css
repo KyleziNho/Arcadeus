@@ -482,6 +482,103 @@
   line-height: 1.5;
 }
 
+/* Thinking steps styling for ReAct agent transparency */
+.thinking-steps .message-content {
+  background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+  border: 1px solid #7dd3fc;
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.thinking-badge {
+  background: linear-gradient(135deg, #0ea5e9, #0284c7);
+}
+
+.thinking-container {
+  margin-top: 8px;
+}
+
+.thinking-container h4 {
+  margin: 0 0 12px 0;
+  color: #0c4a6e;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.thinking-step {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 12px;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #bae6fd;
+}
+
+.thinking-step:last-child {
+  margin-bottom: 0;
+}
+
+.step-number {
+  background: linear-gradient(135deg, #0ea5e9, #0284c7);
+  color: white;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.step-content {
+  flex: 1;
+}
+
+.step-action,
+.step-input,
+.step-observation {
+  margin-bottom: 8px;
+}
+
+.step-action strong {
+  color: #0c4a6e;
+}
+
+.step-input strong {
+  color: #065f46;
+}
+
+.step-input code {
+  background: #f1f5f9;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: #475569;
+}
+
+.step-observation strong {
+  color: #7c2d12;
+}
+
+.observation-content {
+  margin-top: 4px;
+  padding: 8px;
+  background: #f8fafc;
+  border-radius: 6px;
+  border-left: 3px solid #22d3ee;
+}
+
+.observation-content pre {
+  margin: 0;
+  font-size: 11px;
+  color: #64748b;
+  background: none;
+  padding: 0;
+}
+
 /* Responsive design */
 @media (max-width: 480px) {
   .formatted-response {
