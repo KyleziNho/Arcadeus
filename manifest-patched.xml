@@ -1,26 +1,102 @@
-<ns0:OfficeApp xmlns:ns0="http://schemas.microsoft.com/office/appforoffice/1.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="TaskPaneApp">
-<ns0:Id>b24892eb-f900-5bb7-9c67-8f4b23e28e9d</ns0:Id>
-<ns0:Version>1.0.0.0</ns0:Version>
-<ns0:ProviderName>Arcadeus</ns0:ProviderName>
-<ns0:DefaultLocale>en-US</ns0:DefaultLocale>
-<ns0:DisplayName DefaultValue="Arcadeus"/>
-<ns0:Description DefaultValue="Professional MA and PE deal modeling"/>
-<ns0:IconUrl DefaultValue="https://guavaexcel.netlify.app/assets/icon-32.png"/>
-<ns0:HighResolutionIconUrl DefaultValue="https://guavaexcel.netlify.app/assets/icon-64.png"/>
-<ns0:SupportUrl DefaultValue="https://guavaexcel.netlify.app"/>
-<ns0:AppDomains>
-<ns0:AppDomain>https://guavaexcel.netlify.app</ns0:AppDomain>
-</ns0:AppDomains>
-<ns0:Hosts>
-<ns0:Host Name="Workbook"/>
-</ns0:Hosts>
-<ns0:DefaultSettings>
-<ns0:SourceLocation DefaultValue="https://guavaexcel.netlify.app/taskpane.html"/>
-</ns0:DefaultSettings>
-<ns0:Permissions>ReadWriteDocument</ns0:Permissions>
-<ns0:Requirements>
-<ns0:Sets DefaultMinVersion="1.1">
-<ns0:Set Name="ExcelApi" MinVersion="1.1"/>
-</ns0:Sets>
-</ns0:Requirements>
-</ns0:OfficeApp>
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<OfficeApp xmlns="http://schemas.microsoft.com/office/appforoffice/1.1"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:bt="http://schemas.microsoft.com/office/officeappbasictypes/1.0"
+  xsi:type="TaskPaneApp">
+
+  <Id>b24892eb-f900-5bb7-9c67-8f4b23e28e9d</Id>
+  <Version>1.0.0.0</Version>
+  <ProviderName>Arcadeus</ProviderName>
+  <DefaultLocale>en-US</DefaultLocale>
+  <DisplayName DefaultValue="Arcadeus"/>
+  <Description DefaultValue="Professional MA and PE deal modeling"/>
+  <IconUrl DefaultValue="https://guavaexcel.netlify.app/assets/icon-32.png"/>
+  <HighResolutionIconUrl DefaultValue="https://guavaexcel.netlify.app/assets/icon-64.png"/>
+  <SupportUrl DefaultValue="https://guavaexcel.netlify.app"/>
+
+  <AppDomains>
+    <AppDomain>guavaexcel.netlify.app</AppDomain>
+    <AppDomain>*.netlify.app</AppDomain>
+  </AppDomains>
+
+  <Hosts>
+    <Host Name="Workbook"/>
+  </Hosts>
+
+  <DefaultSettings>
+    <SourceLocation DefaultValue="https://guavaexcel.netlify.app/taskpane.html"/>
+  </DefaultSettings>
+
+  <Permissions>ReadWriteDocument</Permissions>
+
+  <VersionOverrides xmlns="http://schemas.microsoft.com/office/taskpaneappversionoverrides"
+                    xsi:type="VersionOverridesV1_0">
+    <Hosts>
+      <Host xsi:type="Workbook">
+        <DesktopFormFactor>
+          <GetStarted>
+            <Title resid="GetStarted.Title"/>
+            <Description resid="GetStarted.Description"/>
+            <LearnMoreUrl resid="GetStarted.LearnMoreUrl"/>
+          </GetStarted>
+
+          <!-- Required entry point for ribbon commands -->
+          <FunctionFile resid="Taskpane.Url" />
+
+          <!-- Define where the command appears in the UI -->
+          <ExtensionPoint xsi:type="PrimaryCommandSurface">
+            <CustomTab id="Arcadeus.Tab1">
+            <Group id="Arcadeus.Tab1.Group1">
+                <Label resid="Arcadeus.Tab1.GroupLabel" />
+                <Icon>
+                <bt:Image size="16" resid="Icon.16x16" />
+                <bt:Image size="32" resid="Icon.32x32" />
+                <bt:Image size="80" resid="Icon.80x80" />
+                </Icon>
+                <Control xsi:type="Button" id="Arcadeus.Button1">
+                <Label resid="Arcadeus.Button1.Label" />
+                <Supertip>
+                    <Title resid="Arcadeus.Button1.Label" />
+                    <Description resid="GetStarted.Description" />
+                </Supertip>
+                <Icon>
+                    <bt:Image size="16" resid="Icon.16x16" />
+                    <bt:Image size="32" resid="Icon.32x32" />
+                    <bt:Image size="80" resid="Icon.80x80" />
+                </Icon>
+                <Action xsi:type="ShowTaskpane">
+                    <SourceLocation resid="Taskpane.Url"/>
+                </Action>
+                </Control>
+            </Group>
+            <!-- Add more <Group> elements if needed here -->
+            <!-- <OfficeGroup id="SomeBuiltInGroupID" /> -->
+            <Label resid="Arcadeus.Tab1.TabLabel" /> <!-- THIS MUST BE LAST -->
+            </CustomTab>
+          </ExtensionPoint>
+        </DesktopFormFactor>
+      </Host>
+    </Hosts>
+
+    <Resources>
+      <bt:Images>
+        <bt:Image id="Icon.16x16" DefaultValue="https://guavaexcel.netlify.app/assets/icon-32.png"/>
+        <bt:Image id="Icon.32x32" DefaultValue="https://guavaexcel.netlify.app/assets/icon-32.png"/>
+        <bt:Image id="Icon.80x80" DefaultValue="https://guavaexcel.netlify.app/assets/icon-64.png"/>
+      </bt:Images>
+      <bt:Urls>
+        <bt:Url id="GetStarted.LearnMoreUrl" DefaultValue="https://guavaexcel.netlify.app"/>
+        <bt:Url id="Taskpane.Url" DefaultValue="https://guavaexcel.netlify.app/taskpane.html"/>
+      </bt:Urls>
+      <bt:ShortStrings>
+        <bt:String id="Arcadeus.Tab1.TabLabel" DefaultValue="Arcadeus"/>
+        <bt:String id="Arcadeus.Tab1.GroupLabel" DefaultValue="Deal Modeling"/>
+        <bt:String id="Arcadeus.Button1.Label" DefaultValue="Open Modeler"/>
+        <bt:String id="GetStarted.Title" DefaultValue="Get started with Arcadeus!"/>
+      </bt:ShortStrings>
+      <bt:LongStrings>
+        <bt:String id="GetStarted.Description" DefaultValue="Your add-in loaded successfully. Open the HOME tab and select Arcadeus for deal modeling."/>
+      </bt:LongStrings>
+    </Resources>
+  </VersionOverrides>
+</OfficeApp>
