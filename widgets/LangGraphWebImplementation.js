@@ -167,13 +167,27 @@ class ExcelLangGraphWorkflow {
   }
 
   initializeTools() {
-    // Load existing tools from LangChainProperTools
+    // Load existing basic tools from LangChainProperTools
     if (window.LangChainProperTools) {
       window.LangChainProperTools.excelTools.forEach(tool => {
         this.tools.set(tool.name, tool);
       });
-      console.log('✅ Loaded', this.tools.size, 'Excel tools for LangGraph Web');
     }
+
+    // Load advanced Excel API tools
+    if (window.ExcelApiToolkit) {
+      window.ExcelApiToolkit.excelApiTools.forEach(tool => {
+        this.tools.set(tool.name, tool);
+      });
+    }
+
+    // Initialize the Intelligent Excel Agent
+    if (window.IntelligentExcelAgent) {
+      this.intelligentAgent = new window.IntelligentExcelAgent();
+      console.log('🧠 Intelligent Excel Agent initialized for advanced reasoning');
+    }
+
+    console.log('✅ Loaded', this.tools.size, 'Excel tools for LangGraph Web');
   }
 
   buildWorkflow() {
@@ -265,8 +279,48 @@ class ExcelLangGraphWorkflow {
   async executeTools(state) {
     console.log('⚡ Node: execute_tools');
     
-    const toolResults = {};
     const processingSteps = [];
+
+    // Use Intelligent Excel Agent for complex operations
+    if (this.intelligentAgent && state.userIntent && state.userIntent.confidence > 0.6) {
+      console.log('🧠 Using Intelligent Excel Agent for advanced processing');
+      
+      const lastMessage = state.messages[state.messages.length - 1];
+      const userMessage = lastMessage?.content || '';
+
+      try {
+        const agentResult = await this.intelligentAgent.processRequest(userMessage);
+        
+        processingSteps.push({
+          node: 'execute_tools',
+          action: 'Intelligent Excel Agent Processing',
+          result: agentResult.success ? 'Success' : 'Failed',
+          details: agentResult,
+          success: agentResult.success,
+          timestamp: new Date().toISOString()
+        });
+
+        return {
+          toolResults: { intelligent_agent: agentResult },
+          processingSteps: processingSteps
+        };
+
+      } catch (error) {
+        console.error('❌ Intelligent Excel Agent failed:', error);
+        processingSteps.push({
+          node: 'execute_tools',
+          action: 'Intelligent Excel Agent Processing',
+          result: 'Error',
+          error: error.message,
+          success: false,
+          timestamp: new Date().toISOString()
+        });
+      }
+    }
+
+    // Fallback to individual tool execution
+    console.log('🔧 Using individual tool execution');
+    const toolResults = {};
     
     for (const toolSpec of state.selectedTools) {
       try {
@@ -484,6 +538,18 @@ What specifically would you like me to help with?`;
     const intent = state.userIntent;
     const toolResults = state.toolResults || {};
     
+    // Check if Intelligent Excel Agent was used
+    if (toolResults.intelligent_agent) {
+      const agentResult = toolResults.intelligent_agent;
+      if (agentResult.success && agentResult.response) {
+        // Return the agent's comprehensive response
+        return agentResult.response;
+      } else {
+        return `## ❌ Excel Operation Failed\n\nThe intelligent agent encountered an error: ${agentResult.error}\n\nPlease check your Excel workbook and try again.`;
+      }
+    }
+    
+    // Fallback to basic response synthesis
     let response = `## ${this.getIntentTitle(intent)}\n\n`;
     
     // Add execution results

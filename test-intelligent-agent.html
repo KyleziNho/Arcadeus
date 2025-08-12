@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Intelligent Excel Agent</title>
+    <script src="https://appsforoffice.microsoft.com/lib/1.1/hosted/office.js"></script>
+</head>
+<body>
+    <h1>🧠 Intelligent Excel Agent Test</h1>
+    <div id="output" style="font-family: monospace; white-space: pre-line; padding: 20px; border: 1px solid #ccc; margin: 10px 0;"></div>
+    
+    <input type="text" id="testInput" placeholder="Try: 'Change the blue headers to green'" style="width: 400px; padding: 10px;">
+    <button onclick="testAgent()">Test Agent</button>
+    
+    <!-- Load scripts in correct order -->
+    <script src="widgets/LangChainProperTools.js"></script>
+    <script src="widgets/ExcelApiToolkit.js"></script>
+    <script src="widgets/IntelligentExcelAgent.js"></script>
+    <script src="widgets/LangGraphWebImplementation.js"></script>
+
+    <script>
+        function log(message) {
+            const output = document.getElementById('output');
+            output.textContent += new Date().toLocaleTimeString() + ': ' + message + '\n';
+            console.log(message);
+        }
+
+        Office.onReady(() => {
+            log('✅ Office.js ready');
+            
+            // Check if components loaded
+            log('Checking components...');
+            log('- LangChainProperTools: ' + (typeof window.LangChainProperTools !== 'undefined' ? '✅' : '❌'));
+            log('- ExcelApiToolkit: ' + (typeof window.ExcelApiToolkit !== 'undefined' ? '✅' : '❌'));
+            log('- IntelligentExcelAgent: ' + (typeof window.IntelligentExcelAgent !== 'undefined' ? '✅' : '❌'));
+            log('- ExcelLangGraphWorkflow: ' + (typeof window.ExcelLangGraphWorkflow !== 'undefined' ? '✅' : '❌'));
+            
+            if (typeof window.IntelligentExcelAgent !== 'undefined') {
+                const agent = new window.IntelligentExcelAgent();
+                log('🧠 IntelligentExcelAgent instance created successfully');
+                log('🔧 Tools loaded: ' + agent.tools.size);
+                
+                window.testAgent = testAgent; // Make sure it's available
+            }
+        });
+
+        async function testAgent() {
+            const input = document.getElementById('testInput').value.trim();
+            if (!input) {
+                log('❌ Please enter a test command');
+                return;
+            }
+
+            log('\n🧪 TESTING: "' + input + '"');
+            
+            try {
+                if (!window.IntelligentExcelAgent) {
+                    throw new Error('IntelligentExcelAgent not available');
+                }
+
+                const agent = new window.IntelligentExcelAgent();
+                log('⚡ Processing with Intelligent Excel Agent...');
+                
+                const result = await agent.processRequest(input);
+                
+                log('\n📊 RESULT:');
+                log('Success: ' + result.success);
+                
+                if (result.success) {
+                    log('\n🧠 Intent Analysis:');
+                    log('- Intent: ' + result.analysis.intent);
+                    log('- Confidence: ' + (result.analysis.confidence * 100).toFixed(1) + '%');
+                    log('- Description: ' + result.analysis.description);
+                    
+                    log('\n⚡ Execution Plan:');
+                    log('- Steps: ' + result.executionPlan.steps.length);
+                    result.executionPlan.steps.forEach(step => {
+                        log(`  ${step.stepNumber}. ${step.tool}: ${step.purpose}`);
+                    });
+
+                    log('\n📋 Execution Results:');
+                    log('- Steps executed: ' + result.results.steps.length);
+                    log('- Success rate: ' + result.results.steps.filter(s => s.success).length + '/' + result.results.steps.length);
+                    
+                    log('\n💬 Agent Response:');
+                    log(result.response);
+                } else {
+                    log('❌ Error: ' + result.error);
+                }
+
+            } catch (error) {
+                log('❌ Test failed: ' + error.message);
+                console.error('Full error:', error);
+            }
+        }
+    </script>
+</body>
+</html>
