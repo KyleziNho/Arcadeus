@@ -164,6 +164,57 @@ class ReActAgent {
     // Determine what action to take based on the input
     const lowerInput = userInput.toLowerCase();
     
+    // CRITICAL THINKING: Cell formatting patterns - analyze what user actually wants
+    if (lowerInput.includes('change') || lowerInput.includes('format') || lowerInput.includes('color') || 
+        lowerInput.includes('bold') || lowerInput.includes('highlight')) {
+      
+      // Extract what they want to find and how they want to format it
+      let searchTerm = '';
+      let formatType = 'color';
+      let formatValue = 'green';
+      
+      // Extract search terms from the input
+      const searchPatterns = [
+        /(?:the\s+)?(unlevered\s+irr|levered\s+irr|irr|moic|revenue|ebitda|exit\s+value)/i,
+        /(?:the\s+)?([a-zA-Z\s]+?)(?:\s+cell|\s+to\s+|\s+should)/i
+      ];
+      
+      for (const pattern of searchPatterns) {
+        const match = userInput.match(pattern);
+        if (match) {
+          searchTerm = match[1].trim();
+          break;
+        }
+      }
+      
+      // Extract format type
+      if (lowerInput.includes('bold')) formatType = 'bold';
+      if (lowerInput.includes('italic')) formatType = 'italic';
+      if (lowerInput.includes('border')) formatType = 'border';
+      
+      // Extract color
+      const colors = ['red', 'green', 'blue', 'yellow', 'orange', 'purple', 'pink'];
+      for (const color of colors) {
+        if (lowerInput.includes(color)) {
+          formatValue = color;
+          break;
+        }
+      }
+      
+      if (searchTerm) {
+        console.log(`🧠 Critical Thinking: User wants to format '${searchTerm}' with ${formatType}: ${formatValue}`);
+        return {
+          action: 'smart_cell_formatting',
+          actionInput: {
+            searchTerm: searchTerm,
+            formatType: formatType,
+            formatValue: formatValue,
+            searchAllSheets: true
+          }
+        };
+      }
+    }
+    
     // Financial analysis patterns
     if (lowerInput.includes('irr') || lowerInput.includes('npv') || lowerInput.includes('calculate')) {
       const formulaMatch = userInput.match(/(irr|npv|pv|fv)\s*\([^)]+\)/i);
@@ -290,6 +341,20 @@ class ReActAgent {
           answer += `  - ${data.interpretation}\n`;
         } else if (tool === 'read_range') {
           answer += `• **Range Data**: Successfully read ${data.data.values.length} rows from ${data.data.address}\n`;
+        } else if (tool === 'smart_cell_formatting') {
+          answer += `• **Formatting Applied**: Found ${data.cellsFound} cells matching "${data.searchTerm}"\n`;
+          answer += `  - Successfully formatted ${data.cellsFormatted} cells\n`;
+          
+          if (data.results && data.results.length > 0) {
+            answer += `  - **Cells Updated**:\n`;
+            data.results.forEach(result => {
+              if (result.success) {
+                answer += `    ✅ ${result.address}: "${result.content}"\n`;
+              } else {
+                answer += `    ❌ ${result.address}: ${result.error}\n`;
+              }
+            });
+          }
         }
       });
     }

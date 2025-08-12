@@ -276,12 +276,211 @@ class FindFinancialMetricTool extends LangChainTool {
   }
 }
 
+class SmartCellFormattingTool extends LangChainTool {
+  constructor() {
+    super();
+    this.name = "smart_cell_formatting";
+    this.description = "Intelligently find and format cells based on their content or labels, not just selected cells.";
+    this.schema = {
+      type: "object",
+      properties: { 
+        searchTerm: { type: "string", description: "What to search for (e.g., 'unlevered IRR', 'MOIC', 'revenue')" },
+        formatType: { type: "string", enum: ["color", "bold", "italic", "border"], description: "Type of formatting to apply" },
+        formatValue: { type: "string", description: "Format value (e.g., 'green', 'red', 'bold')" },
+        searchAllSheets: { type: "boolean", description: "Whether to search all sheets", default: true }
+      },
+      required: ["searchTerm", "formatType", "formatValue"]
+    };
+  }
+
+  async _call(input) {
+    console.log(`🎨 SmartCellFormattingTool: Finding and formatting '${input.searchTerm}'`);
+    
+    try {
+      // Step 1: Find the cell(s) containing the search term
+      const foundCells = await this.searchForCells(input.searchTerm, input.searchAllSheets);
+      
+      if (foundCells.length === 0) {
+        return JSON.stringify({
+          success: false,
+          message: `No cells found containing '${input.searchTerm}'`,
+          suggestion: "Try a different search term or check spelling"
+        });
+      }
+      
+      // Step 2: Apply formatting to found cells
+      const formattingResults = [];
+      
+      for (const cellInfo of foundCells) {
+        try {
+          await this.formatCell(cellInfo.address, input.formatType, input.formatValue);
+          formattingResults.push({
+            address: cellInfo.address,
+            sheet: cellInfo.sheet,
+            content: cellInfo.content,
+            success: true
+          });
+        } catch (error) {
+          formattingResults.push({
+            address: cellInfo.address,
+            sheet: cellInfo.sheet,
+            error: error.message,
+            success: false
+          });
+        }
+      }
+      
+      const successCount = formattingResults.filter(r => r.success).length;
+      
+      return JSON.stringify({
+        success: successCount > 0,
+        searchTerm: input.searchTerm,
+        cellsFound: foundCells.length,
+        cellsFormatted: successCount,
+        results: formattingResults,
+        message: `Found ${foundCells.length} cells matching '${input.searchTerm}' and successfully formatted ${successCount} of them`
+      });
+      
+    } catch (error) {
+      return JSON.stringify({
+        success: false,
+        error: error.message
+      });
+    }
+  }
+
+  async searchForCells(searchTerm, searchAllSheets = true) {
+    const foundCells = [];
+    const searchLower = searchTerm.toLowerCase();
+    
+    await Excel.run(async (context) => {
+      const worksheets = context.workbook.worksheets;
+      worksheets.load('items');
+      await context.sync();
+      
+      for (const worksheet of worksheets.items) {
+        worksheet.load('name');
+        const usedRange = worksheet.getUsedRangeOrNullObject();
+        usedRange.load(['values', 'address']);
+        
+        await context.sync();
+        
+        if (!usedRange.isNullObject && usedRange.values) {
+          for (let row = 0; row < usedRange.values.length; row++) {
+            for (let col = 0; col < usedRange.values[row].length; col++) {
+              const cellValue = String(usedRange.values[row][col]).toLowerCase();
+              
+              // Check if cell contains the search term
+              if (cellValue.includes(searchLower)) {
+                const cellAddress = this.getCellAddress(row, col);
+                foundCells.push({
+                  address: `${worksheet.name}!${cellAddress}`,
+                  sheet: worksheet.name,
+                  content: usedRange.values[row][col],
+                  row: row,
+                  col: col
+                });
+              }
+              
+              // Also check adjacent cells for values (in case it's a label)
+              if (cellValue.includes(searchLower) && col + 1 < usedRange.values[row].length) {
+                const valueCell = usedRange.values[row][col + 1];
+                if (valueCell !== null && valueCell !== undefined && valueCell !== '') {
+                  const valueCellAddress = this.getCellAddress(row, col + 1);
+                  foundCells.push({
+                    address: `${worksheet.name}!${valueCellAddress}`,
+                    sheet: worksheet.name,
+                    content: valueCell,
+                    row: row,
+                    col: col + 1,
+                    isValue: true,
+                    label: usedRange.values[row][col]
+                  });
+                }
+              }
+            }
+          }
+        }
+        
+        if (!searchAllSheets) break;
+      }
+    });
+    
+    return foundCells;
+  }
+
+  async formatCell(cellAddress, formatType, formatValue) {
+    await Excel.run(async (context) => {
+      let range;
+      
+      if (cellAddress.includes('!')) {
+        const [sheetName, rangeAddr] = cellAddress.split('!');
+        const sheet = context.workbook.worksheets.getItem(sheetName);
+        range = sheet.getRange(rangeAddr);
+      } else {
+        const sheet = context.workbook.worksheets.getActiveWorksheet();
+        range = sheet.getRange(cellAddress);
+      }
+      
+      // Apply formatting based on type
+      switch (formatType.toLowerCase()) {
+        case 'color':
+          range.format.fill.color = this.getColorCode(formatValue);
+          break;
+        case 'bold':
+          range.format.font.bold = formatValue.toLowerCase() === 'true' || formatValue.toLowerCase() === 'bold';
+          break;
+        case 'italic':
+          range.format.font.italic = formatValue.toLowerCase() === 'true' || formatValue.toLowerCase() === 'italic';
+          break;
+        case 'border':
+          range.format.borders.getItem('EdgeTop').style = 'Continuous';
+          range.format.borders.getItem('EdgeBottom').style = 'Continuous';
+          range.format.borders.getItem('EdgeLeft').style = 'Continuous';
+          range.format.borders.getItem('EdgeRight').style = 'Continuous';
+          break;
+      }
+      
+      await context.sync();
+    });
+  }
+
+  getColorCode(colorName) {
+    const colorMap = {
+      'red': '#FF0000',
+      'green': '#00FF00',
+      'blue': '#0000FF',
+      'yellow': '#FFFF00',
+      'orange': '#FFA500',
+      'purple': '#800080',
+      'pink': '#FFC0CB',
+      'light green': '#90EE90',
+      'light blue': '#ADD8E6',
+      'light gray': '#D3D3D3',
+      'dark gray': '#A9A9A9'
+    };
+    
+    return colorMap[colorName.toLowerCase()] || colorName;
+  }
+
+  getCellAddress(row, col) {
+    let columnLetter = '';
+    let temp = col;
+    while (temp >= 0) {
+      columnLetter = String.fromCharCode(65 + (temp % 26)) + columnLetter;
+      temp = Math.floor(temp / 26) - 1;
+    }
+    return `${columnLetter}${row + 1}`;
+  }
+}
+
 // Export all tools
 const excelTools = [
   new ReadRangeTool(),
   new WriteRangeTool(), 
   new EvaluateFinancialFormulaTool(),
-  new FindFinancialMetricTool()
+  new FindFinancialMetricTool(),
+  new SmartCellFormattingTool()
 ];
 
 // Initialize globally
@@ -291,6 +490,7 @@ if (typeof window !== 'undefined') {
     WriteRangeTool,
     EvaluateFinancialFormulaTool,
     FindFinancialMetricTool,
+    SmartCellFormattingTool,
     excelTools
   };
   
