@@ -97,6 +97,18 @@ class SimpleStreamingChat {
         box-shadow: 0 2px 8px rgba(34, 197, 94, 0.3);
       }
 
+      /* Bold titles - black background, no hover effects */
+      .bold-title {
+        background: #1e293b;
+        color: white;
+        padding: 3px 8px;
+        border-radius: 4px;
+        font-weight: 600;
+        font-size: 14px;
+        display: inline-block;
+        margin: 2px 1px;
+      }
+
       /* Typewriter effect for streaming */
       .typewriter {
         overflow: hidden;
@@ -442,8 +454,8 @@ class SimpleStreamingChat {
     highlighted = highlighted.replace(/(\d+\.?\d*x)/gi, 
       '<span class="financial-value">$1</span>');
 
-    // Convert markdown formatting
-    highlighted = highlighted.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    // Convert markdown formatting - use custom class for black background
+    highlighted = highlighted.replace(/\*\*(.*?)\*\*/g, '<span class="bold-title">$1</span>');
     highlighted = highlighted.replace(/\n\n/g, '</p><p>');
     highlighted = highlighted.replace(/\n/g, '<br>');
     highlighted = `<p>${highlighted}</p>`;
