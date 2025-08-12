@@ -26,6 +26,21 @@
       this.isProcessing = false;
       this.maxIterations = 3;
       this.setupStyles();
+      
+      // Initialize AccurateExcelValueFinder for precise value reading
+      try {
+        if (typeof AccurateExcelValueFinder !== 'undefined') {
+          this.valueFinder = new AccurateExcelValueFinder();
+          console.log('✅ AccurateExcelValueFinder integrated');
+        } else {
+          console.log('⚠️ AccurateExcelValueFinder not available');
+          this.valueFinder = null;
+        }
+      } catch (error) {
+        console.error('Failed to initialize AccurateExcelValueFinder:', error);
+        this.valueFinder = null;
+      }
+      
       this.initializeTools();
       console.log('🤖 Excel AI Agent initialized');
     }
@@ -223,20 +238,28 @@
 
       console.log('📡 Calling Netlify OpenAI function:', apiUrl);
 
-      // Enhanced prompt for LangChain-style analysis
+      // Enhanced prompt for LangChain-style analysis with ACTUAL VALUES emphasis
       const enhancedMessage = `As an expert M&A financial analyst using Excel, please analyze this question: "${userMessage}"
 
-Excel Data Context:
+IMPORTANT: Use ONLY the actual values provided below. DO NOT make up any numbers.
+
+Excel Data Context (ACTUAL VALUES FROM WORKBOOK):
 ${excelContext}
 
-Please provide a comprehensive M&A analysis including:
-1. Direct answer to the question
-2. Relevant financial metrics and their implications
-3. Specific Excel cell references where possible
-4. M&A industry insights and recommendations
-5. Any assumptions or considerations
+Instructions:
+1. ONLY use the exact values and cell references provided above
+2. If a value is not provided, say "Value not found in Excel" - DO NOT guess
+3. Always cite the specific cell location when referencing a value
+4. Explain what the actual values mean in the M&A context
 
-Focus on M&A concepts like IRR, MOIC, DCF valuation, exit multiples, and leverage analysis.`;
+Please provide analysis including:
+1. Direct answer using the ACTUAL values provided
+2. Explanation of what these specific numbers mean
+3. Cell references for all values mentioned
+4. M&A insights based on the REAL data
+5. Any concerns or recommendations based on the ACTUAL metrics
+
+Remember: NEVER make up values. Only use what's explicitly provided in the Excel Data Context above.`;
 
       const requestBody = {
         message: enhancedMessage,
@@ -394,10 +417,19 @@ Focus on M&A concepts like IRR, MOIC, DCF valuation, exit multiples, and leverag
     }
 
     /**
-     * Tool: Get Financial Summary
+     * Tool: Get Financial Summary - Now with accurate value finding
      */
     async getFinancialSummary() {
       try {
+        // Use AccurateExcelValueFinder if available
+        if (this.valueFinder) {
+          console.log('🎯 Using AccurateExcelValueFinder for precise metrics');
+          const summary = await this.valueFinder.getFormattedSummaryForAI();
+          return summary;
+        }
+        
+        // Fallback to basic search if AccurateExcelValueFinder not available
+        console.log('⚠️ Using fallback financial summary method');
         const metrics = {};
 
         await Excel.run(async (context) => {
