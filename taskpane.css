@@ -576,7 +576,7 @@ body {
   visibility: visible !important; /* Force visibility */
   opacity: 1 !important; /* Force opacity */
   position: relative !important; /* Ensure proper positioning */
-  z-index: 10 !important; /* Ensure it stays on top */
+  /* z-index: 10 !important; -- Removed to prevent overlay on chat text */
   min-height: 48px !important; /* Minimum height to prevent collapse */
 }
 
