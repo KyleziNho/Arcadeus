@@ -317,11 +317,14 @@ FORMATTING REQUIREMENTS:
    - 💡 for key insights
    - ⚠️ for warnings or concerns
    - ✅ for recommendations
-10. When showing multiple metrics, list them beneath each other with bullet points
-11. Always include an analysis section with actionable insights
+10. NEVER create tables, grids, or side-by-side layouts
+11. ALWAYS list metrics in simple vertical bullet point format
+12. Always include an analysis section with actionable insights
+
+CRITICAL: DO NOT CREATE ANY TABLES OR COMPLEX LAYOUTS. Use simple bullet points only.
 
 RESPONSE STRUCTURE:
-- ## Key Financial Metrics (with actual values and cell locations)
+- ## Key Financial Metrics (simple bullet list with actual values and cell locations)
 - ## Analysis (interpretation of the numbers)
 - ## Insights and Recommendations (actionable advice)
 
@@ -449,6 +452,13 @@ Provide a comprehensive, well-formatted analysis using ONLY the actual tool resu
    */
   basicFormatResponse(response) {
     let formatted = response;
+    
+    // FIRST: Remove any table HTML that might have been generated
+    formatted = formatted.replace(/<table[^>]*>[\s\S]*?<\/table>/gi, '');
+    formatted = formatted.replace(/<tr[^>]*>[\s\S]*?<\/tr>/gi, '');
+    formatted = formatted.replace(/<td[^>]*>[\s\S]*?<\/td>/gi, '');
+    formatted = formatted.replace(/<th[^>]*>[\s\S]*?<\/th>/gi, '');
+    formatted = formatted.replace(/\|[^|\n]*\|[\s\S]*?\n/g, '');
     
     // Convert markdown headers with better styling
     formatted = formatted.replace(/### (.+)/g, '<h3 class="response-header">📊 $1</h3>');

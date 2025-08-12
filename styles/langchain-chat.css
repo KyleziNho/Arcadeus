@@ -321,37 +321,35 @@
   background: linear-gradient(135deg, #22c55e, #16a34a);
 }
 
-/* Table formatting in responses */
-.response-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin: 12px 0;
-  border-radius: 8px;
-  overflow: hidden;
-  border: 1px solid #e2e8f0;
+/* Disable all table formatting to prevent layout issues */
+.formatted-response table,
+.formatted-response tr,
+.formatted-response td,
+.formatted-response th {
+  display: block !important;
+  width: 100% !important;
+  border: none !important;
+  margin: 0 !important;
+  padding: 4px 0 !important;
+  background: none !important;
 }
 
-.response-table th {
-  background: #f8fafc;
-  padding: 10px;
-  text-align: left;
-  font-weight: 600;
-  color: #1e293b;
-  border-bottom: 2px solid #e2e8f0;
+.formatted-response table {
+  margin: 12px 0 !important;
 }
 
-.response-table td {
-  padding: 10px;
-  border-bottom: 1px solid #f1f5f9;
-  color: #475569;
+/* Force simple list display for any table content */
+.formatted-response td::before {
+  content: "• ";
+  color: #22c55e;
+  font-weight: bold;
 }
 
-.response-table tr:last-child td {
-  border-bottom: none;
-}
-
-.response-table tr:hover {
-  background: #f8fafc;
+.formatted-response th {
+  font-weight: 600 !important;
+  color: #1e293b !important;
+  font-size: 14px !important;
+  margin-top: 8px !important;
 }
 
 /* Code blocks in responses */
