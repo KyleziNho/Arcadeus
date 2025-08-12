@@ -579,6 +579,109 @@
   padding: 0;
 }
 
+/* LangGraph workflow steps styling */
+.langgraph-steps .message-content {
+  background: linear-gradient(135deg, #f0fdf4, #ecfccb);
+  border: 1px solid #84cc16;
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.langgraph-badge {
+  background: linear-gradient(135deg, #65a30d, #84cc16);
+}
+
+.langgraph-container {
+  margin-top: 8px;
+}
+
+.langgraph-container h4 {
+  margin: 0 0 12px 0;
+  color: #365314;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.langgraph-step {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 12px;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #bef264;
+}
+
+.langgraph-step.success {
+  border-left: 4px solid #22c55e;
+}
+
+.langgraph-step.error {
+  border-left: 4px solid #ef4444;
+  border-color: #fecaca;
+}
+
+.langgraph-step:last-child {
+  margin-bottom: 0;
+}
+
+.langgraph-step .step-number {
+  background: linear-gradient(135deg, #65a30d, #84cc16);
+  color: white;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.langgraph-step.error .step-number {
+  background: linear-gradient(135deg, #dc2626, #ef4444);
+}
+
+.step-node strong {
+  color: #365314;
+}
+
+.step-action strong {
+  color: #0c4a6e;
+}
+
+.step-input strong {
+  color: #065f46;
+}
+
+.step-result strong {
+  color: #7c2d12;
+}
+
+.step-details strong {
+  color: #6b21a8;
+}
+
+.step-error {
+  color: #dc2626;
+  font-weight: 500;
+}
+
+.result-content,
+.details-content {
+  margin-top: 4px;
+  padding: 8px;
+  background: #f8fafc;
+  border-radius: 6px;
+  border-left: 3px solid #22d3ee;
+}
+
+.langgraph-step.error .result-content {
+  background: #fef2f2;
+  border-left-color: #ef4444;
+}
+
 /* Responsive design */
 @media (max-width: 480px) {
   .formatted-response {

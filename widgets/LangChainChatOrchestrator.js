@@ -13,8 +13,8 @@ class LangChainChatOrchestrator {
     this.chatHistory = [];
     this.maxHistoryLength = 10;
     
-    // New ReAct Agent components
-    this.agentExecutor = null;
+    // New LangGraph components
+    this.langGraphWorkflow = null;
     this.memory = null;
     this.properTools = [];
     
@@ -43,8 +43,8 @@ class LangChainChatOrchestrator {
         console.log('✅ Enhanced Response Formatter initialized');
       }
       
-      // Initialize new ReAct Agent system
-      await this.initializeReActAgent();
+      // Initialize new LangGraph system
+      await this.initializeLangGraph();
       
       this.isInitialized = true;
       console.log('✅ LangChain Chat Orchestrator ready');
@@ -58,47 +58,34 @@ class LangChainChatOrchestrator {
   }
 
   /**
-   * Initialize ReAct Agent system following expert implementation
+   * Initialize LangGraph workflow system
    */
-  async initializeReActAgent() {
-    console.log('🤖 Initializing ReAct Agent system...');
+  async initializeLangGraph() {
+    console.log('🌟 Initializing LangGraph workflow system...');
     
     try {
-      // Initialize proper tools
-      if (window.LangChainProperTools) {
-        this.properTools = window.LangChainProperTools.excelTools;
-        console.log('✅ Loaded', this.properTools.length, 'proper LangChain tools');
+      // Initialize LangGraph workflow
+      if (window.LangGraphExcelWorkflow) {
+        this.langGraphWorkflow = new window.LangGraphExcelWorkflow();
+        console.log('✅ LangGraph workflow initialized');
       }
       
-      // Initialize memory with session storage
-      if (window.LangChainReActAgent) {
-        this.memory = new window.LangChainReActAgent.BufferMemory({
-          returnMessages: true,
-          memoryKey: "chat_history",
-          maxMessages: 20
-        });
-        
-        // Load saved memory from session storage
-        const savedMemory = sessionStorage.getItem("langchain_chat_memory");
-        if (savedMemory) {
-          this.memory.chatHistory = JSON.parse(savedMemory);
-          console.log('📚 Loaded chat memory:', this.memory.chatHistory.length, 'messages');
+      // Initialize state management
+      if (window.ExcelChatState) {
+        // Load saved state from session storage
+        const savedState = sessionStorage.getItem("langgraph_chat_state");
+        if (savedState) {
+          this.chatState = window.ExcelChatState.deserialize(JSON.parse(savedState));
+          console.log('📚 Loaded chat state:', this.chatState.messages.length, 'messages');
+        } else {
+          this.chatState = new window.ExcelChatState();
         }
         
-        // Initialize agent executor
-        this.agentExecutor = new window.LangChainReActAgent.LangChainAgentExecutor({
-          llm: null, // We'll use our API instead
-          tools: this.properTools,
-          memory: this.memory,
-          verbose: true,
-          maxIterations: 5
-        });
-        
-        console.log('✅ ReAct Agent system initialized');
+        console.log('✅ LangGraph state management initialized');
       }
       
     } catch (error) {
-      console.error('❌ Failed to initialize ReAct Agent:', error);
+      console.error('❌ Failed to initialize LangGraph:', error);
     }
   }
 
@@ -126,10 +113,10 @@ class LangChainChatOrchestrator {
   }
 
   /**
-   * Main entry point for processing messages through ReAct Agent
+   * Main entry point for processing messages through LangGraph
    */
   async processMessage(userMessage) {
-    console.log('🎯 Processing message through ReAct Agent:', userMessage);
+    console.log('🌟 Processing message through LangGraph:', userMessage);
     
     try {
       // Show user message in chat
@@ -138,49 +125,56 @@ class LangChainChatOrchestrator {
       // Show processing indicator
       const processingContainer = this.showProcessingIndicator();
       
-      // ALWAYS use ReAct Agent - NO FALLBACKS
-      if (!this.agentExecutor) {
-        console.error('❌ ReAct Agent not initialized!');
+      // ALWAYS use LangGraph - NO FALLBACKS
+      if (!this.langGraphWorkflow) {
+        console.error('❌ LangGraph not initialized!');
         console.log('Available components:');
-        console.log('- window.LangChainProperTools:', typeof window.LangChainProperTools);
-        console.log('- window.LangChainReActAgent:', typeof window.LangChainReActAgent);
-        console.log('- this.properTools:', this.properTools.length);
-        console.log('- this.memory:', !!this.memory);
-        throw new Error("ReAct Agent not initialized. Cannot process message without proper LangChain tools.");
+        console.log('- window.LangGraphExcelWorkflow:', typeof window.LangGraphExcelWorkflow);
+        console.log('- window.ExcelChatState:', typeof window.ExcelChatState);
+        throw new Error("LangGraph not initialized. Cannot process message without proper workflow.");
       }
       
-      console.log('🤖 Using ReAct Agent for processing...');
-      console.log('Agent executor available tools:', this.properTools.map(t => t.name));
+      console.log('🌟 Using LangGraph for processing...');
       
-      const result = await this.agentExecutor.invoke({
-        input: userMessage
+      // Add user message to state
+      this.chatState.addMessage({
+        role: 'user',
+        content: userMessage
       });
       
-      console.log('🧠 ReAct Agent result:', result);
-      console.log('🧠 Result has intermediate_steps:', !!result.intermediate_steps);
-      console.log('🧠 Intermediate steps count:', result.intermediate_steps ? result.intermediate_steps.length : 0);
+      // Stream through LangGraph workflow for real-time updates
+      let finalState = null;
+      const streamSteps = [];
       
-      // ALWAYS display step-by-step reasoning
-      if (result.intermediate_steps && result.intermediate_steps.length > 0) {
-        console.log('📝 Displaying', result.intermediate_steps.length, 'thinking steps');
-        this.displayIntermediateSteps(result.intermediate_steps, processingContainer);
+      for await (const update of this.langGraphWorkflow.stream(this.chatState)) {
+        console.log('📊 LangGraph update:', update.node, update.step);
+        streamSteps.push(update.step);
+        finalState = update.state;
+      }
+      
+      console.log('🌟 LangGraph completed with', streamSteps.length, 'steps');
+      
+      // Display all processing steps
+      if (streamSteps.length > 0) {
+        console.log('📝 Displaying', streamSteps.length, 'LangGraph steps');
+        this.displayLangGraphSteps(streamSteps, processingContainer);
       } else {
-        console.log('⚠️ No intermediate steps found in result');
-        // Remove processing indicator since no steps to show
+        console.log('⚠️ No processing steps found');
         if (processingContainer) {
           processingContainer.remove();
         }
       }
       
-      // Format and display final response
-      const formattedResponse = await this.formatResponse(result.output);
-      this.displayResponse(formattedResponse, null); // null since we handled processingContainer above
-      
-      // Save memory to session storage
-      if (this.memory) {
-        sessionStorage.setItem("langchain_chat_memory", JSON.stringify(this.memory.chatHistory));
-        console.log('💾 Saved memory with', this.memory.chatHistory.length, 'messages');
+      // Get final response from state
+      const finalMessage = finalState.messages[finalState.messages.length - 1];
+      if (finalMessage && finalMessage.role === 'assistant') {
+        const formattedResponse = await this.formatResponse(finalMessage.content);
+        this.displayResponse(formattedResponse, null);
       }
+      
+      // Save state to session storage
+      sessionStorage.setItem("langgraph_chat_state", JSON.stringify(finalState.serialize()));
+      console.log('💾 Saved LangGraph state with', finalState.messages.length, 'messages');
       
     } catch (error) {
       console.error('❌ Error processing message:', error);
@@ -273,6 +267,121 @@ class LangChainChatOrchestrator {
     
     // Fallback: show raw JSON for debugging
     return `<pre>${JSON.stringify(observation, null, 2)}</pre>`;
+  }
+
+  /**
+   * Display LangGraph processing steps for transparency
+   */
+  displayLangGraphSteps(steps, processingContainer) {
+    // Remove processing indicator first
+    if (processingContainer) {
+      processingContainer.remove();
+    }
+    
+    const chatMessages = document.getElementById('chatMessages');
+    if (!chatMessages) return;
+    
+    // Create LangGraph steps container
+    const stepsDiv = document.createElement('div');
+    stepsDiv.className = 'chat-message assistant-message langgraph-steps';
+    
+    let stepsHTML = `
+      <div class="message-avatar">
+        <div class="avatar-icon">🌟</div>
+      </div>
+      <div class="message-content">
+        <div class="message-header">
+          <span class="message-role">LangGraph Workflow</span>
+          <span class="message-badge langgraph-badge">Step-by-Step</span>
+        </div>
+        <div class="langgraph-container">
+          <h4>🔄 Workflow Execution:</h4>
+    `;
+    
+    steps.forEach((step, index) => {
+      const statusIcon = step.success ? '✅' : '❌';
+      const stepClass = step.success ? 'success' : 'error';
+      
+      stepsHTML += `
+        <div class="langgraph-step ${stepClass}">
+          <div class="step-number">${step.stepNumber}</div>
+          <div class="step-content">
+            <div class="step-node">
+              <strong>📍 Node:</strong> ${step.node}
+            </div>
+            <div class="step-action">
+              <strong>🔧 Action:</strong> ${step.action}
+            </div>
+      `;
+      
+      if (step.input) {
+        stepsHTML += `
+            <div class="step-input">
+              <strong>📝 Input:</strong> <code>${JSON.stringify(step.input)}</code>
+            </div>
+        `;
+      }
+      
+      stepsHTML += `
+            <div class="step-result">
+              <strong>👀 Result:</strong> 
+              <div class="result-content">
+                ${statusIcon} ${step.result}
+              </div>
+            </div>
+      `;
+      
+      if (step.details) {
+        stepsHTML += `
+            <div class="step-details">
+              <strong>📋 Details:</strong>
+              <div class="details-content">
+                ${this.formatLangGraphDetails(step.details)}
+              </div>
+            </div>
+        `;
+      }
+      
+      if (step.error) {
+        stepsHTML += `
+            <div class="step-error">
+              <strong>⚠️ Error:</strong> ${step.error}
+            </div>
+        `;
+      }
+      
+      stepsHTML += `
+          </div>
+        </div>
+      `;
+    });
+    
+    stepsHTML += `
+        </div>
+        <div class="message-footer">
+          <span class="message-time">${new Date().toLocaleTimeString()}</span>
+        </div>
+      </div>
+    `;
+    
+    stepsDiv.innerHTML = stepsHTML;
+    chatMessages.appendChild(stepsDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  }
+
+  /**
+   * Format LangGraph step details for display
+   */
+  formatLangGraphDetails(details) {
+    if (details.success && details.cellsFound) {
+      return `Found ${details.cellsFound} cells matching "${details.searchTerm}" and formatted ${details.cellsFormatted} successfully`;
+    } else if (details.value && details.location) {
+      return `Found <strong>${details.metric}: ${details.value}</strong> at ${details.location}`;
+    } else if (details.formattedValue) {
+      return `Calculation result: <strong>${details.formattedValue}</strong>`;
+    }
+    
+    return JSON.stringify(details, null, 2);
   }
 
   /**
