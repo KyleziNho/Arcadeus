@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>🧠 Test Deep Excel Agent</title>
+    <script src="https://appsforoffice.microsoft.com/lib/1.1/hosted/office.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; }
+        .container { max-width: 1000px; margin: 0 auto; }
+        .test-input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
+        .test-button { background: #6366f1; color: white; padding: 12px 24px; border: none; border-radius: 6px; cursor: pointer; margin: 5px; font-weight: 500; }
+        .test-button:hover { background: #4f46e5; }
+        .test-button.secondary { background: #64748b; }
+        .test-button.secondary:hover { background: #475569; }
+        .output { background: #f8fafc; padding: 20px; margin: 15px 0; border-radius: 8px; white-space: pre-wrap; font-family: monospace; max-height: 500px; overflow-y: auto; border: 1px solid #e2e8f0; }
+        .status { padding: 12px; margin: 10px 0; border-radius: 6px; font-weight: 500; }
+        .status.success { background: #d1fae5; color: #065f46; border: 1px solid #86efac; }
+        .status.error { background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; }
+        .status.warning { background: #fef3c7; color: #92400e; border: 1px solid #fbbf24; }
+        .api-key-section { background: #f0f9ff; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #7dd3fc; }
+        .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px; margin: 20px 0; }
+        .feature-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; }
+        .feature-card h4 { margin: 0 0 10px 0; color: #1e293b; }
+        .feature-card p { margin: 0; color: #64748b; font-size: 14px; }
+        .todo-display { background: #fefce8; border: 1px solid #eab308; border-radius: 6px; padding: 12px; margin: 10px 0; }
+        .file-display { background: #f0fdf4; border: 1px solid #22c55e; border-radius: 6px; padding: 12px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧠 Deep Excel Agent Test</h1>
+        <p>This is a comprehensive AI agent with planning, sub-agents, file system, and deep reasoning capabilities.</p>
+        
+        <div id="status" class="status">⏳ Loading components...</div>
+
+        <div id="apiKeySection" class="api-key-section">
+            <h3>🔑 OpenAI API Key Configuration</h3>
+            <input type="password" id="apiKeyInput" class="test-input" placeholder="Enter your OpenAI API key" style="max-width: 400px;">
+            <button onclick="setApiKey()" class="test-button">Set API Key</button>
+            <p><small>Get your key from: <a href="https://platform.openai.com/api-keys" target="_blank">https://platform.openai.com/api-keys</a></small></p>
+        </div>
+
+        <div id="testSection" style="display: none;">
+            <h3>💬 Deep Agent Chat</h3>
+            <textarea id="testInput" class="test-input" rows="3" placeholder="Try complex requests like: 'Analyze this Excel workbook, find all financial metrics, format them professionally, and create a summary report'"></textarea>
+            <button onclick="testDeepAgent()" class="test-button">Process with Deep Agent</button>
+            <button onclick="clearWorkspace()" class="test-button secondary">Clear Workspace</button>
+            
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4>🧠 Deep Reasoning Examples</h4>
+                    <p>Complex multi-step tasks that require planning and execution</p>
+                    <button onclick="quickTest('Analyze this M&A model, find all the key metrics like IRR and MOIC, format them professionally with colors and borders, and create a summary of the financial performance')" class="test-button">M&A Analysis</button>
+                </div>
+                
+                <div class="feature-card">
+                    <h4>🎨 Professional Formatting</h4>
+                    <p>Intelligent formatting with contextual understanding</p>
+                    <button onclick="quickTest('Make this spreadsheet look professional - apply consistent formatting, highlight headers, add borders, and make the data easy to read')" class="test-button">Professional Style</button>
+                </div>
+                
+                <div class="feature-card">
+                    <h4>🔍 Data Analysis</h4>
+                    <p>Comprehensive data analysis with insights</p>
+                    <button onclick="quickTest('Analyze all the data in this workbook, identify patterns and trends, find any issues or inconsistencies, and provide insights')" class="test-button">Data Analysis</button>
+                </div>
+                
+                <div class="feature-card">
+                    <h4>📊 Complex Calculations</h4>
+                    <p>Multi-step calculations with explanations</p>
+                    <button onclick="quickTest('Calculate the unlevered and levered IRR for this investment, create sensitivity tables, and explain the methodology used')" class="test-button">IRR Analysis</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="results">
+            <div id="todoDisplay" class="todo-display" style="display: none;">
+                <h4>📋 Agent Todo List</h4>
+                <div id="todoContent"></div>
+            </div>
+            
+            <div id="fileDisplay" class="file-display" style="display: none;">
+                <h4>💾 Agent Workspace</h4>
+                <div id="fileContent"></div>
+            </div>
+        </div>
+
+        <div id="output" class="output"></div>
+    </div>
+
+    <!-- Load required scripts -->
+    <script src="widgets/UnifiedExcelApiLibrary.js"></script>
+    <script src="widgets/DeepExcelAgent.js"></script>
+
+    <script>
+        let deepAgent;
+
+        function log(message) {
+            const output = document.getElementById('output');
+            const timestamp = new Date().toLocaleTimeString();
+            output.textContent += `[${timestamp}] ${message}\n`;
+            output.scrollTop = output.scrollHeight;
+            console.log(message);
+        }
+
+        function setStatus(message, type = 'success') {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = `status ${type}`;
+        }
+
+        Office.onReady(() => {
+            log('✅ Office.js ready');
+            checkComponents();
+        });
+
+        function checkComponents() {
+            log('Checking Deep Agent components...');
+            
+            const hasExcelApi = typeof window.UnifiedExcelApiLibrary !== 'undefined';
+            const hasDeepAgent = typeof window.DeepExcelAgent !== 'undefined';
+            const hasVirtualFs = typeof window.VirtualFileSystem !== 'undefined';
+
+            log(`- UnifiedExcelApiLibrary: ${hasExcelApi ? '✅' : '❌'}`);
+            log(`- DeepExcelAgent: ${hasDeepAgent ? '✅' : '❌'}`);  
+            log(`- VirtualFileSystem: ${hasVirtualFs ? '✅' : '❌'}`);
+
+            if (hasExcelApi && hasDeepAgent && hasVirtualFs) {
+                setStatus('🚀 Deep Agent components loaded! Please configure your OpenAI API key.');
+                
+                // Check if API key already exists
+                const existingKey = localStorage.getItem('openai_api_key');
+                if (existingKey) {
+                    setStatus('✅ API key found! Deep Agent ready for testing.');
+                    initializeDeepAgent(existingKey);
+                }
+            } else {
+                setStatus('❌ Some components failed to load. Check console for errors.', 'error');
+            }
+        }
+
+        function setApiKey() {
+            const apiKeyInput = document.getElementById('apiKeyInput');
+            const apiKey = apiKeyInput.value.trim();
+            
+            if (!apiKey) {
+                alert('Please enter your OpenAI API key');
+                return;
+            }
+
+            localStorage.setItem('openai_api_key', apiKey);
+            log('🔑 API key configured');
+            setStatus('✅ Deep Agent initialized and ready!');
+            
+            apiKeyInput.value = '';
+            initializeDeepAgent(apiKey);
+        }
+
+        function initializeDeepAgent(apiKey) {
+            try {
+                deepAgent = new window.DeepExcelAgent(apiKey);
+                log('🧠 Deep Excel Agent initialized with:');
+                log('  - Planning tool (todo_write)');
+                log('  - File system (write_file, read_file, edit_file, ls)');
+                log('  - Sub-agents (research, formatting, analysis, general)');
+                log('  - Excel tools (read, write, format, find, analyze)');
+                
+                showTestSection();
+            } catch (error) {
+                log(`❌ Failed to initialize Deep Agent: ${error.message}`);
+                setStatus('❌ Failed to initialize Deep Agent', 'error');
+            }
+        }
+
+        function showTestSection() {
+            document.getElementById('apiKeySection').style.display = 'none';
+            document.getElementById('testSection').style.display = 'block';
+        }
+
+        async function testDeepAgent() {
+            const input = document.getElementById('testInput').value.trim();
+            if (!input) {
+                alert('Please enter a request for the Deep Agent');
+                return;
+            }
+
+            await runDeepTest(input);
+        }
+
+        async function quickTest(message) {
+            await runDeepTest(message);
+        }
+
+        async function runDeepTest(message) {
+            log(`\n🧠 DEEP AGENT TEST: "${message}"`);
+            log('=' .repeat(80));
+            
+            try {
+                if (!deepAgent) {
+                    throw new Error('Deep Agent not initialized');
+                }
+
+                log('🚀 Starting deep reasoning process...');
+                const startTime = Date.now();
+                
+                const result = await deepAgent.processRequest(message);
+                const duration = Date.now() - startTime;
+                
+                log(`⏱️  Total processing time: ${(duration/1000).toFixed(1)}s`);
+                log(`📊 Result: ${result.success ? 'SUCCESS' : 'FAILED'}`);
+                
+                if (result.success) {
+                    // Display todo list
+                    if (result.todoList && result.todoList.length > 0) {
+                        displayTodoList(result.todoList);
+                    }
+                    
+                    // Display files
+                    if (result.files && result.files.length > 0) {
+                        displayFiles(result.files);
+                    }
+                    
+                    log('\n🤖 DEEP AGENT RESPONSE:');
+                    log('-'.repeat(50));
+                    log(result.response);
+                    log('-'.repeat(50));
+                    
+                } else {
+                    log(`❌ Error: ${result.error}`);
+                }
+                
+                log('=' .repeat(80));
+
+            } catch (error) {
+                log(`❌ Test failed: ${error.message}`);
+                console.error('Full error:', error);
+            }
+        }
+
+        function displayTodoList(todos) {
+            const todoDisplay = document.getElementById('todoDisplay');
+            const todoContent = document.getElementById('todoContent');
+            
+            let html = '<ul>';
+            todos.forEach(todo => {
+                const icon = todo.status === 'completed' ? '✅' : 
+                           todo.status === 'in_progress' ? '🔄' : '⏳';
+                html += `<li>${icon} ${todo.id}. ${todo.task}</li>`;
+            });
+            html += '</ul>';
+            
+            todoContent.innerHTML = html;
+            todoDisplay.style.display = 'block';
+        }
+
+        function displayFiles(files) {
+            const fileDisplay = document.getElementById('fileDisplay');
+            const fileContent = document.getElementById('fileContent');
+            
+            let html = '<ul>';
+            files.forEach(([filename, content]) => {
+                html += `<li>📄 <strong>${filename}</strong> (${content.length} characters)</li>`;
+            });
+            html += '</ul>';
+            
+            fileContent.innerHTML = html;
+            fileDisplay.style.display = 'block';
+        }
+
+        function clearWorkspace() {
+            if (deepAgent) {
+                deepAgent.fileSystem.clear();
+                deepAgent.todoList = [];
+                log('🧹 Agent workspace cleared');
+                
+                document.getElementById('todoDisplay').style.display = 'none';
+                document.getElementById('fileDisplay').style.display = 'none';
+            }
+        }
+
+        // Allow Enter key to send messages
+        document.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && e.ctrlKey) {
+                if (document.getElementById('testInput') === document.activeElement) {
+                    testDeepAgent();
+                }
+            }
+        });
+    </script>
+</body>
+</html>

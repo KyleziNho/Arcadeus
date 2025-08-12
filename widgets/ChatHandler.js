@@ -231,10 +231,31 @@ class ChatHandler {
       // Show processing indicator
       const processingDiv = this.showProcessingIndicator();
       
-      // **USE UNIFIED AI AGENT - Single intelligent agent**
+      // **USE DEEP AGENT - Intelligent multi-step reasoning with planning**
       let aiAgent;
       try {
-        aiAgent = await window.ApiKeyManager.ensureApiKey();
+        // Check for Deep Agent first (most intelligent)
+        if (window.DeepExcelAgent) {
+          const apiKey = localStorage.getItem('openai_api_key') || 
+                         sessionStorage.getItem('openai_api_key') ||
+                         await this.promptForApiKey();
+          
+          if (!apiKey) {
+            throw new Error('OpenAI API key required for Deep Agent');
+          }
+          
+          aiAgent = new window.DeepExcelAgent(apiKey);
+          console.log('🧠 Using Deep Excel Agent with planning, sub-agents, and persistence');
+          
+        } else if (window.HybridExcelAgent && localStorage.getItem('useComplexWorkflows') === 'true') {
+          const baseAgent = await window.ApiKeyManager.ensureApiKey();
+          aiAgent = new window.HybridExcelAgent(baseAgent.apiKey);
+          console.log('🔄 Using Hybrid Excel Agent');
+          
+        } else {
+          aiAgent = await window.ApiKeyManager.ensureApiKey();
+          console.log('⚡ Using simple Unified AI Agent');
+        }
       } catch (error) {
         console.error('❌ Failed to initialize AI agent:', error);
         this.showError(error.message);
@@ -249,8 +270,13 @@ class ChatHandler {
       if (processingDiv) processingDiv.remove();
       
       if (result.success) {
-        // Add AI response to chat
-        this.addFormattedChatMessage('assistant', result.response);
+        // Check if this is from Deep Agent with todo list
+        if (result.todoList && result.todoList.length > 0) {
+          this.addDeepAgentResponse(result);
+        } else {
+          // Add standard AI response to chat
+          this.addFormattedChatMessage('assistant', result.response);
+        }
       } else {
         this.showError(`AI Agent Error: ${result.error}`);
       }
@@ -261,6 +287,82 @@ class ChatHandler {
     } finally {
       this.isProcessing = false;
     }
+  }
+
+  /**
+   * Display Deep Agent response with todo list and files
+   */
+  addDeepAgentResponse(result) {
+    const chatMessages = document.getElementById('chatMessages');
+    if (!chatMessages) return;
+    
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'chat-message assistant-message deep-agent-response';
+    
+    // Format todo list
+    let todoHtml = '';
+    if (result.todoList && result.todoList.length > 0) {
+      todoHtml = '<div class="todo-list"><h4>📋 Execution Plan:</h4><ul>';
+      result.todoList.forEach(todo => {
+        const icon = todo.status === 'completed' ? '✅' : 
+                     todo.status === 'in_progress' ? '🔄' : '⏳';
+        todoHtml += `<li>${icon} ${todo.task}</li>`;
+      });
+      todoHtml += '</ul></div>';
+    }
+    
+    // Format files if any
+    let filesHtml = '';
+    if (result.files && result.files.length > 0) {
+      filesHtml = '<div class="file-list"><h4>💾 Workspace Files:</h4><ul>';
+      result.files.forEach(([filename, content]) => {
+        filesHtml += `<li>📄 ${filename} (${content.length} chars)</li>`;
+      });
+      filesHtml += '</ul></div>';
+    }
+    
+    messageDiv.innerHTML = `
+      <div class="message-avatar">
+        <div class="avatar-icon">🧠</div>
+      </div>
+      <div class="message-content">
+        <div class="message-header">
+          <span class="message-role">Deep AI Agent</span>
+          <span class="message-badge deep-badge">Multi-Step Reasoning</span>
+        </div>
+        ${todoHtml}
+        ${filesHtml}
+        <div class="message-text">${this.formatMessage(result.response)}</div>
+        <div class="message-footer">
+          <span class="message-time">${new Date().toLocaleTimeString()}</span>
+        </div>
+      </div>
+    `;
+    
+    chatMessages.appendChild(messageDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  }
+
+  /**
+   * Prompt for API key if not available
+   */
+  async promptForApiKey() {
+    const apiKey = prompt(`
+🔑 OpenAI API Key Required
+
+To use the Deep Excel Agent, please enter your OpenAI API key.
+You can get one from: https://platform.openai.com/api-keys
+
+Your API key will be stored locally and only used for Excel operations.
+
+Enter your API key:`);
+
+    if (apiKey && apiKey.trim()) {
+      localStorage.setItem('openai_api_key', apiKey.trim());
+      return apiKey.trim();
+    }
+    
+    return null;
   }
 
   /**
