@@ -14,6 +14,7 @@
     Access-Control-Allow-Origin = "*"
     Access-Control-Allow-Headers = "Content-Type"
     Access-Control-Allow-Methods = "GET, POST, OPTIONS"
+    Content-Security-Policy = "default-src 'self' https://appsforoffice.microsoft.com https://*.office.com https://*.office.net; frame-ancestors 'self' https://*.office.com https://*.office.net https://excel.officeapps.live.com https://*.sharepoint.com; img-src 'self' data: https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; script-src 'self' 'unsafe-inline' https://appsforoffice.microsoft.com https://www.gstatic.com; connect-src 'self' https://firestore.googleapis.com https://www.googleapis.com https://securetoken.googleapis.com https://identitytoolkit.googleapis.com https://content-firebaseappcheck.googleapis.com https://www.gstatic.com"
 
 [[redirects]]
   from = "/api/*"
