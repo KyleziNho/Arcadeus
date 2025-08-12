@@ -64,10 +64,10 @@ class LangChainChatOrchestrator {
     console.log('🌟 Initializing LangGraph workflow system...');
     
     try {
-      // Initialize LangGraph workflow
-      if (window.LangGraphExcelWorkflow) {
-        this.langGraphWorkflow = new window.LangGraphExcelWorkflow();
-        console.log('✅ LangGraph workflow initialized');
+      // Initialize LangGraph Web workflow (browser-compatible)
+      if (window.ExcelLangGraphWorkflow) {
+        this.langGraphWorkflow = new window.ExcelLangGraphWorkflow();
+        console.log('✅ LangGraph Web workflow initialized');
       }
       
       // Initialize state management
@@ -129,18 +129,28 @@ class LangChainChatOrchestrator {
       if (!this.langGraphWorkflow) {
         console.error('❌ LangGraph not initialized!');
         console.log('Available components:');
-        console.log('- window.LangGraphExcelWorkflow:', typeof window.LangGraphExcelWorkflow);
+        console.log('- window.ExcelLangGraphWorkflow:', typeof window.ExcelLangGraphWorkflow);
         console.log('- window.ExcelChatState:', typeof window.ExcelChatState);
         console.log('- this.langGraphWorkflow:', this.langGraphWorkflow);
         console.log('- this.chatState:', this.chatState);
         
         // Try to initialize now if components are available
-        if (typeof window.LangGraphExcelWorkflow !== 'undefined') {
-          console.log('🔄 Attempting to initialize LangGraph now...');
+        if (typeof window.ExcelLangGraphWorkflow !== 'undefined') {
+          console.log('🔄 Attempting to initialize LangGraph Web now...');
           try {
-            this.langGraphWorkflow = new window.LangGraphExcelWorkflow();
-            this.chatState = new window.ExcelChatState();
-            console.log('✅ LangGraph force-initialized successfully');
+            this.langGraphWorkflow = new window.ExcelLangGraphWorkflow();
+            if (!this.chatState) {
+              // Create initial state
+              this.chatState = {
+                messages: [],
+                userIntent: null,
+                toolResults: {},
+                processingSteps: [],
+                needsClarification: false,
+                confidence: 0.0
+              };
+            }
+            console.log('✅ LangGraph Web force-initialized successfully');
           } catch (initError) {
             console.error('❌ Force initialization failed:', initError);
           }
@@ -151,21 +161,25 @@ class LangChainChatOrchestrator {
         }
       }
       
-      console.log('🌟 Using LangGraph for processing...');
+      console.log('🌟 Using LangGraph Web for processing...');
       
       // Add user message to state
-      this.chatState.addMessage({
+      if (!this.chatState.messages) this.chatState.messages = [];
+      this.chatState.messages.push({
         role: 'user',
-        content: userMessage
+        content: userMessage,
+        timestamp: new Date().toISOString()
       });
       
-      // Stream through LangGraph workflow for real-time updates
+      // Stream through LangGraph Web workflow for real-time updates
       let finalState = null;
       const streamSteps = [];
       
       for await (const update of this.langGraphWorkflow.stream(this.chatState)) {
-        console.log('📊 LangGraph update:', update.node, update.step);
-        streamSteps.push(update.step);
+        console.log('📊 LangGraph Web update:', update.node, update.step);
+        if (update.step) {
+          streamSteps.push(update.step);
+        }
         finalState = update.state;
       }
       
@@ -183,15 +197,19 @@ class LangChainChatOrchestrator {
       }
       
       // Get final response from state
-      const finalMessage = finalState.messages[finalState.messages.length - 1];
-      if (finalMessage && finalMessage.role === 'assistant') {
-        const formattedResponse = await this.formatResponse(finalMessage.content);
-        this.displayResponse(formattedResponse, null);
+      if (finalState && finalState.messages && finalState.messages.length > 0) {
+        const finalMessage = finalState.messages[finalState.messages.length - 1];
+        if (finalMessage && finalMessage.role === 'assistant') {
+          const formattedResponse = await this.formatResponse(finalMessage.content);
+          this.displayResponse(formattedResponse, null);
+        }
       }
       
-      // Save state to session storage
-      sessionStorage.setItem("langgraph_chat_state", JSON.stringify(finalState.serialize()));
-      console.log('💾 Saved LangGraph state with', finalState.messages.length, 'messages');
+      // Save state to session storage (simplified for Web implementation)
+      if (finalState) {
+        sessionStorage.setItem("langgraph_web_state", JSON.stringify(finalState));
+        console.log('💾 Saved LangGraph Web state with', finalState.messages?.length || 0, 'messages');
+      }
       
     } catch (error) {
       console.error('❌ Error processing message:', error);
