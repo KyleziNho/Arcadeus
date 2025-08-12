@@ -1,0 +1,26 @@
+<ns0:OfficeApp xmlns:ns0="http://schemas.microsoft.com/office/appforoffice/1.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="TaskPaneApp">
+<ns0:Id>b24892eb-f900-5bb7-9c67-8f4b23e28e9d</ns0:Id>
+<ns0:Version>1.0.0.0</ns0:Version>
+<ns0:ProviderName>Arcadeus</ns0:ProviderName>
+<ns0:DefaultLocale>en-US</ns0:DefaultLocale>
+<ns0:DisplayName DefaultValue="Arcadeus"/>
+<ns0:Description DefaultValue="Professional MA and PE deal modeling"/>
+<ns0:IconUrl DefaultValue="https://guavaexcel.netlify.app/assets/icon-32.png"/>
+<ns0:HighResolutionIconUrl DefaultValue="https://guavaexcel.netlify.app/assets/icon-64.png"/>
+<ns0:SupportUrl DefaultValue="https://guavaexcel.netlify.app"/>
+<ns0:AppDomains>
+<ns0:AppDomain>https://guavaexcel.netlify.app</ns0:AppDomain>
+</ns0:AppDomains>
+<ns0:Hosts>
+<ns0:Host Name="Workbook"/>
+</ns0:Hosts>
+<ns0:DefaultSettings>
+<ns0:SourceLocation DefaultValue="https://guavaexcel.netlify.app/taskpane.html"/>
+</ns0:DefaultSettings>
+<ns0:Permissions>ReadWriteDocument</ns0:Permissions>
+<ns0:Requirements>
+<ns0:Sets DefaultMinVersion="1.1">
+<ns0:Set Name="ExcelApi" MinVersion="1.1"/>
+</ns0:Sets>
+</ns0:Requirements>
+</ns0:OfficeApp>
