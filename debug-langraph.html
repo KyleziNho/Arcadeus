@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>LangGraph Debug</title>
+</head>
+<body>
+    <h1>LangGraph Web Debug</h1>
+    <div id="output"></div>
+    <button onclick="testLangGraph()">Test LangGraph</button>
+    
+    <script src="widgets/LangChainProperTools.js"></script>
+    <script src="widgets/LangGraphWebImplementation.js"></script>
+    <script>
+        console.log('=== DEBUGGING LANGRAPH WEB ===');
+        
+        function log(message) {
+            console.log(message);
+            document.getElementById('output').innerHTML += '<p>' + message + '</p>';
+        }
+        
+        // Check if classes are available
+        log('window.ExcelLangGraphWorkflow: ' + typeof window.ExcelLangGraphWorkflow);
+        log('window.LangGraphWebAnnotation: ' + typeof window.LangGraphWebAnnotation);
+        log('window.LangGraphWebStateGraph: ' + typeof window.LangGraphWebStateGraph);
+        
+        async function testLangGraph() {
+            try {
+                log('Creating ExcelLangGraphWorkflow...');
+                const workflow = new window.ExcelLangGraphWorkflow();
+                
+                log('Creating initial state...');
+                const initialState = {
+                    messages: [{
+                        role: 'user',
+                        content: 'Change the IRR cell to green',
+                        timestamp: new Date().toISOString()
+                    }],
+                    userIntent: null,
+                    toolResults: {},
+                    processingSteps: [],
+                    needsClarification: false,
+                    confidence: 0.0
+                };
+                
+                log('Starting stream...');
+                for await (const update of workflow.stream(initialState)) {
+                    log('Stream update: ' + JSON.stringify(update, null, 2));
+                }
+                
+                log('✅ LangGraph Web test completed successfully!');
+                
+            } catch (error) {
+                log('❌ Error: ' + error.message);
+                console.error('Full error:', error);
+            }
+        }
+        
+        // Auto-test after page load
+        setTimeout(() => {
+            log('Auto-testing LangGraph Web...');
+            testLangGraph();
+        }, 1000);
+    </script>
+</body>
+</html>

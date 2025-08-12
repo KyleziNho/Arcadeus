@@ -217,38 +217,65 @@ class ChatHandler {
       return;
     }
 
-    console.log('Sending chat message:', message);
+    console.log('Sending chat message via LangChain orchestrator:', message);
+    
+    // **ALWAYS use LangChain orchestrator - NO FALLBACKS**
+    if (!window.langChainOrchestrator || typeof window.langChainOrchestrator.processMessage !== 'function') {
+      console.error('❌ LangChain orchestrator not available! Cannot process message.');
+      this.showError('LangChain system not initialized. Please refresh the page and try again.');
+      return;
+    }
+    
+    console.log('🌟 Processing message with LangChain orchestrator');
+    
+    // Clear input immediately
+    chatInput.value = '';
     
     try {
       this.isProcessing = true;
-      this.showLoading(true);
-      
-      // Add user message to chat
-      this.addChatMessage('user', message);
-      
-      // Clear input
-      chatInput.value = '';
-      
-      // Show live search indicators (Hebbia-style)
-      this.showLiveSearchIndicators(message);
-      
-      // Process message with AI
-      const response = await this.processWithAI(message);
-      
-      // Add assistant response with enhanced formatting
-      this.addFormattedChatMessage('assistant', response);
-      
+      await window.langChainOrchestrator.processMessage(message);
     } catch (error) {
-      console.error('Error sending chat message:', error);
-      this.addChatMessage('assistant', 'Sorry, I encountered an error. Please try again.');
+      console.error('❌ LangChain orchestrator failed:', error);
+      this.showError(`LangChain processing failed: ${error.message}`);
     } finally {
       this.isProcessing = false;
-      this.showLoading(false);
-      this.hideLiveSearchIndicators();
     }
   }
 
+  /**
+   * Show error message to user
+   */
+  showError(message) {
+    const chatMessages = document.getElementById('chatMessages');
+    if (!chatMessages) return;
+    
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'chat-message assistant-message error-message';
+    
+    messageDiv.innerHTML = `
+      <div class="message-avatar">
+        <div class="avatar-icon">⚠️</div>
+      </div>
+      <div class="message-content">
+        <div class="message-header">
+          <span class="message-role">System Error</span>
+          <span class="message-badge error-badge">Critical</span>
+        </div>
+        <div class="message-text error-text">${message}</div>
+        <div class="message-footer">
+          <span class="message-time">${new Date().toLocaleTimeString()}</span>
+        </div>
+      </div>
+    `;
+    
+    chatMessages.appendChild(messageDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  }
+
+  // LEGACY METHOD - No longer used since we're using LangChain orchestrator exclusively
+  // This method remains for reference but is not called anymore
   async processWithAI(message) {
+    console.log('⚠️ LEGACY: This method is no longer used. All processing goes through LangChain orchestrator.');
     console.log('🎯 Processing message with Hebbia-inspired multi-agent approach:', message);
     
     try {
@@ -501,6 +528,7 @@ class ChatHandler {
     displayElement.scrollTop = displayElement.scrollHeight;
   }
 
+  // LEGACY METHOD - No longer used with LangChain orchestrator
   showLoading(show) {
     // Look for loading indicators
     const loadingElement = document.getElementById('loading') || 
@@ -886,6 +914,7 @@ class ChatHandler {
   /**
    * Show live search indicators (like screenshot)
    */
+  // LEGACY METHOD - No longer used with LangChain orchestrator  
   showLiveSearchIndicators(message) {
     const chatMessages = document.getElementById('chatMessages') || 
                          document.getElementById('chatContainer');
@@ -981,6 +1010,7 @@ class ChatHandler {
 
   /**
    * Hide live search indicators
+   * LEGACY METHOD - No longer used with LangChain orchestrator
    */
   hideLiveSearchIndicators() {
     const indicators = document.getElementById('liveSearchIndicators');

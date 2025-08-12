@@ -64,10 +64,13 @@ class LangChainChatOrchestrator {
     console.log('🌟 Initializing LangGraph workflow system...');
     
     try {
-      // Initialize LangGraph Web workflow (browser-compatible)
+      // Initialize LangGraph Web workflow (browser-compatible) - REQUIRED
       if (window.ExcelLangGraphWorkflow) {
         this.langGraphWorkflow = new window.ExcelLangGraphWorkflow();
         console.log('✅ LangGraph Web workflow initialized');
+      } else {
+        console.error('❌ CRITICAL: window.ExcelLangGraphWorkflow not available!');
+        console.log('Available window objects:', Object.keys(window).filter(k => k.includes('LangGraph')));
       }
       
       // Initialize state management
@@ -90,26 +93,11 @@ class LangChainChatOrchestrator {
   }
 
   /**
-   * Replace the default chat handler with LangChain processing
+   * Note: Chat handler integration is now handled directly in ChatHandler.js
+   * The ChatHandler checks for window.langChainOrchestrator and delegates to it automatically
    */
   replaceDefaultChatHandler() {
-    // Override the global sendChatMessage function
-    if (window.chatHandler) {
-      const originalSend = window.chatHandler.sendChatMessage.bind(window.chatHandler);
-      
-      window.chatHandler.sendChatMessage = async () => {
-        const chatInput = document.getElementById('chatInput');
-        if (!chatInput || !chatInput.value.trim()) return;
-        
-        const message = chatInput.value.trim();
-        chatInput.value = '';
-        
-        // Process through LangChain
-        await this.processMessage(message);
-      };
-      
-      console.log('✅ Default chat handler replaced with LangChain');
-    }
+    console.log('✅ Chat handler integration is handled automatically via ChatHandler delegation');
   }
 
   /**
@@ -157,7 +145,7 @@ class LangChainChatOrchestrator {
         }
         
         if (!this.langGraphWorkflow) {
-          throw new Error("LangGraph still not initialized after retry. Please refresh the page and try again.");
+          throw new Error("❌ CRITICAL: LangGraph Web workflow not initialized. Please refresh the page. No fallback methods available - this system requires LangGraph to function.");
         }
       }
       
