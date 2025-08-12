@@ -10,17 +10,12 @@ class DirectResponseFormatter {
   }
 
   start() {
-    console.log('🚨 Starting aggressive response formatting...');
-    
-    // Inject CSS first
-    this.injectCSS();
-    
-    // Start polling for new messages every 500ms
-    this.pollingInterval = setInterval(() => {
-      this.scanAndFormatMessages();
-    }, 500);
-    
-    console.log('✅ Aggressive formatter started');
+    console.log('🚨 Direct response formatter disabled to preserve chat formatting');
+    // Disabled - was causing good formatting to be replaced with aggressive formatting
+    // this.injectCSS();
+    // this.pollingInterval = setInterval(() => {
+    //   this.scanAndFormatMessages();
+    // }, 500);
   }
 
   stop() {
