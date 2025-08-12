@@ -1,0 +1,396 @@
+/* LangChain Chat Styles - Professional Formatted Responses */
+
+/* Main chat message styling */
+.chat-message.langchain-response {
+  animation: slideInFromBottom 0.3s ease-out;
+  margin-bottom: 20px;
+}
+
+@keyframes slideInFromBottom {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Message header with LangChain badge */
+.message-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.message-role {
+  font-weight: 600;
+  color: #1e293b;
+  font-size: 14px;
+}
+
+.message-badge {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Formatted response content */
+.formatted-response {
+  background: white;
+  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  line-height: 1.6;
+  color: #334155;
+}
+
+/* Response headers */
+.response-header {
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 20px 0 12px 0;
+  padding-bottom: 6px;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.response-header:first-child {
+  margin-top: 0;
+}
+
+/* Response paragraphs */
+.response-paragraph {
+  margin: 12px 0;
+  line-height: 1.6;
+  color: #475569;
+}
+
+/* Highlighted values */
+.highlight-value {
+  background: linear-gradient(135deg, #dbeafe, #e0e7ff);
+  color: #1e40af;
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-weight: 600;
+  display: inline-block;
+  margin: 0 2px;
+  border: 1px solid #93c5fd;
+  transition: all 0.2s ease;
+}
+
+.highlight-value:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+}
+
+/* Cell references - Excel green theme */
+.cell-reference {
+  background: #dcfce7;
+  color: #15803d;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+  font-size: 13px;
+  border: 1px solid #86efac;
+  display: inline-block;
+  margin: 0 3px;
+  transition: all 0.2s ease;
+}
+
+.cell-reference.clickable {
+  cursor: pointer;
+}
+
+.cell-reference.clickable:hover {
+  background: #22c55e;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+}
+
+/* Response lists */
+.response-list {
+  margin: 12px 0;
+  padding-left: 0;
+  list-style: none;
+}
+
+.response-bullet {
+  position: relative;
+  padding-left: 24px;
+  margin: 8px 0;
+  color: #475569;
+}
+
+.response-bullet::before {
+  content: '▸';
+  position: absolute;
+  left: 0;
+  color: #22c55e;
+  font-weight: bold;
+  font-size: 16px;
+}
+
+/* Key metrics section */
+.metrics-section {
+  background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+  border-radius: 10px;
+  padding: 16px;
+  margin: 16px 0;
+  border: 1px solid #e2e8f0;
+}
+
+.metric-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.metric-item:last-child {
+  border-bottom: none;
+}
+
+.metric-name {
+  font-weight: 600;
+  color: #1e293b;
+  font-size: 14px;
+}
+
+.metric-value {
+  font-weight: 700;
+  font-size: 16px;
+  color: #0f172a;
+  background: white;
+  padding: 4px 12px;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+}
+
+/* Processing indicator */
+.processing-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+  gap: 12px;
+}
+
+.processing-dots {
+  display: flex;
+  gap: 8px;
+}
+
+.processing-dots span {
+  width: 12px;
+  height: 12px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  border-radius: 50%;
+  animation: bounce 1.4s infinite ease-in-out both;
+}
+
+.processing-dots span:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.processing-dots span:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+@keyframes bounce {
+  0%, 80%, 100% {
+    transform: scale(0);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.processing-text {
+  color: #64748b;
+  font-size: 14px;
+  font-style: italic;
+}
+
+/* Message footer */
+.message-footer {
+  margin-top: 12px;
+  padding-top: 8px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.message-time {
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+/* Error messages */
+.error-message .message-content {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.error-text {
+  color: #dc2626;
+  font-size: 14px;
+}
+
+/* Insights and recommendations */
+.insight-box {
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  border: 1px solid #fbbf24;
+  border-radius: 8px;
+  padding: 12px;
+  margin: 12px 0;
+  border-left: 4px solid #f59e0b;
+}
+
+.insight-box .insight-title {
+  font-weight: 600;
+  color: #92400e;
+  margin-bottom: 6px;
+  font-size: 14px;
+}
+
+.insight-box .insight-content {
+  color: #78350f;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* Action buttons in responses */
+.response-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.response-action-btn {
+  padding: 6px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  background: white;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.response-action-btn:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* Avatar styling */
+.message-avatar {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  flex-shrink: 0;
+}
+
+.avatar-icon {
+  font-size: 18px;
+}
+
+.user-message .message-avatar {
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+}
+
+/* Table formatting in responses */
+.response-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+}
+
+.response-table th {
+  background: #f8fafc;
+  padding: 10px;
+  text-align: left;
+  font-weight: 600;
+  color: #1e293b;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.response-table td {
+  padding: 10px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #475569;
+}
+
+.response-table tr:last-child td {
+  border-bottom: none;
+}
+
+.response-table tr:hover {
+  background: #f8fafc;
+}
+
+/* Code blocks in responses */
+.code-block {
+  background: #1e293b;
+  color: #94a3b8;
+  padding: 12px;
+  border-radius: 6px;
+  font-family: 'SF Mono', Monaco, monospace;
+  font-size: 13px;
+  margin: 12px 0;
+  overflow-x: auto;
+}
+
+/* Formula display */
+.formula-display {
+  background: #eff6ff;
+  border: 1px solid #93c5fd;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-family: 'SF Mono', Monaco, monospace;
+  font-size: 13px;
+  color: #1e40af;
+  margin: 8px 0;
+  display: inline-block;
+}
+
+/* Responsive design */
+@media (max-width: 480px) {
+  .formatted-response {
+    padding: 12px;
+  }
+  
+  .response-header {
+    font-size: 14px;
+  }
+  
+  .message-badge {
+    font-size: 10px;
+    padding: 2px 6px;
+  }
+}
