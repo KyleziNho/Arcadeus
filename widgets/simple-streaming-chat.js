@@ -309,7 +309,15 @@ class SimpleStreamingChat {
         throw new Error(`API error: ${response.status}`);
       }
 
-      const data = await response.json();
+      const responseText = await response.text();
+      let data;
+      
+      try {
+        data = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error('Invalid JSON response:', responseText);
+        throw new Error(`Invalid response format: ${responseText.substring(0, 200)}...`);
+      }
 
       if (data.error) {
         throw new Error(data.error);

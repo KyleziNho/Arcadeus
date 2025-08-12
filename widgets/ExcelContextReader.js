@@ -48,8 +48,9 @@ class ExcelContextReader {
         const activeWorksheet = worksheets.getActiveWorksheet();
         const selectedRange = workbook.getSelectedRange();
         
-        // Load all worksheets
+        // Load all worksheets and active worksheet name
         worksheets.load('items');
+        activeWorksheet.load('name');
         await context.sync();
         
         const allSheets = [];
@@ -66,9 +67,10 @@ class ExcelContextReader {
           await context.sync();
           
           if (!usedRange.isNullObject) {
-            allSheets.push({
-              name: worksheet.name,
-              isActive: worksheet.name === activeWorksheet.name,
+            try {
+              allSheets.push({
+                name: worksheet.name || `Sheet${i + 1}`,
+                isActive: worksheet.name === activeWorksheet.name,
               visibility: worksheet.visibility,
               data: {
                 address: usedRange.address,
@@ -78,12 +80,15 @@ class ExcelContextReader {
                 formulas: usedRange.formulas
               }
             });
+            } catch (sheetError) {
+              console.warn('Error processing sheet:', sheetError);
+              // Continue with other sheets
+            }
           }
         }
         
         // Get selected range details
         selectedRange.load(['address', 'values', 'formulas', 'format/*']);
-        activeWorksheet.load('name');
         
         await context.sync();
         
@@ -114,18 +119,18 @@ class ExcelContextReader {
         
         const fullContext = {
           workbook: {
-            name: workbook.name,
+            name: workbook.name || 'Unknown Workbook',
             properties: {
-              title: properties.title,
-              subject: properties.subject,
-              author: properties.author,
-              comments: properties.comments,
-              company: properties.company
+              title: properties.title || '',
+              subject: properties.subject || '',
+              author: properties.author || '',
+              comments: properties.comments || '',
+              company: properties.company || ''
             }
           },
           sheets: allSheets,
           selection: {
-            worksheet: activeWorksheet.name,
+            worksheet: activeWorksheet.name || 'Unknown Sheet',
             address: selectedRange.address,
             values: selectedRange.values,
             formulas: selectedRange.formulas,
