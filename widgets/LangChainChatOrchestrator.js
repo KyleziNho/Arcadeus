@@ -131,7 +131,24 @@ class LangChainChatOrchestrator {
         console.log('Available components:');
         console.log('- window.LangGraphExcelWorkflow:', typeof window.LangGraphExcelWorkflow);
         console.log('- window.ExcelChatState:', typeof window.ExcelChatState);
-        throw new Error("LangGraph not initialized. Cannot process message without proper workflow.");
+        console.log('- this.langGraphWorkflow:', this.langGraphWorkflow);
+        console.log('- this.chatState:', this.chatState);
+        
+        // Try to initialize now if components are available
+        if (typeof window.LangGraphExcelWorkflow !== 'undefined') {
+          console.log('🔄 Attempting to initialize LangGraph now...');
+          try {
+            this.langGraphWorkflow = new window.LangGraphExcelWorkflow();
+            this.chatState = new window.ExcelChatState();
+            console.log('✅ LangGraph force-initialized successfully');
+          } catch (initError) {
+            console.error('❌ Force initialization failed:', initError);
+          }
+        }
+        
+        if (!this.langGraphWorkflow) {
+          throw new Error("LangGraph still not initialized after retry. Please refresh the page and try again.");
+        }
       }
       
       console.log('🌟 Using LangGraph for processing...');
@@ -384,322 +401,11 @@ class LangChainChatOrchestrator {
     return JSON.stringify(details, null, 2);
   }
 
-  /**
-   * Search Excel for data relevant to the user's query
-   */
-  async searchExcelData(query) {
-    console.log('🔍 Searching Excel for relevant data...');
-    
-    const searchResults = {
-      metrics: {},
-      cells: [],
-      context: {}
-    };
-    
-    try {
-      // Use AccurateExcelValueFinder to get all financial metrics
-      if (this.valueFinder) {
-        const metrics = await this.valueFinder.findAllFinancialMetrics();
-        searchResults.metrics = metrics;
-        console.log('📊 Found metrics:', Object.keys(metrics));
-      }
-      
-      // Search for specific terms mentioned in the query
-      const searchTerms = this.extractSearchTerms(query);
-      
-      for (const term of searchTerms) {
-        try {
-          await Excel.run(async (context) => {
-            const worksheets = context.workbook.worksheets;
-            worksheets.load('items');
-            await context.sync();
-            
-            for (const worksheet of worksheets.items) {
-              worksheet.load('name');
-              const usedRange = worksheet.getUsedRangeOrNullObject();
-              usedRange.load(['values', 'address']);
-              
-              await context.sync();
-              
-              if (!usedRange.isNullObject) {
-                const values = usedRange.values;
-                
-                for (let row = 0; row < values.length; row++) {
-                  for (let col = 0; col < values[row].length; col++) {
-                    const cellValue = String(values[row][col]).toLowerCase();
-                    
-                    if (cellValue.includes(term.toLowerCase())) {
-                      searchResults.cells.push({
-                        worksheet: worksheet.name,
-                        address: this.getCellAddress(row, col),
-                        value: values[row][col],
-                        matchedTerm: term
-                      });
-                    }
-                  }
-                }
-              }
-            }
-          });
-        } catch (error) {
-          console.error(`Error searching for ${term}:`, error);
-        }
-      }
-      
-    } catch (error) {
-      console.error('Error searching Excel:', error);
-    }
-    
-    return searchResults;
-  }
+  // OLD METHOD REMOVED - Using LangGraph workflow instead
 
-  /**
-   * Extract search terms from user query
-   */
-  extractSearchTerms(query) {
-    const terms = [];
-    
-    // Financial metric keywords
-    const metricKeywords = ['irr', 'moic', 'revenue', 'ebitda', 'debt', 'equity', 'exit', 'value', 'return', 'multiple'];
-    
-    // Check for each keyword in the query
-    for (const keyword of metricKeywords) {
-      if (query.toLowerCase().includes(keyword)) {
-        terms.push(keyword);
-      }
-    }
-    
-    // Extract cell references (e.g., B12, Sheet1!A1)
-    const cellRefPattern = /[A-Z]+!?[A-Z]*\d+/gi;
-    const cellRefs = query.match(cellRefPattern);
-    if (cellRefs) {
-      terms.push(...cellRefs);
-    }
-    
-    // Extract numbers that might be values to search for
-    const numberPattern = /\d+\.?\d*/g;
-    const numbers = query.match(numberPattern);
-    if (numbers) {
-      terms.push(...numbers);
-    }
-    
-    return [...new Set(terms)]; // Remove duplicates
-  }
+  // OLD METHODS REMOVED - Using LangGraph workflow instead
 
-  /**
-   * Build comprehensive context for LangChain
-   */
-  async buildContext(message, excelData) {
-    const context = {
-      userMessage: message,
-      timestamp: new Date().toISOString(),
-      excel: {
-        metrics: excelData.metrics,
-        searchResults: excelData.cells,
-        hasData: Object.keys(excelData.metrics).length > 0
-      },
-      chatHistory: this.chatHistory.slice(-3), // Last 3 messages for context
-      instructions: this.getSystemInstructions()
-    };
-    
-    // Add form data if available
-    if (window.formHandler) {
-      try {
-        context.formData = window.formHandler.collectAllModelData();
-      } catch (error) {
-        console.log('Could not collect form data:', error);
-      }
-    }
-    
-    return context;
-  }
-
-  /**
-   * Process message through LangChain with all tools - ALWAYS use LangChain
-   */
-  async processWithLangChain(message, context) {
-    console.log('🤖 Processing through LangChain with context:', context);
-    
-    // ALWAYS use LangChain API - no fallbacks or alternatives
-    return await this.callLangChainAPI(message, context);
-  }
-
-  /**
-   * Call LangChain API endpoint with proper tool calling
-   */
-  async callLangChainAPI(message, context) {
-    console.log('🤖 Calling LangChain API with tool calling...');
-    
-    const isLocal = window.location.hostname === 'localhost';
-    const apiUrl = isLocal 
-      ? 'http://localhost:8888/.netlify/functions/streaming-chat' 
-      : '/.netlify/functions/streaming-chat';
-    
-    try {
-      // Step 1: Determine what Excel tools to use based on the query
-      const toolsToUse = this.determineRequiredTools(message);
-      console.log('📋 Tools to use:', toolsToUse);
-      
-      // Step 2: Execute tools to get actual data
-      const toolResults = await this.executeTools(toolsToUse, message);
-      console.log('🔧 Tool results:', toolResults);
-      
-      // Step 3: Build enhanced context with tool results
-      let toolContext = '';
-      if (Object.keys(toolResults).length > 0) {
-        toolContext = '\n\nTOOL EXECUTION RESULTS (ACTUAL EXCEL DATA):\n';
-        
-        for (const [toolName, result] of Object.entries(toolResults)) {
-          toolContext += `\n${toolName.toUpperCase()}:\n`;
-          
-          if (typeof result === 'object') {
-            toolContext += JSON.stringify(result, null, 2);
-          } else {
-            toolContext += result;
-          }
-          toolContext += '\n';
-        }
-      }
-      
-      const enhancedMessage = `
-You are an expert M&A financial analyst with access to live Excel data.
-
-User Question: ${message}
-
-${toolContext}
-
-CRITICAL INSTRUCTIONS:
-1. Use ONLY the actual data from TOOL EXECUTION RESULTS above
-2. Always cite specific cell locations when mentioning values (e.g., "IRR of **25.3%** at B12")
-3. If a value wasn't found by tools, say "Value not found in Excel"
-4. The tool results contain the REAL Excel data - never make up numbers
-
-FORMATTING REQUIREMENTS:
-5. Structure your response with clear sections using ## headers
-6. Use **bold** for all financial values and important metrics
-7. Use • bullet points for insights and recommendations
-8. Include cell references in format: SheetName!A1 or B12
-9. Add insight boxes using:
-   - 💡 for key insights
-   - ⚠️ for warnings or concerns
-   - ✅ for recommendations
-10. NEVER create tables, grids, or side-by-side layouts
-11. ALWAYS list metrics in simple vertical bullet point format
-12. Always include an analysis section with actionable insights
-
-CRITICAL: DO NOT CREATE ANY TABLES OR COMPLEX LAYOUTS. Use simple bullet points only.
-
-RESPONSE STRUCTURE:
-- ## Key Financial Metrics (simple bullet list with actual values and cell locations)
-- ## Analysis (interpretation of the numbers)
-- ## Insights and Recommendations (actionable advice)
-
-Provide a comprehensive, well-formatted analysis using ONLY the actual tool results.`;
-      
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: enhancedMessage,
-          streaming: false,
-          toolResults: toolResults // Include tool results for reference
-        })
-      });
-      
-      if (!response.ok) {
-        throw new Error(`API error: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      return data.response || data.parsed?.final_answer || 'No response received';
-      
-    } catch (error) {
-      console.error('❌ LangChain API error:', error);
-      // NO FALLBACKS - Always retry LangChain or show proper error
-      throw new Error(`LangChain API failed: ${error.message}. Please check your connection and try again.`);
-    }
-  }
-
-  /**
-   * Determine which Excel tools to use based on the user's query
-   */
-  determineRequiredTools(message) {
-    const tools = [];
-    const lowerMessage = message.toLowerCase();
-    
-    // Check for financial metric queries
-    const metricKeywords = ['irr', 'moic', 'revenue', 'ebitda', 'debt', 'equity', 'exit', 'deal', 'value'];
-    const mentionedMetrics = metricKeywords.filter(keyword => lowerMessage.includes(keyword));
-    
-    if (mentionedMetrics.length > 0) {
-      // If specific metrics mentioned, search for them
-      tools.push({ name: 'search_financial_metrics', args: { metricType: 'All' } });
-      
-      // If asking about relationships between metrics
-      if (mentionedMetrics.length > 1) {
-        tools.push({ 
-          name: 'calculate_metric_relationships', 
-          args: { 
-            metric1: mentionedMetrics[0].toUpperCase(), 
-            metric2: mentionedMetrics[1].toUpperCase() 
-          } 
-        });
-      }
-    }
-    
-    // Check for cell references
-    const cellRefPattern = /[A-Z]+!?[A-Z]*\d+/gi;
-    const cellRefs = message.match(cellRefPattern);
-    if (cellRefs) {
-      cellRefs.forEach(cellRef => {
-        tools.push({ name: 'read_cell_value', args: { cellAddress: cellRef } });
-      });
-    }
-    
-    // Check for value search queries
-    const numberPattern = /\d+\.?\d*/g;
-    const numbers = message.match(numberPattern);
-    if (numbers && (lowerMessage.includes('find') || lowerMessage.includes('search') || lowerMessage.includes('where'))) {
-      tools.push({ 
-        name: 'search_value_in_workbook', 
-        args: { searchTerm: numbers[0], maxResults: 5 } 
-      });
-    }
-    
-    // Always get worksheet summary for context
-    tools.push({ name: 'get_worksheet_summary', args: {} });
-    
-    return tools;
-  }
-
-  /**
-   * Execute the determined tools to get actual Excel data
-   */
-  async executeTools(toolsToUse, originalMessage) {
-    const results = {};
-    
-    // Check if LangChainExcelTools is available
-    if (!window.langChainExcelTools) {
-      console.warn('⚠️ LangChainExcelTools not available');
-      return results;
-    }
-    
-    for (const toolSpec of toolsToUse) {
-      try {
-        console.log(`🔧 Executing tool: ${toolSpec.name}`, toolSpec.args);
-        
-        const result = await window.langChainExcelTools.executeTool(toolSpec.name, toolSpec.args);
-        results[toolSpec.name] = JSON.parse(result);
-        
-        console.log(`✅ Tool ${toolSpec.name} completed`);
-      } catch (error) {
-        console.error(`❌ Tool ${toolSpec.name} failed:`, error);
-        results[toolSpec.name] = { error: error.message };
-      }
-    }
-    
-    return results;
-  }
+  // OLD API METHODS REMOVED - Using LangGraph workflow instead
 
   /**
    * Format the response for display
