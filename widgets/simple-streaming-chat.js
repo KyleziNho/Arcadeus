@@ -202,6 +202,32 @@ class SimpleStreamingChat {
         this.processMessage(message);
       }
     };
+
+    // IMPORTANT: Override sendMessageToOpenAI to use our streaming API instead of the old chat endpoint
+    if (typeof window.sendMessageToOpenAI !== 'undefined') {
+      window.originalSendMessageToOpenAI = window.sendMessageToOpenAI;
+    }
+    
+    const self = this; // Capture context for the override
+    window.sendMessageToOpenAI = async (message) => {
+      console.log('🔄 Intercepting sendMessageToOpenAI call for:', message);
+      
+      // Create a streaming container like the original does
+      const existingThinking = document.querySelector('.chat-message.assistant-message .message-text');
+      if (existingThinking && existingThinking.textContent === 'Analyzing your Excel model...') {
+        existingThinking.closest('.chat-message').remove();
+      }
+      
+      const streamingContainer = self.createStreamingResponse();
+      
+      // Use our streaming chat processing
+      try {
+        return await self.processMessage(message);
+      } catch (error) {
+        self.showError(error.message);
+        throw error;
+      }
+    };
   }
 
   /**
