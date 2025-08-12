@@ -2,6 +2,22 @@ class ChatHandler {
   constructor() {
     this.chatMessages = [];
     this.isProcessing = false;
+    this.excelContext = null; // Store Excel data for all AI interactions
+    this.contextLastUpdated = null;
+    
+    // Initialize SafeExcelContext for reading Excel data
+    try {
+      if (typeof SafeExcelContext !== 'undefined') {
+        this.safeExcelContext = new SafeExcelContext();
+        console.log('✅ SafeExcelContext initialized successfully');
+      } else {
+        console.log('⚠️ SafeExcelContext not available');
+        this.safeExcelContext = null;
+      }
+    } catch (error) {
+      console.error('❌ Failed to initialize SafeExcelContext:', error);
+      this.safeExcelContext = null;
+    }
     
     // Initialize ExcelLiveAnalyzer safely
     try {
@@ -20,6 +36,9 @@ class ChatHandler {
 
   async initialize() {
     console.log('Initializing Hebbia-inspired chat handler...');
+    
+    // Load Excel context immediately when chat opens
+    await this.loadExcelContext();
     
     // Find chat elements
     const sendChatBtn = document.getElementById('sendChatBtn');
@@ -76,6 +95,110 @@ class ChatHandler {
     console.log('✅ Advanced chat handler initialized with multi-agent architecture');
   }
 
+  /**
+   * Load Excel worksheet data to use as context for all AI interactions
+   */
+  async loadExcelContext() {
+    console.log('📊 Loading Excel context for chat...');
+    
+    if (!this.safeExcelContext) {
+      console.log('⚠️ SafeExcelContext not available, skipping Excel context loading');
+      return;
+    }
+
+    try {
+      // Get comprehensive Excel context
+      const excelData = await this.safeExcelContext.getComprehensiveContext();
+      
+      if (excelData && !excelData.error) {
+        this.excelContext = excelData;
+        this.contextLastUpdated = new Date().toISOString();
+        
+        console.log('✅ Excel context loaded successfully:', {
+          worksheet: excelData.worksheetName,
+          hasData: excelData.hasActualData,
+          nonEmptyCells: excelData.totalNonEmptyCells,
+          usedRange: excelData.usedRange?.address
+        });
+        
+        // Show context loaded indicator to user
+        this.showContextStatus('Excel worksheet loaded as context');
+      } else {
+        console.log('⚠️ No Excel context available:', excelData?.error);
+        this.excelContext = null;
+      }
+    } catch (error) {
+      console.error('❌ Failed to load Excel context:', error);
+      this.excelContext = null;
+    }
+  }
+
+  /**
+   * Show context status to user
+   */
+  showContextStatus(message) {
+    const statusElement = document.getElementById('chat-context-status');
+    if (statusElement) {
+      statusElement.textContent = message;
+      statusElement.style.display = 'block';
+      
+      // Auto-hide after 3 seconds
+      setTimeout(() => {
+        statusElement.style.display = 'none';
+      }, 3000);
+    } else {
+      // Create status indicator if it doesn't exist
+      const chatContainer = document.getElementById('chatMessages');
+      if (chatContainer) {
+        const statusDiv = document.createElement('div');
+        statusDiv.id = 'chat-context-status';
+        statusDiv.textContent = message;
+        statusDiv.style.cssText = `
+          background: #e7f5e7;
+          color: #2d5a2d;
+          padding: 8px 12px;
+          border-radius: 6px;
+          font-size: 12px;
+          margin-bottom: 8px;
+          text-align: center;
+          border-left: 3px solid #4caf50;
+        `;
+        chatContainer.insertBefore(statusDiv, chatContainer.firstChild);
+        
+        // Auto-hide after 3 seconds
+        setTimeout(() => {
+          statusDiv.style.display = 'none';
+        }, 3000);
+      }
+    }
+  }
+
+  /**
+   * Refresh Excel context when worksheet changes
+   */
+  async refreshExcelContext() {
+    console.log('🔄 Refreshing Excel context...');
+    await this.loadExcelContext();
+    this.showContextStatus('Excel context refreshed');
+  }
+
+  /**
+   * Get Excel context info for display
+   */
+  getExcelContextInfo() {
+    if (!this.excelContext) {
+      return null;
+    }
+    
+    return {
+      worksheet: this.excelContext.worksheetName,
+      hasData: this.excelContext.hasActualData,
+      dataPoints: this.excelContext.totalNonEmptyCells,
+      lastUpdated: this.contextLastUpdated,
+      usedRange: this.excelContext.usedRange?.address
+    };
+  }
+
   async sendChatMessage() {
     const chatInput = document.getElementById('chatInput');
     if (!chatInput) {
@@ -129,26 +252,24 @@ class ChatHandler {
     console.log('🎯 Processing message with Hebbia-inspired multi-agent approach:', message);
     
     try {
-      // Use ExcelLiveAnalyzer for comprehensive, fast context
-      let excelContext = null;
-      try {
-        if (this.excelAnalyzer) {
-          console.log('📊 Getting optimized Excel context for AI...');
-          excelContext = await this.excelAnalyzer.getOptimizedContextForAI();
-          console.log('✅ Excel context retrieved:', {
-            structure: excelContext?.structure,
-            hasMetrics: !!excelContext?.financialMetrics,
-            hasSummary: !!excelContext?.summary
-          });
-        }
-      } catch (error) {
-        console.log('Could not get comprehensive Excel context:', error);
-        // Fallback to basic context
-        try {
-          excelContext = await this.getExcelContext();
-        } catch (fallbackError) {
-          console.log('Fallback context also failed:', fallbackError);
-        }
+      // Use pre-loaded Excel context for faster response
+      let excelContext = this.excelContext;
+      
+      if (!excelContext) {
+        console.log('📊 No pre-loaded Excel context, attempting to load now...');
+        await this.loadExcelContext();
+        excelContext = this.excelContext;
+      }
+      
+      if (excelContext) {
+        console.log('✅ Using Excel context for AI:', {
+          worksheet: excelContext.worksheetName,
+          hasData: excelContext.hasActualData,
+          nonEmptyCells: excelContext.totalNonEmptyCells,
+          lastUpdated: this.contextLastUpdated
+        });
+      } else {
+        console.log('⚠️ No Excel context available for AI');
       }
 
       // Get current form data
@@ -186,6 +307,13 @@ class ChatHandler {
         queryType: queryAnalysis.type,
         priority: queryAnalysis.priority,
         excelContext: excelContext,
+        excelContextInfo: excelContext ? {
+          worksheet: excelContext.worksheetName,
+          hasData: excelContext.hasActualData,
+          dataPoints: excelContext.totalNonEmptyCells,
+          sampleData: excelContext.sampleData,
+          contextLoadedAt: this.contextLastUpdated
+        } : null,
         formData: queryAnalysis.needsFormData ? formData : {},
         uploadedFiles: queryAnalysis.needsFiles ? filesInfo : [],
         chatHistory: this.chatMessages.slice(-3), // Reduced for faster processing
