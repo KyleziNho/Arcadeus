@@ -29,4 +29,5 @@ build/
 
 # Temporary files
 *.tmp
-*.temp
+*.temp# Excel MCP Test Files
+excel-mcp.log

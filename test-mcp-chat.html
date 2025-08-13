@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Test Excel MCP Chat Agent</title>
+    <script src="https://appsforoffice.microsoft.com/lib/1.1/hosted/office.js"></script>
+    <style>
+        body { 
+            font-family: 'Inter', Arial, sans-serif; 
+            margin: 20px; 
+            background: #f8f9fa;
+        }
+        .container { 
+            max-width: 1000px; 
+            margin: 0 auto; 
+            background: white; 
+            padding: 30px; 
+            border-radius: 12px; 
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        h1 { 
+            color: #1a237e; 
+            border-bottom: 3px solid #3f51b5; 
+            padding-bottom: 10px;
+        }
+        .chat-container {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            height: 400px;
+            overflow-y: auto;
+            padding: 15px;
+            background: #fafafa;
+            margin: 20px 0;
+        }
+        .message {
+            margin: 10px 0;
+            padding: 12px;
+            border-radius: 8px;
+        }
+        .user-message {
+            background: #e3f2fd;
+            text-align: right;
+        }
+        .assistant-message {
+            background: #f3e5f5;
+        }
+        .input-container {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        .chat-input {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        .send-button {
+            background: #3f51b5;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        .send-button:hover {
+            background: #303f9f;
+        }
+        .send-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .api-key-section {
+            background: #f0f9ff;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid #7dd3fc;
+        }
+        .api-key-input {
+            width: 100%;
+            max-width: 400px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .tool-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin: 20px 0;
+        }
+        .tool-item {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid #e9ecef;
+            font-size: 12px;
+        }
+        .example-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        .example-button {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .example-button:hover {
+            background: #5a6268;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Excel MCP Chat Agent Test</h1>
+        <p>Complete implementation of <code>haris-musa/excel-mcp-server</code> for browser environment</p>
+        
+        <div id="status" class="status">⏳ Loading...</div>
+        
+        <div id="apiKeySection" class="api-key-section">
+            <h3>🔑 OpenAI API Key Configuration</h3>
+            <input type="password" id="apiKeyInput" class="api-key-input" placeholder="Enter your OpenAI API key">
+            <button onclick="setApiKey()" class="send-button">Set API Key</button>
+            <p><small>Get your key from: <a href="https://platform.openai.com/api-keys" target="_blank">https://platform.openai.com/api-keys</a></small></p>
+        </div>
+        
+        <div id="chatSection" style="display: none;">
+            <h3>💬 MCP Chat Interface</h3>
+            
+            <div class="example-buttons">
+                <button class="example-button" onclick="sendExample('Create a new worksheet called Analysis')">Create Worksheet</button>
+                <button class="example-button" onclick="sendExample('Read data from range A1:D10 in Sheet1')">Read Data</button>
+                <button class="example-button" onclick="sendExample('Write the following data to A1: [[\"Name\", \"Value\"], [\"Revenue\", 1000], [\"Costs\", 500]]')">Write Data</button>
+                <button class="example-button" onclick="sendExample('Format range A1:B2 with bold font and blue background')">Format Cells</button>
+                <button class="example-button" onclick="sendExample('Apply formula =SUM(B2:B10) to cell B11')">Apply Formula</button>
+                <button class="example-button" onclick="sendExample('Create a line chart using data from A1:B5 and place it at cell D1')">Create Chart</button>
+                <button class="example-button" onclick="sendExample('Get metadata about this workbook including all worksheets')">Get Metadata</button>
+            </div>
+            
+            <div id="chatContainer" class="chat-container"></div>
+            
+            <div class="input-container">
+                <input type="text" id="chatInput" class="chat-input" placeholder="Enter your Excel command..." onkeypress="handleKeyPress(event)">
+                <button id="sendButton" class="send-button" onclick="sendMessage()">Send</button>
+            </div>
+            
+            <div id="toolsSection">
+                <h4>🛠️ Available MCP Tools</h4>
+                <div id="toolsList" class="tool-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="widgets/ExcelMCPChatAgent.js"></script>
+    
+    <script>
+        let mcpAgent;
+        
+        function setStatus(message, type = 'success') {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = `status ${type}`;
+        }
+        
+        Office.onReady(() => {
+            console.log('✅ Office.js ready');
+            
+            if (typeof ExcelMCPChatAgent !== 'undefined') {
+                setStatus('✅ Excel MCP Chat Agent loaded successfully!');
+                
+                // Check for existing API key
+                const existingKey = localStorage.getItem('openai_api_key');
+                if (existingKey) {
+                    initializeMCPAgent(existingKey);
+                }
+            } else {
+                setStatus('❌ Excel MCP Chat Agent failed to load', 'error');
+            }
+        });
+        
+        function setApiKey() {
+            const apiKeyInput = document.getElementById('apiKeyInput');
+            const apiKey = apiKeyInput.value.trim();
+            
+            if (!apiKey) {
+                alert('Please enter your OpenAI API key');
+                return;
+            }
+            
+            localStorage.setItem('openai_api_key', apiKey);
+            apiKeyInput.value = '';
+            initializeMCPAgent(apiKey);
+        }
+        
+        function initializeMCPAgent(apiKey) {
+            try {
+                mcpAgent = new ExcelMCPChatAgent(apiKey);
+                setStatus('🚀 MCP Chat Agent initialized and ready!');
+                
+                // Show chat section
+                document.getElementById('apiKeySection').style.display = 'none';
+                document.getElementById('chatSection').style.display = 'block';
+                
+                // Display available tools
+                displayAvailableTools();
+                
+                // Add welcome message
+                addMessage('assistant', 'Hello! I\'m your Excel MCP Chat Agent with complete MCP server implementation. I have access to all Excel tools from the original Python server. What would you like me to help you with?');
+                
+            } catch (error) {
+                setStatus(`❌ Failed to initialize MCP Agent: ${error.message}`, 'error');
+            }
+        }
+        
+        function displayAvailableTools() {
+            if (!mcpAgent) return;
+            
+            const toolsList = document.getElementById('toolsList');
+            const tools = mcpAgent.getAvailableTools();
+            
+            toolsList.innerHTML = '';
+            tools.forEach(toolName => {
+                const toolDiv = document.createElement('div');
+                toolDiv.className = 'tool-item';
+                toolDiv.textContent = toolName;
+                toolsList.appendChild(toolDiv);
+            });
+        }
+        
+        function addMessage(role, content) {
+            const chatContainer = document.getElementById('chatContainer');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${role}-message`;
+            
+            if (role === 'user') {
+                messageDiv.innerHTML = `<strong>You:</strong> ${content}`;
+            } else {
+                messageDiv.innerHTML = `<strong>MCP Agent:</strong> ${content}`;
+            }
+            
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+        
+        async function sendMessage() {
+            const chatInput = document.getElementById('chatInput');
+            const sendButton = document.getElementById('sendButton');
+            const message = chatInput.value.trim();
+            
+            if (!message || !mcpAgent) return;
+            
+            // Add user message
+            addMessage('user', message);
+            chatInput.value = '';
+            
+            // Disable input during processing
+            sendButton.disabled = true;
+            sendButton.textContent = 'Processing...';
+            
+            try {
+                const response = await mcpAgent.processRequest(message);
+                
+                if (response.success) {
+                    addMessage('assistant', response.response);
+                } else {
+                    addMessage('assistant', `Error: ${response.error}`);
+                }
+                
+            } catch (error) {
+                addMessage('assistant', `Error: ${error.message}`);
+            } finally {
+                sendButton.disabled = false;
+                sendButton.textContent = 'Send';
+            }
+        }
+        
+        function sendExample(exampleText) {
+            const chatInput = document.getElementById('chatInput');
+            chatInput.value = exampleText;
+            sendMessage();
+        }
+        
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+    </script>
+</body>
+</html>

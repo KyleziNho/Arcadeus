@@ -231,19 +231,33 @@ class ChatHandler {
       // Show processing indicator
       const processingDiv = this.showProcessingIndicator();
       
-      // **USE DEEP AGENT - Intelligent multi-step reasoning with planning**
+      // **USE MCP CHAT AGENT - Complete MCP server implementation**
       let aiAgent;
       try {
         // Debug: Check what agents are available
         console.log('🔍 Checking available agents:');
+        console.log('- window.ExcelMCPChatAgent:', typeof window.ExcelMCPChatAgent);
         console.log('- window.DeepAgentExcelIntegration:', typeof window.DeepAgentExcelIntegration);
         console.log('- window.DeepExcelAgent:', typeof window.DeepExcelAgent);
-        console.log('- window.HybridExcelAgent:', typeof window.HybridExcelAgent);
-        console.log('- window.UnifiedAiAgent:', typeof window.UnifiedAiAgent);
-        console.log('- window.ApiKeyManager:', typeof window.ApiKeyManager);
         
-        // Check for Enhanced Deep Agent first (most intelligent + MCP patterns)
-        if (typeof window.DeepAgentExcelIntegration === 'function') {
+        // Priority 1: Use complete MCP server implementation
+        if (typeof window.ExcelMCPChatAgent === 'function') {
+          console.log('🚀 Excel MCP Chat Agent found, initializing...');
+          
+          const apiKey = localStorage.getItem('openai_api_key') || 
+                         sessionStorage.getItem('openai_api_key') ||
+                         await this.promptForApiKey();
+          
+          if (!apiKey) {
+            throw new Error('OpenAI API key required for MCP Chat Agent');
+          }
+          
+          console.log('🔑 API key found, creating MCP Chat Agent instance...');
+          aiAgent = new window.ExcelMCPChatAgent(apiKey);
+          console.log('✅ Excel MCP Chat Agent instance created successfully');
+          console.log('🧠 Using complete MCP server implementation with all Excel tools');
+          
+        } else if (typeof window.DeepAgentExcelIntegration === 'function') {
           console.log('🚀 Enhanced Deep Agent with MCP integration found, initializing...');
           
           const apiKey = localStorage.getItem('openai_api_key') || 
@@ -276,7 +290,7 @@ class ChatHandler {
           console.log('🧠 Using Deep Excel Agent with planning, sub-agents, and persistence');
           
         } else {
-          console.warn('⚠️ window.DeepExcelAgent not available, checking alternatives...');
+          console.warn('⚠️ No advanced agents available, checking fallback options...');
           
           if (window.HybridExcelAgent && localStorage.getItem('useComplexWorkflows') === 'true') {
             const baseAgent = await window.ApiKeyManager.ensureApiKey();
