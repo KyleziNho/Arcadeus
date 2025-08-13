@@ -23,7 +23,8 @@
     "start": "node server.js",
     "build:mcp": "tsc --project tsconfig.mcp.json",
     "dev:mcp": "tsc --watch --project tsconfig.mcp.json",
-    "install:mcp": "npm install"
+    "install:mcp": "npm install",
+    "validate:manifest": "npx --yes office-addin-manifest validate manifest-patched.xml"
   },
   "keywords": [
     "excel",

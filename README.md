@@ -17,3 +17,13 @@ This is deployed to Netlify and can be used as an Excel Web add-in.
 ## Usage
 
 Upload the `manifest.xml` to Excel Web to install the add-in.
+
+### Validate the Office manifest
+
+Run the built-in script to validate the add-in manifest:
+
+```bash
+npm run validate:manifest
+```
+
+See `MANIFEST_VALIDATION.md` for a full example of a successful validation output.
