@@ -56,18 +56,19 @@ class ExcelLiveAnalyzer {
         
         await context.sync();
         
-        // Get full used range (not limited to 10 rows)
-        const usedRange = activeWorksheet.getUsedRange();
-        if (usedRange) {
-          usedRange.load(['address', 'values', 'formulas', 'rowCount', 'columnCount']);
-          await context.sync();
-        }
+        // Get full used range (not limited to 10 rows) - handle null case
+        const usedRange = activeWorksheet.getUsedRangeOrNullObject();
+        usedRange.load(['address', 'values', 'formulas', 'rowCount', 'columnCount']);
+        await context.sync();
+        
+        // Check if used range actually exists
+        const hasUsedRange = !usedRange.isNullObject;
         
         // Comprehensive analysis
         const analysis = await this.analyzeWorkbookStructure(
           workbook,
           activeWorksheet,
-          usedRange,
+          hasUsedRange ? usedRange : null,
           worksheets.items,
           namedRanges.items
         );
@@ -79,7 +80,7 @@ class ExcelLiveAnalyzer {
           },
           activeWorksheet: {
             name: activeWorksheet.name || 'Unknown Worksheet',
-            usedRange: usedRange ? {
+            usedRange: hasUsedRange ? {
               address: usedRange.address,
               rowCount: usedRange.rowCount,
               columnCount: usedRange.columnCount,
@@ -101,8 +102,8 @@ class ExcelLiveAnalyzer {
             value: range.value
           })),
           analysis: analysis,
-          financialMetrics: await this.extractFinancialMetrics(usedRange),
-          calculationChains: await this.mapCalculationDependencies(usedRange)
+          financialMetrics: await this.extractFinancialMetrics(hasUsedRange ? usedRange : null),
+          calculationChains: await this.mapCalculationDependencies(hasUsedRange ? usedRange : null)
         };
         
         // Cache the structure for performance
@@ -512,37 +513,42 @@ class ExcelLiveAnalyzer {
     
     if (!full || full.error) return full;
 
-    // Optimize for AI consumption - send only relevant data
+    // Optimize for AI consumption - send only relevant data with safe property access
     return {
       structure: full.analysis?.structure || 'unknown',
-      financialMetrics: full.financialMetrics,
-      selectedArea: full.selectedRange,
-      keyCalculations: full.calculationChains,
-      worksheetName: full.activeWorksheet.name || 'Unknown Worksheet',
+      financialMetrics: full.financialMetrics || {},
+      selectedArea: full.selectedRange || null,
+      keyCalculations: full.calculationChains || {},
+      worksheetName: full.activeWorksheet?.name || 'Unknown Worksheet',
       summary: this.generateContextSummary(full)
     };
   }
 
   generateContextSummary(context) {
-    const summary = [];
-    
-    if (context.analysis?.structure) {
-      summary.push(`Workbook type: ${context.analysis.structure}`);
+    try {
+      const summary = [];
+      
+      if (context?.analysis?.structure) {
+        summary.push(`Workbook type: ${context.analysis.structure}`);
+      }
+      
+      if (context?.financialMetrics?.moic) {
+        summary.push(`MOIC: ${context.financialMetrics.moic.value} (${context.financialMetrics.moic.interpretation})`);
+      }
+      
+      if (context?.financialMetrics?.irr) {
+        summary.push(`IRR: ${context.financialMetrics.irr.value} (${context.financialMetrics.irr.interpretation})`);
+      }
+      
+      if (context?.activeWorksheet?.usedRange) {
+        summary.push(`Data range: ${context.activeWorksheet.usedRange.address}`);
+      }
+      
+      return summary.join(' | ') || 'Context analysis complete';
+    } catch (error) {
+      console.warn('Failed to generate context summary:', error);
+      return 'Context analysis complete';
     }
-    
-    if (context.financialMetrics?.moic) {
-      summary.push(`MOIC: ${context.financialMetrics.moic.value} (${context.financialMetrics.moic.interpretation})`);
-    }
-    
-    if (context.financialMetrics?.irr) {
-      summary.push(`IRR: ${context.financialMetrics.irr.value} (${context.financialMetrics.irr.interpretation})`);
-    }
-    
-    if (context.activeWorksheet?.usedRange) {
-      summary.push(`Data range: ${context.activeWorksheet.usedRange.address}`);
-    }
-    
-    return summary.join(' | ');
   }
 }
 
