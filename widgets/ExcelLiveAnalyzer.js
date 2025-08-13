@@ -75,10 +75,10 @@ class ExcelLiveAnalyzer {
         const comprehensiveContext = {
           timestamp: new Date(),
           workbook: {
-            name: workbook.name
+            name: workbook.name || 'Unknown Workbook'
           },
           activeWorksheet: {
-            name: activeWorksheet.name,
+            name: activeWorksheet.name || 'Unknown Worksheet',
             usedRange: usedRange ? {
               address: usedRange.address,
               rowCount: usedRange.rowCount,
@@ -93,10 +93,10 @@ class ExcelLiveAnalyzer {
             formulas: selectedRange.formulas
           },
           allWorksheets: worksheets.items.map(ws => ({
-            name: ws.name
+            name: ws.name || 'Unknown'
           })),
           namedRanges: namedRanges.items.map(range => ({
-            name: range.name,
+            name: range.name || 'Unknown',
             formula: range.formula,
             value: range.value
           })),
@@ -166,7 +166,7 @@ class ExcelLiveAnalyzer {
           }
           
           // Identify calculation areas (cells with formulas)
-          if (formula && formula.startsWith('=')) {
+          if (formula && typeof formula === 'string' && formula.startsWith('=')) {
             analysis.calculationAreas.push({
               location: `${String.fromCharCode(65 + col)}${row + 1}`,
               formula: formula,
@@ -176,7 +176,7 @@ class ExcelLiveAnalyzer {
           }
           
           // Identify input areas (hardcoded numbers)
-          if (typeof value === 'number' && (!formula || !formula.startsWith('='))) {
+          if (typeof value === 'number' && (!formula || typeof formula !== 'string' || !formula.startsWith('='))) {
             analysis.inputAreas.push({
               location: `${String.fromCharCode(65 + col)}${row + 1}`,
               value: value,
@@ -284,7 +284,7 @@ class ExcelLiveAnalyzer {
           const formula = formulas[row][col];
           const location = `${String.fromCharCode(65 + col)}${row + 1}`;
           
-          if (formula && formula.startsWith('=')) {
+          if (formula && typeof formula === 'string' && formula.startsWith('=')) {
             dependencies[location] = {
               formula: formula,
               references: this.extractCellReferences(formula),
@@ -441,6 +441,7 @@ class ExcelLiveAnalyzer {
   }
 
   extractCellReferences(formula) {
+    if (!formula || typeof formula !== 'string') return [];
     return (formula.match(/[A-Z]+\d+/g) || []);
   }
 
@@ -494,7 +495,7 @@ class ExcelLiveAnalyzer {
         await context.sync();
         
         return {
-          worksheetName: worksheet.name,
+          worksheetName: worksheet.name || 'Unknown Worksheet',
           error: 'Limited context due to analysis failure'
         };
       });
@@ -517,7 +518,7 @@ class ExcelLiveAnalyzer {
       financialMetrics: full.financialMetrics,
       selectedArea: full.selectedRange,
       keyCalculations: full.calculationChains,
-      worksheetName: full.activeWorksheet.name,
+      worksheetName: full.activeWorksheet.name || 'Unknown Worksheet',
       summary: this.generateContextSummary(full)
     };
   }

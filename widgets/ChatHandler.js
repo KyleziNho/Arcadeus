@@ -236,14 +236,31 @@ class ChatHandler {
       try {
         // Debug: Check what agents are available
         console.log('🔍 Checking available agents:');
+        console.log('- window.DeepAgentExcelIntegration:', typeof window.DeepAgentExcelIntegration);
         console.log('- window.DeepExcelAgent:', typeof window.DeepExcelAgent);
         console.log('- window.HybridExcelAgent:', typeof window.HybridExcelAgent);
         console.log('- window.UnifiedAiAgent:', typeof window.UnifiedAiAgent);
         console.log('- window.ApiKeyManager:', typeof window.ApiKeyManager);
         
-        // Check for Deep Agent first (most intelligent)
-        if (typeof window.DeepExcelAgent === 'function') {
-          console.log('🧠 Deep Agent class found, initializing...');
+        // Check for Enhanced Deep Agent first (most intelligent + MCP patterns)
+        if (typeof window.DeepAgentExcelIntegration === 'function') {
+          console.log('🚀 Enhanced Deep Agent with MCP integration found, initializing...');
+          
+          const apiKey = localStorage.getItem('openai_api_key') || 
+                         sessionStorage.getItem('openai_api_key') ||
+                         await this.promptForApiKey();
+          
+          if (!apiKey) {
+            throw new Error('OpenAI API key required for Enhanced Deep Agent');
+          }
+          
+          console.log('🔑 API key found, creating Enhanced Deep Agent instance...');
+          aiAgent = new window.DeepAgentExcelIntegration(apiKey);
+          console.log('✅ Enhanced Deep Excel Agent instance created successfully');
+          console.log('🧠 Using Enhanced Deep Agent with MCP-style tools, banking intelligence, and persistence');
+          
+        } else if (typeof window.DeepExcelAgent === 'function') {
+          console.log('🧠 Basic Deep Agent class found, initializing...');
           
           const apiKey = localStorage.getItem('openai_api_key') || 
                          sessionStorage.getItem('openai_api_key') ||
