@@ -69,6 +69,18 @@
                     <p>Multi-step calculations with explanations</p>
                     <button onclick="quickTest('Calculate the unlevered and levered IRR for this investment, create sensitivity tables, and explain the methodology used')" class="test-button">IRR Analysis</button>
                 </div>
+                
+                <div class="feature-card">
+                    <h4>🛠️ MCP-Style Tools</h4>
+                    <p>Test new MCP server patterns and banking intelligence</p>
+                    <button onclick="quickTest('Use MCP tools to read data from range A1:D10, format it professionally, then calculate banking metrics and create a comprehensive report')" class="test-button">MCP Tools Test</button>
+                </div>
+                
+                <div class="feature-card">
+                    <h4>🏦 Banking Intelligence</h4>
+                    <p>Investment banking specific analysis and validation</p>
+                    <button onclick="quickTest('Validate this financial model using banking standards, find all key metrics like IRR and MOIC, and provide professional recommendations')" class="test-button">Banking Analysis</button>
+                </div>
             </div>
         </div>
 
@@ -87,7 +99,10 @@
         <div id="output" class="output"></div>
     </div>
 
-    <!-- Load required scripts -->
+    <!-- Load required scripts for new implementation -->
+    <script src="widgets/LangChainExcelTools.js"></script>
+    <script src="widgets/ExcelToolLibrary.js"></script>
+    <script src="widgets/DeepAgentExcelIntegration.js"></script>
     <script src="widgets/UnifiedExcelApiLibrary.js"></script>
     <script src="widgets/DeepExcelAgent.js"></script>
 
@@ -116,25 +131,45 @@
         function checkComponents() {
             log('Checking Deep Agent components...');
             
+            // Check for new MCP-style implementation (priority 1)
+            const hasEnhancedAgent = typeof window.DeepAgentExcelIntegration !== 'undefined';
+            const hasLangChainTools = typeof window.LangChainExcelTools !== 'undefined';
+            const hasExcelToolLibrary = typeof window.ExcelToolLibrary !== 'undefined';
+            
+            // Check for basic Deep Agent (priority 2)
+            const hasBasicDeepAgent = typeof window.DeepExcelAgent !== 'undefined';
+            
+            // Check legacy components
             const hasExcelApi = typeof window.UnifiedExcelApiLibrary !== 'undefined';
-            const hasDeepAgent = typeof window.DeepExcelAgent !== 'undefined';
             const hasVirtualFs = typeof window.VirtualFileSystem !== 'undefined';
 
-            log(`- UnifiedExcelApiLibrary: ${hasExcelApi ? '✅' : '❌'}`);
-            log(`- DeepExcelAgent: ${hasDeepAgent ? '✅' : '❌'}`);  
+            log(`🚀 NEW IMPLEMENTATION:`);
+            log(`- Enhanced Deep Agent (MCP+Banking): ${hasEnhancedAgent ? '✅' : '❌'}`);
+            log(`- LangChain Excel Tools: ${hasLangChainTools ? '✅' : '❌'}`);
+            log(`- Excel Tool Library: ${hasExcelToolLibrary ? '✅' : '❌'}`);
+            log(`🧠 BASIC IMPLEMENTATION:`);
+            log(`- Basic Deep Agent: ${hasBasicDeepAgent ? '✅' : '❌'}`);
+            log(`📚 LEGACY COMPONENTS:`);
+            log(`- UnifiedExcelApiLibrary: ${hasExcelApi ? '✅' : '❌'}`);  
             log(`- VirtualFileSystem: ${hasVirtualFs ? '✅' : '❌'}`);
 
-            if (hasExcelApi && hasDeepAgent && hasVirtualFs) {
-                setStatus('🚀 Deep Agent components loaded! Please configure your OpenAI API key.');
-                
-                // Check if API key already exists
-                const existingKey = localStorage.getItem('openai_api_key');
-                if (existingKey) {
-                    setStatus('✅ API key found! Deep Agent ready for testing.');
-                    initializeDeepAgent(existingKey);
-                }
+            // Priority detection (same as ChatHandler)
+            if (hasEnhancedAgent) {
+                setStatus('🚀 Enhanced Deep Agent with MCP integration ready! Please configure your OpenAI API key.');
+                log('🎉 PRIORITY 1: Using Enhanced Deep Agent with MCP tools and banking intelligence');
+            } else if (hasBasicDeepAgent && hasVirtualFs) {
+                setStatus('🧠 Basic Deep Agent ready! Please configure your OpenAI API key.');
+                log('🎉 PRIORITY 2: Using Basic Deep Agent with LangChain tools');
             } else {
-                setStatus('❌ Some components failed to load. Check console for errors.', 'error');
+                setStatus('❌ No Deep Agent implementation available. Check console for errors.', 'error');
+                return;
+            }
+            
+            // Check if API key already exists
+            const existingKey = localStorage.getItem('openai_api_key');
+            if (existingKey) {
+                setStatus('✅ API key found! Deep Agent ready for testing.');
+                initializeDeepAgent(existingKey);
             }
         }
 
@@ -157,12 +192,29 @@
 
         function initializeDeepAgent(apiKey) {
             try {
-                deepAgent = new window.DeepExcelAgent(apiKey);
-                log('🧠 Deep Excel Agent initialized with:');
-                log('  - Planning tool (todo_write)');
-                log('  - File system (write_file, read_file, edit_file, ls)');
-                log('  - Sub-agents (research, formatting, analysis, general)');
-                log('  - Excel tools (read, write, format, find, analyze)');
+                // Use same priority logic as ChatHandler
+                if (typeof window.DeepAgentExcelIntegration === 'function') {
+                    log('🚀 Initializing Enhanced Deep Agent with MCP integration...');
+                    deepAgent = new window.DeepAgentExcelIntegration(apiKey);
+                    log('✅ Enhanced Deep Agent initialized with:');
+                    log('  🧠 Planning tool (todo_write)');
+                    log('  💾 File system (write_file, read_file)');
+                    log('  🛠️ MCP-style Excel tools (read_excel_range, write_data, format_range)');
+                    log('  🏦 Banking intelligence (calculate_irr, validate_model, find_metrics)');
+                    log('  🔧 Enhanced validation and safety checks');
+                    
+                } else if (typeof window.DeepExcelAgent === 'function') {
+                    log('🧠 Initializing Basic Deep Agent...');
+                    deepAgent = new window.DeepExcelAgent(apiKey);
+                    log('✅ Basic Deep Agent initialized with:');
+                    log('  📋 Planning tool (todo_write)');
+                    log('  💾 File system (write_file, read_file, edit_file, ls)');
+                    log('  🤖 Sub-agents (research, formatting, analysis, general)');
+                    log('  📊 Excel tools (read, write, format, find, analyze)');
+                    
+                } else {
+                    throw new Error('No Deep Agent implementation available');
+                }
                 
                 showTestSection();
             } catch (error) {
