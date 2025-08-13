@@ -95,7 +95,67 @@ exports.handler = async (event, context) => {
     // Determine system prompt based on batch type and query analysis (Hebbia-style routing)
     let finalSystemPrompt = systemPrompt;
     
-    if (batchType === 'financial_analysis') {
+    if (batchType === 'mcp_function_calling') {
+      // Handle MCP function calling - message contains the full OpenAI request
+      try {
+        const mcpRequest = JSON.parse(message);
+        
+        console.log('🔧 MCP Function Calling Request:', mcpRequest);
+        
+        const openaiData = {
+          model: mcpRequest.model || "gpt-4o-mini",
+          messages: mcpRequest.messages,
+          functions: mcpRequest.functions,
+          function_call: mcpRequest.function_call || 'auto',
+          temperature: mcpRequest.temperature || 0.1,
+          max_tokens: maxTokens || 3000
+        };
+
+        console.log('🤖 Calling OpenAI API with MCP function calling data:', JSON.stringify(openaiData, null, 2));
+
+        // Make request to OpenAI using modern fetch API
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`
+          },
+          body: JSON.stringify(openaiData)
+        });
+
+        console.log('📡 OpenAI API response status:', response.status);
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('OpenAI API error response:', errorText);
+          throw new Error(`OpenAI API error: ${response.status} - ${errorText}`);
+        }
+
+        const responseData = await response.json();
+        console.log('✅ OpenAI MCP API response received');
+
+        // Return the raw OpenAI response for MCP processing
+        return {
+          statusCode: 200,
+          headers: {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Headers': 'Content-Type',
+            'Access-Control-Allow-Methods': 'POST, OPTIONS',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            success: true,
+            response: JSON.stringify(responseData), // Return full OpenAI response as string
+            usage: responseData.usage
+          })
+        };
+        
+      } catch (parseError) {
+        console.error('❌ Failed to parse MCP request:', parseError);
+        throw new Error(`Invalid MCP request format: ${parseError.message}`);
+      }
+      
+    } else if (batchType === 'financial_analysis') {
       finalSystemPrompt = `You are a specialized M&A financial analysis agent. Your expertise:
 
 • Analyze MOIC, IRR, and cash flow metrics with precision

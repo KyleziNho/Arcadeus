@@ -5,8 +5,7 @@
  */
 
 class ExcelMCPChatAgent {
-  constructor(apiKey) {
-    this.apiKey = apiKey;
+  constructor() {
     this.tools = new Map();
     this.initializeTools();
     
@@ -779,7 +778,7 @@ Current context: You are working with an Excel workbook in the browser using Off
   }
 
   /**
-   * Call OpenAI with function calling capabilities
+   * Call OpenAI via Netlify function with function calling capabilities
    */
   async callOpenAI(messages) {
     const functions = Array.from(this.tools.values()).map(tool => ({
@@ -788,27 +787,51 @@ Current context: You are working with an Excel workbook in the browser using Off
       parameters: tool.schema
     }));
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.apiKey}`
-      },
-      body: JSON.stringify({
-        model: 'gpt-4-0125-preview',
+    // Use Netlify function endpoint instead of direct OpenAI API
+    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const apiEndpoint = isLocal ? 'http://localhost:8888/.netlify/functions/chat' : '/.netlify/functions/chat';
+
+    // Convert messages to format expected by Netlify function
+    const requestData = {
+      message: JSON.stringify({
         messages: messages,
         functions: functions,
         function_call: 'auto',
+        model: 'gpt-4-0125-preview',
         temperature: 0.1
-      })
+      }),
+      batchType: 'mcp_function_calling',
+      systemPrompt: 'You are an Excel MCP server with function calling capabilities.'
+    };
+
+    const response = await fetch(apiEndpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(requestData)
     });
 
     if (!response.ok) {
-      throw new Error(`OpenAI API error: ${response.statusText}`);
+      const errorText = await response.text();
+      throw new Error(`Netlify function error: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
-    const message = data.choices[0].message;
+    
+    if (!data.success) {
+      throw new Error(`API error: ${data.error}`);
+    }
+
+    // Parse the response content back to message format
+    let message;
+    try {
+      const responseData = JSON.parse(data.response);
+      message = responseData.choices?.[0]?.message || { content: data.response };
+    } catch (e) {
+      // Fallback if response isn't JSON
+      message = { content: data.response };
+    }
 
     // Handle function calls
     if (message.function_call) {

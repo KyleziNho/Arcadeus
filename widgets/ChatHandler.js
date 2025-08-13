@@ -243,17 +243,8 @@ class ChatHandler {
         // Priority 1: Use complete MCP server implementation
         if (typeof window.ExcelMCPChatAgent === 'function') {
           console.log('🚀 Excel MCP Chat Agent found, initializing...');
-          
-          const apiKey = localStorage.getItem('openai_api_key') || 
-                         sessionStorage.getItem('openai_api_key') ||
-                         await this.promptForApiKey();
-          
-          if (!apiKey) {
-            throw new Error('OpenAI API key required for MCP Chat Agent');
-          }
-          
-          console.log('🔑 API key found, creating MCP Chat Agent instance...');
-          aiAgent = new window.ExcelMCPChatAgent(apiKey);
+          console.log('🔑 Using Netlify function for OpenAI API access...');
+          aiAgent = new window.ExcelMCPChatAgent();
           console.log('✅ Excel MCP Chat Agent instance created successfully');
           console.log('🧠 Using complete MCP server implementation with all Excel tools');
           
