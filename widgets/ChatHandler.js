@@ -592,12 +592,26 @@ Enter your API key:`);
       const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
       const apiUrl = isLocal ? 'http://localhost:8888/.netlify/functions/chat' : '/.netlify/functions/chat';
       
+      // Ensure we only send serializable data
+      const serializableContext = {
+        message: context.message || '',
+        batchType: context.batchType || 'chat',
+        temperature: context.temperature || 0.7,
+        systemPrompt: context.systemPrompt,
+        // Only include serializable parts of Excel context
+        excelContext: context.excelContext ? {
+          worksheetName: context.excelContext.worksheetName,
+          financialMetrics: context.excelContext.financialMetrics,
+          summary: context.excelContext.summary
+        } : null
+      };
+      
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(context)
+        body: JSON.stringify(serializableContext)
       });
       
       if (!response.ok) {
