@@ -2134,8 +2134,16 @@ USER MESSAGE: ${userMessage}`;
             chatMessages.scrollTop = chatMessages.scrollHeight;
         }
         
+        // Store citations globally for reference
+        let citationReferences = {};
+        let citationCounter = 1;
+        
         function formatAIResponse(content) {
             if (!content || typeof content !== 'string') return content;
+            
+            // Reset citations for each new response
+            citationReferences = {};
+            citationCounter = 1;
             
             // Try to parse as JSON first (for structured responses)
             try {
@@ -2147,7 +2155,7 @@ USER MESSAGE: ${userMessage}`;
                 // Not JSON, continue with text formatting
             }
             
-            // Apply text formatting for regular responses
+            // Clean up the content first
             let formatted = content
                 // Remove LaTeX completely
                 .replace(/\\text\{([^}]+)\}/g, '$1')
@@ -2155,33 +2163,53 @@ USER MESSAGE: ${userMessage}`;
                 .replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '$1/$2')
                 .replace(/\\\[[\s\S]*?\\\]/g, '')
                 .replace(/\\\([\s\S]*?\\\)/g, '')
-                
-                // Convert markdown headers to clean HTML
-                .replace(/### ([^#\n]+)/g, '<div class="response-section-header">$1</div>')
-                .replace(/## ([^#\n]+)/g, '<div class="response-section-header">$1</div>')
-                
-                // Convert **bold** to highlighted spans
-                .replace(/\*\*([^*]+)\*\*/g, '<span class="value-highlight">$1</span>')
-                
-                // Make Excel cell references clickable
-                .replace(/\b([A-Z]+![A-Z]+\d+(?::[A-Z]+\d+)?)\b/g, 
-                    '<span class="cell-reference-clickable" onclick="navigateToExcelCell(\'$1\')">$1</span>')
-                
-                // Highlight financial values
-                .replace(/\$[\d,]+(?:\.\d{2})?(?:\s*(?:million|Million|M|K|thousand))?/g, 
-                    '<span class="money-highlight">$&</span>')
-                .replace(/\b\d+(?:\.\d+)?%/g, '<span class="percentage-highlight">$&</span>')
-                
-                // Convert numbered lists
-                .replace(/^\d+\.\s+(.+)$/gm, '<div class="list-item-numbered">$1</div>')
-                
-                // Convert bullet points
-                .replace(/^[-•*]\s+(.+)$/gm, '<div class="list-item-bullet">$1</div>')
-                
-                // Convert line breaks
-                .replace(/\n\n+/g, '<br><br>')
+                // Remove markdown bold and italic
+                .replace(/\*\*([^*]+)\*\*/g, '$1')
+                .replace(/\*([^*]+)\*/g, '$1')
+                .replace(/__([^_]+)__/g, '$1')
+                .replace(/_([^_]+)_/g, '$1');
+            
+            // Extract and replace cell references with citations
+            formatted = formatted.replace(/\b([A-Z]+![A-Z]+\d+(?::[A-Z]+\d+)?)\b/g, (match, cellRef) => {
+                citationReferences[citationCounter] = cellRef;
+                const citation = `<sup class="citation-link" onclick="navigateToExcelCell('${cellRef}')" title="Click to go to ${cellRef}">[${citationCounter}]</sup>`;
+                citationCounter++;
+                return citation;
+            });
+            
+            // Extract financial values with their context and add citations
+            formatted = formatted.replace(/(\$[\d,]+(?:\.\d{2})?(?:\s*(?:million|Million|M|K|thousand))?|\b\d+(?:\.\d+)?[xX]?\b(?:\s*MOIC)?|\b\d+(?:\.\d+)?%)/g, (match, value) => {
+                // Check if this value appears to be from a cell (based on context)
+                const hasContext = formatted.includes('located at') || formatted.includes('cell') || formatted.includes('formula');
+                if (hasContext && !match.includes('[')) {
+                    // Try to find associated cell reference nearby
+                    const cellRefPattern = /([A-Z]+![A-Z]+\d+)/;
+                    const nearbyMatch = content.substring(content.indexOf(match), content.indexOf(match) + 50).match(cellRefPattern);
+                    if (nearbyMatch) {
+                        citationReferences[citationCounter] = nearbyMatch[1];
+                        const citation = `<sup class="citation-link" onclick="navigateToExcelCell('${nearbyMatch[1]}')" title="Click to go to ${nearbyMatch[1]}">[${citationCounter}]</sup>`;
+                        citationCounter++;
+                        return `${match}${citation}`;
+                    }
+                }
+                return match;
+            });
+            
+            // Clean, minimalist formatting
+            formatted = formatted
+                // Remove headers - just use regular text
+                .replace(/###?\s*([^#\n]+)/g, '$1')
+                // Simple line breaks
+                .replace(/\n\n+/g, '</p><p>')
                 .replace(/\n/g, '<br>')
+                // Convert bullet points to simple dots
+                .replace(/^[-•*]\s+(.+)$/gm, '• $1')
                 .trim();
+            
+            // Wrap in paragraph tags if not already
+            if (!formatted.startsWith('<p>')) {
+                formatted = `<p>${formatted}</p>`;
+            }
             
             return formatted;
         }
