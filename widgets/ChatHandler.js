@@ -240,15 +240,8 @@ class ChatHandler {
         console.log('- window.DeepAgentExcelIntegration:', typeof window.DeepAgentExcelIntegration);
         console.log('- window.DeepExcelAgent:', typeof window.DeepExcelAgent);
         
-        // Priority 1: Use complete MCP server implementation
-        if (typeof window.ExcelMCPChatAgent === 'function') {
-          console.log('🚀 Excel MCP Chat Agent found, initializing...');
-          console.log('🔑 Using Netlify function for OpenAI API access...');
-          aiAgent = new window.ExcelMCPChatAgent();
-          console.log('✅ Excel MCP Chat Agent instance created successfully');
-          console.log('🧠 Using complete MCP server implementation with all Excel tools');
-          
-        } else if (typeof window.DeepAgentExcelIntegration === 'function') {
+        // Skip MCP Chat Agent for now - use existing working agents
+        if (typeof window.DeepAgentExcelIntegration === 'function') {
           console.log('🚀 Enhanced Deep Agent with MCP integration found, initializing...');
           
           const apiKey = localStorage.getItem('openai_api_key') || 

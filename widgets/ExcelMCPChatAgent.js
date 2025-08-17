@@ -788,8 +788,18 @@ Current context: You are working with an Excel workbook in the browser using Off
     }));
 
     // Use Netlify function endpoint instead of direct OpenAI API
-    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const currentHostname = window.location.hostname;
+    const currentHref = window.location.href;
+    console.log('🌐 MCP Agent - Current location:', { hostname: currentHostname, href: currentHref });
+    
+    // More robust local environment detection
+    const isLocal = (currentHostname === 'localhost' || currentHostname === '127.0.0.1') && 
+                   !currentHref.includes('netlify.app') && 
+                   !currentHref.includes('guavaexcel.netlify.app');
+    
     const apiEndpoint = isLocal ? 'http://localhost:8888/.netlify/functions/chat' : '/.netlify/functions/chat';
+    
+    console.log('🔗 MCP Agent using endpoint:', apiEndpoint, '(isLocal:', isLocal, ')');
 
     // Convert messages to format expected by Netlify function
     const requestData = {
