@@ -1470,7 +1470,8 @@
             const chatInput = document.getElementById('chatInput');
             if (chatInput) {
                 chatInput.value = message;
-                handleSendMessageWithExcelContext();
+                // Use the same working function that manual typing uses
+                handleUserQuery(message);
             }
         }
 
