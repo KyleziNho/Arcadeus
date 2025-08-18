@@ -1106,8 +1106,13 @@ Required format:
           dashRange.values = [['-']];
           dashRange.format.horizontalAlignment = 'Right';
         } else if (modelData.operatingExpenses && modelData.operatingExpenses.length > 0) {
-          const sumFormula = `=SUM(${colLetter}${opexStartRow + 1}:${colLetter}${currentRow - 1})`;
-          plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[sumFormula]];
+          // Handle single operating expense case
+          if (modelData.operatingExpenses.length === 1) {
+            plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${colLetter}${currentRow - 1}`]];
+          } else {
+            const sumFormula = `=SUM(${colLetter}${opexStartRow + 1}:${colLetter}${currentRow - 1})`;
+            plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[sumFormula]];
+          }
         } else {
           plSheet.getRange(`${colLetter}${currentRow}`).values = [[0]];
         }
@@ -3823,7 +3828,12 @@ You MUST create a P&L Statement with this EXACT structure:
         } else {
           const opexStartRow = totalOpExRow - modelData.operatingExpenses.length;
           const opexEndRow = totalOpExRow - 1;
-          plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=SUM(${colLetter}${opexStartRow + 1}:${colLetter}${opexEndRow})`]];
+          // Handle single operating expense case
+          if (modelData.operatingExpenses.length === 1) {
+            plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${colLetter}${opexStartRow + 1}`]];
+          } else {
+            plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=SUM(${colLetter}${opexStartRow + 1}:${colLetter}${opexEndRow})`]];
+          }
         }
         ExcelFormatter.applyNumberFormat(plSheet.getRange(`${colLetter}${currentRow}`));
       }
