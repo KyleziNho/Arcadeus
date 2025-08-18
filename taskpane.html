@@ -2168,7 +2168,10 @@ USER MESSAGE: ${userMessage}`;
                 .replace(/_([^_]+)_/g, '$1')
                 // Clean up redundant percentage displays (e.g., "0.1489 (approximately 14.89%)" -> "14.89%")
                 .replace(/0\.\d+\s*\((?:approximately\s*)?(\d+(?:\.\d+)?%)\)/gi, '$1')
-                .replace(/(\d+(?:\.\d+)?%)\s*\([^)]*\)/g, '$1'); // Remove any parenthetical after percentages
+                .replace(/(\d+(?:\.\d+)?%)\s*\([^)]*\)/g, '$1') // Remove any parenthetical after percentages
+                // Remove empty cell references like "(Cell )" or "Cell:" with nothing after
+                .replace(/\(Cell\s*\)/gi, '')
+                .replace(/Cell:\s*(?=[,.\s]|$)/gi, '');
             
             // Extract cell references and store them
             const cellRefPattern = /([A-Z]+![A-Z]+\d+)/g;
@@ -2185,30 +2188,55 @@ USER MESSAGE: ${userMessage}`;
             formatted = formatted.replace(/\s*\([A-Z]+![A-Z]+\d+\)/g, '');
             formatted = formatted.replace(/\s*(?:located at|at|in cell)\s*[A-Z]+![A-Z]+\d+/gi, '');
             
-            // Find financial values and make them clickable with black highlights
-            formatted = formatted.replace(/(\$[\d,]+(?:\.\d{2})?(?:\s*(?:million|Million|M|K|thousand))?|\b\d+(?:\.\d+)?[xX]\b|\b\d+(?:\.\d+)?%)/g, (match, offset, string) => {
-                // Find the nearest cell reference for this value
-                let nearestCellRef = null;
-                let minDistance = Infinity;
-                
-                // Look for cell refs near this value in the original content
-                for (let cellRef of cellRefs) {
-                    const distance = Math.abs(cellRef.index - offset);
-                    if (distance < minDistance && distance < 100) { // Within 100 characters
-                        minDistance = distance;
-                        nearestCellRef = cellRef.ref;
+            // Enhanced pattern matching for financial values
+            const valuePatterns = [
+                /\$[\d,]+(?:\.\d{1,2})?(?:\s*(?:million|Million|M|bn|billion|k|thousand))?/g,  // Money values
+                /\b\d+(?:\.\d+)?[xX]\b/g,  // Multiples (e.g., 6.93x)
+                /\b\d+(?:\.\d+)?%/g,  // Percentages
+                /\b(?:\d{1,3}(?:,\d{3})*|\d+)(?:\.\d+)?\b(?=\s*(?:is|are|was|were|equals|totals|shows|indicates|represents))/g  // Numbers followed by verbs
+            ];
+            
+            // Process each pattern
+            valuePatterns.forEach(pattern => {
+                formatted = formatted.replace(pattern, (match, offset, string) => {
+                    // Skip if already wrapped
+                    if (string.substring(Math.max(0, offset - 20), offset).includes('excel-value-highlight')) {
+                        return match;
                     }
-                }
-                
-                if (nearestCellRef) {
-                    // Create a unique ID for this value
-                    const valueId = `value_${Math.random().toString(36).substr(2, 9)}`;
-                    cellReferenceMap[valueId] = nearestCellRef;
                     
-                    return `<span class="excel-value-highlight" data-cell="${nearestCellRef}" onclick="navigateToExcelCell('${nearestCellRef}')" title="Click to go to ${nearestCellRef}">${match}</span>`;
-                }
-                
-                return match;
+                    // Find the nearest cell reference for this value
+                    let nearestCellRef = null;
+                    let minDistance = Infinity;
+                    
+                    // Look for cell refs near this value in the original content
+                    for (let cellRef of cellRefs) {
+                        const distance = Math.abs(cellRef.index - offset);
+                        if (distance < minDistance && distance < 150) { // Within 150 characters
+                            minDistance = distance;
+                            nearestCellRef = cellRef.ref;
+                        }
+                    }
+                    
+                    // Also check if this value appears to be from Excel based on context
+                    const contextWords = ['contribution', 'equity', 'irr', 'moic', 'revenue', 'expense', 'capex', 'noi', 'ebitda', 'cash', 'debt', 'value'];
+                    const hasContext = contextWords.some(word => 
+                        string.substring(Math.max(0, offset - 50), offset + 50).toLowerCase().includes(word)
+                    );
+                    
+                    if (nearestCellRef || hasContext) {
+                        // Create a unique ID for this value
+                        const valueId = `value_${Math.random().toString(36).substr(2, 9)}`;
+                        if (nearestCellRef) {
+                            cellReferenceMap[valueId] = nearestCellRef;
+                            return `<span class="excel-value-highlight" data-cell="${nearestCellRef}" onclick="navigateToExcelCell('${nearestCellRef}')" title="📍 ${nearestCellRef}">${match}</span>`;
+                        } else {
+                            // Context suggests it's from Excel but no specific cell ref found
+                            return `<span class="excel-value-highlight-static">${match}</span>`;
+                        }
+                    }
+                    
+                    return match;
+                });
             });
             
             // Clean, minimalist formatting
