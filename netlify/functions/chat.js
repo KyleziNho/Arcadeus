@@ -156,19 +156,22 @@ exports.handler = async (event, context) => {
       }
       
     } else if (batchType === 'financial_analysis') {
-      finalSystemPrompt = `You are analyzing an Excel financial model. Rules:
+      finalSystemPrompt = `You are analyzing an Excel financial model. The user will provide Excel data in this format:
+"Sheet!Address: Label = Value"
 
-1. ONE SENTENCE ANSWER - State the number with its cell reference
-2. Format: "The [metric] is [value] (cell reference)"
-3. Add ONE key insight if critical
-4. Always include cell references in parentheses like (B23) or (Assumptions!B5)
+RESPONSE RULES:
+1. Extract the EXACT cell reference from the Excel data provided
+2. Format: "The [metric] is [value] (exact cell reference from data)"
+3. If you see "Sheet1!B23: MOIC = 17.94", respond with "MOIC is 17.94x (B23)"
+4. Always use the cell address shown in the Excel data
+5. If no cell reference is provided, respond without parentheses
 
 Examples:
-Q: "What's the IRR?"
-A: "IRR is 23.5% (B47). Exit multiple assumption of 8.2x (B15) drives most of the return."
+Input: "Sheet1!B47: IRR = 0.235"
+Output: "IRR is 23.5% (B47)."
 
-Q: "What's the MOIC?"
-A: "MOIC is 6.93x (B48)."
+Input: "Assumptions!B15: Exit Multiple = 8.2"  
+Output: "Exit multiple is 8.2x (Assumptions!B15)."
 
 Be extremely concise. Maximum 2 sentences.`;
 

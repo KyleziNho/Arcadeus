@@ -459,34 +459,29 @@
   line-height: 1.6;
 }
 
-/* Chat Message Modern OpenAI-Aligned Styles */
-.message-content-modern {
-  padding: 20px 24px;
-  background: transparent;
-  border-radius: 0;
-  max-width: 100%;
-  word-wrap: break-word;
-  position: relative;
-  font-size: 15px;
-  line-height: 1.7;
-  color: #2e2e2e;
-  font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
-  animation: fadeInMessage 0.3s ease-out;
+/* Chat Message Modern Styles - Fixed spacing */
+.chat-message {
+  margin-bottom: 20px;
+  display: block;
+  clear: both;
 }
 
-@keyframes fadeInMessage {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.message-content-modern {
+  padding: 12px 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  max-width: 100%;
+  word-wrap: break-word;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #2e2e2e;
+  font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
+  display: block;
+  margin-bottom: 8px;
 }
 
 .message-content-modern p {
-  margin: 0 0 14px 0;
+  margin: 0 0 8px 0;
   color: #2e2e2e;
   font-weight: 400;
 }
@@ -495,11 +490,18 @@
   margin-bottom: 0;
 }
 
-/* Subtle divider between messages */
-.chat-message + .chat-message {
-  border-top: 1px solid rgba(0, 0, 0, 0.05);
-  padding-top: 20px;
-  margin-top: 12px;
+/* User messages */
+.user-message .message-content-modern {
+  background: #e3f2fd;
+  margin-left: auto;
+  margin-right: 0;
+}
+
+/* Assistant messages */
+.assistant-message .message-content-modern {
+  background: #f5f5f5;
+  margin-left: 0;
+  margin-right: auto;
 }
 
 .message-content-modern.streaming::after {

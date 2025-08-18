@@ -2178,16 +2178,20 @@ USER MESSAGE: ${userMessage}`;
         }
         
         function formatAIResponse(content) {
-            if (!content || typeof content !== 'string') return content;
+            if (!content || typeof content !== 'string') {
+                console.warn('formatAIResponse: Invalid content type:', typeof content);
+                return content || '';
+            }
             
             // Try to parse as JSON first (for structured responses)
             try {
                 const jsonData = JSON.parse(content);
-                if (jsonData.summary || jsonData.key_metrics || jsonData.answer) {
+                if (jsonData && (jsonData.summary || jsonData.key_metrics || jsonData.answer)) {
                     return renderStructuredResponse(jsonData);
                 }
             } catch (e) {
-                // Not JSON, continue with text formatting
+                // Not JSON, continue with text formatting - this is normal for simple responses
+                console.log('formatAIResponse: Content is not JSON, treating as plain text');
             }
             
             // Clean up the content
@@ -3743,9 +3747,9 @@ Respond with analysis based on the real Excel data provided.`;
                 const requestBody = {
                     message: prompt,
                     autoFillMode: false, // Chat mode, not autofill mode
-                    batchType: 'chat', // Use a different batch type for conversational mode
-                    systemPrompt: 'You are an expert Excel and M&A financial modeling assistant. Provide clear, conversational responses about the Excel data. Analyze the provided Excel data and give specific, data-driven insights in natural language.',
-                    temperature: 0.7,
+                    batchType: 'financial_analysis', // Use financial analysis for consistent cell reference format
+                    systemPrompt: null, // Let the function use the financial_analysis system prompt
+                    temperature: 0.3, // Lower temperature for more consistent responses
                     maxTokens: 3000
                 };
                 
@@ -3769,18 +3773,30 @@ Respond with analysis based on the real Excel data provided.`;
                     throw new Error(`API error: ${response.status} - ${errorText}`);
                 }
                 
-                const result = await response.json();
-                console.log('✅ API Response:', result);
+                let result;
+                try {
+                    result = await response.json();
+                    console.log('✅ API Response:', result);
+                } catch (jsonError) {
+                    console.error('❌ Failed to parse JSON response:', jsonError);
+                    const responseText = await response.text();
+                    console.error('❌ Raw response text:', responseText);
+                    throw new Error(`Invalid JSON response from API: ${jsonError.message}`);
+                }
                 
                 if (result.error) {
                     throw new Error(result.error);
                 }
                 
-                let aiResponse = result.content || result.response || result.choices?.[0]?.message?.content || 'No response received';
+                let aiResponse = result.content || result.response || result.choices?.[0]?.message?.content;
                 
                 if (!aiResponse || aiResponse.trim() === '') {
-                    throw new Error('Empty response from API');
+                    console.error('❌ Empty or missing AI response:', result);
+                    throw new Error('Empty response from AI service');
                 }
+                
+                // Clean up any malformed cell references
+                aiResponse = aiResponse.replace(/\(Cell\s*\)/g, '').replace(/\s+/g, ' ').trim();
                 
                 updateStreamingMessage(loadingMessage, aiResponse, true);
                 
