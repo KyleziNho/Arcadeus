@@ -2134,16 +2134,14 @@ USER MESSAGE: ${userMessage}`;
             chatMessages.scrollTop = chatMessages.scrollHeight;
         }
         
-        // Store citations globally for reference
-        let citationReferences = {};
-        let citationCounter = 1;
+        // Store cell references for values
+        let cellReferenceMap = {};
         
         function formatAIResponse(content) {
             if (!content || typeof content !== 'string') return content;
             
-            // Reset citations for each new response
-            citationReferences = {};
-            citationCounter = 1;
+            // Reset references for each new response
+            cellReferenceMap = {};
             
             // Try to parse as JSON first (for structured responses)
             try {
@@ -2155,7 +2153,7 @@ USER MESSAGE: ${userMessage}`;
                 // Not JSON, continue with text formatting
             }
             
-            // Clean up the content first
+            // Clean up redundant percentage formatting first
             let formatted = content
                 // Remove LaTeX completely
                 .replace(/\\text\{([^}]+)\}/g, '$1')
@@ -2167,31 +2165,49 @@ USER MESSAGE: ${userMessage}`;
                 .replace(/\*\*([^*]+)\*\*/g, '$1')
                 .replace(/\*([^*]+)\*/g, '$1')
                 .replace(/__([^_]+)__/g, '$1')
-                .replace(/_([^_]+)_/g, '$1');
+                .replace(/_([^_]+)_/g, '$1')
+                // Clean up redundant percentage displays (e.g., "0.1489 (approximately 14.89%)" -> "14.89%")
+                .replace(/0\.\d+\s*\((?:approximately\s*)?(\d+(?:\.\d+)?%)\)/gi, '$1')
+                .replace(/(\d+(?:\.\d+)?%)\s*\([^)]*\)/g, '$1'); // Remove any parenthetical after percentages
             
-            // Extract and replace cell references with citations
-            formatted = formatted.replace(/\b([A-Z]+![A-Z]+\d+(?::[A-Z]+\d+)?)\b/g, (match, cellRef) => {
-                citationReferences[citationCounter] = cellRef;
-                const citation = `<sup class="citation-link" onclick="navigateToExcelCell('${cellRef}')" title="Click to go to ${cellRef}">[${citationCounter}]</sup>`;
-                citationCounter++;
-                return citation;
-            });
+            // Extract cell references and store them
+            const cellRefPattern = /([A-Z]+![A-Z]+\d+)/g;
+            let cellRefs = [];
+            let match;
+            while ((match = cellRefPattern.exec(formatted)) !== null) {
+                cellRefs.push({
+                    ref: match[1],
+                    index: match.index
+                });
+            }
             
-            // Extract financial values with their context and add citations
-            formatted = formatted.replace(/(\$[\d,]+(?:\.\d{2})?(?:\s*(?:million|Million|M|K|thousand))?|\b\d+(?:\.\d+)?[xX]?\b(?:\s*MOIC)?|\b\d+(?:\.\d+)?%)/g, (match, value) => {
-                // Check if this value appears to be from a cell (based on context)
-                const hasContext = formatted.includes('located at') || formatted.includes('cell') || formatted.includes('formula');
-                if (hasContext && !match.includes('[')) {
-                    // Try to find associated cell reference nearby
-                    const cellRefPattern = /([A-Z]+![A-Z]+\d+)/;
-                    const nearbyMatch = content.substring(content.indexOf(match), content.indexOf(match) + 50).match(cellRefPattern);
-                    if (nearbyMatch) {
-                        citationReferences[citationCounter] = nearbyMatch[1];
-                        const citation = `<sup class="citation-link" onclick="navigateToExcelCell('${nearbyMatch[1]}')" title="Click to go to ${nearbyMatch[1]}">[${citationCounter}]</sup>`;
-                        citationCounter++;
-                        return `${match}${citation}`;
+            // Remove explicit cell references from display (e.g., "(Assumptions!A38)" -> "")
+            formatted = formatted.replace(/\s*\([A-Z]+![A-Z]+\d+\)/g, '');
+            formatted = formatted.replace(/\s*(?:located at|at|in cell)\s*[A-Z]+![A-Z]+\d+/gi, '');
+            
+            // Find financial values and make them clickable with black highlights
+            formatted = formatted.replace(/(\$[\d,]+(?:\.\d{2})?(?:\s*(?:million|Million|M|K|thousand))?|\b\d+(?:\.\d+)?[xX]\b|\b\d+(?:\.\d+)?%)/g, (match, offset, string) => {
+                // Find the nearest cell reference for this value
+                let nearestCellRef = null;
+                let minDistance = Infinity;
+                
+                // Look for cell refs near this value in the original content
+                for (let cellRef of cellRefs) {
+                    const distance = Math.abs(cellRef.index - offset);
+                    if (distance < minDistance && distance < 100) { // Within 100 characters
+                        minDistance = distance;
+                        nearestCellRef = cellRef.ref;
                     }
                 }
+                
+                if (nearestCellRef) {
+                    // Create a unique ID for this value
+                    const valueId = `value_${Math.random().toString(36).substr(2, 9)}`;
+                    cellReferenceMap[valueId] = nearestCellRef;
+                    
+                    return `<span class="excel-value-highlight" data-cell="${nearestCellRef}" onclick="navigateToExcelCell('${nearestCellRef}')" title="Click to go to ${nearestCellRef}">${match}</span>`;
+                }
+                
                 return match;
             });
             
@@ -2204,6 +2220,8 @@ USER MESSAGE: ${userMessage}`;
                 .replace(/\n/g, '<br>')
                 // Convert bullet points to simple dots
                 .replace(/^[-•*]\s+(.+)$/gm, '• $1')
+                // Remove any remaining cell references that weren't caught
+                .replace(/\b[A-Z]+![A-Z]+\d+\b/g, '')
                 .trim();
             
             // Wrap in paragraph tags if not already

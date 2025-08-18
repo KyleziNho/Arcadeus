@@ -37,34 +37,31 @@
   display: none; /* Hide headers for cleaner look */
 }
 
-/* Citation Links - Minimalist superscript style */
-.citation-link {
-  color: #3b82f6;
-  font-size: 10px;
+/* Excel Value Highlights - Black background for clickable values */
+.excel-value-highlight {
+  background: #000000;
+  color: #ffffff;
+  padding: 2px 6px;
+  border-radius: 4px;
   font-weight: 600;
   cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-block;
   text-decoration: none;
-  transition: color 0.2s ease;
-  margin-left: 1px;
-  vertical-align: super;
-  line-height: 0;
 }
 
-.citation-link:hover {
-  color: #1d4ed8;
-  text-decoration: underline;
+.excel-value-highlight:hover {
+  background: #1f2937;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
-/* Remove all highlighting except citations */
+/* Remove old highlighting styles */
+.citation-link,
 .value-highlight,
 .money-highlight,
 .percentage-highlight {
-  background: transparent !important;
-  color: inherit !important;
-  padding: 0 !important;
-  border: none !important;
-  font-weight: normal !important;
-  display: inline !important;
+  display: none !important;
 }
 
 /* Cell references - hidden (using citations instead) */
