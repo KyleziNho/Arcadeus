@@ -671,23 +671,66 @@
         let isReadingExcelFiles = false;
         let userProfilePicture = null;
 
-        // Excel Navigation - Global function for clickable cell references
+        // Excel Navigation - Direct implementation for clickable cell references
         async function navigateToExcelCell(cellReference) {
-            console.log('🎯 Global navigation triggered for:', cellReference);
+            console.log('🎯 Navigating to cell:', cellReference);
             
-            if (window.excelNavigator) {
-                try {
-                    const result = await window.excelNavigator.navigateToCell(cellReference);
-                    if (result.success) {
-                        console.log('✅ Navigation successful:', result);
-                    } else {
-                        console.error('❌ Navigation failed:', result.error);
+            try {
+                await Excel.run(async (context) => {
+                    // Parse the cell reference (e.g., "Assumptions!B5" or "B5")
+                    let sheetName = null;
+                    let cellAddr = cellReference;
+                    
+                    if (cellReference.includes('!')) {
+                        const parts = cellReference.split('!');
+                        sheetName = parts[0].replace(/'/g, ''); // Remove quotes if present
+                        cellAddr = parts[1];
                     }
-                } catch (error) {
-                    console.error('❌ Navigation error:', error);
+                    
+                    // Get the worksheet
+                    let worksheet;
+                    if (sheetName) {
+                        worksheet = context.workbook.worksheets.getItem(sheetName);
+                    } else {
+                        worksheet = context.workbook.worksheets.getActiveWorksheet();
+                    }
+                    
+                    // Activate the worksheet
+                    worksheet.activate();
+                    
+                    // Get and select the range
+                    const range = worksheet.getRange(cellAddr);
+                    range.select();
+                    
+                    // Load the range to get its value for confirmation
+                    range.load(['address', 'values']);
+                    
+                    await context.sync();
+                    
+                    console.log('✅ Navigated to:', range.address);
+                    
+                    // Optional: Show a subtle notification
+                    const value = range.values[0][0];
+                    if (value !== null && value !== undefined) {
+                        console.log('Cell value:', value);
+                    }
+                });
+            } catch (error) {
+                console.error('❌ Navigation failed:', error);
+                // Fallback: try to at least activate the sheet if it exists
+                try {
+                    await Excel.run(async (context) => {
+                        if (cellReference.includes('!')) {
+                            const sheetName = cellReference.split('!')[0].replace(/'/g, '');
+                            const worksheet = context.workbook.worksheets.getItem(sheetName);
+                            worksheet.activate();
+                            await context.sync();
+                            console.log('✅ At least activated sheet:', sheetName);
+                        }
+                    });
+                } catch (fallbackError) {
+                    console.error('❌ Even sheet activation failed:', fallbackError);
                 }
-            } else {
-                console.error('❌ Excel Navigator not available');
             }
         }
 
@@ -2169,9 +2212,12 @@ USER MESSAGE: ${userMessage}`;
                 // Clean up redundant percentage displays (e.g., "0.1489 (approximately 14.89%)" -> "14.89%")
                 .replace(/0\.\d+\s*\((?:approximately\s*)?(\d+(?:\.\d+)?%)\)/gi, '$1')
                 .replace(/(\d+(?:\.\d+)?%)\s*\([^)]*\)/g, '$1') // Remove any parenthetical after percentages
-                // Remove empty cell references like "(Cell )" or "Cell:" with nothing after
-                .replace(/\(Cell\s*\)/gi, '')
-                .replace(/Cell:\s*(?=[,.\s]|$)/gi, '');
+                // Remove all cell reference patterns more aggressively
+                .replace(/\(cell\s*\)/gi, '')
+                .replace(/\(\s*cell\s*\)/gi, '')
+                .replace(/cell:\s*(?=[,.\s]|$)/gi, '')
+                .replace(/\s*\(located at cell\s*\)/gi, '')
+                .replace(/,\s*calculated at.*?\(cell\s*\)/gi, '');
             
             // Extract cell references and store them
             const cellRefPattern = /([A-Z]+![A-Z]+\d+)/g;
