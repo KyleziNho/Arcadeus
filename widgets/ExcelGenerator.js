@@ -4395,6 +4395,7 @@ You MUST create a P&L Statement with this EXACT structure:
       fcfSheet.getRange(`A${currentRow}`).format.font.name = 'Times New Roman';
       fcfSheet.getRange(`A${currentRow}`).format.font.size = 12;
       fcfSheet.getRange(`A${currentRow}`).format.font.color = ExcelFormatter.colors.black;
+      fcfStructure.salePrice = currentRow; // Track the sale price row
       
       // Fill Period 0 through Period N-1 with dashes
       for (let i = 0; i < periods; i++) {
@@ -4432,6 +4433,7 @@ You MUST create a P&L Statement with this EXACT structure:
       fcfSheet.getRange(`A${currentRow}`).format.font.name = 'Times New Roman';
       fcfSheet.getRange(`A${currentRow}`).format.font.size = 12;
       fcfSheet.getRange(`A${currentRow}`).format.font.color = ExcelFormatter.colors.black;
+      fcfStructure.disposalCosts = currentRow; // Track the disposal costs row
       
       // Fill Period 0 through Period N-1 with dashes
       for (let i = 0; i < periods; i++) {
@@ -4599,6 +4601,7 @@ You MUST create a P&L Statement with this EXACT structure:
       leveredCashflowRange.format.borders.getItem('EdgeTop').color = ExcelFormatter.colors.black;
       
       const leveredCashflowsRow = currentRow;
+      fcfStructure.leveredCashflows = currentRow; // Track this for later reference
       // Store row numbers for correct formula references (adjusted for empty row)
       const debtUpfrontCostsRow = currentRow - 3;
       const debtExpenseRow = currentRow - 2;
@@ -4606,9 +4609,15 @@ You MUST create a P&L Statement with this EXACT structure:
       
       for (let i = 0; i <= periods; i++) {
         const colLetter = this.getColumnLetter(i + 1);
-        // Levered CF = SUM of all components from unlevered CF to loan proceeds (B11:B15 format)
-        // Include ALL rows from unlevered cashflows through loan proceeds
-        fcfSheet.getRange(colLetter + currentRow).formulas = [[`=SUM(${colLetter}${unlevereCashflowsRow}:${colLetter}${loanProceedsRow})`]];
+        // For final period, include Sale Price and Disposal Costs
+        if (i === periods && fcfStructure.salePrice && fcfStructure.disposalCosts) {
+          // Final period: Include unlevered CF + debt flows + sale price + disposal costs
+          fcfSheet.getRange(colLetter + currentRow).formulas = 
+            [[`=SUM(${colLetter}${unlevereCashflowsRow}:${colLetter}${loanProceedsRow})+${colLetter}${fcfStructure.salePrice}+${colLetter}${fcfStructure.disposalCosts}`]];
+        } else {
+          // Regular periods: SUM of all components from unlevered CF to loan proceeds
+          fcfSheet.getRange(colLetter + currentRow).formulas = [[`=SUM(${colLetter}${unlevereCashflowsRow}:${colLetter}${loanProceedsRow})`]];
+        }
         ExcelFormatter.applyNumberFormat(fcfSheet.getRange(colLetter + currentRow));
       }
       currentRow += 2;
