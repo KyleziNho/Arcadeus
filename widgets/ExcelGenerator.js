@@ -935,6 +935,7 @@ Required format:
       currentRow++;
       
       // Add each revenue item
+      const revenueItemsStartRow = currentRow; // Track where actual revenue items start
       if (modelData.revenueItems && modelData.revenueItems.length > 0) {
         modelData.revenueItems.forEach((item, index) => {
           plSheet.getRange(`A${currentRow}`).values = [[item.name || `Revenue ${index + 1}`]];
@@ -1005,7 +1006,7 @@ Required format:
           dashRange.values = [['-']];
           dashRange.format.horizontalAlignment = 'Right';
         } else if (modelData.revenueItems && modelData.revenueItems.length > 0) {
-          const sumFormula = `=SUM(${colLetter}${revenueStartRow + 3}:${colLetter}${currentRow - 1})`;
+          const sumFormula = `=SUM(${colLetter}${revenueItemsStartRow}:${colLetter}${currentRow - 1})`;
           plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[sumFormula]];
         } else {
           plSheet.getRange(`${colLetter}${currentRow}`).values = [[0]];
@@ -3670,6 +3671,7 @@ You MUST create a P&L Statement with this EXACT structure:
       currentRow++;
 
       // Add revenue items with growth
+      const actualRevenueItemsStartRow = currentRow; // Track where actual revenue items start
       if (modelData.revenueItems && modelData.revenueItems.length > 0) {
         modelData.revenueItems.forEach((item, index) => {
           plSheet.getRange(`A${currentRow}`).values = [[item.name]];
@@ -3734,9 +3736,8 @@ You MUST create a P&L Statement with this EXACT structure:
           dashRange.values = [['-']];
           dashRange.format.horizontalAlignment = 'Right';
         } else {
-          const revenueStartRow = totalRevenueRow - modelData.revenueItems.length;
-          const revenueEndRow = totalRevenueRow - 1;
-          plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=SUM(${colLetter}${revenueStartRow + 1}:${colLetter}${revenueEndRow})`]];
+          const revenueEndRow = currentRow - 1; // Current row is Total Revenue, so revenue items end at currentRow - 1
+          plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=SUM(${colLetter}${actualRevenueItemsStartRow}:${colLetter}${revenueEndRow})`]];
         }
         ExcelFormatter.applyNumberFormat(plSheet.getRange(`${colLetter}${currentRow}`));
       }
