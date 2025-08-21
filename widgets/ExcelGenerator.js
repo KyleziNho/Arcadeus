@@ -4183,6 +4183,9 @@ You MUST create a P&L Statement with this EXACT structure:
     return Excel.run(async (context) => {
       console.log('💰 Creating Free Cash Flow Sheet...');
       
+      // Track FCF line item positions for later reference
+      const fcfStructure = {};
+      
       const sheets = context.workbook.worksheets;
       
       // Delete existing FCF sheet if it exists
@@ -5062,7 +5065,7 @@ You MUST create a P&L Statement with this EXACT structure:
         // Unlevered IRR
         assumptionsSheet.getRange(`H${currentRow}`).values = [['Unlevered IRR']];
         if (unleverIRRRow) {
-          assumptionsSheet.getRange(`I${currentRow}`).values = [[`=Cashflows!B${unleverIRRRow}`]];
+          assumptionsSheet.getRange(`I${currentRow}`).formulas = [[`=Cashflows!B${unleverIRRRow}`]];
         } else {
           assumptionsSheet.getRange(`I${currentRow}`).values = [['N/A']];
         }
@@ -5074,7 +5077,7 @@ You MUST create a P&L Statement with this EXACT structure:
         // Levered IRR  
         assumptionsSheet.getRange(`H${currentRow}`).values = [['Levered IRR']];
         if (leverIRRRow) {
-          assumptionsSheet.getRange(`I${currentRow}`).values = [[`=Cashflows!B${leverIRRRow}`]];
+          assumptionsSheet.getRange(`I${currentRow}`).formulas = [[`=Cashflows!B${leverIRRRow}`]];
         } else {
           assumptionsSheet.getRange(`I${currentRow}`).values = [['N/A']];
         }
@@ -5086,7 +5089,7 @@ You MUST create a P&L Statement with this EXACT structure:
         // MOIC
         assumptionsSheet.getRange(`H${currentRow}`).values = [['MOIC']];
         if (moicRow) {
-          assumptionsSheet.getRange(`I${currentRow}`).values = [[`=Cashflows!B${moicRow}`]];
+          assumptionsSheet.getRange(`I${currentRow}`).formulas = [[`=Cashflows!B${moicRow}`]];
         } else {
           assumptionsSheet.getRange(`I${currentRow}`).values = [['N/A']];
         }

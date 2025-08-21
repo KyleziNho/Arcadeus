@@ -26,6 +26,18 @@ class ExcelLiveAnalyzer {
   }
 
   /**
+   * Safely get a property value with fallback
+   */
+  safeGetProperty(obj, property, fallback = 'Unknown') {
+    try {
+      return obj[property] || fallback;
+    } catch (error) {
+      console.warn(`Property '${property}' not available:`, error.message);
+      return fallback;
+    }
+  }
+
+  /**
    * Get comprehensive Excel context - far beyond current 10-row limit
    */
   async getComprehensiveContext() {
@@ -76,10 +88,10 @@ class ExcelLiveAnalyzer {
         const comprehensiveContext = {
           timestamp: new Date(),
           workbook: {
-            name: workbook.name || 'Unknown Workbook'
+            name: this.safeGetProperty(workbook, 'name', 'Unknown Workbook')
           },
           activeWorksheet: {
-            name: activeWorksheet.name || 'Unknown Worksheet',
+            name: this.safeGetProperty(activeWorksheet, 'name', 'Unknown Worksheet'),
             usedRange: hasUsedRange ? {
               address: usedRange.address,
               rowCount: usedRange.rowCount,
@@ -94,12 +106,12 @@ class ExcelLiveAnalyzer {
             formulas: selectedRange.formulas
           },
           allWorksheets: worksheets.items.map(ws => ({
-            name: ws.name || 'Unknown'
+            name: this.safeGetProperty(ws, 'name', 'Unknown')
           })),
           namedRanges: namedRanges.items.map(range => ({
-            name: range.name || 'Unknown',
-            formula: range.formula,
-            value: range.value
+            name: this.safeGetProperty(range, 'name', 'Unknown'),
+            formula: this.safeGetProperty(range, 'formula', ''),
+            value: this.safeGetProperty(range, 'value', '')
           })),
           analysis: analysis,
           financialMetrics: await this.extractFinancialMetrics(hasUsedRange ? usedRange : null),
