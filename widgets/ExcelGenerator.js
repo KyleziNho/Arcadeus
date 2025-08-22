@@ -1037,6 +1037,7 @@ Required format:
       currentRow++;
       
       // Add each operating expense
+      const opexItemsStartRow = currentRow; // Track where actual operating expense items start
       if (modelData.operatingExpenses && modelData.operatingExpenses.length > 0) {
         modelData.operatingExpenses.forEach((item, index) => {
           plSheet.getRange(`A${currentRow}`).values = [[item.name || `OpEx ${index + 1}`]];
@@ -1107,13 +1108,9 @@ Required format:
           dashRange.values = [['-']];
           dashRange.format.horizontalAlignment = 'Right';
         } else if (modelData.operatingExpenses && modelData.operatingExpenses.length > 0) {
-          // Handle single operating expense case
-          if (modelData.operatingExpenses.length === 1) {
-            plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${colLetter}${currentRow - 1}`]];
-          } else {
-            const sumFormula = `=SUM(${colLetter}${opexStartRow + 1}:${colLetter}${currentRow - 1})`;
-            plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[sumFormula]];
-          }
+          const opexEndRow = currentRow - 1; // Current row is Total OpEx, so opex items end at currentRow - 1
+          const sumFormula = `=SUM(${colLetter}${opexItemsStartRow}:${colLetter}${opexEndRow})`;
+          plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[sumFormula]];
         } else {
           plSheet.getRange(`${colLetter}${currentRow}`).values = [[0]];
         }
@@ -3763,6 +3760,7 @@ You MUST create a P&L Statement with this EXACT structure:
       currentRow++;
 
       // Add operating expense items
+      const actualOpexItemsStartRow = currentRow; // Track where actual operating expense items start
       if (modelData.operatingExpenses && modelData.operatingExpenses.length > 0) {
         modelData.operatingExpenses.forEach((item, index) => {
           plSheet.getRange(`A${currentRow}`).values = [[item.name]];
@@ -3827,14 +3825,9 @@ You MUST create a P&L Statement with this EXACT structure:
           dashRange.values = [['-']];
           dashRange.format.horizontalAlignment = 'Right';
         } else {
-          const opexStartRow = totalOpExRow - modelData.operatingExpenses.length;
-          const opexEndRow = totalOpExRow - 1;
-          // Handle single operating expense case
-          if (modelData.operatingExpenses.length === 1) {
-            plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=${colLetter}${opexStartRow + 1}`]];
-          } else {
-            plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[`=SUM(${colLetter}${opexStartRow + 1}:${colLetter}${opexEndRow})`]];
-          }
+          const opexEndRow = currentRow - 1; // Current row is Total OpEx, so opex items end at currentRow - 1
+          const sumFormula = `=SUM(${colLetter}${actualOpexItemsStartRow}:${colLetter}${opexEndRow})`;
+          plSheet.getRange(`${colLetter}${currentRow}`).formulas = [[sumFormula]];
         }
         ExcelFormatter.applyNumberFormat(plSheet.getRange(`${colLetter}${currentRow}`));
       }
@@ -4307,6 +4300,7 @@ You MUST create a P&L Statement with this EXACT structure:
       currentRow++;
       
       // Remove section headers - start directly with data rows
+      const fcfComponentsStartRow = currentRow; // Track where FCF components start
       
       // Purchase price (Period 0 only)
       fcfSheet.getRange(`A${currentRow}`).values = [['Purchase price']];
@@ -4471,7 +4465,8 @@ You MUST create a P&L Statement with this EXACT structure:
       const unlevereCashflowsRow = currentRow;
       for (let i = 0; i <= periods; i++) {
         const colLetter = this.getColumnLetter(i + 1);
-        fcfSheet.getRange(colLetter + currentRow).formulas = [[`=SUM(${colLetter}${currentRow - 6}:${colLetter}${currentRow - 1})`]];
+        const unleverEndRow = currentRow - 1; // Current row is Unlevered Cashflows, so components end at currentRow - 1
+        fcfSheet.getRange(colLetter + currentRow).formulas = [[`=SUM(${colLetter}${fcfComponentsStartRow}:${colLetter}${unleverEndRow})`]];
         ExcelFormatter.applyNumberFormat(fcfSheet.getRange(colLetter + currentRow));
       }
       currentRow++;
